@@ -1,0 +1,70 @@
+{
+  "date": "2026-11-17",
+  "timezone": "America/New_York",
+  "hardware": {
+    "model": "MacBook Pro",
+    "chip": "Apple M5 Pro",
+    "memory_gb": 48
+  },
+  "os": {
+    "name": "macOS",
+    "version": "26.3.2",
+    "build": "25D2150"
+  },
+  "toolchain": {
+    "juce": "8.0.6",
+    "cmake": "3.31.6",
+    "ninja_python_distribution": "1.11.1.3",
+    "compiler": "Apple Clang 21.0.0",
+    "sdk": "26.5",
+    "architecture": "arm64",
+    "deployment_minimum": "12.0"
+  },
+  "artifact_sha256": {
+    "MacOS/SoundPlus": "7148e29d0cd27b537677641eb53f7b6f58a0c6b9d2a89943446784159241f5e1",
+    "Helpers/SoundPlusAudio": "c0057616d65f697dc703aa644b22da951c46435f7cef6b3302496e1d929ef9f0"
+  },
+  "ctest": {
+    "result": "pass",
+    "checks": 2805,
+    "seconds": 11.41,
+    "progressive_visible_files": 577,
+    "corpus_files": 2400,
+    "unchanged_restart_header_jobs": 0,
+    "device": "MacBook Pro Speakers",
+    "device_rate_hz": 48000,
+    "callback_frames_observed": 62976,
+    "searches_during_playback": 100,
+    "additional_fifo_starvation": 0,
+    "warm_query_count": 200,
+    "warm_query_mean_ms_small_catalog": 0.062436
+  },
+  "volume_test": {
+    "fixture": "disposable HFS+ disk image",
+    "passed": true,
+    "volume_identity_stored": true,
+    "offline_entries_retained": true,
+    "remount_at_new_path": true,
+    "stable_asset_id": true,
+    "unchanged_revision": true
+  },
+  "original_demo_sha256_checks": 12,
+  "native_ui_verified": [
+    "Add Folder via native picker",
+    "metadata and paths",
+    "Unicode result names",
+    "search while pinned audition advances",
+    "reopen with zero header jobs"
+  ],
+  "keyboard_verification": "Space observed in initial native pass; final raw-key automation unreliable; confirm physical keyboard in five-minute test",
+  "not_qualified": [
+    "physical external drives",
+    "external audio interfaces",
+    "network mounts",
+    "VoiceOver user testing",
+    "older macOS",
+    "30-minute callback workload",
+    "100000-file performance gates",
+    "distribution signing and notarization"
+  ]
+}

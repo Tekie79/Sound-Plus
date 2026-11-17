@@ -1,0 +1,31 @@
+#pragma once
+#include "AudioStream.h"
+#include "AudioIPC.h"
+#include <juce_audio_utils/juce_audio_utils.h>
+namespace sp
+{
+class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallback
+{
+  public:
+    AudioEngine();
+    ~AudioEngine() override;
+
+  private:
+    void timerCallback() override;
+    void audioDeviceIOCallbackWithContext(const float *const *, int, float *const *, int, int,
+                                          const juce::AudioIODeviceCallbackContext &) override;
+    void audioDeviceAboutToStart(juce::AudioIODevice *) override;
+    void audioDeviceStopped() override;
+    void audioDeviceError(const juce::String &) override;
+    void command(const juce::var &);
+    void sendStatus();
+    AuditionCore core;
+    juce::AudioDeviceManager devices;
+    juce::String input, id, error;
+    juce::Array<juce::var> outputs;
+    std::atomic<double> deviceRate{0};
+    std::atomic<bool> deviceChanged{false};
+    bool hello = false;
+    int ticks = 0;
+};
+} // namespace sp
