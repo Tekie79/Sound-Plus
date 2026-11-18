@@ -27,6 +27,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
       waveformCache(db.getParentDirectory().getChildFile("waveforms")),
       referenceWaveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
+    pauseIndex.setToggleable(true);
     look.setColour(juce::ResizableWindow::backgroundColourId, bg);
     look.setColour(juce::TextButton::buttonColourId, line);
     look.setColour(juce::TextButton::textColourOffId, text);
@@ -1309,8 +1310,8 @@ void LibraryView::timerCallback()
     referencePlay.setButtonText(state["id"].toString() == referenceId && (isPlaying || pending)
                                     ? "Stop reference"
                                     : "Play reference");
-    referencePlay.setIcon(state["id"].toString() == referenceId && (isPlaying || pending)
-                              ? ActionIcon::stop : ActionIcon::play);
+    referencePlay.setIcon(state["id"].toString() == referenceId && (isPlaying || pending) ? ActionIcon::stop
+                                                                                          : ActionIcon::play);
     if (isPlaying && state["id"].toString() == referenceId)
         referenceWaveform.setCursor((int64_t)state["sourceSample"]);
     if (auto data = referenceWaveformCache.snapshot();

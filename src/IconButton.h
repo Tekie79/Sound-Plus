@@ -9,11 +9,6 @@ class IconButton : public juce::TextButton
         : juce::TextButton(name), kind(icon), showLabel(label)
     {
         icons::preload();
-        setToggleable(icon == ActionIcon::lock || icon == ActionIcon::mute || icon == ActionIcon::solo ||
-                      icon == ActionIcon::snap || icon == ActionIcon::scrub || icon == ActionIcon::chevron ||
-                      icon == ActionIcon::keep || icon == ActionIcon::compare ||
-                      icon == ActionIcon::inspector || icon == ActionIcon::browser ||
-                      icon == ActionIcon::pause);
         setTitle(name);
         setTooltip(name);
         setMouseCursor(juce::MouseCursor::PointingHandCursor);

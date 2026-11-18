@@ -54,22 +54,68 @@ class LookAndFeel : public juce::LookAndFeel_V4
 class FileDragButton : public IconButton
 {
   public:
-    explicit FileDragButton(const juce::String &name) : IconButton(name, ActionIcon::drag) {}
+    explicit FileDragButton(const juce::String &name) : IconButton(name, ActionIcon::drag)
+    {
+        auto path = juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_QA_DRAG_LOG", {});
+        if (path.isNotEmpty())
+            traceFile = juce::File(path);
+    }
     juce::File file;
     void mouseDown(const juce::MouseEvent &e) override
     {
         started = false;
+        tracedDrag = false;
+        trace("mouse-down", e.getDistanceFromDragStart());
         IconButton::mouseDown(e);
     }
     void mouseDrag(const juce::MouseEvent &e) override
     {
+        if (!tracedDrag && e.getDistanceFromDragStart() > 5)
+        {
+            trace("mouse-drag", e.getDistanceFromDragStart());
+            tracedDrag = true;
+        }
         if (!started && isEnabled() && file != juce::File() && e.getDistanceFromDragStart() > 5)
-            started = juce::DragAndDropContainer::performExternalDragDropOfFiles({file.getFullPathName()},
-                                                                                 false, this);
+        {
+            std::function<void()> ended;
+            if (traceFile != juce::File())
+            {
+                juce::Component::SafePointer<FileDragButton> safe(this);
+                ended = [safe]
+                {
+                    if (safe)
+                        safe->trace("native-ended", 0);
+                };
+            }
+            started = juce::DragAndDropContainer::performExternalDragDropOfFiles(
+                {file.getFullPathName()}, false, this, std::move(ended));
+            trace(started ? "native-started" : "native-start-failed", e.getDistanceFromDragStart());
+        }
     }
 
   private:
     bool started = false;
+    bool tracedDrag = false;
+    juce::File traceFile;
+    void trace(const char *event, int distance)
+    {
+        if (traceFile == juce::File())
+            return;
+        auto row = juce::var(new juce::DynamicObject());
+        auto *o = row.getDynamicObject();
+        o->setProperty("event", event);
+        o->setProperty("time", juce::Time::getCurrentTime().toISO8601(true));
+        o->setProperty("control", getButtonText());
+        o->setProperty("file", file.getFullPathName());
+        o->setProperty("exists", file.existsAsFile());
+        o->setProperty("enabled", isEnabled());
+        o->setProperty("distance", distance);
+        o->setProperty("bounds", getScreenBounds().toString());
+        auto p = juce::Desktop::getInstance().getMainMouseSource().getScreenPosition();
+        o->setProperty("screenX", p.x);
+        o->setProperty("screenY", p.y);
+        traceFile.appendText(juce::JSON::toString(row, true) + "\n");
+    }
 };
 inline juce::PropertiesFile::Options preferenceOptions()
 {

@@ -64,7 +64,10 @@ struct DesignerCanvas::Header : juce::Button
         addAndMakeVisible(colour);
         colour.onClick = [this, id] { canvas.showColours(id); };
         for (auto *button : {&mute, &solo, &lock})
+        {
+            button->setToggleable(true);
             addAndMakeVisible(button);
+        }
         auto toggle = [this, id](const char *name, bool DesignLayer::*property)
         {
             canvas.session.edit(name,
@@ -428,7 +431,21 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                                                                                    : accent);
                 if (!in && shape.fadeOutY != shape.fadeInY)
                     graphics.drawLine(x, shape.fadeInY, x, y, 1.f);
-                graphics.fillRoundedRectangle(x - 2.5f, y - 2.5f, 5, 5, 1.5f);
+                auto handle = fadeHandleBounds(shape, in);
+                // Mirrored ramp markers distinguish duration grips from interior curve points.
+                auto edge = [&](float u, float v)
+                {
+                    return juce::Point<float>(handle.getX() + (in ? u : 1 - u) * handle.getWidth(),
+                                              handle.getY() + v * handle.getHeight());
+                };
+                juce::Path marker;
+                marker.startNewSubPath(edge(0, 1));
+                marker.quadraticTo(edge(.65f, .85f), edge(1, 0));
+                marker.lineTo(edge(1, 1));
+                marker.closeSubPath();
+                graphics.fillPath(marker);
+                graphics.setColour(ui::background.withAlpha(.6f));
+                graphics.strokePath(marker, juce::PathStrokeType(.65f));
             }
             juce::Path sync;
             sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,

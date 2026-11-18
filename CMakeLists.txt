@@ -69,6 +69,10 @@ if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   target_sources(SoundPlusTests PRIVATE tests/IconTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/ViewCommandTests.cpp src/DesignerView.cpp)
+  add_test(NAME designer_view_commands COMMAND SoundPlusTests --view-commands
+    "${CMAKE_BINARY_DIR}/view-command-test-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(designer_view_commands PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
   add_test(NAME icon_system COMMAND SoundPlusTests --icon-system "${CMAKE_BINARY_DIR}/icon-test-output")
   set_tests_properties(icon_system PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
   add_test(NAME library_and_audio COMMAND SoundPlusTests

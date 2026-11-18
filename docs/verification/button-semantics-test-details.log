@@ -1,0 +1,115 @@
+Start testing: Nov 18 14:36 EST
+----------------------------------------------------------
+1/12 Testing: designer_view_commands
+1/12 Test: designer_view_commands
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--view-commands" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/view-command-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_view_commands" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+PASS actual view comparison, model toggles and minimum geometry: 76 checks
+<end of output>
+Test time =   0.59 sec
+----------------------------------------------------------
+Test Passed.
+"designer_view_commands" end time: Nov 18 14:36 EST
+"designer_view_commands" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/12 Testing: icon_system
+2/12 Test: icon_system
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--icon-system" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/icon-test-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"icon_system" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+PASS embedded icon coverage, viewBox, states, cache and 1x/2x rendering: 750 checks
+<end of output>
+Test time =   0.11 sec
+----------------------------------------------------------
+Test Passed.
+"icon_system" end time: Nov 18 14:36 EST
+"icon_system" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/12 Testing: library_selection_audition
+4/12 Test: library_selection_audition
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--selection-audition" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/library-selection-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_selection_audition" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+Native selection audition passed in full Library and Designer browser
+<end of output>
+Test time =   3.94 sec
+----------------------------------------------------------
+Test Passed.
+"library_selection_audition" end time: Nov 18 14:36 EST
+"library_selection_audition" time elapsed: 00:00:03
+----------------------------------------------------------
+
+9/12 Testing: designer_canvas
+9/12 Test: designer_canvas
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--canvas-gestures" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-gesture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_canvas" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1437 checks
+<end of output>
+Test time =   0.19 sec
+----------------------------------------------------------
+Test Passed.
+"designer_canvas" end time: Nov 18 14:36 EST
+"designer_canvas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+10/12 Testing: designer_session
+10/12 Test: designer_session
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-session" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-session-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_session" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport ownership: 121 checks
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"designer_session" end time: Nov 18 14:36 EST
+"designer_session" time elapsed: 00:00:00
+----------------------------------------------------------
+
+11/12 Testing: designer_workflow
+11/12 Test: designer_workflow
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_workflow" start time: Nov 18 14:36 EST
+Output:
+----------------------------------------------------------
+Designer checks passed: 66299
+<end of output>
+Test time =   9.64 sec
+----------------------------------------------------------
+Test Passed.
+"designer_workflow" end time: Nov 18 14:37 EST
+"designer_workflow" time elapsed: 00:00:09
+----------------------------------------------------------
+
+12/12 Testing: designer_fades
+12/12 Test: designer_fades
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-fades" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-fade-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_fades" start time: Nov 18 14:37 EST
+Output:
+----------------------------------------------------------
+PASS independent fade shapes, legacy recall, overlap, Undo/Redo and native/render parity: 1137 checks
+<end of output>
+Test time =   2.35 sec
+----------------------------------------------------------
+Test Passed.
+"designer_fades" end time: Nov 18 14:37 EST
+"designer_fades" time elapsed: 00:00:02
+----------------------------------------------------------
+
+End testing: Nov 18 14:37 EST

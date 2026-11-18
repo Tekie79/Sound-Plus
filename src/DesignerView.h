@@ -47,6 +47,7 @@ class DesignerView final : public juce::Component,
     }
 
   private:
+    friend struct DesignerViewTestAccess;
     void showSnapOptions();
     IconButton zoomIn{"Zoom in (Command-wheel)", ActionIcon::zoom}, zoomOut{"Zoom out", ActionIcon::zoomOut},
         fitAll{"Fit design", ActionIcon::fit}, fitSelected{"Fit selected layers", ActionIcon::fitSelection},
@@ -128,7 +129,7 @@ class DesignerView final : public juce::Component,
                                                     {"Lock insert parameter 4", ActionIcon::lock}}};
     juce::Slider monitor;
     juce::Label sourceInfo, layerName, pitchInfo;
-    juce::String candidateSignature, effectSignature, lastComparison;
+    juce::String candidateSignature, effectSignature, lastComparison, comparisonDocument;
     bool clipHeld = false;
     float peak = 0;
     WaveformCache peaks;

@@ -44,21 +44,26 @@ void runIconTests(const juce::File &output)
             auto icon = (sp::ActionIcon)i;
             auto name = sp::icons::resourceName(icon);
             resources.insert(name);
-            juce::Image sample(juce::Image::ARGB, 32 * scale, 32 * scale, true);
-            juce::Graphics painter(sample);
-            painter.addTransform(juce::AffineTransform::scale((float)scale));
             for (int tone = 0; tone < (int)sp::icons::Tone::count; ++tone)
+            {
+                juce::Image sample(juce::Image::ARGB, 32 * scale, 32 * scale, true);
+                juce::Graphics painter(sample);
+                painter.addTransform(juce::AffineTransform::scale((float)scale));
                 sp::icons::draw(painter, icon, {7, 7, 18, 18}, (sp::icons::Tone)tone);
-            int ink = 0, edgeInk = 0;
-            for (int y = 0; y < sample.getHeight(); ++y)
-                for (int x = 0; x < sample.getWidth(); ++x)
-                    if (sample.getPixelAt(x, y).getAlpha() > 0)
-                    {
-                        ++ink;
-                        edgeInk +=
-                            x == 0 || y == 0 || x == sample.getWidth() - 1 || y == sample.getHeight() - 1;
-                    }
-            check(ink > 5 && edgeInk == 0, "Every embedded icon renders visible and unclipped at 1x/2x");
+                int ink = 0, outside = 0;
+                // The intended 18-point viewport, expanded by one physical pixel for AA.
+                auto allowed =
+                    juce::Rectangle<int>(7 * scale - 1, 7 * scale - 1, 18 * scale + 2, 18 * scale + 2);
+                for (int y = 0; y < sample.getHeight(); ++y)
+                    for (int x = 0; x < sample.getWidth(); ++x)
+                        if (sample.getPixelAt(x, y).getAlpha() > 2)
+                        {
+                            ++ink;
+                            outside += !allowed.contains(x, y);
+                        }
+                check(ink > 5 && outside == 0, "Each tone independently renders visible inside its viewport "
+                                               "at 1x/2x (one-pixel AA allowance)");
+            }
             auto x = (i % 8) * 80.f, y = (i / 8) * 64.f;
             sp::icons::draw(g, icon, {x + 24, y + 7, 24, 24});
             g.setColour(sp::ui::muted);
@@ -83,6 +88,8 @@ void runIconTests(const juce::File &output)
     button.setToggleState(false, juce::dontSendNotification);
     check(button.renderedIcon() == sp::ActionIcon::unmuted, "Unmuting restores speaker waves");
     sp::IconButton accessible("Lock parameter", sp::ActionIcon::lock);
+    check(!accessible.isToggleable(), "An icon does not infer toggle semantics");
+    accessible.setToggleable(true);
     check(accessible.isToggleable() && !accessible.getClickingTogglesState(),
           "Accessibility exposes checked state without changing model-owned click behavior");
     auto idle = sp::ui::button::style(true, false, false, false, false, false, false);

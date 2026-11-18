@@ -179,12 +179,23 @@ void runCanvasGestureTests(const juce::File &parent)
     check(sp::canvasHitTest(narrow, viewport, narrowShape.right, narrowShape.fadeOutY).target ==
               sp::CanvasTarget::fadeOut,
           "Narrow clips retain an independently reachable OUT grip");
-    for (auto fades : {std::pair<int64_t, int64_t>{48000, 48000}, {96000, 0}, {0, 96000}})
+    for (auto fades : {std::pair<int64_t, int64_t>{0, 0}, {48000, 48000}, {96000, 0}, {0, 96000}})
     {
         auto overlap = original;
         overlap.original.layers[0].fadeIn = fades.first;
         overlap.original.layers[0].fadeOut = fades.second;
         auto g = sp::clipGeometry(overlap.original.layers[0], 0, viewport, 48000);
+        auto clipBounds =
+            juce::Rectangle<float>(g.left, g.clipTop, g.right - g.left, g.clipBottom - g.clipTop);
+        for (bool in : {true, false})
+        {
+            auto marker = sp::fadeHandleBounds(g, in);
+            auto centre = marker.getCentre();
+            check(clipBounds.reduced(.5f).contains(marker) &&
+                      sp::canvasHitTest(overlap, viewport, centre.x, centre.y).target ==
+                          (in ? sp::CanvasTarget::fadeIn : sp::CanvasTarget::fadeOut),
+                  "Zero, full and overlapping fade markers stay inside the border and hit their own grip");
+        }
         check(sp::canvasHitTest(overlap, viewport, g.fadeIn, g.fadeInY).target == sp::CanvasTarget::fadeIn &&
                   sp::canvasHitTest(overlap, viewport, g.fadeOut, g.fadeOutY).target ==
                       sp::CanvasTarget::fadeOut,
@@ -367,8 +378,7 @@ void runCanvasGestureTests(const juce::File &parent)
     auto coincident = sp::clipGeometry(session.document.original.layers[0], 0, canvas.viewport, 48000);
     for (bool in : {false, true})
     {
-        juce::Point<float> from{in ? coincident.fadeIn : coincident.fadeOut,
-                                in ? coincident.fadeInY : coincident.fadeOutY};
+        auto from = sp::fadeHandleBounds(coincident, in).getCentre();
         auto to = from + juce::Point<float>(10, 0);
         canvas.mouseDown(pointer(canvas, from, from));
         canvas.mouseDrag(pointer(canvas, to, from));
@@ -508,7 +518,8 @@ void runCanvasGestureTests(const juce::File &parent)
           "Shift-drag edits coincident OUT without deselecting the track or changing IN");
     session.undo();
     session.undo();
-    juce::Point<float> start{shape.fadeIn, shape.top + 10}, end{shape.fadeIn + 50, shape.top + 10};
+    auto start = sp::fadeHandleBounds(shape, true).getCentre();
+    auto end = start + juce::Point<float>(50, 0);
     canvas.mouseDown(pointer(canvas, start, start));
     canvas.mouseDrag(pointer(canvas, end, start));
     canvas.mouseUp(pointer(canvas, end, start));

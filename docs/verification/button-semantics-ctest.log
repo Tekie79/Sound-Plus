@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  1: designer_view_commands
+1/7 Test  #1: designer_view_commands ...........   Passed    0.59 sec
+    Start  2: icon_system
+2/7 Test  #2: icon_system ......................   Passed    0.11 sec
+    Start  4: library_selection_audition
+3/7 Test  #4: library_selection_audition .......   Passed    3.94 sec
+    Start  9: designer_canvas
+4/7 Test  #9: designer_canvas ..................   Passed    0.19 sec
+    Start 10: designer_session
+5/7 Test #10: designer_session .................   Passed    0.10 sec
+    Start 11: designer_workflow
+6/7 Test #11: designer_workflow ................   Passed    9.64 sec
+    Start 12: designer_fades
+7/7 Test #12: designer_fades ...................   Passed    2.35 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =  16.93 sec

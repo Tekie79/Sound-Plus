@@ -54,6 +54,7 @@ struct CanvasClipGeometry
     float fadeInY = 0, fadeOutY = 0;
 };
 CanvasClipGeometry clipGeometry(const DesignLayer &, int row, const TimelineViewport &, double rate);
+juce::Rectangle<float> fadeHandleBounds(const CanvasClipGeometry &, bool in);
 CanvasHit canvasHitTest(const DesignDocument &, const TimelineViewport &, float x, float y,
                         bool preferOut = false);
 juce::Point<float> fadePointPosition(const DesignLayer &, int row, bool in, int point,

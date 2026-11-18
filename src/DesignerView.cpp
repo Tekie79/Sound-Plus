@@ -46,6 +46,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
+    for (auto *button : {&snap, &scrub, &inspect, &keep})
+        button->setToggleable(true);
     for (auto *control : {&zoomIn, &zoomOut, &fitAll, &fitSelected, &snap, &snapOptions, &scrub, &verticalIn,
                           &verticalOut, &accurate})
         addAndMakeVisible(control);
@@ -233,7 +235,9 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         if (updating)
             return;
         int index = candidates.getSelectedId() - 2;
-        session.selectVariation(index < 0 ? juce::String() : session.document.variations[(size_t)index].id);
+        if (index < 0 || index < (int)session.document.variations.size())
+            session.selectVariation(index < 0 ? juce::String()
+                                              : session.document.variations[(size_t)index].id);
     };
     keep.onClick = [this]
     {
@@ -263,7 +267,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
             lastComparison = session.document.activeVariation;
             session.selectVariation({});
         }
-        else if (lastComparison.isNotEmpty())
+        else if (std::any_of(session.document.variations.begin(), session.document.variations.end(),
+                             [&](auto &v) { return v.id == lastComparison; }))
             session.selectVariation(lastComparison);
     };
     render.onClick = [this] { session.render(); };
@@ -538,6 +543,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         auto &v = effectValues[(size_t)i];
         auto &label = effectLabels[(size_t)i];
         auto &lock = effectParameterLocks[(size_t)i];
+        lock.setToggleable(true);
         labelStyle(label);
         inspector.addAndMakeVisible(label);
         inspector.addAndMakeVisible(v);
@@ -624,6 +630,7 @@ void DesignerView::section(const juce::String &name)
     group.open = preferences.getBoolValue("inspector." + name,
                                           name != "SOURCE & TIMING" && name != "FADES" && name != "MASTER");
     group.header = std::make_unique<IconButton>(name, ActionIcon::chevron, true);
+    group.header->setToggleable(true);
     group.header->setToggleState(group.open, juce::dontSendNotification);
     inspector.addAndMakeVisible(*group.header);
     group.header->onClick = [this, name]
@@ -747,6 +754,7 @@ void DesignerView::number(const juce::String &name, const juce::String &titleTex
     if (lockBit)
     {
         auto *lock = new IconButton("Lock " + name + " for variations", ActionIcon::lock);
+        lock->setToggleable(true);
         controls.add(lock);
         inspector.addAndMakeVisible(lock);
         lock->setBounds(282, inspectorY, 28, 28);
@@ -809,6 +817,7 @@ void DesignerView::slider(const juce::String &name, const juce::String &titleTex
     if (lockBit)
     {
         auto *lock = new IconButton("Lock " + name + " for variations", ActionIcon::lock);
+        lock->setToggleable(true);
         controls.add(lock);
         inspector.addAndMakeVisible(lock);
         lock->setBounds(282, inspectorY + 20, 28, 28);
@@ -833,6 +842,7 @@ void DesignerView::toggle(const juce::String &name, std::function<bool(const Des
         auto *v = new IconButton(name, name == "Mute"   ? ActionIcon::mute
                                        : name == "Solo" ? ActionIcon::solo
                                                         : ActionIcon::lock);
+        v->setToggleable(true);
         controls.add(v);
         inspector.addAndMakeVisible(v);
         v->setBounds(name == "Mute" ? 8 : name == "Solo" ? 48 : 88, inspectorY, 30, 28);
@@ -866,6 +876,7 @@ void DesignerView::toggle(const juce::String &name, std::function<bool(const Des
     {
         v->setSize(270, 24);
         auto *lock = new IconButton("Lock Reverse for variations", ActionIcon::lock);
+        lock->setToggleable(true);
         controls.add(lock);
         inspector.addAndMakeVisible(lock);
         lock->setBounds(282, inspectorY - 28, 28, 28);
@@ -1057,9 +1068,24 @@ void DesignerView::refresh()
     discard.setEnabled(active > 1);
     generate.setButtonText("Generate " + juce::String(d.variationSettings.count));
     generate.setEnabled(!d.activeMix().layers.empty());
-    compare.setEnabled(d.activeVariation.isNotEmpty() ||
-                       std::any_of(d.variations.begin(), d.variations.end(),
-                                   [&](auto &v) { return v.id == lastComparison; }));
+    if (session.transitionPending() || comparisonDocument != d.id)
+    {
+        comparisonDocument = session.transitionPending() ? juce::String() : d.id;
+        lastComparison.clear();
+    }
+    if (!session.transitionPending() && d.activeVariation.isNotEmpty())
+        lastComparison = d.activeVariation;
+    auto comparison = std::find_if(d.variations.begin(), d.variations.end(),
+                                   [&](auto &v) { return v.id == lastComparison; });
+    if (comparison == d.variations.end())
+        lastComparison.clear();
+    compare.setEnabled(!session.transitionPending() &&
+                       (d.activeVariation.isNotEmpty() || comparison != d.variations.end()));
+    compare.setButtonText(d.activeVariation.isNotEmpty()     ? "Switch to Original"
+                          : comparison != d.variations.end() ? "Switch back to " + comparison->name
+                                                             : "Compare with Original");
+    compare.setTooltip(compare.isEnabled() ? compare.getButtonText()
+                                           : "Choose a variation to compare with Original");
     undoButton.setEnabled(session.canUndo());
     redoButton.setEnabled(session.canRedo());
     for (auto *button : {&duplicate, &remove, &up, &down, &renderSelection, &copyOriginal})
