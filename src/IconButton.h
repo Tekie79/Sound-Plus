@@ -98,7 +98,7 @@ class IconButton : public juce::TextButton
         auto ink=fill.isEmpty() ? outline.getBounds().expanded(0.9f) : outline.isEmpty() ? fill.getBounds() : fill.getBounds().getUnion(outline.getBounds().expanded(0.9f));
         auto scale=std::min(iconSize/std::max(1.0f,ink.getWidth()),iconSize/std::max(1.0f,ink.getHeight()));
         auto transform=juce::AffineTransform::translation(-ink.getCentreX(),-ink.getCentreY()).scaled(scale).translated(start+iconSize*0.5f,getHeight()*0.5f);
-        g.setColour(juce::Colour(primary ? 0xff101c25 : hasKeyboardFocus(false) || getToggleState() ? 0xff77bfff : 0xffd2e9f5).withMultipliedAlpha(isEnabled()?1.0f:0.3f));
+        g.setColour(juce::Colour(primary ? 0xff101c25 : getToggleState() ? 0xff77bfff : hasKeyboardFocus(false) ? 0xfff2f7fa : 0xffd2e9f5).withMultipliedAlpha(isEnabled()?1.0f:0.3f));
         g.fillPath(fill,transform);g.strokePath(outline,juce::PathStrokeType(1.8f),transform);
         if(showLabel){g.setFont(font);g.drawText(getButtonText(),juce::Rectangle<float>(start+iconSize+gap,0,labelWidth,(float)getHeight()),juce::Justification::centredLeft,false);}
     }

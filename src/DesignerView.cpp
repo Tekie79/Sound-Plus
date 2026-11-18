@@ -403,9 +403,30 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     inspectorY += 26;
     toggle("Reverse", [](auto &l) { return l.reverse; }, [](auto &l, bool v) { l.reverse = v; });
     section("FADES");
+    auto addShapeControl = [this](ui::FadeShapeButton &button, bool in)
+    {
+        inspector.addAndMakeVisible(button);
+        button.setBounds(282, inspectorY, 28, 20);
+        button.onClick = [this, &button, in]
+        { canvas->chooseFadeShape(session.document.selectedLayer, in, button, button.getLocalBounds()); };
+        refreshers.push_back(
+            [this, &button, in]
+            {
+                auto *layer = session.selectedLayer();
+                button.setEnabled(layer != nullptr);
+                button.shape = layer ? (in ? layer->fadeInShape : layer->fadeOutShape) : FadeShape::linear;
+                button.points =
+                    layer ? (in ? layer->fadeInPoints : layer->fadeOutPoints) : std::vector<FadePoint>{};
+                button.setTooltip(juce::String(in ? "Fade-in shape: " : "Fade-out shape: ") +
+                                  fadeShapeName(button.shape));
+                button.repaint();
+            });
+    };
+    addShapeControl(fadeInShape, true);
     slider(
         "Fade in", "Fade in (seconds)", 0, 5, .001, [](auto &l) { return (double)l.fadeIn; },
         [](auto &l, double v) { l.fadeIn = (int64_t)std::llround(v); }, lockFadeIn);
+    addShapeControl(fadeOutShape, false);
     slider(
         "Fade out", "Fade out (seconds)", 0, 5, .001, [](auto &l) { return (double)l.fadeOut; },
         [](auto &l, double v) { l.fadeOut = (int64_t)std::llround(v); }, lockFadeOut);
@@ -1147,10 +1168,10 @@ void DesignerView::paint(juce::Graphics &g)
 void DesignerView::resized()
 {
     int side = inspectorOpen ? 350 : 0, creative = getWidth() - side;
-    library.setBounds(16, 17, 30, 30);
-    browse.setBounds(54, 17, 30, 30);
-    title.setBounds(100, 10, std::max(80, getWidth() - 360), 30);
-    info.setBounds(100, 40, std::max(80, getWidth() - 360), 20);
+    library.setBounds(16, 17, 64, 30);
+    browse.setBounds(86, 17, 72, 30);
+    title.setBounds(170, 10, std::max(80, getWidth() - 358), 30);
+    info.setBounds(170, 40, std::max(80, getWidth() - 358), 16);
     inspect.setBounds(getWidth() - 42, 57, 30, 28);
     int x = 16;
     for (auto *b : {&newButton, &openButton, &saveButton, &recover, &undoButton, &redoButton, &add,

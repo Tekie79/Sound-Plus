@@ -18,6 +18,8 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     void fitSelection();
     void zoom(double factor);
     void zoomVertical(double factor);
+    void chooseFadeShape(const juce::String &layer, bool in, juce::Component &anchor,
+                         juce::Rectangle<int> area);
     std::function<void()> onRowsChanged;
     int contentHeight() const
     {

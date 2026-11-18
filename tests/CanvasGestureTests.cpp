@@ -3,6 +3,7 @@
 #include "UIComponents.h"
 #include "LibraryLayout.h"
 #include "DesignLive.h"
+#include "DesignControls.h"
 #include <iostream>
 #include <future>
 namespace
@@ -238,15 +239,51 @@ void runCanvasGestureTests(const juce::File &parent)
     canvas.mouseDown(pointer(canvas, clipClick, clipClick));
     canvas.mouseUp(pointer(canvas, clipClick, clipClick));
     auto clipImage = image();
-    auto lanePixel = clipImage.getPixelAt(950, (int)shape.top + 40);
+    auto lanePixel = clipImage.getPixelAt(940, (int)shape.top + 40);
+    auto gridPixel = clipImage.getPixelAt(950, (int)shape.top + 40);
     auto clipPixel = clipImage.getPixelAt((int)shape.left + 20, (int)shape.top + 40);
     juce::Point<float> headerClick{20, shape.top + 20};
     canvas.mouseDown(pointer(canvas, headerClick, headerClick));
     canvas.mouseUp(pointer(canvas, headerClick, headerClick));
     auto trackImage = image();
-    check(lanePixel == sp::ui::surface && trackImage.getPixelAt(950, (int)shape.top + 40) != lanePixel &&
+    check(gridPixel != lanePixel && lanePixel != sp::ui::surface &&
+              trackImage.getPixelAt(940, (int)shape.top + 40) != lanePixel &&
               trackImage.getPixelAt((int)shape.left + 20, (int)shape.top + 40) != clipPixel,
-          "Clip selection paints only the clip; track selection has a distinct lane and clip state");
+          "Translucent lanes retain grid lines and distinct track/clip selection");
+    check(clipImage.getPixelAt(445, (int)shape.top + 50) == clipImage.getPixelAt(450, (int)shape.top + 50),
+          "Clip fill remains opaque over the timeline grid");
+    // Actual track-header commands edit their own layer without changing selection.
+    for (auto title : {"Mute ", "Solo ", "Lock "})
+    {
+        auto *header = canvas.getChildComponent(1);
+        juce::Button *command = nullptr;
+        for (auto *child : header->getChildren())
+            if (auto *button = dynamic_cast<juce::Button *>(child);
+                button && button->getTitle().startsWith(title))
+                command = button;
+        check(command != nullptr, "Track-header command is accessible");
+        auto selection = session.selectedIds;
+        command->onClick();
+        auto &layer = session.document.original.layers[1];
+        check((juce::String(title) == "Mute "   ? layer.mute
+               : juce::String(title) == "Solo " ? layer.solo
+                                                : layer.locked) &&
+                  session.selectedIds == selection,
+              "Header mute/solo/lock changes the addressed track and preserves primary selection");
+        session.undo();
+    }
+    uint32_t chosen = 0;
+    sp::ui::detail::ColourChoices palette(0, [&](uint32_t value) { chosen = value; });
+    auto *swatch = dynamic_cast<sp::ui::ColourSwatchButton *>(palette.getChildComponent(2));
+    check(swatch != nullptr, "Palette exposes real swatch controls");
+    swatch->onClick();
+    check(chosen == 0xff72b8a2, "Choosing a swatch delivers its actual colour");
+    swatch->setToggleState(false, juce::dontSendNotification);
+    juce::Image swatchPixels(juce::Image::ARGB, 32, 32, true);
+    juce::Graphics swatchGraphics(swatchPixels);
+    swatch->paintButton(swatchGraphics, false, false);
+    check(swatchPixels.getPixelAt(16, 16) == juce::Colour(chosen),
+          "Swatch center displays the actual colour");
     auto beforeHeight = session.document.revision;
     juce::Point<float> edge{20, canvas.viewport.rowTop(1) - 3}, taller{20, edge.y + 90};
     canvas.mouseDown(pointer(canvas, edge, edge));
@@ -306,6 +343,94 @@ void runCanvasGestureTests(const juce::File &parent)
     }
     session.undo();
     shape = sp::clipGeometry(a, 0, canvas.viewport, 48000);
+    session.edit("Point-edit fixture",
+                 [](auto &d) { d.original.layers[0].fadeIn = d.original.layers[0].fadeOut = 96000; });
+    auto curveShape = sp::clipGeometry(session.document.original.layers[0], 0, canvas.viewport, 48000);
+    auto curvePosition = [&](bool in, double t, double gain)
+    {
+        return juce::Point<float>(in ? curveShape.left + (float)t * (curveShape.right - curveShape.left)
+                                     : curveShape.right - (float)t * (curveShape.right - curveShape.left),
+                                  curveShape.clipBottom - 1 -
+                                      (float)gain * (curveShape.clipBottom - 1 - curveShape.fadeInY));
+    };
+    auto pointPosition = curvePosition(true, .37, .37);
+    canvas.mouseDoubleClick(pointer(canvas, pointPosition, pointPosition));
+    check(session.document.original.layers[0].fadeInShape == sp::FadeShape::custom &&
+              session.document.original.layers[0].fadeInPoints.size() == 1,
+          "Double-clicking the actual IN curve adds exactly one custom point");
+    auto pointBefore = session.document.original.layers[0].fadeInPoints[0];
+    check(std::abs(pointBefore.x - .37) < .001 && std::abs(pointBefore.y - .37) < .001,
+          "New point is placed at the double-click location");
+    auto pointHit = sp::canvasHitTest(session.document, canvas.viewport, pointPosition.x, pointPosition.y);
+    check(pointHit.target == sp::CanvasTarget::fadeInPoint && pointHit.point == 0,
+          "Small visible point retains a generous distinct hit target");
+    auto draggedPoint = pointPosition + juce::Point<float>(6, -8);
+    canvas.mouseDown(pointer(canvas, pointPosition, pointPosition));
+    canvas.mouseDrag(pointer(canvas, draggedPoint, pointPosition));
+    canvas.mouseUp(pointer(canvas, draggedPoint, pointPosition));
+    auto pointAfter = session.document.original.layers[0].fadeInPoints[0];
+    check(pointAfter.x > pointBefore.x && pointAfter.y > pointBefore.y &&
+              session.document.original.layers[0].placement == a.placement &&
+              session.document.original.layers[0].fadeOutPoints.empty(),
+          "Real point drag changes its time and gain, preserving the clip and other fade");
+    session.undo();
+    check(session.document.original.layers[0].fadeInPoints[0] == pointBefore,
+          "One Undo restores a complete point drag");
+    canvas.mouseDown(
+        pointer(canvas, pointPosition, pointPosition, juce::ModifierKeys(juce::ModifierKeys::altModifier)));
+    canvas.mouseUp(pointer(canvas, pointPosition, pointPosition));
+    check(session.document.original.layers[0].fadeInPoints.empty(),
+          "Option-click removes the addressed interior point");
+    session.undo();
+    canvas.mouseDown(pointer(canvas, pointPosition, pointPosition));
+    canvas.mouseDrag(pointer(canvas, {-1000, -1000}, pointPosition));
+    canvas.cancelDrag();
+    check(session.document.original.layers[0].fadeInPoints[0] == pointBefore,
+          "Escape restores a point dragged outside the canvas");
+    auto outPosition = curvePosition(false, .33, .33);
+    canvas.mouseDoubleClick(pointer(canvas, outPosition, outPosition));
+    check(session.document.original.layers[0].fadeOutShape == sp::FadeShape::custom &&
+              session.document.original.layers[0].fadeOutPoints.size() == 1,
+          "OUT curve supports its own independent custom points");
+    auto outBefore = session.document.original.layers[0].fadeOutPoints[0];
+    auto outEnd = outPosition + juce::Point<float>(-6, -8);
+    canvas.mouseDown(pointer(canvas, outPosition, outPosition));
+    canvas.mouseDrag(pointer(canvas, outEnd, outPosition));
+    canvas.mouseUp(pointer(canvas, outEnd, outPosition));
+    check(session.document.original.layers[0].fadeOutPoints[0].x > outBefore.x &&
+              session.document.original.layers[0].fadeInPoints[0] == pointBefore,
+          "OUT drag mirrors the time axis while preserving IN");
+    session.undo();
+    session.undo();
+    session.undo();
+    session.undo();
+    check(sp::ui::fadeInAccent == sp::ui::fadeOutAccent, "Both fades use the same accent");
+    session.edit("Overlapping point fixture",
+                 [](auto &d)
+                 {
+                     auto &l = d.original.layers[0];
+                     l.fadeIn = l.fadeOut = 96000;
+                     l.fadeInShape = l.fadeOutShape = sp::FadeShape::custom;
+                     l.fadeInPoints = l.fadeOutPoints = {{.5, .5}};
+                 });
+    auto crossing =
+        sp::fadePointPosition(session.document.original.layers[0], 0, true, 0, canvas.viewport, 48000);
+    check(sp::canvasHitTest(session.document, canvas.viewport, crossing.x, crossing.y).target ==
+                  sp::CanvasTarget::fadeInPoint &&
+              sp::canvasHitTest(session.document, canvas.viewport, crossing.x, crossing.y, true).target ==
+                  sp::CanvasTarget::fadeOutPoint,
+          "Coincident IN and OUT custom points remain independently addressable");
+    auto crossed = crossing + juce::Point<float>(-6, -4);
+    juce::ModifierKeys chooseOut(juce::ModifierKeys::shiftModifier);
+    canvas.mouseDown(pointer(canvas, crossing, crossing, chooseOut));
+    canvas.mouseDrag(pointer(canvas, crossed, crossing, chooseOut));
+    canvas.mouseUp(pointer(canvas, crossed, crossing, chooseOut));
+    check(session.document.original.layers[0].fadeOutPoints[0].x > .5 &&
+              session.document.original.layers[0].fadeInPoints[0] == sp::FadePoint{.5, .5} &&
+              session.selectedIds.contains(a.id),
+          "Shift-drag edits coincident OUT without deselecting the track or changing IN");
+    session.undo();
+    session.undo();
     juce::Point<float> start{shape.fadeIn, shape.top + 10}, end{shape.fadeIn + 50, shape.top + 10};
     canvas.mouseDown(pointer(canvas, start, start));
     canvas.mouseDrag(pointer(canvas, end, start));

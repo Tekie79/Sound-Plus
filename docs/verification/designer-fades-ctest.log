@@ -1,0 +1,168 @@
+Start testing: Nov 18 12:55 EST
+----------------------------------------------------------
+1/10 Testing: library_and_audio
+1/10 Test: library_and_audio
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/test-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_and_audio" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+200 warm FTS queries, mean ms: 0.0399492
+Progressive import visible at 600 / 2400 files
+Core Audio device: MacBook Pro Speakers, sample rate: 48000.0, callback frames: 59392
+PASS: 2808 checks. Original fixtures retained at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/test-output/fixture
+<end of output>
+Test time =   8.63 sec
+----------------------------------------------------------
+Test Passed.
+"library_and_audio" end time: Nov 18 12:55 EST
+"library_and_audio" time elapsed: 00:00:08
+----------------------------------------------------------
+
+2/10 Testing: library_selection_audition
+2/10 Test: library_selection_audition
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--selection-audition" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/library-selection-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_selection_audition" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+Native selection audition passed in full Library and Designer browser
+<end of output>
+Test time =   3.69 sec
+----------------------------------------------------------
+Test Passed.
+"library_selection_audition" end time: Nov 18 12:55 EST
+"library_selection_audition" time elapsed: 00:00:03
+----------------------------------------------------------
+
+3/10 Testing: library_performance_regression
+3/10 Test: library_performance_regression
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--performance" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_performance_regression" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+Pause acknowledged at 616 committed files
+PASS paging, concurrent import identity, cancellation, source filters, pause/resume, incremental scope, reopen and paused audition
+<end of output>
+Test time =   6.32 sec
+----------------------------------------------------------
+Test Passed.
+"library_performance_regression" end time: Nov 18 12:55 EST
+"library_performance_regression" time elapsed: 00:00:06
+----------------------------------------------------------
+
+4/10 Testing: library_semantic_integrity
+4/10 Test: library_semantic_integrity
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--semantic-integrity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_semantic_integrity" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+PASS semantic revision/space integrity, window grouping, source ranges, waveform cache and seek generations
+<end of output>
+Test time =   0.34 sec
+----------------------------------------------------------
+Test Passed.
+"library_semantic_integrity" end time: Nov 18 12:55 EST
+"library_semantic_integrity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+5/10 Testing: library_similar_integrity
+5/10 Test: library_similar_integrity
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--similar-integrity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/similar-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_similar_integrity" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+PASS exact cached retrieval, live deltas, filters, exclusions, invalidation, log gap recovery, cache reuse/integrity, channels and reference windows
+<end of output>
+Test time =   1.14 sec
+----------------------------------------------------------
+Test Passed.
+"library_similar_integrity" end time: Nov 18 12:55 EST
+"library_similar_integrity" time elapsed: 00:00:01
+----------------------------------------------------------
+
+6/10 Testing: designer_transport
+6/10 Test: designer_transport
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-transport" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-transport-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_transport" start time: Nov 18 12:55 EST
+Output:
+----------------------------------------------------------
+Prepared eight-layer 40-second sources
+PASS native live control, search/index, clock, late seek/Stop/cancel and forward grains: 5619 checks
+<end of output>
+Test time =  15.52 sec
+----------------------------------------------------------
+Test Passed.
+"designer_transport" end time: Nov 18 12:56 EST
+"designer_transport" time elapsed: 00:00:15
+----------------------------------------------------------
+
+7/10 Testing: designer_canvas
+7/10 Test: designer_canvas
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--canvas-gestures" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-gesture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_canvas" start time: Nov 18 12:56 EST
+Output:
+----------------------------------------------------------
+PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1408 checks
+<end of output>
+Test time =   0.18 sec
+----------------------------------------------------------
+Test Passed.
+"designer_canvas" end time: Nov 18 12:56 EST
+"designer_canvas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+8/10 Testing: designer_session
+8/10 Test: designer_session
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-session" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-session-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_session" start time: Nov 18 12:56 EST
+Output:
+----------------------------------------------------------
+PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport ownership: 121 checks
+<end of output>
+Test time =   0.10 sec
+----------------------------------------------------------
+Test Passed.
+"designer_session" end time: Nov 18 12:56 EST
+"designer_session" time elapsed: 00:00:00
+----------------------------------------------------------
+
+9/10 Testing: designer_workflow
+9/10 Test: designer_workflow
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_workflow" start time: Nov 18 12:56 EST
+Output:
+----------------------------------------------------------
+Designer checks passed: 66299
+<end of output>
+Test time =   9.59 sec
+----------------------------------------------------------
+Test Passed.
+"designer_workflow" end time: Nov 18 12:56 EST
+"designer_workflow" time elapsed: 00:00:09
+----------------------------------------------------------
+
+10/10 Testing: designer_fades
+10/10 Test: designer_fades
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-fades" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-fade-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_fades" start time: Nov 18 12:56 EST
+Output:
+----------------------------------------------------------
+PASS independent fade shapes, legacy recall, overlap, Undo/Redo and native/render parity: 1137 checks
+<end of output>
+Test time =   2.36 sec
+----------------------------------------------------------
+Test Passed.
+"designer_fades" end time: Nov 18 12:56 EST
+"designer_fades" time elapsed: 00:00:02
+----------------------------------------------------------
+
+End testing: Nov 18 12:56 EST

@@ -33,6 +33,10 @@ juce::var mixJson(const DesignMix &mix)
         put(s,"rate",l.source.sampleRate);put(s,"samples",(juce::int64)l.source.samples);put(s,"channels",l.source.channels);put(v,"source",s);
         put(v,"first",(juce::int64)l.region.startSample);put(v,"last",(juce::int64)l.region.endSample);put(v,"channelPair",l.region.auditionPair);
         put(v,"placement",(juce::int64)l.placement);put(v,"sync",(juce::int64)l.sync);put(v,"fadeIn",(juce::int64)l.fadeIn);put(v,"fadeOut",(juce::int64)l.fadeOut);
+        if(l.fadeInShape!=FadeShape::linear)put(v,"fadeInShape",fadeShapeId(l.fadeInShape));
+        if(l.fadeOutShape!=FadeShape::linear)put(v,"fadeOutShape",fadeShapeId(l.fadeOutShape));
+        if(!l.fadeInPoints.empty())put(v,"fadeInPoints",fadePointsToJson(l.fadeInPoints));
+        if(!l.fadeOutPoints.empty())put(v,"fadeOutPoints",fadePointsToJson(l.fadeOutPoints));
         put(v,"gainDb",l.gainDb);put(v,"pan",l.pan);put(v,"rate",l.rate);put(v,"reverse",l.reverse);put(v,"mute",l.mute);put(v,"solo",l.solo);put(v,"locked",l.locked);put(v,"locks",(int)l.locks);put(v,"colour",(juce::int64)l.colour);put(v,"effects",effectsJson(l.effects));layers.add(v);}
     put(o,"layers",layers);return o;
 }
@@ -44,7 +48,7 @@ DesignMix mixFrom(const juce::var &o)
         l.source.id=s["id"].toString();l.source.rootId=s["root"].toString();l.source.relative=s["relative"].toString();l.source.path=s["path"].toString();l.source.name=s["name"].toString();l.source.error=s["status"].toString();l.source.revision=integer(s,"revision");
         l.source.size=integer(s,"size");l.source.modified=integer(s,"modified");l.source.inode=integer(s,"inode");l.source.sampleRate=(double)s["rate"];l.source.samples=integer(s,"samples");l.source.channels=(int)s["channels"];l.source.duration=l.source.samples/l.source.sampleRate;
         l.region.startSample=integer(v,"first");l.region.endSample=integer(v,"last");l.region.auditionPair=(int)v["channelPair"];l.region.revision=l.source.revision;l.region.size=l.source.size;l.region.modified=l.source.modified;l.region.inode=l.source.inode;
-        l.placement=integer(v,"placement");l.sync=integer(v,"sync");l.fadeIn=integer(v,"fadeIn");l.fadeOut=integer(v,"fadeOut");l.gainDb=(double)v["gainDb"];l.pan=(double)v["pan"];l.rate=(double)v["rate"];
+        l.placement=integer(v,"placement");l.sync=integer(v,"sync");l.fadeIn=integer(v,"fadeIn");l.fadeOut=integer(v,"fadeOut");l.fadeInShape=fadeShapeFromId(v["fadeInShape"].toString());l.fadeOutShape=fadeShapeFromId(v["fadeOutShape"].toString());l.fadeInPoints=fadePointsFromJson(v["fadeInPoints"]);l.fadeOutPoints=fadePointsFromJson(v["fadeOutPoints"]);l.gainDb=(double)v["gainDb"];l.pan=(double)v["pan"];l.rate=(double)v["rate"];
         l.reverse=(bool)v["reverse"];l.mute=(bool)v["mute"];l.solo=(bool)v["solo"];l.locked=(bool)v["locked"];l.locks=(uint32_t)(int)v["locks"];l.colour=(uint32_t)(juce::int64)v["colour"];l.effects=effectsFrom(v["effects"]);mix.layers.push_back(std::move(l));}
     return mix;
 }
@@ -65,21 +69,61 @@ DesignLayer makeDesignLayer(const Asset &a,int64_t first,int64_t last,bool exter
     l.region.size=a.size;l.region.modified=a.modified;l.region.inode=a.inode;l.region.revision=a.revision;l.region.auditionPair=0;return l;
 }
 StockEffect makeStockEffect(const juce::String &type){StockEffect e;e.type=type;if(type=="filter")e.parameters={20,20000,0,0};else if(type=="delay")e.parameters={150,.3,.2,0};else if(type=="reverb")e.parameters={.5,.5,.2,1};else if(type!="gain")throw std::runtime_error("Unknown stock effect");return e;}
+FadeShape fadeShapeFromId(const juce::String &id)
+{
+    if (id.isEmpty()) return FadeShape::linear;
+    if (id == "custom") return FadeShape::custom;
+    for (auto shape : fadeShapes)
+        if (id == fadeShapeId(shape)) return shape;
+    throw std::runtime_error("Unsupported fade shape");
+}
+namespace
+{
+bool shapedFades(const DesignDocument &d)
+{
+    auto shaped = [](const DesignMix &mix)
+    {
+        return std::any_of(mix.layers.begin(), mix.layers.end(), [](auto &l)
+        { return l.fadeInShape != FadeShape::linear || l.fadeOutShape != FadeShape::linear || !l.fadeInPoints.empty() || !l.fadeOutPoints.empty(); });
+    };
+    return shaped(d.original) || std::any_of(d.variations.begin(), d.variations.end(),
+                                           [&](auto &v) { return shaped(v.mix); });
+}
+}
+juce::var fadePointsToJson(const std::vector<FadePoint> &points)
+{
+    juce::Array<juce::var> values;
+    for (auto &point : points) { auto v=object();put(v,"x",point.x);put(v,"y",point.y);values.add(v); }
+    return values;
+}
+std::vector<FadePoint> fadePointsFromJson(const juce::var &value)
+{
+    if (value.isVoid()) return {};
+    auto *points=value.getArray();
+    if(!points || points->size()>maxFadePoints)throw std::runtime_error("Invalid fade points (maximum 32)");
+    std::vector<FadePoint> result;
+    for(auto &point:*points)
+    {
+        if(!point.isObject() || !point.hasProperty("x") || !point.hasProperty("y"))throw std::runtime_error("Invalid fade point");
+        result.push_back({(double)point["x"],(double)point["y"]});
+    }
+    return result;
+}
 juce::var designToJson(const DesignDocument &d)
 {
-    auto o=object();put(o,"outputFolder",d.outputFolder);put(o,"format","SoundPlus referenced design");put(o,"version",1);put(o,"dsp","stock-sinc32-v1");put(o,"id",d.id);put(o,"revision",(juce::int64)d.revision);put(o,"name",d.name);put(o,"sampleRate",d.sampleRate);put(o,"original",mixJson(d.original));put(o,"activeVariation",d.activeVariation);put(o,"selectedLayer",d.selectedLayer);put(o,"playhead",(juce::int64)d.playhead);
+    auto o=object();put(o,"outputFolder",d.outputFolder);put(o,"format","SoundPlus referenced design");put(o,"version",1);put(o,"dsp",shapedFades(d) ? "stock-sinc32-v2" : "stock-sinc32-v1");put(o,"id",d.id);put(o,"revision",(juce::int64)d.revision);put(o,"name",d.name);put(o,"sampleRate",d.sampleRate);put(o,"original",mixJson(d.original));put(o,"activeVariation",d.activeVariation);put(o,"selectedLayer",d.selectedLayer);put(o,"playhead",(juce::int64)d.playhead);
     juce::Array<juce::var> variations;for(auto &v:d.variations){auto n=object();put(n,"id",v.id);put(n,"name",v.name);put(n,"seed",juce::String::toHexString((juce::int64)v.seed));put(n,"kept",v.kept);put(n,"mix",mixJson(v.mix));variations.add(n);}put(o,"variations",variations);
     auto settings=object();auto &s=d.variationSettings;put(settings,"count",s.count);put(settings,"enabled",(int)s.enabled);put(settings,"gainDb",s.gainDb);put(settings,"pan",s.pan);put(settings,"placementSeconds",s.placementSeconds);put(settings,"ratePercent",s.ratePercent);put(settings,"fadeSeconds",s.fadeSeconds);put(settings,"trimSeconds",s.trimSeconds);put(settings,"effectAmount",s.effectAmount);put(o,"variationSettings",settings);put(o,"renderSettings",renderJson(d.renderSettings));
     juce::Array<juce::var> outputs;for(auto &v:d.outputs){auto n=object();put(n,"path",v.path);put(n,"sha256",v.sha256);put(n,"variation",v.variation);put(n,"kind",v.kind);put(n,"created",v.created);put(n,"samples",(juce::int64)v.samples);put(n,"revision",(juce::int64)v.revision);put(n,"peak",v.peak);put(n,"clipped",(juce::int64)v.clipped);put(n,"settings",renderJson(v.settings));outputs.add(n);}put(o,"outputs",outputs);return o;
 }
 DesignDocument designFromJson(const juce::var &o)
 {
-    if(o["format"].toString()!="SoundPlus referenced design" || (int)o["version"]!=1 || o["dsp"].toString()!="stock-sinc32-v1")throw std::runtime_error("Unsupported SoundPlus design version");
+    if(o["format"].toString()!="SoundPlus referenced design" || (int)o["version"]!=1 || (o["dsp"].toString()!="stock-sinc32-v1" && o["dsp"].toString()!="stock-sinc32-v2"))throw std::runtime_error("Unsupported SoundPlus design version");
     DesignDocument d;d.outputFolder=o["outputFolder"].toString();d.id=o["id"].toString();d.name=o["name"].toString();d.revision=integer(o,"revision");d.sampleRate=(double)o["sampleRate"];d.original=mixFrom(o["original"]);d.activeVariation=o["activeVariation"].toString();d.selectedLayer=o["selectedLayer"].toString();d.playhead=integer(o,"playhead");
     if(auto *a=o["variations"].getArray()){if(a->size()>32)throw std::runtime_error("Too many variations");for(auto &v:*a){DesignVariation n;n.id=v["id"].toString();n.name=v["name"].toString();n.seed=(uint64_t)v["seed"].toString().getHexValue64();n.kept=(bool)v["kept"];n.mix=mixFrom(v["mix"]);d.variations.push_back(std::move(n));}}
     auto s=o["variationSettings"];d.variationSettings={(int)s["count"],(uint32_t)(int)s["enabled"],(double)s["gainDb"],(double)s["pan"],(double)s["placementSeconds"],(double)s["ratePercent"],(double)s["fadeSeconds"],(double)s["trimSeconds"],(double)s["effectAmount"]};d.renderSettings=renderFrom(o["renderSettings"]);
     if(auto *a=o["outputs"].getArray()){if(a->size()>1000)throw std::runtime_error("Too much export history");for(auto &v:*a){DesignOutput n;n.path=v["path"].toString();n.sha256=v["sha256"].toString();n.variation=v["variation"].toString();n.kind=v["kind"].toString();n.created=v["created"].toString();n.samples=integer(v,"samples");n.revision=integer(v,"revision");n.peak=(double)v["peak"];n.clipped=integer(v,"clipped");n.settings=renderFrom(v["settings"]);d.outputs.push_back(n);}}
-    validateDesign(d);return d;
+    validateDesign(d);if(shapedFades(d) && o["dsp"].toString()!="stock-sinc32-v2")throw std::runtime_error("Non-linear fades require stock DSP version 2");return d;
 }
 void validateDesign(const DesignDocument &d)
 {
@@ -94,6 +138,13 @@ void validateDesign(const DesignDocument &d)
             bounded(l.source.sampleRate,8000,384000,"Invalid source rate");if(l.source.channels<1 || l.source.channels>64 || l.source.samples<1 || l.source.samples>l.source.sampleRate*86400*7 || l.source.revision<1 || l.source.id.isEmpty() || l.source.path.isEmpty())throw std::runtime_error("Invalid design source");
             if(l.region.startSample<0 || l.region.endSample>l.source.samples || l.region.endSample<=l.region.startSample || l.sync<l.region.startSample || l.sync>=l.region.endSample)throw std::runtime_error("Invalid source range or sync point");
             if(l.region.auditionPair< -1 || l.region.auditionPair>=32 || (l.region.auditionPair>=0 && l.region.auditionPair*2>=l.source.channels))throw std::runtime_error("Unsupported source channel mapping");
+            for(auto shape:{l.fadeInShape,l.fadeOutShape})if((int)shape<0 || (int)shape>(int)FadeShape::custom)throw std::runtime_error("Invalid fade shape");
+            for(auto *points:{&l.fadeInPoints,&l.fadeOutPoints})
+            {
+                if(points->size()>maxFadePoints)throw std::runtime_error("At most 32 interior points per fade");
+                double previous=0;
+                for(auto &point:*points){bounded(point.x,fadePointEpsilon,1-fadePointEpsilon,"Invalid fade point time");bounded(point.y,0,1,"Invalid fade point gain");if(point.x-previous<fadePointEpsilon)throw std::runtime_error("Fade points must have distinct ordered times");previous=point.x;}
+            }
             bounded(l.gainDb,-90,24,"Invalid layer gain");bounded(l.pan,-1,1,"Invalid pan/balance");bounded(l.rate,.25,4,"Linked rate must be 0.25–4 times");
             if(l.placement<0 || l.placement>d.sampleRate*3600 || l.fadeIn<0 || l.fadeOut<0 || layerDuration(l,d.sampleRate)+l.placement>d.sampleRate*3600 || l.fadeIn>d.sampleRate*3600 || l.fadeOut>d.sampleRate*3600)throw std::runtime_error("Invalid design timing");rack(l.effects);}};
     mix(d.original);if(d.variations.size()>32)throw std::runtime_error("32 variations maximum");juce::StringArray variationIds;for(auto &v:d.variations){if(v.id.isEmpty() || variationIds.contains(v.id))throw std::runtime_error("Duplicate variation identity");variationIds.add(v.id);mix(v.mix);}

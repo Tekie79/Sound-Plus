@@ -60,7 +60,8 @@ juce::String designStructure(const DesignDocument &document)
     {
         stripRack(layer["effects"]);
         for (const char *key : {"name", "first", "last", "placement", "sync", "fadeIn", "fadeOut", "gainDb",
-                                "pan", "rate", "reverse", "locked", "locks", "colour"})
+                                "pan", "rate", "reverse", "locked", "locks", "colour", "fadeInShape",
+                                "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
             layer.getDynamicObject()->removeProperty(key);
     }
     auto text = juce::JSON::toString(mix, true);
@@ -86,6 +87,10 @@ juce::var designParameters(const DesignDocument &document)
         value->setProperty("sync", (juce::int64)layer.sync);
         value->setProperty("fadeIn", (juce::int64)layer.fadeIn);
         value->setProperty("fadeOut", (juce::int64)layer.fadeOut);
+        value->setProperty("fadeInShape", fadeShapeId(layer.fadeInShape));
+        value->setProperty("fadeOutShape", fadeShapeId(layer.fadeOutShape));
+        value->setProperty("fadeInPoints", fadePointsToJson(layer.fadeInPoints));
+        value->setProperty("fadeOutPoints", fadePointsToJson(layer.fadeOutPoints));
         value->setProperty("effects", rackParameters(layer.effects));
         layers.add(juce::var(value));
     }
@@ -116,6 +121,10 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         layer.sync = (int64_t)value["sync"];
         layer.fadeIn = (int64_t)value["fadeIn"];
         layer.fadeOut = (int64_t)value["fadeOut"];
+        layer.fadeInShape = fadeShapeFromId(value["fadeInShape"].toString());
+        layer.fadeOutShape = fadeShapeFromId(value["fadeOutShape"].toString());
+        layer.fadeInPoints = fadePointsFromJson(value["fadeInPoints"]);
+        layer.fadeOutPoints = fadePointsFromJson(value["fadeOutPoints"]);
         applyRack(layer.effects, value["effects"]);
     }
     validateDesign(changed);

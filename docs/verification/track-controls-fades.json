@@ -1,0 +1,239 @@
+{
+  "recordedUtc": "2026-11-18T17:59:28.299801+00:00",
+  "baseHead": "0da45925fc4fe519cab5a45e196bbd84df7bd150",
+  "sourceManifestSha256": "5736d08ae8dad66fe12bef3ebe206ab16a9c377fe8e045411d02753ad0b4e37a",
+  "sourceManifest": {
+    "CMakeLists.txt": "8c2d7b41ccccf07d3c1462049d6b16ab119d92c390d776291e9ee6c7f80e6abf",
+    "src/AIHelperMain.cpp": "8ff675b6ae694bc70763e883771ec8b2e4cd0de94cfff9d72a781a9d3642c8ab",
+    "src/AIProcess.cpp": "d903681f491dd5d9aba85240733cfee905dfdd43d942ec6c4f4ca174e8fbd066",
+    "src/AIProcess.h": "575d3080e580be325ca1b8390f0e2e8920c960912dde75440f7639f3a212268d",
+    "src/AudioEngine.cpp": "fd773987927671a314f2b18eb73947e01041409e49763f11ec32511475f9deba",
+    "src/AudioEngine.h": "a5479e9170911b06fb4eb7402b4132a10762a2339ab8d7ac14142bdb3029f454",
+    "src/AudioIPC.cpp": "194292675403eb89e90f1ecba883a659ea3f79df9d68a7277fab986ea32a1167",
+    "src/AudioIPC.h": "c83ff04852760af0b8a99bed1adf9e4d133b4c4e85e325e95561dfa684c1a862",
+    "src/AudioMain.cpp": "ddf5e19f0579db64d1e26f9e82f32ac6d72aab3f9069b71c016bcdc2071f59c4",
+    "src/AudioPlaybackService.cpp": "3a7c57e4e919e81df0a1f7e93dc7c461cc552a846032867fe34977a035701ddb",
+    "src/AudioPlaybackService.h": "f60f84cf8e99f38cd7ced6d89592b124af889e01b89605e3a0cb6ad6102939aa",
+    "src/AudioRegion.h": "1a12cf07be56984c45a0e8408f9c3434eae7363ca1abcf4ada643128a68e883c",
+    "src/AudioStream.cpp": "96ee869d7946f867af8e32871d7b4e817c578ac0b4f2c563e76de7cd3ebfc7c4",
+    "src/AudioStream.h": "22a29a107885e5009920e06ecb467e9a29c5ecded0c3fc14c447707417c27c7a",
+    "src/Benchmark.cpp": "6b266f543ed24cf54afe1e9ebbb923c02d09cf85b5c9bdc47c4343524af1e63e",
+    "src/Benchmark.h": "ceea1f4c4f5e7be331cdc3d3ab4836de2fa063107aac5d8949a4e55e16d66dba",
+    "src/CanvasEditing.cpp": "5da2832bbc08c4701058c72078bb7da7982d5c896162c519d1701db39a464506",
+    "src/CanvasEditing.h": "18d8057de298e437f3cd089c0a623277018aff431e3ee4128a2eb4c6dc1747ce",
+    "src/Catalog.cpp": "2b56346989599de1e7b4b1a93aaf4f4f784963a44c62d120a95b4410aaf92e4e",
+    "src/Catalog.h": "8bfc75edb2e844067e63af29e60845a69dc59fc5e802a444cc7769d3d7f130bf",
+    "src/ClapRuntime.cpp": "dd709c233b619189af155e6964c5e64e897e8a17e5bbfe690a87859e7dd43ef4",
+    "src/ClapRuntime.h": "fdf289fa109113afd935c9b709585742dda208668f89d67c84c3289ce5458890",
+    "src/DesignAudio.cpp": "b6e14d4901aec8e0dc456b3fa898602725da8d98c8bf155780d2a3e4279c7ce3",
+    "src/DesignAudio.h": "ef5bf370de905017efdaff43bf637d1b6c596cd41ec548007dd63989dc7c89e8",
+    "src/DesignControls.h": "fbe3c71f4e8329d2f9e56d5a6fbc964fe8a4ee6596dbaeec3b2a6d0473a302a5",
+    "src/DesignLive.cpp": "6085d788dd5b32e0314648137f6692d408f5a7021ab83c0c5fbb76ed88cf2daa",
+    "src/DesignLive.h": "dd904447f22f01038ee2c1a9e4a783d8af8b35a505a79b3a65ff2dc0bb11eb13",
+    "src/DesignModel.cpp": "788c49027b1a348a93f927fece6a38a88609425ab29020deb306b9b7233ba217",
+    "src/DesignModel.h": "a536e8f70bf685b8b8d4b2b7c13df40681fb162b4929d2e5fc4820cbb30d4f89",
+    "src/DesignRecovery.cpp": "6bdf7c41c38f671d577c27e9bad3ed04b73f05068822764f4083548bb163a197",
+    "src/DesignRecovery.h": "6676cd1777c380b0267bfb829bbaf66026d2759668453dc34857d2c03f94b89e",
+    "src/DesignSession.cpp": "a631dac9095c1c1789606b8fdf793616277e3e794880bace6752a2561833294f",
+    "src/DesignSession.h": "de2733205c1ac28f4fc48ea59b50727ef70bb9fde33df7f6d631b8ea8dc90ba5",
+    "src/DesignerCanvas.cpp": "aa69997a0f6e0913aae6666c104b3e3c749b441d859eaaafea4f00e61becd8f2",
+    "src/DesignerCanvas.h": "6709c06d52cb3ace79585eacbae8704978c2917ce494e6b1ec62b4e8bc498e9c",
+    "src/DesignerView.cpp": "4674a3b90ff808c7a2d577b85e16d67721b5418ca2a944c13df8bd856ff591eb",
+    "src/DesignerView.h": "16552a935fb1e4172e05c1a48a326b105d7e7de616ed23f78a3d03fbdf22ae38",
+    "src/FadeCurve.h": "cb5c795e791bc02aa6ea3c6a46e2e35bde4cdeb65b528a121749e8f19f477296",
+    "src/IconButton.h": "a7b43433d827172f938d3f62830bad3415e104311327a511fbdd550b4d6f6d04",
+    "src/LibraryLayout.h": "4c5a0eecf8f7cb21a7a4ed6ede5787dd013e93b148bdf1a1e785621a14ea3628",
+    "src/LibraryService.cpp": "d197cdc8a982f5bc95fa0531ae14b012feba3ee15386f8ea698befb426bdfee3",
+    "src/LibraryService.h": "3d19371d18da10290e7c44c8ec1c2abe1f18029f280b4e8a78d1737e213433ca",
+    "src/LibraryView.cpp": "2f0fe429de5633c12006c231b56048539c6caa9e61bae1b3cea844e6c5b2fda4",
+    "src/LibraryView.h": "756289df43c6c168fe5b7ba95f70a06b8a703f2337dcc441a894235a802886dd",
+    "src/MacSources.h": "1bb1214c13aa12ee6be2e0f80a371ded1cd8418fccc74c5205688f717fd1b85c",
+    "src/MacSources.mm": "0d60eeb8050c9022d0c93ea569e297ee2a520e4f99b64f79fd8200a5a45aed09",
+    "src/Main.cpp": "e55f186f21432851a9f5514cc9e2098c3b4c60401e9dc3aa73fec15b44fe59c9",
+    "src/ModelPack.cpp": "11a7b79d4ffe6b13d317c6bc97025cf2f0ea4b082b220f54a374f8ec02ab6c9f",
+    "src/ModelPack.h": "d52efd9274b1d75947f0951337dd44772d504ac8753b22c470545e9ce6f9297c",
+    "src/Performance.h": "ea77811d53d5338b3dcc4763a05dcb36cca6e152efd0d80438073ed0620a7917",
+    "src/Reference.cpp": "76f433af7fbaf4af1465c4f3661ec45653c085107b53cae83fb514ac2dc2bc82",
+    "src/Reference.h": "9796ce21512066ee445882ef4e76a1b1290097531bc1dfd87094310a0fa61283",
+    "src/RegionRanking.h": "9424bf9f63859137b72516709a56c9cdff0b1cc2d3ca97bf73cb8ddefedc763f",
+    "src/RetrievalIndex.cpp": "8e7e4edaa3e4a7e67756b151a5f3391a94c544d6a01ed132efcab3ffd826d3b7",
+    "src/RetrievalIndex.h": "94d6c323c630080518d2d78b2b14f88750f7be1c46a85b0792cbf264b3646355",
+    "src/SerialWorker.h": "cf9c92575b453eea78f19062332de3efd640aeea00253265f7baf27789da78a7",
+    "src/UIComponents.h": "f2e3890ee7b1f99eb2738243f2b8c8883f13af14c75abe30f154b484769fbd23",
+    "src/Waveform.cpp": "68273fb43f5d3214a9a0723ddf15e68c0b939ed56f8cc068f69efab06b023825",
+    "src/Waveform.h": "e8a021bc1e40724104eb00d3b73c95fe0c52e7d525a9868af62cda6a7a8e72fa",
+    "src/Workstation.h": "c74cc888c286de52d557f23511e811af54ffadd04aca3e52a63631d58a2678d2",
+    "tests/CanvasGestureTests.cpp": "caae1cc8cc03fbffaa2cc41700b4fd6483bea5c4019e427a191179f4b4bf2cde",
+    "tests/CanvasGestureTests.h": "c594ec414fa5d8db7e64dac6a4724eed6cd5323bbdd406d69e169bab50bb6c19",
+    "tests/DesignSessionTests.cpp": "c3c11a0e557c55d2daf254749c00a8f68e7c0d3e4fdc50f10d6e76d6f6d17ed3",
+    "tests/DesignSessionTests.h": "265e0687499f05cd9f2867499ed690127c586c3a73f537b0bfb32b61fca00189",
+    "tests/DesignTests.cpp": "44e7aa7e434d86ed321ef055452af367b21e2c48426edce557a8bfd2bfca679f",
+    "tests/DesignTests.h": "e2aea12e7df2e4573f9c9b34c725e6b0a85aa6576ad888ef5947d6f5fdebac80",
+    "tests/FadeTests.cpp": "26d3b66a0a80c6b2637b31fcdaa98cfbedfc748de786047a62d8d235f1283b7f",
+    "tests/FadeTests.h": "badcc87aae6f49129ff1f01d4048ccb090dc54956e5cfbb2621c403ded7a4286",
+    "tests/PerformanceTests.cpp": "e6a0920d2ab0bbcdbb8d04759194a59d4ce741702e020c15667fd84244b77e5c",
+    "tests/PerformanceTests.h": "d3a13649bb6706ab9f09f77ce3e4eab1856d2f569db7ad9f33304dbc6e76a6b4",
+    "tests/SemanticTests.cpp": "2c5642ace99279f560a14ce3d40ff7b817d33518e9c0204d85f4d76aa1968d14",
+    "tests/SemanticTests.h": "82227ccc549b360b2e94c6a61e997377b3136416be0f4dd3006e6e427641b808",
+    "tests/SimilarTests.cpp": "044447bfd67b4ad2eaa6e67634f887764a92f2a96e84dfcf705c20e3858ffb96",
+    "tests/SimilarTests.h": "150897327d9b75439ecd21cf0875c98cf713522960fed8650f50b5c99181b510",
+    "tests/Tests.cpp": "0bab9ab62a33ca614bca14e1973f164b98369b9980bf63aec72ae12521286552",
+    "tests/TransportInteractionTests.cpp": "499eb13c9f363852a3803efc241d231fa06a93322978bf552eb494193c2bfed6",
+    "tests/TransportInteractionTests.h": "8c4b3236bb7dd2a4446e059e511702ee0e6a58dc6b0b1063ac9bd420db1f782b"
+  },
+  "binaries": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "fd0f45e7219d2ec01c6037d97d5d1438aac47b5a611e0cb4d5857be8a32cc776",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "69657f7bcc940a5d2d3cc3616ecf19b4d7932c4fa831143da966bbd2bc03434c",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "a01c7204b943a33ba89259c822d326ead9b6bca759caed824007514d35e51fb2"
+  },
+  "build": {
+    "configuration": "Release",
+    "architecture": "arm64",
+    "result": "passed"
+  },
+  "platform": {
+    "hardware": "Apple M5 Pro MacBook Pro Mac17,8, 48 GiB",
+    "macOS": "26.3.2 (25D2150)",
+    "display": "built-in Retina only",
+    "audio": "MacBook Pro Speakers, Core Audio, 48000 Hz / 512 frames"
+  },
+  "ctest": {
+    "passed": 10,
+    "failed": 0,
+    "durationSeconds": 47.87,
+    "log": "designer-fades-ctest.log",
+    "fadeAssertions": 1137
+  },
+  "fadeAudio": {
+    "checks": 1136,
+    "fixture": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-fade-output/068ccef3be5c4bc781f5efc6ec028d60/constant-stereo.wav",
+    "renderMaxError": 0.0,
+    "nativeMaxError": 0.0,
+    "liveShapeLatencyMs": 40.81979165971279,
+    "audio": {
+      "version": 5,
+      "command": "status",
+      "id": "design:b6eec5f9007945dc9745ac5691df6141",
+      "playGeneration": 2,
+      "outputRate": 48000.0,
+      "sourceSample": 2560,
+      "sourceRate": 48000.0,
+      "auditionPair": 0,
+      "startSample": 0,
+      "endSample": 96000,
+      "playing": true,
+      "seconds": 0.053333333333333,
+      "firstCallbackMs": 84506040.20854166,
+      "peak": 0.000194554668269,
+      "preMonitorPeak": 0.009727507829666,
+      "design": true,
+      "designLayers": 1,
+      "producerMaxMs": 0.097916677594185,
+      "error": "",
+      "callbacks": 198,
+      "frames": 101376,
+      "underruns": 0,
+      "designRevision": 1,
+      "heardEdit": 1,
+      "editLatencyMs": 40.81979165971279,
+      "stalePreparationsDiscarded": 0,
+      "preparing": false,
+      "sampleRate": 48000.0,
+      "outputs": [
+        "MacBook Pro Speakers"
+      ],
+      "peakResidentBytes": 42975232,
+      "cpuSeconds": 0.091874,
+      "bufferFrames": 512,
+      "device": "MacBook Pro Speakers",
+      "availableRates": [
+        44100.0,
+        48000.0,
+        88200.0,
+        96000.0
+      ],
+      "processGeneration": 1,
+      "intentId": "design:b6eec5f9007945dc9745ac5691df6141",
+      "pendingPlayback": false
+    },
+    "timestamp": "2026-11-18T12:56:14.627-05:00"
+  },
+  "nativeUi": {
+    "status": "passed",
+    "mechanism": "CUA, final native app",
+    "checks": [
+      "text Library opens full Library",
+      "text Browser visibility and active style",
+      "actual-color palette selection and keyboard Undo after popup closes",
+      "header Mute/Solo/Lock toggled on/off, off focused ink is neutral",
+      "Snap and audible-preview off focused ink is neutral",
+      "double-click IN and OUT curves adds one small node each",
+      "drag IN and OUT nodes independently",
+      "keyboard point Undo/Redo",
+      "preset to Custom restores stored nodes",
+      "desktop, compact and minimum window inspected",
+      "quit/reopen restores QA r3468, custom curves and preferences",
+      "working catalog r3449 reopened"
+    ],
+    "minimumOuterWindow": [
+      1040,
+      680
+    ],
+    "minimumSavedContentBounds": [
+      184,
+      109,
+      1040,
+      648
+    ],
+    "modifiedPointerChecks": "Option removal, Shift OUT targeting, Control fine and Escape use actual canvas event-handler tests, not native CUA",
+    "qaDocument": {
+      "revision": 3468,
+      "name": "QA - Custom fade controls",
+      "sha256": "eded8d78449552f666447ef284dfd496ffdaa8840391cbd3239f9e0da198ef46"
+    },
+    "reopenedQaFadeFields": {
+      "fadeInShape": "custom",
+      "fadeOutShape": "custom",
+      "fadeInPoints": [
+        {
+          "x": 0.700377537976753,
+          "y": 0.273656040430069
+        }
+      ],
+      "fadeOutPoints": [
+        {
+          "x": 0.399617116670304,
+          "y": 0.361798018217087
+        }
+      ]
+    }
+  },
+  "workingDocument": {
+    "before": {
+      "revision": 3449,
+      "name": "Rain glass design",
+      "sha256": "d25cd2942e7ad9152f5bfa899fe206af8a696e16a22db09f25c68ceeaf68cc12"
+    },
+    "after": {
+      "revision": 3449,
+      "name": "Rain glass design",
+      "sha256": "d25cd2942e7ad9152f5bfa899fe206af8a696e16a22db09f25c68ceeaf68cc12"
+    },
+    "byteIdentical": true,
+    "catalog": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/fade-ui/native-ui"
+  },
+  "separateAcceptance": {
+    "audibleScrub": "PCM verified by existing transport suite; human listening unverified",
+    "crossApplicationDrag": "unverified: receiving-app save/exit/reopen workflow still required",
+    "physicalAudibility": "unverified"
+  },
+  "screenshots": {
+    "designer-fade-choices.png": "3492b8f79791bf6a5138935cc40f0f343949f51feab1134cd02bfff7be1a0bc7",
+    "designer-fades-minimum.png": "5fb68c59b06c340d8414828beb4d7cbedfea8838815ea883d956424da63a1cac",
+    "designer-header-controls.png": "77c5881bdef3d2272f2f6182234d48421e79c2e9f72c83833b094b4fe143002c",
+    "designer-fades-compact.png": "d7206b627b5a161c0b24ae0e5f8dd23067e6987d3b76be05a01fb641c1c63ab1",
+    "designer-custom-fades.png": "82c02563e29eab908ba85624204f0d2de61565b02046accc9b85878472fbd381",
+    "library-fades-minimum.png": "9640a037a01c94ee722e34e6048b31a67cb923914e97b34be52db7d27679c132",
+    "designer-swatches.png": "f3143227ddc8031b0af1a297b4e9c804375c392c096d8c464cd86aaad7ea8b81"
+  }
+}

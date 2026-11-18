@@ -78,7 +78,8 @@ CanvasClipGeometry clipGeometry(const DesignLayer &layer, int row, const Timelin
     shape.fadeOutY = shape.fadeInY + (std::abs(shape.fadeIn - shape.fadeOut) < 15 ? 17.f : 0.f);
     return shape;
 }
-CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &view, float x, float y)
+CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &view, float x, float y,
+                        bool preferOut)
 {
     if (x < 0 || y < 0 || x > view.width)
         return {};
@@ -95,6 +96,32 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
     if (x < view.header)
         return {CanvasTarget::none, row};
     auto clip = clipGeometry(layers[(size_t)row], row, view, document.sampleRate);
+    auto &layer = layers[(size_t)row];
+    CanvasHit pointHit;
+    float nearestPoint = 6;
+    for (bool in : {true, false})
+        if ((in ? layer.fadeInShape : layer.fadeOutShape) == FadeShape::custom &&
+            (in ? layer.fadeIn : layer.fadeOut) > 0)
+        {
+            auto &points = in ? layer.fadeInPoints : layer.fadeOutPoints;
+            for (int i = 0; i < (int)points.size(); ++i)
+            {
+                auto position = fadePointPosition(layer, row, in, i, view, document.sampleRate);
+                if (position.x < clip.left || position.x > clip.right)
+                    continue;
+                auto distance = position.getDistanceFrom({x, y});
+                if (distance < nearestPoint ||
+                    (preferOut && !in && distance < 6 && distance <= nearestPoint + .001f))
+                {
+                    nearestPoint = distance;
+                    pointHit = {in ? CanvasTarget::fadeInPoint : CanvasTarget::fadeOutPoint, row, i};
+                }
+            }
+        }
+    auto gripDistance = std::min(juce::Point<float>(clip.fadeIn, clip.fadeInY).getDistanceFrom({x, y}),
+                                 juce::Point<float>(clip.fadeOut, clip.fadeOutY).getDistanceFrom({x, y}));
+    if (pointHit.point >= 0 && nearestPoint < gripDistance)
+        return pointHit;
     bool inside = x >= clip.left && x <= clip.right;
     // Fade corners have precedence over trim edges. Sync lives below the waveform
     // so a zero fade and a source sync at IN remain individually reachable.
@@ -125,6 +152,71 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
     if (inside && y >= clip.clipTop && y <= clip.clipBottom + 2)
         return {CanvasTarget::body, row};
     return {CanvasTarget::empty, row};
+}
+juce::Point<float> fadePointPosition(const DesignLayer &layer, int row, bool in, int index,
+                                     const TimelineViewport &view, double rate)
+{
+    auto &point = (in ? layer.fadeInPoints : layer.fadeOutPoints)[(size_t)index];
+    auto shape = clipGeometry(layer, row, view, rate);
+    auto duration = in ? layer.fadeIn : layer.fadeOut;
+    auto offset = (int64_t)std::llround(point.x * duration);
+    auto frame = in ? layer.placement + offset : layer.placement + layerDuration(layer, rate) - offset;
+    return {view.x(frame, rate),
+            shape.clipBottom - 1 - (float)point.y * (shape.clipBottom - 1 - shape.fadeInY)};
+}
+FadePoint fadePointAt(const DesignLayer &layer, int row, bool in, juce::Point<float> position,
+                      const TimelineViewport &view, double rate)
+{
+    auto shape = clipGeometry(layer, row, view, rate);
+    auto frame = view.frame(position.x, rate);
+    auto duration = std::max<int64_t>(1, in ? layer.fadeIn : layer.fadeOut);
+    double x = (double)(in ? frame - layer.placement : layer.placement + layerDuration(layer, rate) - frame) /
+               duration;
+    double y = (shape.clipBottom - 1 - position.y) / (shape.clipBottom - 1 - shape.fadeInY);
+    return {std::clamp(x, 2 * fadePointEpsilon, 1 - 2 * fadePointEpsilon), std::clamp(y, 0., 1.)};
+}
+int addFadePoint(DesignLayer &layer, bool in, FadePoint point)
+{
+    auto &shape = in ? layer.fadeInShape : layer.fadeOutShape;
+    auto &points = in ? layer.fadeInPoints : layer.fadeOutPoints;
+    if (shape != FadeShape::custom)
+        points.clear();
+    shape = FadeShape::custom;
+    point.x = std::clamp(point.x, 2 * fadePointEpsilon, 1 - 2 * fadePointEpsilon);
+    point.y = std::clamp(point.y, 0., 1.);
+    for (size_t i = 0; i < points.size(); ++i)
+        if (std::abs(points[i].x - point.x) < fadePointEpsilon)
+        {
+            points[i].y = point.y;
+            return (int)i;
+        }
+    if (points.size() >= maxFadePoints)
+        throw std::runtime_error("At most 32 interior points per fade");
+    auto found =
+        std::lower_bound(points.begin(), points.end(), point.x, [](auto &p, double x) { return p.x < x; });
+    auto index = (int)std::distance(points.begin(), found);
+    points.insert(found, point);
+    return index;
+}
+void moveFadePoint(DesignLayer &layer, const DesignLayer &before, bool in, int index, FadePoint delta)
+{
+    auto &original = in ? before.fadeInPoints : before.fadeOutPoints;
+    if (index < 0 || index >= (int)original.size())
+        return;
+    auto &points = in ? layer.fadeInPoints : layer.fadeOutPoints;
+    points = original;
+    auto low = index == 0 ? 2 * fadePointEpsilon : original[(size_t)index - 1].x + 2 * fadePointEpsilon;
+    auto high = index + 1 == (int)original.size() ? 1 - 2 * fadePointEpsilon
+                                                  : original[(size_t)index + 1].x - 2 * fadePointEpsilon;
+    points[(size_t)index] = {low <= high ? std::clamp(original[(size_t)index].x + delta.x, low, high)
+                                         : original[(size_t)index].x,
+                             std::clamp(original[(size_t)index].y + delta.y, 0., 1.)};
+}
+void removeFadePoint(DesignLayer &layer, bool in, int index)
+{
+    auto &points = in ? layer.fadeInPoints : layer.fadeOutPoints;
+    if (index >= 0 && index < (int)points.size())
+        points.erase(points.begin() + index);
 }
 int64_t snapFrame(int64_t desired, const DesignDocument &document, const std::set<juce::String> &excluded,
                   const TimelineViewport &view, const SnapSettings &settings)

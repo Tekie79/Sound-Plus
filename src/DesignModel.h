@@ -1,6 +1,7 @@
 #pragma once
 #include "Catalog.h"
 #include "AudioRegion.h"
+#include "FadeCurve.h"
 #include <array>
 #include <atomic>
 namespace sp
@@ -20,6 +21,8 @@ struct DesignLayer
     bool external=false,mute=false,solo=false,reverse=false,locked=false;
     PlaybackRegion region;
     int64_t placement=0,sync=0,fadeIn=0,fadeOut=0;
+    FadeShape fadeInShape=FadeShape::linear,fadeOutShape=FadeShape::linear;
+    std::vector<FadePoint> fadeInPoints,fadeOutPoints;
     double gainDb=0,pan=0,rate=1;
     uint32_t locks=0;
     uint32_t colour=0; // Optional ARGB track colour. Zero uses the application palette.
@@ -80,6 +83,9 @@ int64_t designPlayStart(const DesignDocument &,int64_t parkedFrame);
 int64_t layerSyncFrame(const DesignLayer &,double designRate);
 DesignLayer makeDesignLayer(const Asset &,int64_t first,int64_t last,bool external=false);
 StockEffect makeStockEffect(const juce::String &type);
+FadeShape fadeShapeFromId(const juce::String &);
+juce::var fadePointsToJson(const std::vector<FadePoint> &);
+std::vector<FadePoint> fadePointsFromJson(const juce::var &);
 juce::var designToJson(const DesignDocument &);
 DesignDocument designFromJson(const juce::var &);
 void validateDesign(const DesignDocument &);

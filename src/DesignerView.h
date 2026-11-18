@@ -2,6 +2,7 @@
 #include "DesignSession.h"
 #include "Waveform.h"
 #include "UIComponents.h"
+#include "DesignControls.h"
 #include <map>
 namespace sp
 {
@@ -35,6 +36,11 @@ class DesignerView final : public juce::Component,
     void benchmarkStockControls(int phase, double value);
     juce::var benchmarkSelectionCommands();
     void commitNames();
+    void setBrowserVisible(bool visible)
+    {
+        browse.setToggleState(visible, juce::dontSendNotification);
+        browse.setTooltip(visible ? "Hide sound browser" : "Show sound browser");
+    }
     bool commandKey(const juce::KeyPress &key)
     {
         return keyPressed(key, nullptr);
@@ -80,17 +86,17 @@ class DesignerView final : public juce::Component,
     void finishGroups();
     void layoutInspector();
     bool inspectorOpen = true;
-    IconButton browse{"Show sound browser", ActionIcon::browser},
-        inspect{"Show layer inspector", ActionIcon::settings};
+    ui::TextActionButton browse{"Browser"}, library{"Library"};
+    IconButton inspect{"Show layer inspector", ActionIcon::settings};
+    ui::FadeShapeButton fadeInShape{"Fade-in shape", true}, fadeOutShape{"Fade-out shape", false};
     juce::Viewport canvasViewport, inspectorViewport;
     juce::Component inspector;
     juce::OwnedArray<juce::Component> controls;
     std::vector<std::function<void()>> refreshers;
     int inspectorY = 0;
     bool updating = false;
-    IconButton library{"Library", ActionIcon::folder}, add{"Add source", ActionIcon::addLayer},
-        newButton{"New design", ActionIcon::newDocument}, openButton{"Open design", ActionIcon::open},
-        saveButton{"Save design", ActionIcon::save};
+    IconButton add{"Add source", ActionIcon::addLayer}, newButton{"New design", ActionIcon::newDocument},
+        openButton{"Open design", ActionIcon::open}, saveButton{"Save design", ActionIcon::save};
     IconButton undoButton{"Undo", ActionIcon::undo}, redoButton{"Redo", ActionIcon::redo},
         duplicate{"Duplicate layer", ActionIcon::duplicate}, remove{"Remove layer", ActionIcon::trash},
         up{"Move layer up", ActionIcon::up}, down{"Move layer down", ActionIcon::down};

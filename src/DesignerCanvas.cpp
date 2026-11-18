@@ -1,6 +1,7 @@
 #include "DesignerCanvas.h"
 #include "Performance.h"
 #include "UIComponents.h"
+#include "DesignControls.h"
 #include <cmath>
 namespace sp
 {
@@ -17,20 +18,51 @@ DesignLayer *findLayer(DesignDocument &d, const juce::String &id)
             return &layer;
     return nullptr;
 }
+juce::Path layerFadePath(const DesignLayer &layer, const CanvasClipGeometry &clip, bool in, double rate)
+{
+    auto length = in ? layer.fadeIn : layer.fadeOut;
+    if (length <= 0)
+        return {};
+    auto left = in ? clip.left : clip.fadeOut, right = in ? clip.fadeIn : clip.right;
+    auto bounds =
+        juce::Rectangle<float>(left, clip.fadeInY, right - left, clip.clipBottom - 1 - clip.fadeInY);
+    return ui::fadeCurvePath(in ? layer.fadeInShape : layer.fadeOutShape, in, bounds,
+                             (double)std::min(length, layerDuration(layer, rate)) / length,
+                             in ? layer.fadeInPoints : layer.fadeOutPoints);
+}
 } // namespace
 struct DesignerCanvas::Header : juce::Button
 {
     DesignerCanvas &canvas;
-    IconButton colour{"Track colour", ActionIcon::colour};
+    ui::ColourSwatchButton colour{"Track colour"};
+    IconButton mute{"Mute track", ActionIcon::mute}, solo{"Solo track", ActionIcon::solo},
+        lock{"Lock track for variations", ActionIcon::lock};
     Header(DesignerCanvas &owner, const juce::String &name, const juce::String &id)
         : Button(name), canvas(owner)
     {
         addAndMakeVisible(colour);
         colour.onClick = [this, id] { canvas.showColours(id); };
+        for (auto *button : {&mute, &solo, &lock})
+            addAndMakeVisible(button);
+        auto toggle = [this, id](const char *name, bool DesignLayer::*property)
+        {
+            canvas.session.edit(name,
+                                [=](auto &d)
+                                {
+                                    if (auto *layer = findLayer(d, id))
+                                        layer->*property = !(layer->*property);
+                                });
+        };
+        mute.onClick = [toggle] { toggle("Mute track", &DesignLayer::mute); };
+        solo.onClick = [toggle] { toggle("Solo track", &DesignLayer::solo); };
+        lock.onClick = [toggle] { toggle("Lock track for variations", &DesignLayer::locked); };
     }
     void resized() override
     {
         colour.setBounds(getWidth() - 26, 5, 24, 24);
+        mute.setBounds(7, 31, 22, 22);
+        solo.setBounds(33, 31, 22, 22);
+        lock.setBounds(59, 31, 22, 22);
     }
     void paintButton(juce::Graphics &, bool, bool) override {}
     void mouseDown(const juce::MouseEvent &event) override
@@ -58,8 +90,9 @@ DesignerCanvas::DesignerCanvas(DesignSession &owner, Peaks provider, juce::Prope
     : session(owner), peaks(std::move(provider)), preferences(prefs)
 {
     setWantsKeyboardFocus(true);
-    setTitle("Layer canvas. Drag to seek on ruler; drag visible fade, trim, gain and sync handles. Option "
-             "body drag slips source. Control is fine; Command bypasses snapping.");
+    setTitle("Layer canvas. Double-click a fade curve to add a point; drag to reshape; Option-click removes. "
+             "Shift addresses OUT when points overlap. Right-click for presets. Option-body slips source. "
+             "Control is fine; Command bypasses snapping.");
     restoredViewport = preferences.containsKey("timelineScale");
     viewport.startSeconds = preferences.getDoubleValue("timelineStart", 0);
     viewport.pixelsPerSecond = preferences.getDoubleValue("timelineScale", 100);
@@ -128,6 +161,14 @@ void DesignerCanvas::syncSelectors()
                               (int)viewport.rowHeight(i) - 1);
         headers[i]->setTitle("Select / reorder layer " + layers[(size_t)i].name);
         headers[i]->colour.setTitle("Track colour for " + layers[(size_t)i].name);
+        headers[i]->colour.value = layers[(size_t)i].colour;
+        headers[i]->colour.repaint();
+        headers[i]->mute.setButtonText("Mute " + layers[(size_t)i].name);
+        headers[i]->solo.setButtonText("Solo " + layers[(size_t)i].name);
+        headers[i]->lock.setButtonText("Lock " + layers[(size_t)i].name + " for variations");
+        headers[i]->mute.setToggleState(layers[(size_t)i].mute, juce::dontSendNotification);
+        headers[i]->solo.setToggleState(layers[(size_t)i].solo, juce::dontSendNotification);
+        headers[i]->lock.setToggleState(layers[(size_t)i].locked, juce::dontSendNotification);
         headers[i]->setTooltip(
             "Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize");
     }
@@ -180,32 +221,54 @@ void DesignerCanvas::zoomVertical(double factor)
 }
 void DesignerCanvas::showColours(const juce::String &id)
 {
-    static constexpr uint32_t palette[]{0,          0xff79b6d2, 0xff72b8a2, 0xffb4a0d4,
-                                        0xffd4a27c, 0xffd38393, 0xffd0bc79};
-    static const char *names[]{"Default", "Blue", "Sage", "Lavender", "Amber", "Rose", "Sand"};
-    juce::PopupMenu menu;
     auto *layer = findLayer(session.document, id);
     if (!layer)
         return;
-    for (int i = 0; i < 7; ++i)
-        menu.addColouredItem(i + 1, names[i], palette[i] ? juce::Colour(palette[i]) : ui::text, true,
-                             layer->colour == palette[i]);
     auto token = session.beginDialog();
     juce::Component::SafePointer<DesignerCanvas> safe(this);
     auto found = std::find_if(session.document.activeMix().layers.begin(),
                               session.document.activeMix().layers.end(), [&](auto &l) { return l.id == id; });
     auto index = (int)std::distance(session.document.activeMix().layers.begin(), found);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&headers[index]->colour),
-                       [safe, token, id](int choice)
-                       {
-                           if (safe && safe->session.accepts(token) && choice > 0 && choice <= 7)
-                               safe->session.edit("Track colour",
-                                                  [=](auto &d)
-                                                  {
-                                                      if (auto *selected = findLayer(d, id))
-                                                          selected->colour = palette[choice - 1];
-                                                  });
-                       });
+    ui::showColourChoices(headers[index]->colour, layer->colour,
+                          [safe, token, id](uint32_t choice)
+                          {
+                              if (safe && safe->session.accepts(token))
+                                  safe->session.edit("Track colour",
+                                                     [=](auto &d)
+                                                     {
+                                                         if (auto *selected = findLayer(d, id))
+                                                             selected->colour = choice;
+                                                     });
+                          });
+}
+void DesignerCanvas::chooseFadeShape(const juce::String &id, bool in, juce::Component &anchor,
+                                     juce::Rectangle<int> area)
+{
+    auto *layer = findLayer(session.document, id);
+    if (!layer)
+        return;
+    auto token = session.beginDialog();
+    juce::Component::SafePointer<DesignerCanvas> safe(this);
+    ui::showFadeChoices(anchor, area, in, in ? layer->fadeInShape : layer->fadeOutShape,
+                        in ? layer->fadeInPoints : layer->fadeOutPoints,
+                        [safe, token, id, in](FadeShape shape)
+                        {
+                            if (safe && safe->session.accepts(token))
+                                safe->session.edit(
+                                    in ? "Fade-in shape" : "Fade-out shape",
+                                    [=](auto &d)
+                                    {
+                                        if (auto *layer = findLayer(d, id))
+                                        {
+                                            auto &current = in ? layer->fadeInShape : layer->fadeOutShape;
+                                            auto &points = in ? layer->fadeInPoints : layer->fadeOutPoints;
+                                            if (shape == FadeShape::custom && current != FadeShape::custom &&
+                                                points.empty())
+                                                points = seedFadePoints(current);
+                                            current = shape;
+                                        }
+                                    });
+                        });
 }
 void DesignerCanvas::setDropGhost(std::optional<int64_t> frame)
 {
@@ -246,7 +309,7 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         bool selected = session.selectedIds.contains(layer.id);
         bool selectedClip = selected && clipSelection, selectedTrack = selected && !clipSelection;
         auto colour = layer.colour ? juce::Colour(layer.colour) : ui::accent;
-        graphics.setColour(selectedTrack ? juce::Colour(0xff1d2b39) : ui::surface);
+        graphics.setColour((selectedTrack ? juce::Colour(0xff1d2b39) : ui::surface).withAlpha(.48f));
         graphics.fillRoundedRectangle(left, shape.top, getWidth() - left - 4, shape.height - 5, 4);
         {
             juce::Graphics::ScopedSaveState saved(graphics);
@@ -281,8 +344,6 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 }
             }
             graphics.setColour(colour.withAlpha(selected ? .9f : .55f));
-            graphics.drawLine(shape.left, shape.clipBottom - 1, shape.fadeIn, shape.fadeInY, 1.3f);
-            graphics.drawLine(shape.fadeOut, shape.fadeInY, shape.right, shape.clipBottom - 1, 1.3f);
             graphics.drawLine(shape.left, shape.gain, shape.right, shape.gain,
                               hover.target == CanvasTarget::gain && hover.row == (int)row ? 2.f : 1.f);
             graphics.drawVerticalLine((int)shape.left, shape.clipTop + 13, shape.clipBottom - 6);
@@ -292,11 +353,44 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 auto target = in ? CanvasTarget::fadeIn : CanvasTarget::fadeOut;
                 auto x = in ? shape.fadeIn : shape.fadeOut;
                 auto y = in ? shape.fadeInY : shape.fadeOutY;
+                auto accent = in ? ui::fadeInAccent : ui::fadeOutAccent;
+                auto curve = layerFadePath(layer, shape, in, rate);
+                if (!curve.isEmpty())
+                {
+                    auto tint = curve;
+                    tint.lineTo(in ? shape.fadeIn : shape.right, shape.fadeInY);
+                    tint.lineTo(in ? shape.left : shape.fadeOut, shape.fadeInY);
+                    tint.closeSubPath();
+                    graphics.setColour(accent.withAlpha(selectedClip ? .13f : .08f));
+                    graphics.fillPath(tint);
+                    graphics.setColour(accent.withAlpha(selected ? .95f : .8f));
+                    graphics.strokePath(
+                        curve,
+                        juce::PathStrokeType(hover.target == target && hover.row == (int)row ? 2.2f : 1.5f));
+                }
+                if ((in ? layer.fadeInShape : layer.fadeOutShape) == FadeShape::custom &&
+                    (in ? layer.fadeIn : layer.fadeOut) > 0)
+                {
+                    auto &points = in ? layer.fadeInPoints : layer.fadeOutPoints;
+                    for (int i = 0; i < (int)points.size(); ++i)
+                    {
+                        auto position = fadePointPosition(layer, (int)row, in, i, viewport, rate);
+                        if (position.x < shape.left || position.x > shape.right)
+                            continue;
+                        bool over =
+                            hover.row == (int)row && hover.point == i &&
+                            hover.target == (in ? CanvasTarget::fadeInPoint : CanvasTarget::fadeOutPoint);
+                        float radius = over ? 3.f : 2.25f;
+                        graphics.setColour(over ? juce::Colours::white : accent);
+                        graphics.fillEllipse(position.x - radius, position.y - radius, radius * 2,
+                                             radius * 2);
+                    }
+                }
                 graphics.setColour(hover.target == target && hover.row == (int)row ? juce::Colours::white
-                                                                                   : colour);
+                                                                                   : accent);
                 if (!in && shape.fadeOutY != shape.fadeInY)
                     graphics.drawLine(x, shape.fadeInY, x, y, 1.f);
-                graphics.fillRoundedRectangle(x - 4, y - 4, 8, 8, 2);
+                graphics.fillRoundedRectangle(x - 2.5f, y - 2.5f, 5, 5, 1.5f);
             }
             juce::Path sync;
             sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,
@@ -316,12 +410,6 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         graphics.setFont(juce::FontOptions(12.f, juce::Font::bold));
         graphics.drawText(layer.name, 13, (int)shape.top + 8, (int)left - 52, 21, juce::Justification::left,
                           true);
-        graphics.setColour(ui::muted);
-        graphics.setFont(juce::FontOptions(10.f));
-        graphics.drawText((layer.mute ? "MUTE " : "") +
-                              (layer.solo ? juce::String("SOLO ") : juce::String()) +
-                              (layer.locked ? "LOCKED" : ""),
-                          13, (int)shape.top + 35, (int)left - 25, 20, juce::Justification::left, true);
         if (hover.target == CanvasTarget::rowResize && hover.row == (int)row)
         {
             graphics.setColour(ui::accent.withAlpha(.65f));
@@ -383,13 +471,62 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
     grabKeyboardFocus();
     pointer = anchor = event.position;
     modifiers = event.mods;
-    hit = canvasHitTest(session.document, viewport, pointer.x, pointer.y);
+    hit = canvasHitTest(session.document, viewport, pointer.x, pointer.y, event.mods.isShiftDown());
+    // Control is the existing fine-adjust modifier on macOS. Reserve the
+    // shape menu for the actual secondary button / two-finger trackpad click.
+    if (event.mods.isRightButtonDown())
+    {
+        if (hit.row >= 0 && pointer.x >= viewport.header)
+        {
+            auto &layer = session.document.activeMix().layers[(size_t)hit.row];
+            auto geometry = clipGeometry(layer, hit.row, viewport, session.document.sampleRate);
+            std::optional<bool> in;
+            if (hit.target == CanvasTarget::fadeIn || hit.target == CanvasTarget::fadeOut ||
+                hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint)
+                in = hit.target == CanvasTarget::fadeIn || hit.target == CanvasTarget::fadeInPoint;
+            else
+            {
+                float nearestDistance = 6;
+                for (bool candidate : {true, false})
+                {
+                    auto path = layerFadePath(layer, geometry, candidate, session.document.sampleRate);
+                    if (path.isEmpty())
+                        continue;
+                    juce::Point<float> nearest;
+                    path.getNearestPoint(pointer, nearest);
+                    auto distance = nearest.getDistanceFrom(pointer);
+                    if (distance < nearestDistance)
+                    {
+                        nearestDistance = distance;
+                        in = candidate;
+                    }
+                }
+            }
+            if (in)
+                chooseFadeShape(layer.id, *in, *this, {event.x - 4, event.y - 4, 8, 8});
+        }
+        return;
+    }
     original = session.document;
     originalClipSelection = clipSelection;
     captured = viewport;
     pointerDown = true;
     moved = false;
     slip = event.mods.isAltDown() && hit.target == CanvasTarget::body;
+    if ((hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint) &&
+        event.mods.isAltDown())
+    {
+        auto id = original.activeMix().layers[(size_t)hit.row].id;
+        session.edit("Remove fade point",
+                     [&](auto &d)
+                     {
+                         if (auto *layer = findLayer(d, id))
+                             removeFadePoint(*layer, hit.target == CanvasTarget::fadeInPoint, hit.point);
+                     });
+        pointerDown = false;
+        updateHover(pointer);
+        return;
+    }
     if (hit.target == CanvasTarget::playhead || hit.target == CanvasTarget::empty)
     {
         session.beginSeekGesture(audibleScrub);
@@ -405,8 +542,9 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
         clipSelection = hit.target != CanvasTarget::header;
         session.beginGesture();
         auto id = original.activeMix().layers[(size_t)hit.row].id;
-        if (event.mods.isShiftDown() || !session.selectedIds.contains(id))
-            session.selectLayer(id, event.mods.isShiftDown());
+        bool point = hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint;
+        if ((!point && event.mods.isShiftDown()) || !session.selectedIds.contains(id))
+            session.selectLayer(id, !point && event.mods.isShiftDown());
         selection = session.selectedIds;
         if (selection.empty())
             selection.insert(id);
@@ -446,6 +584,25 @@ void DesignerCanvas::applyDrag()
         return;
     }
     auto rate = original.sampleRate;
+    if (hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint)
+    {
+        bool in = hit.target == CanvasTarget::fadeInPoint;
+        auto fine = modifiers.isCtrlDown() ? .1 : 1.;
+        auto geometry = clipGeometry(before, hit.row, captured, rate);
+        auto time = captured.delta(pointer.x - anchor.x, rate) +
+                    (int64_t)std::llround((viewport.startSeconds - captured.startSeconds) * rate);
+        auto dx = (double)time / std::max<int64_t>(1, in ? before.fadeIn : before.fadeOut) * (in ? 1 : -1);
+        auto dy = -(pointer.y - anchor.y) / (geometry.clipBottom - 1 - geometry.fadeInY);
+        session.edit("Fade point",
+                     [&](auto &d)
+                     {
+                         if (auto *layer = findLayer(d, before.id))
+                             moveFadePoint(*layer, before, in, hit.point, {dx * fine, dy * fine});
+                     });
+        feedback = "Fade point / Option-click: remove";
+        repaint();
+        return;
+    }
     auto delta = captured.delta((pointer.x - anchor.x) * (modifiers.isCtrlDown() ? .1f : 1.f), rate) +
                  (int64_t)std::llround((viewport.startSeconds - captured.startSeconds) * rate);
     auto snap = snapping;
@@ -554,6 +711,7 @@ void DesignerCanvas::focusLost(FocusChangeType)
 }
 void DesignerCanvas::mouseMove(const juce::MouseEvent &event)
 {
+    modifiers = event.mods;
     pointer = event.position;
     updateHover(pointer);
 }
@@ -568,7 +726,7 @@ void DesignerCanvas::mouseExit(const juce::MouseEvent &)
 }
 void DesignerCanvas::updateHover(juce::Point<float> point)
 {
-    hover = canvasHitTest(session.document, viewport, point.x, point.y);
+    hover = canvasHitTest(session.document, viewport, point.x, point.y, modifiers.isShiftDown());
     auto cursor = juce::MouseCursor::NormalCursor;
     if (hover.target == CanvasTarget::trimIn || hover.target == CanvasTarget::trimOut ||
         hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut ||
@@ -578,6 +736,8 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
         cursor = juce::MouseCursor::UpDownResizeCursor;
     if (hover.target == CanvasTarget::body || hover.target == CanvasTarget::header)
         cursor = juce::MouseCursor::DraggingHandCursor;
+    if (hover.target == CanvasTarget::fadeInPoint || hover.target == CanvasTarget::fadeOutPoint)
+        cursor = juce::MouseCursor::CrosshairCursor;
     setMouseCursor(cursor);
     if (!pointerDown)
     {
@@ -586,11 +746,14 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
         {
             auto &layer = session.document.activeMix().layers[(size_t)hover.row];
             if (hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut)
-                feedback = (hover.target == CanvasTarget::fadeIn ? "Fade in  " : "Fade out  ") +
-                           seconds(hover.target == CanvasTarget::fadeIn ? layer.fadeIn : layer.fadeOut,
-                                   session.document.sampleRate);
+                feedback = juce::String(hover.target == CanvasTarget::fadeIn ? "IN: " : "OUT: ") +
+                           fadeShapeName(hover.target == CanvasTarget::fadeIn ? layer.fadeInShape
+                                                                              : layer.fadeOutShape) +
+                           " / right-click: shape";
             else if (hover.target == CanvasTarget::gain)
                 feedback = juce::String(layer.gainDb, 2) + " dB; double-click resets";
+            else if (hover.target == CanvasTarget::fadeInPoint || hover.target == CanvasTarget::fadeOutPoint)
+                feedback = "Drag / Option: remove / Shift: OUT";
             else if (hover.target == CanvasTarget::sync)
                 feedback = "Source sync  " + seconds(layer.sync, layer.source.sampleRate);
         }
@@ -599,7 +762,56 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
 }
 void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
 {
-    auto target = canvasHitTest(session.document, viewport, event.x, event.y);
+    auto target = canvasHitTest(session.document, viewport, event.x, event.y, event.mods.isShiftDown());
+    if (target.target == CanvasTarget::fadeInPoint || target.target == CanvasTarget::fadeOutPoint)
+    {
+        cancelDrag();
+        return;
+    }
+    if ((target.target == CanvasTarget::fadeIn || target.target == CanvasTarget::fadeOut) && target.row >= 0)
+    {
+        auto id = session.document.activeMix().layers[(size_t)target.row].id;
+        cancelDrag();
+        chooseFadeShape(id, target.target == CanvasTarget::fadeIn, *this, {event.x - 4, event.y - 4, 8, 8});
+        return;
+    }
+    if (target.row >= 0 && event.x >= viewport.header)
+    {
+        auto layer = session.document.activeMix().layers[(size_t)target.row];
+        auto geometry = clipGeometry(layer, target.row, viewport, session.document.sampleRate);
+        std::optional<bool> fade;
+        float closest = 6;
+        for (bool in : {true, false})
+        {
+            auto path = layerFadePath(layer, geometry, in, session.document.sampleRate);
+            if (path.isEmpty())
+                continue;
+            juce::Point<float> nearest;
+            path.getNearestPoint(event.position, nearest);
+            auto distance = nearest.getDistanceFrom(event.position);
+            if (distance < closest ||
+                (event.mods.isShiftDown() && !in && distance < 6 && distance <= closest + .001f))
+            {
+                closest = distance;
+                fade = in;
+            }
+        }
+        if (fade)
+        {
+            cancelDrag();
+            auto point =
+                fadePointAt(layer, target.row, *fade, event.position, viewport, session.document.sampleRate);
+            clipSelection = true;
+            session.selectLayer(layer.id);
+            session.edit("Add fade point",
+                         [&](auto &d)
+                         {
+                             if (auto *edited = findLayer(d, layer.id))
+                                 addFadePoint(*edited, *fade, point);
+                         });
+            return;
+        }
+    }
     if (target.target == CanvasTarget::rowResize && target.row >= 0)
     {
         preferences.removeValue(heightKey(session.document.activeMix().layers[(size_t)target.row].id));

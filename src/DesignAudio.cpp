@@ -186,6 +186,8 @@ class Voice
     double designRate;
     juce::SmoothedValue<float> leftGain, rightGain;
     juce::SmoothedValue<double> inFrames, outFrames;
+    juce::SmoothedValue<double> inShapeMix, outShapeMix;
+    PreparedFade previousIn, previousOut, currentIn, currentOut;
     void gainTargets(bool initial)
     {
         float gain = juce::Decibels::decibelsToGain((float)layer.gainDb);
@@ -284,7 +286,8 @@ class Voice
   public:
     Voice(const DesignLayer &l, double rate)
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
-          rack(prepareRack(l.effects, rate)), designRate(rate)
+          rack(prepareRack(l.effects, rate)), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
+          previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
@@ -301,6 +304,10 @@ class Voice
         rightGain.reset(rate, .005);
         inFrames.reset(rate, .005);
         outFrames.reset(rate, .005);
+        inShapeMix.reset(rate, .005);
+        outShapeMix.reset(rate, .005);
+        inShapeMix.setCurrentAndTargetValue(1);
+        outShapeMix.setCurrentAndTargetValue(1);
         gainTargets(true);
         buildCoefficients();
     }
@@ -312,6 +319,7 @@ class Voice
             auto local = frame + n - layer.placement;
             auto left = leftGain.getNextValue(), right = rightGain.getNextValue();
             auto fadeIn = inFrames.getNextValue(), fadeOut = outFrames.getNextValue();
+            auto inBlend = inShapeMix.getNextValue(), outBlend = outShapeMix.getNextValue();
             if (local < 0 || local >= duration)
                 continue;
             double position = layer.reverse ? layer.region.endSample - 1 - local * ratio
@@ -320,9 +328,15 @@ class Voice
                 std::clamp(position, (double)layer.region.startSample, (double)(layer.region.endSample - 1));
             float envelope = 1;
             if (fadeIn > 0)
-                envelope *= std::min(1.0, (double)local / fadeIn);
+            {
+                auto progress = (double)local / fadeIn;
+                envelope *= juce::jmap(inBlend, previousIn.value(progress), currentIn.value(progress));
+            }
             if (fadeOut > 0)
-                envelope *= std::min(1.0, (double)(duration - local - 1) / fadeOut);
+            {
+                auto progress = (double)(duration - local - 1) / fadeOut;
+                envelope *= juce::jmap(outBlend, previousOut.value(progress), currentOut.value(progress));
+            }
             block.setSample(0, n, interpolated(0, position) * left * envelope);
             block.setSample(1, n, interpolated(1, position) * right * envelope);
         }
@@ -337,6 +351,21 @@ class Voice
     void update(const DesignLayer &updated)
     {
         bool rateChanged = layer.rate != updated.rate;
+        auto changeShape = [](FadeShape before, FadeShape after, const auto &oldPoints, const auto &newPoints,
+                              PreparedFade &previous, PreparedFade &current, auto &mix)
+        {
+            if (before != after || oldPoints != newPoints)
+            {
+                previous = current;
+                current.reset(after, newPoints);
+                mix.setCurrentAndTargetValue(0);
+                mix.setTargetValue(1);
+            }
+        };
+        changeShape(layer.fadeInShape, updated.fadeInShape, layer.fadeInPoints, updated.fadeInPoints,
+                    previousIn, currentIn, inShapeMix);
+        changeShape(layer.fadeOutShape, updated.fadeOutShape, layer.fadeOutPoints, updated.fadeOutPoints,
+                    previousOut, currentOut, outShapeMix);
         layer = updated;
         duration = layerDuration(layer, designRate);
         ratio = layer.source.sampleRate * layer.rate / designRate;

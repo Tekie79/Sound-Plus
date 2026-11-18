@@ -1,5 +1,6 @@
 #pragma once
 #include "DesignModel.h"
+#include <juce_graphics/juce_graphics.h>
 #include <set>
 namespace sp
 {
@@ -34,6 +35,8 @@ enum class CanvasTarget
     trimOut,
     fadeIn,
     fadeOut,
+    fadeInPoint,
+    fadeOutPoint,
     gain,
     sync,
     playhead
@@ -42,6 +45,7 @@ struct CanvasHit
 {
     CanvasTarget target = CanvasTarget::none;
     int row = -1;
+    int point = -1;
 };
 struct CanvasClipGeometry
 {
@@ -50,7 +54,15 @@ struct CanvasClipGeometry
     float fadeInY = 0, fadeOutY = 0;
 };
 CanvasClipGeometry clipGeometry(const DesignLayer &, int row, const TimelineViewport &, double rate);
-CanvasHit canvasHitTest(const DesignDocument &, const TimelineViewport &, float x, float y);
+CanvasHit canvasHitTest(const DesignDocument &, const TimelineViewport &, float x, float y,
+                        bool preferOut = false);
+juce::Point<float> fadePointPosition(const DesignLayer &, int row, bool in, int point,
+                                     const TimelineViewport &, double rate);
+FadePoint fadePointAt(const DesignLayer &, int row, bool in, juce::Point<float>, const TimelineViewport &,
+                      double rate);
+int addFadePoint(DesignLayer &, bool in, FadePoint);
+void moveFadePoint(DesignLayer &, const DesignLayer &before, bool in, int point, FadePoint delta);
+void removeFadePoint(DesignLayer &, bool in, int point);
 struct SnapSettings
 {
     bool enabled = true, grid = true, playhead = true, edges = true, sync = true;

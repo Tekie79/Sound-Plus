@@ -10,6 +10,7 @@
 #include "DesignSessionTests.h"
 #include "CanvasGestureTests.h"
 #include "TransportInteractionTests.h"
+#include "FadeTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -67,6 +68,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--designer-fades")
+        {
+            runFadeTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--selection-audition")
         {
             auto parent = juce::File(argv[2]);

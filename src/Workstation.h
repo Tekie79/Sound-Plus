@@ -28,7 +28,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     void resized() override
     {
         library.setCompact(designerActive);
-        bool both=designerActive && browserOpen;
+        bool both=designerActive && browserOpen;designer.setBrowserVisible(both);
         library.setVisible(!designerActive || both);designer.setVisible(designerActive);divider.setVisible(both);
         if(both){int width=std::clamp(browserWidth,260,std::max(260,getWidth()/3));library.setBounds(0,0,width,getHeight());divider.setBounds(width,0,6,getHeight());designer.setBounds(width+6,0,getWidth()-width-6,getHeight());}
         else {library.setBounds(getLocalBounds());designer.setBounds(getLocalBounds());}
