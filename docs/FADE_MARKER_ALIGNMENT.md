@@ -2,11 +2,13 @@
 
 ## Current behavior: fixed square corner controls
 
-Following the later UI clarification, the larger **13 × 13 logical point square controls** with mirrored diagonal lines are pinned inside the clip's top-left and top-right corners. Their position depends only on the clip bounds. Dragging a control changes the corresponding fade duration and moves the curve, while the control stays fixed. Curve endpoints continue to meet the top border. Interior curve-point editing and presets remain available. This replaces the moving endpoint-marker positioning described in the earlier pass below.
+Following the later UI clarification, the larger **13 × 13 logical point square controls** are pinned inside the clip's top-left and top-right corners. Each uses a bright accent half and a faded accent half, mirrored for IN/OUT, with no diagonal stroke. Their position depends only on the clip bounds. Dragging a control changes the corresponding fade duration and moves the curve, while the control stays fixed. Curve endpoints continue to meet the top border. Interior curve-point editing and presets remain available. This replaces the moving endpoint-marker positioning described in the earlier pass below.
 
 The native Release app was rebuilt and visually inspected on the supported Mac. The canvas suite passed **1,443 checks in 0.55 seconds**, including fixed bounds across zero/full/overlapping fades, the larger controls' lower hit area, and actual pointer drags that change fades without moving the icons or deselecting the clip. See [test log](verification/fade-square-corners-ctest.log) and [detailed results](verification/fade-square-corners-test-details.log). Rain glass design **r5697** was retained before rebuilding and reopened; subsequent user edits remain in the running session.
 
-![Square diagonal fade controls pinned to the clip corners](verification/fade-square-corners-native.jpg)
+The accent-only fill follow-up was rebuilt and inspected in the native app; the existing 1,443 canvas checks passed again. It changes painting only. The current working session was retained and reopened.
+
+![Accent-only fade controls pinned to the clip corners](verification/fade-square-accent-native.jpg)
 
 ## Earlier endpoint-alignment pass
 

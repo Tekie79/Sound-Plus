@@ -426,18 +426,21 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                                              radius * 2);
                     }
                 }
-                graphics.setColour(hover.target == target && hover.row == (int)row ? juce::Colours::white
-                                                                                   : accent);
+                auto markerInk =
+                    hover.target == target && hover.row == (int)row ? juce::Colours::white : accent;
                 auto handle = fadeHandleBounds(shape, in);
-                // A square with a mirrored diagonal distinguishes duration grips from curve points.
+                // Two accent tones show the fade direction without a diagonal stroke.
                 auto edge = [&](float u, float v)
                 {
                     return juce::Point<float>(handle.getX() + (in ? u : 1 - u) * handle.getWidth(),
                                               handle.getY() + v * handle.getHeight());
                 };
+                graphics.setColour(markerInk.withMultipliedAlpha(.25f));
                 graphics.fillRect(handle);
-                graphics.setColour(ui::background.withAlpha(.85f));
-                graphics.drawLine({edge(.18f, .82f), edge(.82f, .18f)}, 1.2f);
+                juce::Path fullLevel;
+                fullLevel.addTriangle(edge(0, 1), edge(1, 0), edge(1, 1));
+                graphics.setColour(markerInk);
+                graphics.fillPath(fullLevel);
             }
             juce::Path sync;
             sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,
