@@ -21,7 +21,8 @@ juce::String duration(double seconds)
 LibraryView::LibraryView(const juce::File &db, const juce::File &executable, bool enableAI,
                          const juce::File &modelDirectory)
     : library(db,enableAI ? executable : juce::File(),modelDirectory), audio(executable),
-      waveformCache(db.getParentDirectory().getChildFile("waveforms"))
+      waveformCache(db.getParentDirectory().getChildFile("waveforms")),
+      referenceWaveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
     look.setColour(juce::ResizableWindow::backgroundColourId, bg);
     look.setColour(juce::TextButton::buttonColourId, line);
@@ -43,9 +44,12 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     for (auto *c : std::initializer_list<juce::Component *>{
              &table, &sources, &search, &add, &rescan, &play, &restart, &output, &gain, &summary, &detail,
              &assetId, &transport, &status, &volumeLabel, &pauseIndex, &refresh, &waveform, &installAI,
-             &retryAI, &cancelInstall, &playMatch, &playWhole, &moments, &context, &rangeIn, &rangeOut,
-             &aiStatusLabel, &semanticCoverage, &inLabel, &outLabel})
+             &retryAI, &cancelInstall, &playMatch, &playWhole, &moments, &context,
+             &aiStatusLabel, &semanticCoverage,&previous,&next,&findSimilar,
+             &externalReference,&referenceWaveform,&referencePlay,&referenceSearch,&clearReference,
+             &addReference,&includeSource,&referenceTitle,&referenceStatus,&referenceUnits,&auditionChannels})
         addAndMakeVisible(c);
+    addAndMakeVisible(waveform.markInButton());addAndMakeVisible(waveform.markOutButton());
     for (auto *l : {&summary, &detail, &assetId, &transport, &status, &volumeLabel})
     {
         l->setColour(juce::Label::textColourId, muted);
@@ -54,23 +58,26 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     detail.setColour(juce::Label::textColourId, text);
     detail.setFont(juce::FontOptions(16.0f));
     transport.setColour(juce::Label::textColourId, amber);
-    search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search filenames and folders…"), muted);
+    transport.setVisible(false);
+    search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
     search.setTitle("Search library");
     search.setFont(juce::FontOptions(17.0f));
     search.setIndents(12, 10);
-    search.onTextChange = [this] { requestSearch(); };
+    search.onTextChange = [this] { similarMode=false;requestSearch(); };
     search.onReturnKey = [this] { library.semanticNow(); };
     search.addKeyListener(this);
     table.addKeyListener(this);
     sources.addKeyListener(this);
     waveform.addKeyListener(this);
+    referenceWaveform.addKeyListener(this);
     addKeyListener(this);
     add.setTitle("Add existing sound folders");
     add.onClick = [this] { chooseFolder(); };
     rescan.onClick = [this] { library.rescan(); };
     rescan.setTooltip("Reconcile all sources. Unchanged audio headers are reused.");
     play.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff334c61));
-    play.onClick = [this] { toggle(); };
+    play.setPrimary();
+    play.onClick = [this] {auto s=audio.status();if((bool)s["playing"] || (bool)s["pendingPlayback"])audio.stop();else playFromPlayhead();};
     restart.onClick = [this] { audio.restart(); };
     output.setTitle("Audio output device");
     output.setTextWhenNothingSelected(juce::String::fromUTF8("Starting audio…"));
@@ -112,14 +119,21 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     rangeIn.setTitle("Range start in seconds"); rangeOut.setTitle("Range end in seconds, exclusive");
     inLabel.setText("IN (seconds)",juce::dontSendNotification);
     outLabel.setText("OUT (seconds)",juce::dontSendNotification);
+    inLabel.setTooltip("IN, seconds");outLabel.setTooltip("OUT, seconds (exclusive)");
+    for(auto *label:{&inLabel,&outLabel})label->setFont(juce::FontOptions(12.0f));
     for (auto *editor : {&rangeIn,&rangeOut})
     {
         editor->setInputRestrictions(16,"0123456789.");
+        editor->setColour(juce::TextEditor::backgroundColourId,bg);
+        editor->setColour(juce::TextEditor::outlineColourId,juce::Colours::transparentBlack);
+        editor->setTooltip(editor->getTitle()+". Edit and press Return.");
+        editor->onEscapeKey=[this]{if(rangeEditor){rangeEditor->dismiss();waveform.grabKeyboardFocus();}};
         editor->onReturnKey = [this] {
             if (!selectedAsset || updatingRange) return;
             setRegion((int64_t)std::llround(rangeIn.getText().getDoubleValue()*selectedAsset->sampleRate),
                 (int64_t)std::llround(rangeOut.getText().getDoubleValue()*selectedAsset->sampleRate));
             matchMode = true; rangeEdited = true;
+            if(rangeEditor){rangeEditor->dismiss();waveform.grabKeyboardFocus();}
         };
     }
     moments.setTitle("Other matching moments"); moments.setTextWhenNothingSelected("Matching moments");
@@ -130,17 +144,83 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
         { auto match=selectedAsset->matches[(size_t)index]; setRegion(match.startSample,match.endSample,true); matchMode=true; rangeEdited=false; }
     };
     context.setTooltip("Adds 250 ms before and after the range, clamped to the recording. Stored match boundaries stay unchanged.");
+    context.setButtonText(juce::String::fromUTF8("±250 ms"));context.setTitle("Add 250 milliseconds of audition context");
     waveform.onRange = [this](int64_t first,int64_t last) { setRegion(first,last); matchMode=true; rangeEdited=true; };
+    waveform.onEditRange=[this]{showRangeEditor();};
     waveform.onSeek = [this](int64_t position) {
+        if(!selectedAsset)return;
+        waveform.setCursor(position);
+        auto state=audio.status();
+        if(state["id"].toString()!=selectedAsset->id || (!(bool)state["playing"] && !(bool)state["pendingPlayback"]))
+        {parkedCandidateSeek=position;return;}
         bool inside=matchMode && position>=regionStart && position<regionEnd;
         playSelected(inside,position);
     };
     playMatch.onClick = [this] { matchMode=true; playSelected(true); };
     playWhole.onClick = [this] { matchMode=false; waveform.showWhole(); playSelected(false); };
+    previous.onClick=[this]{navigate(-1);};next.onClick=[this]{navigate(1);};
+    findSimilar.onClick=[this]{useSelectionAsReference();};
+    externalReference.onClick=[this]{chooseReference();};
+    externalReference.setTooltip("Use a local audio file as a temporary search reference. You can also drop one file here.");
+    referencePlay.onClick=[this]{playReference();};
+    referenceSearch.onClick=[this]{submitReference(pinnedReference);};
+    clearReference.onClick=[this]{library.clearReference();similarMode=false;parkedReferenceSeek=-1;referenceDisplayed=0;referenceWaveKey.clear();referenceWaveRequest=referenceWaveformCache.cancel();referenceWaveApplied=referenceWaveRequest;referenceWaveform.setData({});requestSearch();};
+    addReference.onClick=[this]{library.addFolder(juce::File(pinnedReference.source.path).getParentDirectory());};
+    addReference.setTooltip("Add this reference's containing folder to the Library in place, including its other audio files. Using a reference alone never indexes it.");
+    includeSource.setTitle("Include the source recording in similar results");
+    includeSource.onClick=[this]{pinnedReference.includeSource=includeSource.getToggleState();submitReference(pinnedReference);};
+    referenceIn.setTitle("Reference IN seconds");referenceOut.setTitle("Reference OUT seconds, exclusive");
+    for(auto *editor:{&referenceIn,&referenceOut})
+    {
+        editor->setInputRestrictions(16,"0123456789.");
+        editor->onEscapeKey=[this]{if(rangeEditor){rangeEditor->dismiss();referenceWaveform.grabKeyboardFocus();}};
+        editor->onReturnKey=[this]{
+            if(updatingReference || pinnedReference.source.samples<=0)return;
+            auto first=(int64_t)std::llround(referenceIn.getText().getDoubleValue()*pinnedReference.source.sampleRate);
+            auto last=(int64_t)std::llround(referenceOut.getText().getDoubleValue()*pinnedReference.source.sampleRate);
+            pinnedReference.startSample=first;pinnedReference.endSample=last;submitReference(pinnedReference);
+            if(rangeEditor){rangeEditor->dismiss();referenceWaveform.grabKeyboardFocus();}
+        };
+    }
+    referenceWaveform.onRange=[this](int64_t first,int64_t last){
+        parkedReferenceSeek=-1;
+        referenceDraft=true;
+        pinnedReference.startSample=first;pinnedReference.endSample=last;updatingReference=true;
+        referenceIn.setText(juce::String(first/pinnedReference.source.sampleRate,6),juce::dontSendNotification);
+        referenceOut.setText(juce::String(last/pinnedReference.source.sampleRate,6),juce::dontSendNotification);updatingReference=false;
+    };
+    referenceWaveform.onSeek=[this](int64_t position){
+        referenceWaveform.setCursor(position);auto state=audio.status();
+        if(state["id"].toString()!="reference-"+pinnedReference.source.id || (!(bool)state["playing"] && !(bool)state["pendingPlayback"]))
+        {parkedReferenceSeek=position;return;}
+        playReference(position);
+    };
+    referenceWaveform.onEditRange=[this]{showRangeEditor(true);};
+    referenceUnits.setText("Reference range  |  Analysis: all-channel mono average",juce::dontSendNotification);
+    referenceUnits.setTooltip("Analysis averages every source channel. Opposite polarity can cancel. The Analysis Mix audition option uses the same average.");
+    for(auto *label:{&referenceTitle,&referenceStatus,&referenceUnits})
+    {label->setColour(juce::Label::textColourId,muted);label->setFont(juce::FontOptions(12.0f));}
+    referenceTitle.setColour(juce::Label::textColourId,text);
+    auditionChannels.setTitle("Audition channels");
+    auditionChannels.addItem("Analysis Mix (all channels)",1);auditionChannels.addItem("Channels 1 / 2",2);
+    for(int pair=1;pair<32;++pair)auditionChannels.addItem("Channels "+juce::String(pair*2+1)+" / "+juce::String(pair*2+2),pair+2);
+    auditionChannels.setSelectedId(1,juce::dontSendNotification);
+    auditionChannels.onChange=[this]{
+        auto state=audio.status();
+        if(((bool)state["playing"] || (bool)state["pendingPlayback"]) && playingPath.isNotEmpty())
+        {
+            playingSpec.positionSample=std::max(playingSpec.startSample,(int64_t)state["sourceSample"]);
+            if((bool)state["pendingPlayback"])playingSpec.positionSample=playingSpec.startSample;
+            if(playingSpec.endSample>0)playingSpec.positionSample=std::min(playingSpec.endSample-1,playingSpec.positionSample);
+            playingSpec.auditionPair=auditionChannels.getSelectedId()-2;
+            audio.playRegion(playingId,juce::File(playingPath),playingSpec);
+        }
+    };
+    auditionChannels.setTooltip("Analysis Mix reproduces the encoder's all-channel mono average; opposite polarity can cancel. Select a pair present in the recording to inspect original channels. Changing this switches the current audition.");
     installAI.onClick = [this] { installModelMenu(); };
     cancelInstall.onClick = [this] { library.cancelModelInstall(); };
     retryAI.onClick = [this] { library.retryAnalysis(); if (selectedAsset) waveformRequest=waveformCache.request(*selectedAsset); };
-    setSize(1200, 900);
+    setSize(1200, 1000);
     pauseIndex.onClick = [this] { library.pause(!library.snapshot().progress.pauseRequested); };
     refresh.onClick = [this] { requestSearch(); };
     library.setChangeCallback([this] { triggerAsyncUpdate(); });
@@ -190,54 +270,72 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
         bool semanticPending=snapshot.semantic.ready && search.getText().isNotEmpty() && snapshot.semanticCompletedRequest!=requested;
         g.setColour(text);
         g.setFont(juce::FontOptions(22.0f));
-        g.drawText(search.isEmpty() ? "A home for your sound library" : semanticPending ? "Searching sounds..." :
-                   snapshot.semantic.enabled && !snapshot.semantic.ready ? "No filename matches" : "No matching recordings", 270, 260,
+        int emptyY=table.getY()+65;
+        g.drawText(similarMode ? (snapshot.reference.loading ? "Analyzing reference..." : "No eligible alternatives") : search.isEmpty() ? "A home for your sound library" : semanticPending ? "Searching sounds..." :
+                   snapshot.semantic.enabled && !snapshot.semantic.ready ? "No filename matches" : "No matching recordings", 270, emptyY,
                    getWidth() - 310, 36, juce::Justification::centred);
         g.setColour(muted);
         g.setFont(juce::FontOptions(15.0f));
-        g.drawText(search.isEmpty() ? "Add a folder to discover and audition its recordings." : semanticPending ?
+        g.drawText(similarMode ? "Choose a different reference range, include the source, or change the source filter." : search.isEmpty() ? "Add a folder to discover and audition its recordings." : semanticPending ?
                        "Searching the recordings analyzed so far." : snapshot.semantic.ready && snapshot.semantic.coverage.pending>0 ?
                        "Sound analysis is incomplete. More recordings will become available." :
                        "Try a shorter filename or choose All recordings.",
-                   270, 305, getWidth() - 310, 30, juce::Justification::centred);
+                   270, emptyY+40, getWidth() - 310, 30, juce::Justification::centred);
     }
     if (benchmark && snapshot.request == requested)
         benchmark->painted(requested, (int)snapshot.results.size(), dispatchedMs, appliedMs);
 }
 void LibraryView::resized()
 {
-    add.setBounds(getWidth()-162,24,136,35);
-    rescan.setBounds(142,101,76,28);
+    add.setBounds(getWidth()-66,24,40,35);
+    externalReference.setBounds(getWidth()-114,24,40,35);
+    rescan.setBounds(176,101,34,28);
     summary.setBounds(264,50,getWidth()-450,24);
-    search.setBounds(264,103,getWidth()-464,44);
-    refresh.setBounds(getWidth()-186,103,158,44);
+    search.setBounds(264,103,getWidth()-340,44);
+    refresh.setBounds(getWidth()-64,103,36,44);
     semanticCoverage.setBounds(264,149,getWidth()-292,27);
-    pauseIndex.setBounds(16,140,204,28);
+    pauseIndex.setBounds(16,140,40,32);
     aiStatusLabel.setBounds(16,182,204,62);
-    installAI.setBounds(16,246,204,28); cancelInstall.setBounds(16,246,204,28);
-    retryAI.setBounds(16,281,204,28);
-    sources.setBounds(12,322,216,std::max(70,getHeight()-448));
-    table.setBounds(253,181,getWidth()-277,std::max(100,getHeight()-531));
+    installAI.setBounds(64,140,40,32); cancelInstall.setBounds(64,140,40,32);
+    retryAI.setBounds(112,140,40,32);
+    sources.setBounds(12,270,216,std::max(70,getHeight()-396));
+    bool hasReference=snapshot.reference.present;
+    for(auto *c:std::initializer_list<juce::Component *>{&referenceTitle,&referenceStatus,&referenceUnits,
+        &referenceWaveform,&referencePlay,&referenceSearch,&clearReference,&includeSource})c->setVisible(hasReference);
+    addReference.setVisible(hasReference && pinnedReference.external);
+    referenceTitle.setBounds(264,182,getWidth()-480,26);
+    referencePlay.setBounds(getWidth()-142,184,32,30);addReference.setBounds(getWidth()-104,184,32,30);clearReference.setBounds(getWidth()-66,184,32,30);
+    referenceUnits.setBounds(264,211,getWidth()-304,20);
+    includeSource.setBounds(264,235,215,28);referenceSearch.setBounds(getWidth()-184,235,150,28);
+    referenceStatus.setBounds(264,265,getWidth()-300,23);
+    referenceWaveform.setBounds(264,290,getWidth()-292,72);
+    int tableTop=hasReference ? 373 : 181;
+    table.setBounds(253,tableTop,getWidth()-277,std::max(90,getHeight()-350-tableTop));
     int fixed=90+85+90+120+170;
     table.getHeader().setColumnWidth(1,std::max(200,table.getWidth()-fixed-18));
-    int y=getHeight()-320;
-    detail.setBounds(266,y,getWidth()-460,26);
-    play.setBounds(getWidth()-168,y,140,32);
-    assetId.setBounds(266,y+28,195,22);
-    moments.setBounds(266,getHeight()-270,195,28);
-    inLabel.setBounds(473,getHeight()-289,70,18);
-    outLabel.setBounds(552,getHeight()-289,70,18);
-    rangeIn.setBounds(475,getHeight()-270,70,28);
-    rangeOut.setBounds(554,getHeight()-270,70,28);
-    context.setBounds(635,getHeight()-270,150,28);
-    playMatch.setBounds(getWidth()-286,getHeight()-270,126,28);
-    playWhole.setBounds(getWidth()-150,getHeight()-270,122,28);
-    waveform.setBounds(264,getHeight()-232,getWidth()-292,99);
-    transport.setBounds(266,getHeight()-128,getWidth()-300,24);
-    volumeLabel.setBounds(266,getHeight()-82,48,25);
-    gain.setBounds(312,getHeight()-82,175,25);
-    output.setBounds(510,getHeight()-82,230,28);
-    restart.setBounds(755,getHeight()-82,150,28);
+    int y=getHeight()-320,left=264,right=getWidth()-28,centre=(left+right)/2;
+    detail.setBounds(left,y,right-left-365,26);
+    findSimilar.setBounds(right-148,y,148,32);
+    moments.setBounds(right-350,y+2,190,28);
+    assetId.setBounds(left,y+28,right-left,20);
+    waveform.setBounds(left,getHeight()-268,right-left,126);
+    // One centered transport strip, independent of the filename and editing tools.
+    int controlsY=getHeight()-132;
+    playWhole.setBounds(centre-110,controlsY+4,32,32);
+    previous.setBounds(centre-66,controlsY+4,32,32);
+    play.setBounds(centre-20,controlsY,40,40);
+    next.setBounds(centre+34,controlsY+4,32,32);
+    playMatch.setBounds(centre+78,controlsY+4,32,32);
+    waveform.markInButton().setBounds(centre-150,controlsY+6,28,28);
+    waveform.markOutButton().setBounds(centre+122,controlsY+6,28,28);
+    context.setBounds(right-109,controlsY+7,109,26);
+    transport.setBounds(left,getHeight()-88,right-left,20);
+    transport.setJustificationType(juce::Justification::centred);
+    volumeLabel.setBounds(left,getHeight()-60,48,25);
+    gain.setBounds(left+48,getHeight()-60,170,25);
+    output.setBounds(left+240,getHeight()-60,225,26);
+    auditionChannels.setBounds(left+479,getHeight()-60,right-left-529,26);
+    restart.setBounds(right-36,getHeight()-60,36,26);
     status.setBounds(264,getHeight()-30,getWidth()-290,25);
 }
 const Asset *LibraryView::rowAsset(int row) const
@@ -363,7 +461,9 @@ void LibraryView::selectedRowsChanged(int)
         library.prioritizeAnalysis(a->id);
         if (newFile)
         {
+            playbackError.clear();
             rangeAssetId=a->id; rangeRevision=a->revision; rangeSamples=a->samples;
+            waveform.setData({});
             waveformRequest=waveformCache.request(*a); waveformApplied=0;
         }
         if (newRange)
@@ -444,12 +544,14 @@ void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &)
 }
 void LibraryView::requestSearch()
 {
+    navigationToPlay=-1;
     requestedPage = -1;
     dispatchedMs = monotonicMs();
-    requested = library.search(search.getText(), rootFilter);
+    requested = similarMode ? library.findSimilar(pinnedReference,rootFilter) : library.search(search.getText(), rootFilter);
 }
 uint64_t LibraryView::benchmarkSearch(const juce::String &q, const juce::String &root)
 {
+    similarMode=false;
     search.setText(q, juce::dontSendNotification);
     rootFilter = root;
     requestSearch();
@@ -475,10 +577,20 @@ bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
             table.selectRow(0);
         return true;
     }
-    if (key.isKeyCode(juce::KeyPress::spaceKey) && !search.hasKeyboardFocus(true) &&
-        !rangeIn.hasKeyboardFocus(true) && !rangeOut.hasKeyboardFocus(true))
+    bool editing=search.hasKeyboardFocus(true) || rangeIn.hasKeyboardFocus(true) || rangeOut.hasKeyboardFocus(true) ||
+        referenceIn.hasKeyboardFocus(true) || referenceOut.hasKeyboardFocus(true);
+    if(!editing && key.getModifiers().isCommandDown() && (key.isKeyCode('E') || key.isKeyCode('e')))
+    {showRangeEditor(referenceWaveform.hasKeyboardFocus(true));return true;}
+    if(!editing && !key.getModifiers().isCommandDown() && !key.getModifiers().isCtrlDown() && !key.getModifiers().isAltDown())
     {
-        toggle();
+        auto c=key.getTextCharacter();bool in=c=='i' || c=='I',out=c=='o' || c=='O';
+        if(in || out){(referenceWaveform.hasKeyboardFocus(true) ? referenceWaveform : waveform).markAtCursor(in);return true;}
+    }
+    if (key.isKeyCode(juce::KeyPress::spaceKey) && !search.hasKeyboardFocus(true) &&
+        !rangeIn.hasKeyboardFocus(true) && !rangeOut.hasKeyboardFocus(true) &&
+        !referenceIn.hasKeyboardFocus(true) && !referenceOut.hasKeyboardFocus(true))
+    {
+        if(referenceWaveform.hasKeyboardFocus(true))playReference();else toggle();
         return true;
     }
     return false;
@@ -501,6 +613,7 @@ void LibraryView::chooseFolder()
 void LibraryView::setRegion(int64_t start, int64_t end, bool zoom)
 {
     if (!selectedAsset || selectedAsset->samples<=0) return;
+    parkedCandidateSeek=-1;
     regionStart=std::clamp<int64_t>(start,0,selectedAsset->samples-1);
     regionEnd=std::clamp<int64_t>(end,regionStart+1,selectedAsset->samples);
     waveform.setRange(regionStart,regionEnd,zoom);
@@ -513,6 +626,21 @@ void LibraryView::setRegion(int64_t start, int64_t end, bool zoom)
     moments.setTextWhenNothingSelected(selectedAsset->matches.empty() ? "Whole recording" : "Custom range");
     moments.setSelectedId(moment,juce::dontSendNotification);
     updatingRange=false;
+}
+void LibraryView::showRangeEditor(bool forReference)
+{
+    if(forReference ? !snapshot.reference.present || pinnedReference.source.samples<=0 : !selectedAsset || selectedAsset->samples<=0)return;
+    if(rangeEditor){rangeEditor->toFront(true);return;}
+    auto &first=forReference ? referenceIn : rangeIn;auto &last=forReference ? referenceOut : rangeOut;
+    auto rate=forReference ? pinnedReference.source.sampleRate : selectedAsset->sampleRate;
+    first.setText(juce::String((forReference ? pinnedReference.startSample : regionStart)/rate,6),juce::dontSendNotification);
+    last.setText(juce::String((forReference ? pinnedReference.endSample : regionEnd)/rate,6),juce::dontSendNotification);
+    auto content=std::make_unique<juce::Component>();content->setSize(246,78);
+    for(auto *c:std::initializer_list<juce::Component *>{&inLabel,&outLabel,&first,&last})content->addAndMakeVisible(c);
+    inLabel.setBounds(12,6,105,20);outLabel.setBounds(129,6,105,20);
+    first.setBounds(12,30,105,30);last.setBounds(129,30,105,30);
+    rangeEditor=&juce::CallOutBox::launchAsynchronously(std::move(content),(forReference ? referenceWaveform : waveform).getBounds(),this);
+    first.grabKeyboardFocus();first.selectAll();
 }
 void LibraryView::installModelMenu()
 {
@@ -539,35 +667,46 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     for (auto &root : snapshot.roots) if (root.id==a->rootId)
     { online &= root.online; path=juce::File(root.path).getChildFile(a->relative).getFullPathName(); }
     if (!online)
-    { transport.setText("Offline recording - reconnect its source folder to audition.",juce::dontSendNotification); return; }
+    { playbackError="Offline recording - reconnect its source folder to audition.";return; }
+    playbackError.clear();parkedCandidateSeek=-1;
     PlaybackRegion region;
+    region.auditionPair=auditionChannels.getSelectedId()-2;
     region.size=a->size; region.modified=a->modified; region.inode=a->inode; region.revision=a->revision;
     if (useMatch && a->samples>0 && rangeAssetId==a->id && rangeRevision==a->revision && regionEnd>regionStart)
     {
         auto roll=context.getToggleState() ? (int64_t)std::llround(a->sampleRate*0.25) : 0;
         region.startSample=std::max<int64_t>(0,regionStart-roll);
         region.endSample=std::min(a->samples,regionEnd+roll);
-        playingRange=duration(region.startSample/a->sampleRate)+" - "+duration(region.endSample/a->sampleRate);
     }
-    else { region.startSample=0; region.endSample=-1; playingRange="Whole file"; }
+    else { region.startSample=0; region.endSample=a->samples>0 ? a->samples : -1; }
     if (seek>=0)
     {
         region.positionSample=std::max(region.startSample,seek);
         if (region.endSample>0) region.positionSample=std::min(region.endSample-1,region.positionSample);
     }
-    playingName=a->name; playingId=a->id;
+    playingId=a->id;
+    playingPath=path;playingSpec=region;
     audio.playRegion(a->id,juce::File(path),region);
+}
+void LibraryView::playFromPlayhead()
+{
+    auto position=parkedCandidateSeek;
+    bool useMatch=matchMode && (position<0 || (position>=regionStart && position<regionEnd));
+    playSelected(useMatch,position);
 }
 void LibraryView::toggle()
 {
     auto state=audio.status(); bool running=(bool)state["playing"] || (bool)state["pendingPlayback"];
     const auto *a=selected();
     if (running && (!a || state["id"].toString()==a->id)) { audio.stop(); return; }
-    playSelected(matchMode);
+    playFromPlayhead();
 }
 void LibraryView::timerCallback()
 {
     auto next = library.snapshot();
+    bool referenceVisibilityChanged=next.reference.present!=snapshot.reference.present;
+    snapshot.reference=next.reference;updateReference(next.reference);
+    if(referenceVisibilityChanged)resized();
     snapshot.semantic=next.semantic;
     // Progress changes independently of the stable result page (including a fully drained pause).
     snapshot.progress=next.progress;
@@ -575,7 +714,7 @@ void LibraryView::timerCallback()
     const auto &ai=next.semantic;
     aiStatusLabel.setText(ai.enabled ? ai.status : "Local AI disabled for this session",juce::dontSendNotification);
     aiStatusLabel.setTooltip(ai.error+"\nModel: "+ai.model+"\nPreprocessing: "+ai.preprocessing+
-        "\nPaired CLAP · 512 dimensions · cosine ranking · native CPU inference");
+        "\nPaired CLAP · 512 dimensions · cosine ranking · native CPU inference\n"+ai.indexStatus);
     installAI.setVisible(!ai.installing); cancelInstall.setVisible(ai.installing);
     installAI.setButtonText(ai.ready ? "AI Model Installed" : "Install AI Model");
     installAI.setEnabled(ai.enabled && localAiSupported() && !ai.ready && !ai.installing);
@@ -587,7 +726,8 @@ void LibraryView::timerCallback()
         semanticCoverage.setText("Sound search: "+juce::String(ai.coverage.complete)+" / "+juce::String(ai.coverage.total)+
             " analyzed · "+juce::String(ai.coverage.regions)+" regions · "+juce::String(ai.coverage.pending)+
             " pending · "+juce::String(ai.coverage.failed)+" failed"+
-            (ai.coverage.pending>0 ? " — partial coverage" : ""),juce::dontSendNotification);
+            (ai.coverage.pending>0 ? " — partial coverage" : "")+
+            (ai.indexBuilding ? " | Preparing sound index; search stays available" : ""),juce::dontSendNotification);
     else
         semanticCoverage.setText(ai.enabled ? "Filename search is ready while local AI is unavailable or loading." :
             "Filename search",juce::dontSendNotification);
@@ -682,28 +822,34 @@ void LibraryView::timerCallback()
     library.setAuditionActive(isPlaying || pending);
     play.setButtonText(isPlaying || pending ? "Stop  [Space]" : "Play  [Space]");
     bool canPlay=selectedAsset.has_value();
+    previous.setEnabled(snapshot.total>0);this->next.setEnabled(snapshot.total>0);
+    findSimilar.setEnabled(canPlay && ai.ready && selectedAsset->samples>0 && selectedAsset->state=="ready");
     if (selectedAsset)
         for (auto &root : snapshot.roots) if (root.id==selectedAsset->rootId) canPlay &= root.online && selectedAsset->online;
+    play.setEnabled(canPlay || isPlaying || pending);
     playMatch.setEnabled(canPlay && regionEnd>regionStart && selectedAsset->samples>0);
     playWhole.setEnabled(canPlay);
+    if(navigationToPlay>=0)
+        if(auto *a=rowAsset(navigationToPlay);a && selectedId==a->id){navigationToPlay=-1;playSelected(matchMode);}
+    auto referenceId="reference-"+pinnedReference.source.id;
+    referencePlay.setButtonText(state["id"].toString()==referenceId && (isPlaying || pending) ? "Stop reference" : "Play reference");
+    if(isPlaying && state["id"].toString()==referenceId)referenceWaveform.setCursor((int64_t)state["sourceSample"]);
+    if(auto data=referenceWaveformCache.snapshot();data && data->generation==referenceWaveRequest && referenceWaveApplied!=referenceWaveRequest)
+    {
+        referenceWaveApplied=referenceWaveRequest;referenceWaveform.setData(data);
+        referenceWaveform.setRange(pinnedReference.startSample,pinnedReference.endSample,true);
+    }
     if (auto data=waveformCache.snapshot(); data && data->generation==waveformRequest && waveformApplied!=waveformRequest)
     {
         waveformApplied=waveformRequest; waveform.setData(data);
         waveform.setRange(regionStart,regionEnd,waveformNeedsZoom); waveformNeedsZoom=false;
     }
-    waveform.setCursor(isPlaying && selectedAsset && state["id"].toString()==selectedAsset->id ?
-        (int64_t)state["sourceSample"] : -1);
+    if(isPlaying && selectedAsset && state["id"].toString()==selectedAsset->id)
+        waveform.setCursor((int64_t)state["sourceSample"]);
     auto err = state["error"].toString();
-    if (pending)
-        transport.setText("Preparing "+playingName+" · "+playingRange,juce::dontSendNotification);
-    else if (err.isNotEmpty())
-        transport.setText(err, juce::dontSendNotification);
-    else if (isPlaying)
-        transport.setText("Playing  " + playingName + " · "+playingRange+"   " + duration((double)state["seconds"]) +
-                              juce::String::fromUTF8("   •   ") + state["device"].toString(),
-                          juce::dontSendNotification);
-    else if (playingId.isNotEmpty())
-        transport.setText(juce::String::fromUTF8("Stopped  •  ") + playingName, juce::dontSendNotification);
+    if(err.isEmpty())err=playbackError;
+    transport.setText(err,juce::dontSendNotification);
+    transport.setVisible(err.isNotEmpty());
     updating = true;
     if (auto *options = state["outputs"].getArray())
     {
@@ -721,5 +867,88 @@ void LibraryView::timerCallback()
         output.setText(state["device"].toString(), juce::dontSendNotification);
     }
     updating = false;
+}
+bool LibraryView::isInterestedInFileDrag(const juce::StringArray &files)
+{return files.size()==1 && supportedExtension(juce::File(files[0]));}
+void LibraryView::filesDropped(const juce::StringArray &files,int,int)
+{if(isInterestedInFileDrag(files)){AudioReference ref;ref.source.path=files[0];ref.external=true;submitReference(ref);}}
+void LibraryView::chooseReference()
+{
+    referenceChooser=std::make_unique<juce::FileChooser>("Choose a temporary audio reference",juce::File(),"*.wav;*.aif;*.aiff;*.flac;*.mp3;*.m4a;*.caf;*.ogg",true);
+    juce::Component::SafePointer<LibraryView> safe(this);
+    referenceChooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectFiles,
+        [safe](const juce::FileChooser &choice){if(safe && choice.getResult()!=juce::File()){AudioReference ref;ref.source.path=choice.getResult().getFullPathName();ref.external=true;safe->submitReference(ref);}});
+}
+void LibraryView::useSelectionAsReference()
+{
+    const auto *asset=selected();if(!asset && selectedAsset)asset=&*selectedAsset;if(!asset)return;
+    AudioReference ref;ref.source=*asset;
+    ref.startSample=rangeAssetId==asset->id ? regionStart : 0;
+    ref.endSample=rangeAssetId==asset->id ? regionEnd : asset->samples;
+    ref.includeSource=includeSource.getToggleState();submitReference(ref);
+}
+void LibraryView::submitReference(const AudioReference &ref)
+{
+    if(ref.source.id!=pinnedReference.source.id || ref.source.revision!=pinnedReference.source.revision ||
+       ref.source.path!=pinnedReference.source.path || ref.startSample!=pinnedReference.startSample || ref.endSample!=pinnedReference.endSample)
+        parkedReferenceSeek=-1;
+    if(ref.source.path!=pinnedReference.source.path)
+    {referenceWaveKey.clear();referenceWaveRequest=referenceWaveformCache.cancel();referenceWaveApplied=referenceWaveRequest;referenceWaveform.setData({});}
+    pinnedReference=ref;similarMode=true;referenceDraft=false;navigationToPlay=-1;requestedPage=-1;
+    search.setText({},juce::dontSendNotification);dispatchedMs=monotonicMs();requested=library.findSimilar(ref,rootFilter);
+}
+void LibraryView::playReference(int64_t seek)
+{
+    if(!snapshot.reference.present || pinnedReference.source.samples<=0)return;
+    const auto &a=pinnedReference.source;auto id="reference-"+a.id;auto s=audio.status();
+    if(seek<0 && s["id"].toString()==id && ((bool)s["playing"] || (bool)s["pendingPlayback"])) {audio.stop();return;}
+    if(seek<0)seek=parkedReferenceSeek;
+    parkedReferenceSeek=-1;playbackError.clear();
+    PlaybackRegion region;region.size=a.size;region.modified=a.modified;region.inode=a.inode;region.revision=a.revision;
+    region.startSample=pinnedReference.startSample;region.endSample=pinnedReference.endSample;
+    region.positionSample=seek>=region.startSample && seek<region.endSample ? seek : region.startSample;
+    region.auditionPair=auditionChannels.getSelectedId()-2;
+    playingId=id;
+    playingPath=a.path;playingSpec=region;
+    audio.playRegion(id,juce::File(a.path),region);
+}
+void LibraryView::navigate(int direction)
+{
+    if(snapshot.total<=0)return;
+    int target=juce::jlimit(0,snapshot.total-1,table.getSelectedRow()+direction);
+    navigationToPlay=target;table.selectRow(target);requestPageForRow(target);
+}
+void LibraryView::updateReference(const ReferenceState &state)
+{
+    if(!state.present)return;
+    addReference.setVisible(state.reference.external);
+    const auto &ref=state.reference;const auto &a=ref.source;
+    if(referenceDisplayed!=state.generation || referenceDisplayedSamples!=a.samples)
+    {
+        pinnedReference=ref;referenceDisplayed=state.generation;referenceDisplayedSamples=a.samples;updatingReference=true;
+        referenceIn.setText(a.sampleRate>0 ? juce::String(ref.startSample/a.sampleRate,6) : "0",juce::dontSendNotification);
+        referenceOut.setText(a.sampleRate>0 && ref.endSample>=0 ? juce::String(ref.endSample/a.sampleRate,6) : "",juce::dontSendNotification);
+        includeSource.setToggleState(ref.includeSource,juce::dontSendNotification);updatingReference=false;
+        referenceWaveform.setRange(ref.startSample,ref.endSample,true);
+    }
+    auto name=a.name.isNotEmpty() ? a.name : juce::File(a.path).getFileName();
+    if(!pinnedReference.external)
+        for(const auto &root:snapshot.roots)if(root.id==pinnedReference.source.rootId)
+            pinnedReference.source.path=juce::File(root.path).getChildFile(pinnedReference.source.relative).getFullPathName();
+    referenceTitle.setText("REFERENCE  |  "+name+(ref.external ? "  |  Temporary; + adds its containing folder" : "  |  Indexed recording"),juce::dontSendNotification);
+    referenceTitle.setTooltip(a.path+"\nOriginal samples ["+juce::String(ref.startSample)+", "+juce::String(ref.endSample)+") at "+juce::String(a.sampleRate)+" Hz");
+    if(pinnedReference.source.sampleRate>0)
+        referenceUnits.setText("[ "+juce::String(pinnedReference.startSample/pinnedReference.source.sampleRate,6)+
+            juce::String::fromUTF8(" → ")+juce::String(pinnedReference.endSample/pinnedReference.source.sampleRate,6)+
+            " ] s  |  All-channel analysis",juce::dontSendNotification);
+    referenceStatus.setText(referenceDraft ? "Range edited - click Find Similar to update candidates" : state.error.isNotEmpty() ? state.error : state.status,juce::dontSendNotification);
+    referenceStatus.setColour(juce::Label::textColourId,state.error.isNotEmpty() ? amber : muted);
+    referenceStatus.setTooltip(state.error+"\nLong selections use up to twelve short windows spread across the chosen range. Silent windows are skipped. Narrow the range to isolate one event; use Analysis Mix to hear the encoder's channel mix.");
+    referencePlay.setEnabled(a.samples>0 && ref.startSample>=0 && ref.endSample>ref.startSample && ref.endSample<=a.samples);
+    referenceSearch.setEnabled(snapshot.semantic.ready && a.samples>0);
+    addReference.setEnabled(ref.external && a.samples>0 && state.error.isEmpty());
+    auto key=a.id+":"+juce::String(a.revision)+":"+juce::String(a.modified)+":"+juce::String(a.inode);
+    if(a.samples>0 && key!=referenceWaveKey)
+    {referenceWaveKey=key;referenceWaveRequest=referenceWaveformCache.request(a);referenceWaveApplied=0;}
 }
 } // namespace sp

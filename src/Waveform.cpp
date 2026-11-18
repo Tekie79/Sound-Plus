@@ -9,6 +9,7 @@ uint64_t WaveformCache::request(const Asset &a)
 {
     std::lock_guard lock(mutex); auto id = ++generation; pending = a; wake.notify_all(); return id;
 }
+uint64_t WaveformCache::cancel(){std::lock_guard lock(mutex);pending.reset();auto id=++generation;wake.notify_all();return id;}
 std::shared_ptr<const WaveformData> WaveformCache::snapshot() { std::lock_guard lock(mutex); return result; }
 void WaveformCache::run()
 {
@@ -96,17 +97,30 @@ void WaveformCache::run()
         if (generation==token && !stopping) result=std::move(data);
     }
 }
+std::pair<int64_t,int64_t> markRangeAtPlayhead(int64_t first,int64_t last,int64_t cursor,int64_t total,bool markIn)
+{
+    if(total<=0)return {0,0};
+    first=std::clamp<int64_t>(first,0,total-1);last=std::clamp<int64_t>(last,first+1,total);
+    if(markIn){first=std::clamp<int64_t>(cursor,0,total-1);if(first>=last)last=total;}
+    else {last=std::clamp<int64_t>(cursor,1,total);if(last<=first)first=0;}
+    return {first,last};
+}
 WaveformView::WaveformView()
 {
-    setTitle("Recording waveform. Click to seek; drag to select a range."); setWantsKeyboardFocus(true);
-    addAndMakeVisible(zoom); addAndMakeVisible(all);
+    setTitle("Recording waveform. Click to seek; drag brackets to trim; I marks IN, O marks OUT. Right-click for exact range."); setWantsKeyboardFocus(true);
+    addAndMakeVisible(zoom); addAndMakeVisible(all);addAndMakeVisible(in);addAndMakeVisible(out);
     zoom.onClick=[this] { zoomRange(); }; all.onClick=[this] { showWhole(); };
+    in.onClick=[this]{markAtCursor(true);grabKeyboardFocus();};out.onClick=[this]{markAtCursor(false);grabKeyboardFocus();};
+    in.setTooltip("Set IN at playhead (I)");out.setTooltip("Set OUT at playhead, exclusive (O)");
+    setData({});
 }
 void WaveformView::setData(std::shared_ptr<const WaveformData> value)
 {
     bool different = !waveform || !value || waveform->assetId!=value->assetId || waveform->revision!=value->revision;
     waveform=std::move(value);
-    if (different) showWhole();
+    if (different) {cursor=0;showWhole();}
+    bool available=waveform && !waveform->peaks.empty();
+    for(auto *button:{&zoom,&all,&in,&out})button->setEnabled(available);
     repaint();
 }
 void WaveformView::setRange(int64_t start, int64_t end, bool zoomIn)
@@ -114,6 +128,13 @@ void WaveformView::setRange(int64_t start, int64_t end, bool zoomIn)
     first=start; last=end; if (zoomIn) zoomRange(); repaint();
 }
 void WaveformView::setCursor(int64_t sample) { if (cursor!=sample) { cursor=sample; repaint(); } }
+void WaveformView::markAtCursor(bool markIn)
+{
+    if(!waveform || waveform->samples<=0 || waveform->peaks.empty())return;
+    auto range=markRangeAtPlayhead(first,last,cursorSample(),waveform->samples,markIn);
+    first=range.first;last=range.second;
+    if(onRange)onRange(first,last);repaint();
+}
 void WaveformView::showWhole() { viewFirst=0; viewLast=waveform ? std::max<int64_t>(1,waveform->samples) : 1; repaint(); }
 void WaveformView::zoomRange()
 {
@@ -128,10 +149,11 @@ int64_t WaveformView::sampleAt(float x) const
         0,waveform ? std::max<int64_t>(0,waveform->samples-1) : 0);
 }
 float WaveformView::xAt(int64_t sample) const { return (float)((double)(sample-viewFirst)*getWidth()/std::max<int64_t>(1,viewLast-viewFirst)); }
-void WaveformView::resized() { zoom.setBounds(getWidth()-183,2,100,23); all.setBounds(getWidth()-77,2,75,23); }
+void WaveformView::resized()
+{if(in.getParentComponent()==this){in.setBounds(4,1,28,25);out.setBounds(36,1,28,25);}zoom.setBounds(getWidth()-65,2,28,23);all.setBounds(getWidth()-33,2,28,23);}
 void WaveformView::paint(juce::Graphics &g)
 {
-    g.fillAll(juce::Colour(0xff171d25));
+    g.fillAll(juce::Colour(0xff151b22));
     auto area=getLocalBounds().toFloat(); area.removeFromTop(28); area.removeFromBottom(14);
     if (!waveform || waveform->peaks.empty())
     {
@@ -154,16 +176,22 @@ void WaveformView::paint(juce::Graphics &g)
     }
     g.setColour(juce::Colour(0xff77bfff));
     for (auto sample : {first,last}) if (sample>=viewFirst && sample<=viewLast) g.fillRect(xAt(sample)-1,area.getY(),2.0f,area.getHeight());
+    // Bracket handles stay inside the view at the first and final source samples.
+    g.setFont(juce::FontOptions(22.0f));
+    if(first>=viewFirst && first<=viewLast)g.drawText("[",juce::Rectangle<float>(std::clamp(xAt(first)-7,0.0f,std::max(0.0f,getWidth()-14.0f)),25,14,24),juce::Justification::centred);
+    if(last>=viewFirst && last<=viewLast)g.drawText("]",juce::Rectangle<float>(std::clamp(xAt(last)-7,0.0f,std::max(0.0f,getWidth()-14.0f)),25,14,24),juce::Justification::centred);
     if (cursor>=viewFirst && cursor<=viewLast)
-    { g.setColour(juce::Colour(0xffffc384)); g.fillRect(xAt(cursor),area.getY(),1.5f,area.getHeight()); }
+    {g.setColour(juce::Colour(0xffffc384));auto x=xAt(cursor);g.fillRect(x,area.getY(),1.5f,area.getHeight());g.fillPath([](float x){juce::Path p;p.addTriangle(x-4,27,x+4,27,x,32);return p;}(x));}
     g.setColour(juce::Colour(0xff9baabc)); g.setFont(juce::FontOptions(11.0f));
     g.drawText(juce::String(viewFirst/waveform->rate,2)+" s",2,getHeight()-14,100,14,juce::Justification::left);
     g.drawText(juce::String(viewLast/waveform->rate,2)+" s",getWidth()-102,getHeight()-14,100,14,juce::Justification::right);
-    g.drawText("Click to seek | Drag to set range",8,4,getWidth()-205,20,juce::Justification::left);
+    int readoutX=in.getParentComponent()==this ? 76 : 8;
+    g.drawText(juce::String(cursorSample()/waveform->rate,3)+" s",readoutX,4,getWidth()-readoutX-76,20,juce::Justification::left);
 }
 void WaveformView::mouseDown(const juce::MouseEvent &e)
 {
     if (!waveform || waveform->peaks.empty()) return;
+    if(e.mods.isPopupMenu()){if(onEditRange)onEditRange();return;}
     grabKeyboardFocus(); anchor=sampleAt(e.position.x); dragging=false;
     dragMode=std::abs(e.position.x-xAt(first))<8 ? 1 : std::abs(e.position.x-xAt(last))<8 ? 2 : 3;
 }
@@ -179,6 +207,7 @@ void WaveformView::mouseDrag(const juce::MouseEvent &e)
 void WaveformView::mouseUp(const juce::MouseEvent &e)
 {
     if (!waveform || waveform->peaks.empty()) return;
-    if (!dragging && onSeek) onSeek(sampleAt(e.position.x));
+    if(e.mods.isPopupMenu())return;
+    if (!dragging) {setCursor(sampleAt(e.position.x));if(onSeek)onSeek(cursor);}
 }
 } // namespace sp

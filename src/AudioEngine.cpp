@@ -102,7 +102,7 @@ void AudioEngine::command(const juce::var &m)
             }
             auto first = (int64_t)m["startSample"], position = (int64_t)m["positionSample"];
             if (position >= 0) first = std::max(first,position);
-            core.open(file, deviceRate.load(),first,(int64_t)m["endSample"]);
+            core.open(file, deviceRate.load(),first,(int64_t)m["endSample"],(int)m["auditionPair"]);
             id = m["id"].toString();
             error.clear();
         }
@@ -165,6 +165,7 @@ void AudioEngine::sendStatus()
     o->setProperty("playGeneration",(juce::int64)playGeneration);
     o->setProperty("sourceSample",(juce::int64)core.sourceSample());
     o->setProperty("sourceRate",core.sourceRate());
+    o->setProperty("auditionPair",core.channelPair());
     o->setProperty("startSample",(juce::int64)core.startSample());
     o->setProperty("endSample",(juce::int64)core.endSample());
     o->setProperty("playing", core.playing());

@@ -66,6 +66,7 @@ uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, co
     o->setProperty("startSample",(juce::int64)region.startSample);
     o->setProperty("endSample",(juce::int64)region.endSample);
     o->setProperty("positionSample",(juce::int64)region.positionSample);
+    o->setProperty("auditionPair",region.auditionPair);
     o->setProperty("size",(juce::int64)region.size); o->setProperty("modified",(juce::int64)region.modified);
     o->setProperty("inode",(juce::int64)region.inode); o->setProperty("revision",(juce::int64)region.revision);
     enqueue(m);
@@ -100,9 +101,13 @@ juce::var AudioClient::status()
     auto copy = latest.clone();
     if (auto *object = copy.getDynamicObject())
     {
-        bool pending = desiredPlaying && (uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
+        bool awaitingCommand=(uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
+        bool pending = desiredPlaying && awaitingCommand;
         object->setProperty("pendingPlayback",pending);
         if (pending) { object->setProperty("id",desiredId); object->setProperty("playing",false); object->setProperty("error",juce::String()); }
+        // Stop intent is immediate, even before the audio process acknowledges it.
+        // A waveform click in this gap must not restart the previous audition.
+        if(awaitingCommand && !desiredPlaying)object->setProperty("playing",false);
     }
     return copy;
 }

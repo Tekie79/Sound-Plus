@@ -10,7 +10,7 @@ namespace sp
 class PcmStream
 {
   public:
-    PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1);
+    PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1, int auditionPair = 0);
     void fill(int budget = 16384);
     int read(float *const *output, int channels, int frames, float &gain, float targetGain) noexcept;
     double seconds() const
@@ -21,6 +21,7 @@ class PcmStream
     int64_t startSample() const { return sourceStart; }
     int64_t endSample() const { return sourceEnd; }
     double originalRate() const { return sourceRate; }
+    int channelPair() const { return pair; }
     bool ended() const
     {
         return eof.load() && readIndex.load() == writeIndex.load();
@@ -47,11 +48,12 @@ class PcmStream
     double rate = 48000, ratio = 1;
     int64_t sourceStart = 0, sourceEnd = 0;
     double sourceRate = 48000;
+    int pair = 0;
 };
 class AuditionCore
 {
   public:
-    void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1);
+    void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1, int auditionPair = 0);
     void stop();
     void service();
     void render(float *const *, int channels, int frames) noexcept;
@@ -72,6 +74,7 @@ class AuditionCore
     int64_t startSample() const { return stream ? stream->startSample() : 0; }
     int64_t endSample() const { return stream ? stream->endSample() : 0; }
     double sourceRate() const { return stream ? stream->originalRate() : 0; }
+    int channelPair() const { return stream ? stream->channelPair() : 0; }
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};
 
   private:

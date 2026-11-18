@@ -17,7 +17,7 @@ juce::var perform(const juce::var &request, std::unique_ptr<sp::ClapRuntime> &ru
     try
     {
         const auto command = request["command"].toString();
-        pthread_set_qos_class_self_np(command=="text" ? QOS_CLASS_USER_INITIATED : QOS_CLASS_UTILITY,0);
+        pthread_set_qos_class_self_np(command=="text" || (bool)request["interactive"] ? QOS_CLASS_USER_INITIATED : QOS_CLASS_UTILITY,0);
         if (command == "load")
         {
             auto began = sp::monotonicMs();
@@ -63,6 +63,7 @@ juce::var perform(const juce::var &request, std::unique_ptr<sp::ClapRuntime> &ru
             out->setProperty("embedding",values);
             out->setProperty("preprocessMs",runtime->lastPreprocessMs);
             out->setProperty("inferenceMs",runtime->lastInferenceMs);
+            out->setProperty("analysisRms",runtime->lastAnalysisRms);
         }
         out->setProperty("model",sp::modelId()); out->setProperty("preprocessing",sp::preprocessingId());
         out->setProperty("peakResidentBytes",sp::performance.json()["peakResidentBytes"]);

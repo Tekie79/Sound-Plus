@@ -15,7 +15,7 @@ class ClapRuntime
     std::vector<int64_t> tokenize(const juce::String &);
     // Testable preprocessing boundary, matching the pinned HF ClapFeatureExtractor.
     static std::vector<float> features(const std::vector<float> &mono48k);
-    double lastPreprocessMs = 0, lastInferenceMs = 0;
+    double lastPreprocessMs = 0, lastInferenceMs = 0, lastAnalysisRms = 0;
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;

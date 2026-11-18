@@ -31,16 +31,28 @@ void Benchmark::painted(uint64_t id, int rows, double sent, double applied)
         o->setProperty("dispatchToPaintMs",now-sent); o->setProperty("dispatchToAppliedMs",applied-sent);
         o->setProperty("request",(juce::int64)id); o->setProperty("debounceMs",0);
         o->setProperty("query",view.search.getText());
+        o->setProperty("sourceFilter",view.rootFilter);
         o->setProperty("analysisPending",view.snapshot.semantic.coverage.pending);
         o->setProperty("auditionActive",(bool)view.audio.status()["playing"]);
+        bool newRegionHit=false;
+        if(plan["updateFolder"].toString().isNotEmpty())
+            for(auto &a:view.snapshot.results)for(auto &r:view.snapshot.roots)
+                if(a.rootId==r.id && r.path==plan["updateFolder"].toString())newRegionHit=true;
+        o->setProperty("newRegionHit",newRegionHit);
         const auto &t=view.snapshot.semanticTiming;
         o->setProperty("textPreprocessMs",t.textPreprocessMs); o->setProperty("textEncodeMs",t.textEncodeMs);
         o->setProperty("workerRoundTripMs",t.workerRoundTripMs); o->setProperty("fetchFilterMs",t.fetchFilterMs);
         o->setProperty("vectorScoreMs",t.vectorScoreMs); o->setProperty("rankGroupMs",t.rankGroupMs);
         o->setProperty("fusionMs",t.fusionMs); o->setProperty("vectors",t.vectors); o->setProperty("textCacheHit",t.textCacheHit);
         o->setProperty("rows",rows);
+        const auto &reference=view.snapshot.reference;
+        o->setProperty("referenceEncodingMs",reference.encodingMs);o->setProperty("referenceRetrievalMs",reference.retrievalMs);
+        o->setProperty("referenceCacheHit",reference.cacheHit);o->setProperty("referenceWindows",reference.totalWindows);
+        o->setProperty("referenceFile",reference.reference.source.name);
+        o->setProperty("referenceStartSample",(juce::int64)reference.reference.startSample);
+        o->setProperty("referenceEndSample",(juce::int64)reference.reference.endSample);
         juce::Array<juce::var> hits;
-        if (workload=="evaluation" || plan["mode"].toString()=="semantic-reopen" || plan["mode"].toString()=="semantic-offline")
+        if (workload=="evaluation" || workload=="example-evaluation" || plan["mode"].toString()=="semantic-reopen" || plan["mode"].toString()=="semantic-offline")
         for (auto &a : view.snapshot.results)
         {
             auto *hit=new juce::DynamicObject(); hit->setProperty("file",a.name); hit->setProperty("assetId",a.id);
@@ -144,6 +156,9 @@ void Benchmark::save(bool success, const juce::String &error)
         ai->setProperty("analysisWallMs",s.analysisWallMs);
         ai->setProperty("firstWindowStartedMs",s.firstWindowStartedMs);ai->setProperty("lastWindowPublishedMs",s.lastWindowPublishedMs);
         ai->setProperty("helperPeakResidentBytes",(juce::int64)s.helperPeakBytes);
+        ai->setProperty("indexReady",s.indexReady);ai->setProperty("indexReused",s.indexReused);ai->setProperty("indexBuilding",s.indexBuilding);
+        ai->setProperty("indexRegions",(juce::int64)s.indexRegions);ai->setProperty("indexBytes",(juce::int64)s.indexBytes);
+        ai->setProperty("indexOpenMs",s.indexOpenMs);ai->setProperty("indexBuildMs",s.indexBuildMs);ai->setProperty("indexStatus",s.indexStatus);
         o->setProperty("semantic",juce::var(ai));
     }
     output.getParentDirectory().createDirectory();
@@ -331,6 +346,7 @@ void Benchmark::semanticTick(double now)
         thermalSamples.add(state);lastThermalSample=now;
     }
     const auto mode=plan["mode"].toString();
+    if(mode=="semantic-example"){referenceTick(now);return;}
     const auto &ai=view.snapshot.semantic;
     auto record=[&](const juce::String &key,bool value) { controls.getDynamicObject()->setProperty(key,value); };
     auto complete=[&] {
@@ -342,6 +358,38 @@ void Benchmark::semanticTick(double now)
     auto count=(int)plan["queryCount"];
     bool analyzed=ai.ready && ai.coverage.complete>=(int)plan["expectedFiles"] && ai.coverage.pending==0;
     if (mode=="semantic-analyze") { if (analyzed) complete(); return; }
+    if (mode=="semantic-capacity")
+    {
+        if (!ai.ready || ai.coverage.regions<(int)plan["expectedRegions"]) return;
+        if (phase==0 && (!ai.indexReady || ai.indexBuilding)) return; // Cold construction/opening is separate.
+        if (phase==0) { workload="capacity-warm";phase=1; }
+        if (phase==1 || phase==3)
+        {
+            if (phase==3 && !(bool)view.audio.status()["playing"])
+            { view.audio.play("capacity-audition",juce::File(plan["auditionFile"].toString()));return; }
+            if (!waiting && index<count) dispatch();
+            if (index>=count)
+            {
+                index=0;
+                if (++run<3) return;
+                run=0;
+                if (phase==1) { phase=2;view.audio.play("capacity-audition",juce::File(plan["auditionFile"].toString())); }
+                else if(plan["updateFolder"].toString().isNotEmpty())
+                {view.library.addFolder(juce::File(plan["updateFolder"].toString()));phase=4;}
+                else { view.audio.stop();complete(); }
+            }
+        }
+        if (phase==2 && (bool)view.audio.status()["playing"]) { workload="capacity-audition";phase=3; }
+        if(phase==4 && ai.coverage.regions>(int)plan["expectedRegions"] && ai.coverage.pending>0)
+        {workload="capacity-updates";index=0;run=0;phase=5;}
+        if(phase==5)
+        {
+            if(!(bool)view.audio.status()["playing"]){view.audio.play("capacity-audition",juce::File(plan["auditionFile"].toString()));return;}
+            if(!waiting && index<count)dispatch();
+            if(index>=count){view.audio.stop();controls.getDynamicObject()->setProperty("newRegionsSearchable",ai.coverage.regions>(int)plan["expectedRegions"]);complete();}
+        }
+        return;
+    }
     if (mode=="semantic-reopen" || mode=="semantic-offline")
     {
         if (!analyzed) return;
@@ -533,6 +581,199 @@ void Benchmark::semanticTick(double now)
 } // namespace sp
 namespace sp
 {
+void Benchmark::referenceTick(double now)
+{
+    if(now-startMs>180000){save(false,"Native reference workflow timed out at phase "+juce::String(phase));return;}
+    const auto &ref=view.snapshot.reference;
+    if(ref.loading && ref.completedWindows>0 && ref.completedWindows<ref.totalWindows)referenceProgressSeen=true;
+    auto record=[&](const juce::String &key,bool value){controls.getDynamicObject()->setProperty(key,value);};
+    auto submit=[&](const AudioReference &reference,bool measured=false){view.submitReference(reference);if(measured){waiting=view.requested;sendMs=monotonicMs();}return view.requested;};
+    auto finished=[&]{return view.snapshot.semanticCompletedRequest==controlRequest;};
+    if(phase==0)
+    {
+        if(!view.snapshot.semantic.ready || view.snapshot.semantic.coverage.complete<43 || !view.snapshot.semantic.indexReady ||
+            view.snapshot.semantic.indexBuilding || view.snapshot.semantic.indexRegions!=view.snapshot.semantic.coverage.regions)return;
+        controlRequest=view.benchmarkSearch("clip-029.wav");phase=1;return;
+    }
+    if(phase==1)
+    {
+        auto *asset=view.rowAsset(0);if(view.snapshot.request!=controlRequest || !asset || asset->name!="clip-029.wav")return;
+        view.table.selectRow(0);exampleSource=*asset;view.findSimilar.triggerClick();phase=2;return;
+    }
+    if(phase==2)
+    {
+        if(!view.similarMode || ref.reference.source.id!=exampleSource.id || view.snapshot.semanticCompletedRequest!=view.requested)return;
+        bool excluded=true;for(auto &a:view.snapshot.results)excluded&=a.id!=exampleSource.id;
+        record("indexedReferenceAndSourceExclusion",excluded && !view.snapshot.results.empty());
+        view.table.selectRow(0);view.playMatch.triggerClick();phase=3;return;
+    }
+    if(phase==3)
+    {
+        if(!(bool)view.audio.status()["playing"])return;
+        record("candidateKeepsReferencePinned",ref.reference.source.id==exampleSource.id);
+        view.referencePlay.triggerClick();phase=4;return;
+    }
+    if(phase==4)
+    {
+        auto audio=view.audio.status();if(!(bool)audio["playing"] || audio["id"].toString()!="reference-"+exampleSource.id)return;
+        record("referenceAudition",true);view.audio.stop();
+        view.referenceIn.setText("0.100000",juce::dontSendNotification);view.referenceOut.setText("4.800000",juce::dontSendNotification);
+        view.referenceOut.onReturnKey();controlRequest=view.requested;phase=5;return;
+    }
+    if(phase==5)
+    {
+        if(!finished())return;
+        record("referenceRangeEdited",ref.reference.startSample==4410 && ref.reference.endSample==211680);
+        auto desired=ref.reference;for(int n=0;n<100;++n){auto obsolete=desired;obsolete.startSample=n*17;view.submitReference(obsolete);}
+        controlRequest=submit(desired);phase=6;return;
+    }
+    if(phase==6)
+    {
+        if(!finished())return;record("latestReferenceWins",ref.reference.startSample==4410 && ref.generation==view.requested);
+        view.filesDropped({plan["externalFile"].toString()},0,0);controlRequest=view.requested;phase=7;return;
+    }
+    if(phase==7)
+    {
+        if(!finished())return;
+        record("externalFileIsTemporary",ref.reference.external && view.snapshot.roots.size()==1 && view.snapshot.semantic.coverage.total==43);
+        record("externalShortReference",ref.totalWindows==1 && ref.error.isEmpty());
+        view.filesDropped({plan["longFile"].toString()},0,0);controlRequest=view.requested;phase=8;return;
+    }
+    if(phase==8)
+    {
+        if(!finished())return;
+        record("longReferenceWithProgress",ref.totalWindows==11 && referenceProgressSeen && ref.error.isEmpty());
+        controls.getDynamicObject()->setProperty("longReferenceEncodingMs",ref.encodingMs);
+        controls.getDynamicObject()->setProperty("longReferenceRetrievalMs",ref.retrievalMs);
+        if((bool)plan["transportControls"]){view.table.deselectAllRows();view.table.selectRow(0);phase=100;return;}
+        view.clearReference.triggerClick();phase=9;return;
+    }
+    if(phase==100)
+    {
+        if(!view.selectedAsset)return;
+        auto wave=view.waveform.data();if(!wave || wave->assetId!=view.selectedAsset->id || wave->peaks.empty())return;
+        auto state=view.audio.status();if((bool)state["playing"] || (bool)state["pendingPlayback"])return;
+        controlSelectedId=view.selectedAsset->id;semanticDemoRate=view.selectedAsset->sampleRate;
+        transportPosition=(int64_t)std::llround(1.25*semanticDemoRate);
+        transportGeneration=(uint64_t)(juce::int64)state["playGeneration"];
+        view.waveform.onSeek(transportPosition);phaseStart=now;phase=101;return;
+    }
+    if(phase==101)
+    {
+        if(now-phaseStart<250)return;auto state=view.audio.status();
+        record("stoppedCandidateSeekDoesNotPlay",!(bool)state["playing"] && !(bool)state["pendingPlayback"] &&
+            (uint64_t)(juce::int64)state["playGeneration"]==transportGeneration);
+        record("stoppedCandidateSeekMovesPlayhead",view.waveform.cursorSample()==transportPosition);
+        record("noStoppedFilenameLine",view.transport.getText().isEmpty() && !view.transport.isVisible());
+        view.play.triggerClick();phase=102;return;
+    }
+    if(phase==102)
+    {
+        auto state=view.audio.status();if(!(bool)state["playing"] || state["id"].toString()!=controlSelectedId)return;
+        record("playStartsAtParkedCandidate",view.playingSpec.positionSample==transportPosition && (int64_t)state["sourceSample"]>=transportPosition);
+        transportGeneration=(uint64_t)(juce::int64)state["playGeneration"];
+        transportPosition=(int64_t)std::llround(2.25*semanticDemoRate);view.waveform.onSeek(transportPosition);phase=103;return;
+    }
+    if(phase==103)
+    {
+        auto state=view.audio.status();if(!(bool)state["playing"] || (uint64_t)(juce::int64)state["playGeneration"]<=transportGeneration)return;
+        record("activeCandidateSeekKeepsPlaying",state["id"].toString()==controlSelectedId && view.playingSpec.positionSample==transportPosition && (int64_t)state["sourceSample"]>=transportPosition);
+        transportGeneration=(uint64_t)(juce::int64)state["playGeneration"]+1;
+        // Same message turn: Stop intent must win even before the helper acknowledges it.
+        view.play.onClick();view.waveform.onSeek((int64_t)std::llround(1.75*semanticDemoRate));phaseStart=now;phase=104;return;
+    }
+    if(phase==104)
+    {
+        if(now-phaseStart<250)return;auto state=view.audio.status();
+        record("immediateStopThenSeekStaysStopped",!(bool)state["playing"] && !(bool)state["pendingPlayback"] &&
+            (uint64_t)(juce::int64)state["playGeneration"]==transportGeneration);
+        transportPosition=(int64_t)std::llround(2.25*ref.reference.source.sampleRate);
+        view.referenceWaveform.onSeek(transportPosition);phaseStart=now;phase=105;return;
+    }
+    if(phase==105)
+    {
+        if(now-phaseStart<250)return;auto state=view.audio.status();
+        record("stoppedReferenceSeekDoesNotPlay",!(bool)state["playing"] && !(bool)state["pendingPlayback"] &&
+            (uint64_t)(juce::int64)state["playGeneration"]==transportGeneration);
+        record("stoppedReferenceSeekMovesPlayhead",view.referenceWaveform.cursorSample()==transportPosition);
+        view.referencePlay.triggerClick();phase=106;return;
+    }
+    if(phase==106)
+    {
+        auto state=view.audio.status();if(!(bool)state["playing"] || state["id"].toString()!="reference-"+ref.reference.source.id)return;
+        record("referencePlayStartsAtParkedCursor",view.playingSpec.positionSample==transportPosition && (int64_t)state["sourceSample"]>=transportPosition);
+        transportGeneration=(uint64_t)(juce::int64)state["playGeneration"];
+        transportPosition=(int64_t)std::llround(.75*semanticDemoRate);view.waveform.onSeek(transportPosition);phaseStart=now;phase=107;return;
+    }
+    if(phase==107)
+    {
+        if(now-phaseStart<250)return;auto state=view.audio.status();
+        record("inactiveWaveformSeekDoesNotRetargetAudition",(bool)state["playing"] && state["id"].toString()=="reference-"+ref.reference.source.id &&
+            (uint64_t)(juce::int64)state["playGeneration"]==transportGeneration && view.waveform.cursorSample()==transportPosition);
+        record("noPlayingFilenameLine",view.transport.getText().isEmpty() && !view.transport.isVisible());
+        transportPosition=(int64_t)std::llround(4.5*ref.reference.source.sampleRate);view.referenceWaveform.onSeek(transportPosition);phase=108;return;
+    }
+    if(phase==108)
+    {
+        auto state=view.audio.status();if(!(bool)state["playing"] || (uint64_t)(juce::int64)state["playGeneration"]<=transportGeneration)return;
+        record("activeReferenceSeekKeepsPlaying",state["id"].toString()=="reference-"+ref.reference.source.id && view.playingSpec.positionSample==transportPosition && (int64_t)state["sourceSample"]>=transportPosition);
+        transportGeneration=(uint64_t)(juce::int64)state["playGeneration"]+1;
+        view.referencePlay.onClick();view.referenceWaveform.onSeek((int64_t)std::llround(3.25*ref.reference.source.sampleRate));phaseStart=now;phase=109;return;
+    }
+    if(phase==109)
+    {
+        if(now-phaseStart<250)return;auto state=view.audio.status();
+        record("immediateReferenceStopSeekStaysStopped",!(bool)state["playing"] && !(bool)state["pendingPlayback"] &&
+            (uint64_t)(juce::int64)state["playGeneration"]==transportGeneration);
+        view.clearReference.triggerClick();phase=9;return;
+    }
+    if(phase==9)
+    {
+        if(ref.present)return;record("clearReference",true);
+        if((bool)plan["controlsOnly"])
+        {
+            for(auto &property:controls.getDynamicObject()->getProperties())if(property.value.isBool() && !(bool)property.value)
+            {save(false,"Native transport assertion: "+property.name.toString());return;}
+            save(true);return;
+        }
+        workload="example-uncached";index=0;phase=10;return;
+    }
+    if(phase==10 || phase==11)
+    {
+        int count=(int)plan["queryCount"];
+        if(!waiting && index<count)
+        {
+            AudioReference reference;
+            if(phase==10){reference.source=exampleSource;reference.startSample=1000+index*37;reference.endSample=exampleSource.samples-1000-index*23;exampleLast=reference;}
+            else reference=exampleLast;
+            submit(reference,true);
+        }
+        if(index>=count){index=0;if(phase==10){phase=11;workload="example-cached";}else{phase=12;workload="example-evaluation";}}
+        return;
+    }
+    auto *evaluation=plan["examples"].getArray();
+    if(!evaluation){save(false,"Missing reference evaluation cases");return;}
+    if(phase==12)
+    {
+        if(index>=evaluation->size())
+        {
+            for(auto &property:controls.getDynamicObject()->getProperties())if(property.value.isBool() && !(bool)property.value)
+            {save(false,"Native Find Similar assertion: "+property.name.toString());return;}
+            view.audio.stop();save(true);return;
+        }
+        controlRequest=view.benchmarkSearch((*evaluation)[index]["file"].toString());phase=13;return;
+    }
+    if(phase==13)
+    {
+        auto *asset=view.rowAsset(0);auto example=(*evaluation)[index];
+        if(view.snapshot.request!=controlRequest || !asset || asset->name!=example["file"].toString())return;
+        view.table.selectRow(0);AudioReference reference;reference.source=*asset;
+        reference.startSample=(int64_t)std::llround((double)example["startSeconds"]*asset->sampleRate);
+        reference.endSample=(int64_t)std::llround((double)example["endSeconds"]*asset->sampleRate);
+        submit(reference,true);phase=14;return;
+    }
+    if(phase==14 && !waiting)phase=12;
+}
 void Benchmark::controlTick(int total, int done, double now)
 {
     // A pinned/result page may deliberately retain an older membership count.

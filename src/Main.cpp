@@ -86,8 +86,8 @@ class SoundPlusApplication final : public juce::JUCEApplication
             view = new sp::LibraryView(db, juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory);
             setContentOwned(view, true);
             setResizable(true, true);
-            setResizeLimits(1080, 820, 2600, 1800);
-            centreWithSize(1200, 900);
+            setResizeLimits(1080, 900, 2600, 1800);
+            centreWithSize(1200, 1000);
             setVisible(true);
             toFront(true);
         }

@@ -1,4 +1,5 @@
 #include "Catalog.h"
+#include "RegionRanking.h"
 #include "MacSources.h"
 #include "Performance.h"
 #include <sys/stat.h>
@@ -123,7 +124,7 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
             version.step();
             schemaVersion = version.integer(0);
         }
-        if (schemaVersion > 3)
+        if (schemaVersion > 4)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         exec(R"SQL(BEGIN IMMEDIATE;
           CREATE TABLE IF NOT EXISTS roots(id TEXT PRIMARY KEY,path TEXT UNIQUE NOT NULL,volume TEXT NOT NULL,
@@ -221,6 +222,23 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
                 DELETE FROM analysis_jobs WHERE asset_id=new.id;
               END;
               PRAGMA user_version=3; COMMIT;
+            )SQL");
+        }
+        if (schemaVersion<4)
+        {
+            exec(R"SQL(BEGIN IMMEDIATE;
+              CREATE TABLE retrieval_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
+              INSERT INTO retrieval_meta VALUES('catalog',lower(hex(randomblob(16))));
+              CREATE TABLE vector_changes(sequence INTEGER PRIMARY KEY AUTOINCREMENT,asset_id TEXT NOT NULL);
+              CREATE TRIGGER vector_change_insert AFTER INSERT ON embeddings BEGIN INSERT INTO vector_changes(asset_id) VALUES(new.asset_id); END;
+              CREATE TRIGGER vector_change_delete AFTER DELETE ON embeddings BEGIN INSERT INTO vector_changes(asset_id) VALUES(old.asset_id); END;
+              CREATE TRIGGER vector_change_update AFTER UPDATE ON embeddings BEGIN INSERT INTO vector_changes(asset_id) VALUES(new.asset_id); END;
+              CREATE TRIGGER vector_change_asset AFTER UPDATE OF state,root_id ON assets
+                WHEN (old.state<>new.state OR old.root_id<>new.root_id) AND EXISTS(SELECT 1 FROM embeddings WHERE asset_id=new.id)
+                BEGIN INSERT INTO vector_changes(asset_id) VALUES(new.id); END;
+              CREATE TRIGGER vector_changes_bound AFTER INSERT ON vector_changes BEGIN
+                DELETE FROM vector_changes WHERE sequence<new.sequence-8191; END;
+              PRAGMA user_version=4;COMMIT;
             )SQL");
         }
     }
@@ -608,10 +626,11 @@ std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &ro
     }
     return result;
 }
-void Catalog::materialize(const juce::String &q, const juce::String &root)
+void Catalog::materialize(const juce::String &q, const juce::String &root, bool empty)
 {
     exec("DROP TABLE IF EXISTS temp.browse_ids; CREATE TEMP TABLE browse_ids(position INTEGER PRIMARY KEY,id "
          "TEXT NOT NULL);");
+    if (empty) return;
     auto match = matchText(q, root);
     juce::String sql;
     if (uuidQuery(q))
@@ -792,7 +811,7 @@ Asset Catalog::asset(const juce::String &id)
         " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.id=?").toRawUTF8());
     row.bind(1,id); return row.step() ? readAsset(row) : Asset{};
 }
-int Catalog::promote(const std::vector<Asset> &prefix)
+int Catalog::promote(const std::vector<Asset> &prefix, bool keepLexicalTail)
 {
     exec("DROP TABLE IF EXISTS temp.next_browse_ids; CREATE TEMP TABLE next_browse_ids(position INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE);");
     for (auto &a : prefix)
@@ -800,7 +819,8 @@ int Catalog::promote(const std::vector<Asset> &prefix)
         Statement insert(db,"INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM assets WHERE id=? AND revision=?");
         insert.bind(1,a.id); insert.bind(2,a.revision); insert.step();
     }
-    exec("INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM browse_ids ORDER BY position; DROP TABLE browse_ids; ALTER TABLE next_browse_ids RENAME TO browse_ids;");
+    if (keepLexicalTail) exec("INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM browse_ids ORDER BY position;");
+    exec("DROP TABLE browse_ids; ALTER TABLE next_browse_ids RENAME TO browse_ids;");
     Statement count(db,"SELECT count(*) FROM browse_ids"); count.step(); return (int)count.integer(0);
 }
 void Catalog::seedAnalysis(const juce::String &model, const juce::String &preprocessing,
@@ -888,25 +908,51 @@ void Catalog::retryAnalysis(const juce::String &model, const juce::String &prepr
     Statement s(db,"UPDATE analysis_jobs SET state='pending',error='' WHERE model=? AND preprocessing=? AND state='failed'");
     s.bind(1,model); s.bind(2,preprocessing); s.step();
 }
+IndexState Catalog::indexState()
+{
+    IndexState state;
+    Statement id(db,"SELECT value FROM retrieval_meta WHERE key='catalog'");if(id.step()) state.catalog=id.str(0);
+    Statement latest(db,"SELECT seq FROM sqlite_sequence WHERE name='vector_changes'");if(latest.step()) state.sequence=latest.integer(0);
+    Statement oldest(db,"SELECT min(sequence) FROM vector_changes");oldest.step();state.oldest=oldest.integer(0);
+    if (!state.oldest) state.oldest=state.sequence+1;
+    return state;
+}
+juce::StringArray Catalog::indexChanges(int64_t since)
+{
+    juce::StringArray ids;Statement s(db,"SELECT DISTINCT asset_id FROM vector_changes WHERE sequence>?");s.bind(1,since);
+    while(s.step()) ids.add(s.str(0));return ids;
+}
+void Catalog::visitRegions(const juce::String &model,const juce::String &preprocessing,
+                          const juce::String &assetId,const std::function<void(const StoredRegion &)> &visit)
+{
+    Statement s(db,("SELECT e.asset_id,a.root_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
+        "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision WHERE e.model=? AND e.preprocessing=? AND a.state='ready'"+
+        (assetId.isEmpty() ? juce::String() : " AND e.asset_id=?")+" ORDER BY e.asset_id,e.start_sample").toRawUTF8());
+    s.bind(1,model);s.bind(2,preprocessing);if(assetId.isNotEmpty())s.bind(3,assetId);
+    while(s.step())
+    {
+        if(sqlite3_column_bytes(s.s,5)!=2048)continue;
+        StoredRegion row;row.asset=s.str(0);row.root=s.str(1);row.revision=s.integer(2);row.first=s.integer(3);row.last=s.integer(4);
+        std::memcpy(row.vector.data(),sqlite3_column_blob(s.s,5),2048);visit(row);
+    }
+}
 std::vector<Asset> Catalog::semanticSearch(const std::vector<float> &query,
                                           const juce::String &model, const juce::String &preprocessing,
-                                          const juce::String &root, int limit, RetrievalMetrics *metrics)
+                                          const juce::String &root, int limit, RetrievalMetrics *metrics,
+                                          const juce::String &excludeAsset)
 {
     auto began = monotonicMs();
     RetrievalMetrics measured;
     if (query.size() != 512) throw std::runtime_error("Invalid query embedding dimensions");
-    struct Hit { juce::String id; int64_t revision,start,end; float score; };
-    std::vector<Hit> best;
-    auto order = [](const Hit &a, const Hit &b) {
-        if (a.score != b.score) return a.score > b.score;
-        if (a.id != b.id) return a.id < b.id;
-        return a.start < b.start;
-    };
+    RegionRanking ranking(limit);
     Statement rows(db,("SELECT e.asset_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
         "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision JOIN roots r ON r.id=a.root_id "
         "WHERE e.model=? AND e.preprocessing=? AND a.state='ready'"+
-        (root.isEmpty() ? juce::String() : " AND a.root_id=?")).toRawUTF8());
-    rows.bind(1,model); rows.bind(2,preprocessing); if (root.isNotEmpty()) rows.bind(3,root);
+        (root.isEmpty() ? juce::String() : " AND a.root_id=?")+
+        (excludeAsset.isEmpty() ? juce::String() : " AND a.id<>?")+" ORDER BY e.asset_id,e.start_sample").toRawUTF8());
+    rows.bind(1,model); rows.bind(2,preprocessing); int binding=3;
+    if (root.isNotEmpty()) rows.bind(binding++,root);
+    if (excludeAsset.isNotEmpty()) rows.bind(binding,excludeAsset);
     int seen = 0;
     measured.fetchFilterMs = monotonicMs()-began;
     for (;;)
@@ -920,31 +966,9 @@ std::vector<Asset> Catalog::semanticSearch(const std::vector<float> &query,
         auto scoreAt = monotonicMs();
         float score = 0; vDSP_dotpr(query.data(),1,vector,1,&score,512);
         measured.vectorScoreMs += monotonicMs()-scoreAt; ++measured.vectors;
-        Hit hit{rows.str(0),rows.integer(1),rows.integer(2),rows.integer(3),score};
-        auto at = std::lower_bound(best.begin(),best.end(),hit,order);
-        if (best.size() < 256 || at != best.end())
-        { best.insert(at,std::move(hit)); if (best.size() > 256) best.pop_back(); }
+        ranking.add(rows.str(0),rows.integer(1),rows.integer(2),rows.integer(3),score);
     }
-    std::vector<Asset> result;
-    std::map<juce::String,size_t> ids;
-    for (auto &hit : best)
-    {
-        auto found = ids.find(hit.id);
-        if (found == ids.end())
-        {
-            if ((int)result.size() >= limit) continue;
-            auto a = asset(hit.id);
-            if (a.id.isEmpty() || a.revision != hit.revision) continue;
-            a.matchReason = "Sound similarity";
-            ids[a.id] = result.size(); result.push_back(std::move(a)); found = ids.find(hit.id);
-        }
-        auto &matches = result[found->second].matches;
-        bool overlaps = false;
-        for (auto &match : matches)
-            if (hit.start < match.endSample && hit.end > match.startSample)
-            { ++match.groupedWindows; overlaps = true; break; }
-        if (!overlaps && matches.size() < 5) matches.push_back({hit.start,hit.end,hit.score,1});
-    }
+    auto result=ranking.finish(*this,root);
     measured.rankGroupMs = std::max(0.0,monotonicMs()-began-measured.fetchFilterMs-measured.vectorScoreMs);
     if (metrics) *metrics = measured;
     return result;

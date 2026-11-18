@@ -7,7 +7,7 @@
 #include "AudioRegion.h"
 namespace sp
 {
-constexpr int protocolVersion = 2;
+constexpr int protocolVersion = 3;
 juce::var message(const juce::String &command);
 bool sendMessage(int fd, const juce::var &);
 // Private inherited socketpair: no listening port or discoverable endpoint.

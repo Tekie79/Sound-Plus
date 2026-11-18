@@ -3,6 +3,7 @@
 #include <functional>
 #include <memory>
 #include "ModelPack.h"
+#include "Reference.h"
 namespace sp
 {
 struct IndexProgress
@@ -30,6 +31,10 @@ struct LibrarySnapshot
         int64_t downloadedBytes = 0, downloadTotalBytes = 0, windowsThisSession = 0, helperPeakBytes = 0;
         double modelLoadMs = 0, analysisWallMs = 0, sourceSecondsThisSession = 0,
                firstWindowStartedMs = 0, lastWindowPublishedMs = 0;
+        juce::String indexStatus;
+        bool indexReady=false,indexReused=false,indexBuilding=false;
+        int64_t indexRegions=0,indexBytes=0,indexGeneration=-1;
+        double indexOpenMs=0,indexBuildMs=0;
     } semantic;
     struct SemanticTiming
     {
@@ -39,6 +44,8 @@ struct LibrarySnapshot
         bool textCacheHit = false;
     } semanticTiming;
     uint64_t semanticCompletedRequest = 0, semanticSerial = 0;
+    ReferenceState reference;
+    bool exampleMode=false;
 };
 class LibraryService
 {
@@ -60,6 +67,8 @@ class LibraryService
     void semanticNow();
     void prioritizeAnalysis(const juce::String &assetId);
     void setAuditionActive(bool);
+    uint64_t findSimilar(const AudioReference &,const juce::String &root = {});
+    void clearReference();
 
   private:
     struct Impl;

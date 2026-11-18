@@ -1,0 +1,38 @@
+--- a/src/Benchmark.cpp
++++ b/src/Benchmark.cpp
+@@ -31,6 +31,7 @@
+         o->setProperty("dispatchToPaintMs",now-sent); o->setProperty("dispatchToAppliedMs",applied-sent);
+         o->setProperty("request",(juce::int64)id); o->setProperty("debounceMs",0);
+         o->setProperty("query",view.search.getText());
++        o->setProperty("sourceFilter",view.rootFilter);
+         o->setProperty("analysisPending",view.snapshot.semantic.coverage.pending);
+         o->setProperty("auditionActive",(bool)view.audio.status()["playing"]);
+         const auto &t=view.snapshot.semanticTiming;
+@@ -342,6 +343,27 @@
+     auto count=(int)plan["queryCount"];
+     bool analyzed=ai.ready && ai.coverage.complete>=(int)plan["expectedFiles"] && ai.coverage.pending==0;
+     if (mode=="semantic-analyze") { if (analyzed) complete(); return; }
++    if (mode=="semantic-capacity")
++    {
++        if (!ai.ready || ai.coverage.regions<(int)plan["expectedRegions"]) return;
++        if (phase==0) { workload="capacity-warm";phase=1; }
++        if (phase==1 || phase==3)
++        {
++            if (phase==3 && !(bool)view.audio.status()["playing"])
++            { view.audio.play("capacity-audition",juce::File(plan["auditionFile"].toString()));return; }
++            if (!waiting && index<count) dispatch();
++            if (index>=count)
++            {
++                index=0;
++                if (++run<3) return;
++                run=0;
++                if (phase==1) { phase=2;view.audio.play("capacity-audition",juce::File(plan["auditionFile"].toString())); }
++                else { view.audio.stop();complete(); }
++            }
++        }
++        if (phase==2 && (bool)view.audio.status()["playing"]) { workload="capacity-audition";phase=3; }
++        return;
++    }
+     if (mode=="semantic-reopen" || mode=="semantic-offline")
+     {
+         if (!analyzed) return;

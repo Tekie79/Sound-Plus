@@ -8,5 +8,6 @@ struct PlaybackRegion
 {
     int64_t startSample = 0, endSample = -1, positionSample = -1;
     int64_t size = 0, modified = 0, inode = 0, revision = 0;
+    int auditionPair = 0; // -1: all-channel arithmetic mean; 0..31: stereo pairs 1/2, 3/4, ...
 };
 } // namespace sp

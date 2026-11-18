@@ -248,6 +248,8 @@ std::vector<float> ClapRuntime::audio(const juce::File &file, int64_t start, int
             mono[(size_t)(at-start+j)] = (float)(value/block.getNumChannels());
         }
     }
+    double energy=0;for (float value:mono) energy+=(double)value*value;
+    lastAnalysisRms=std::sqrt(energy/std::max<size_t>(1,mono.size()));
     auto data = features(resample(mono,expectedRate));
     lastPreprocessMs = monotonicMs()-begin;
     auto memory = Ort::MemoryInfo::CreateCpu(OrtArenaAllocator,OrtMemTypeDefault);

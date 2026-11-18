@@ -7,7 +7,7 @@ namespace sp
 static_assert(std::atomic<PcmStream *>::is_always_lock_free);
 static_assert(std::atomic<int64_t>::is_always_lock_free);
 static_assert(std::atomic<float>::is_always_lock_free);
-PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, int64_t last) : rate(outputRate)
+PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, int64_t last, int auditionPair) : rate(outputRate), pair(auditionPair)
 {
     formats.registerBasicFormats();
     reader.reset(formats.createReaderFor(file));
@@ -16,6 +16,9 @@ PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, i
     if (rate <= 0)
         throw std::runtime_error("No audio output device");
     sourceRate = reader->sampleRate;
+    if (reader->numChannels==0 || reader->numChannels>64 || pair < -1 || pair>=32 || (pair>=0 && pair*2>=(int)reader->numChannels))
+        throw std::runtime_error("Audition channel pair is unavailable for this recording");
+    cache.setSize((int)reader->numChannels,8192);
     sourceStart = first; sourceEnd = last < 0 ? reader->lengthInSamples : std::min(last,reader->lengthInSamples);
     if (sourceStart < 0 || sourceStart >= sourceEnd) throw std::runtime_error("Invalid source playback range");
     ratio = sourceRate / rate;
@@ -46,9 +49,13 @@ void PcmStream::fill(int budget)
         const auto fraction = (float)(pos - (double)i);
         for (int c = 0; c < 2; ++c)
         {
-            int source = reader->numChannels == 1 ? 0 : c;
-            float a = cache.getSample(source, local);
-            float b = i+1 < sourceEnd ? cache.getSample(source, local + 1) : a;
+            auto valueAt=[&](int at) {
+                if (pair>=0) return cache.getSample(std::min((int)reader->numChannels-1,pair*2+c),at);
+                double sum=0;for (int channel=0;channel<(int)reader->numChannels;++channel) sum+=cache.getSample(channel,at);
+                return (float)(sum/reader->numChannels);
+            };
+            float a = valueAt(local);
+            float b = i+1 < sourceEnd ? valueAt(local+1) : a;
             if (!std::isfinite(a) || !std::isfinite(b))
                 throw std::runtime_error("Nonfinite audio samples; replace or repair this recording");
             pcm[(size_t)c][write % capacity] = a + (b - a) * fraction;
@@ -73,10 +80,10 @@ int PcmStream::read(float *const *output, int channels, int frames, float &gain,
     readIndex.store(read, std::memory_order_release);
     return count;
 }
-void AuditionCore::open(const juce::File &file, double rate, int64_t start, int64_t end)
+void AuditionCore::open(const juce::File &file, double rate, int64_t start, int64_t end, int auditionPair)
 {
     stop(); // Discard the old FIFO at the seek/switch command boundary.
-    auto next = std::make_unique<PcmStream>(file, rate,start,end);
+    auto next = std::make_unique<PcmStream>(file, rate,start,end,auditionPair);
     next->fill(32768);
     if (stream)
         retired.push_back(std::move(stream));

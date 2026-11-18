@@ -17,7 +17,7 @@ endif()
 juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resources/clap-model.json)
 add_library(soundplus_core STATIC
   src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
-  src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp)
+  src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/Reference.cpp src/RetrievalIndex.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -63,7 +63,7 @@ add_custom_command(TARGET SoundPlus POST_BUILD
 include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
-  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   add_test(NAME library_and_audio COMMAND SoundPlusTests
     "$<TARGET_FILE:SoundPlus>" "${CMAKE_BINARY_DIR}/test-output")
@@ -74,4 +74,7 @@ if(BUILD_TESTING)
   add_test(NAME library_semantic_integrity COMMAND SoundPlusTests --semantic-integrity
     "${CMAKE_BINARY_DIR}/semantic-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_semantic_integrity PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
+  add_test(NAME library_similar_integrity COMMAND SoundPlusTests --similar-integrity
+    "${CMAKE_BINARY_DIR}/similar-test-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(library_similar_integrity PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 endif()

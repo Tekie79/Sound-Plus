@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_gui_extra/juce_gui_extra.h>
+#include "Reference.h"
 namespace sp
 {
 class LibraryView;
@@ -31,6 +32,10 @@ class Benchmark final : private juce::Timer
     juce::String controlSelectedId;
     void controlTick(int total, int done, double now);
     void semanticTick(double now);
+    void referenceTick(double now);
+    Asset exampleSource;
+    AudioReference exampleLast;
+    bool referenceProgressSeen=false;
     double firstSemanticPaint = 0;
     juce::String semanticDemoId;
     int64_t pausedAiWindows = 0, semanticAudioFrames = 0;
@@ -39,6 +44,8 @@ class Benchmark final : private juce::Timer
     juce::Array<juce::var> thermalSamples;
     double lastThermalSample = 0;
     uint64_t semanticPageBefore = 0;
+    uint64_t transportGeneration = 0;
+    int64_t transportPosition = 0;
     int64_t semanticOtherMoment = 0;
     int semanticJobsBefore = 0;
 };

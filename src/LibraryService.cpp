@@ -1,4 +1,5 @@
 #include "LibraryService.h"
+#include "RetrievalIndex.h"
 #include "MacSources.h"
 #include "Performance.h"
 #include "AIProcess.h"
@@ -88,7 +89,7 @@ struct LibraryService::Impl
     juce::File modelDirectory;
     std::unique_ptr<AIProcess> inference;
     std::thread analysisWorker, semanticReader;
-    std::atomic<bool> aiLoaded{false}, aiAnalyzing{false}, installCancelled{false};
+    std::atomic<bool> aiLoaded{false}, aiAnalyzing{false}, installCancelled{false},indexWorking{false};
     std::atomic<bool> auditionActive{false};
     std::atomic<uint64_t> analysisGeneration{0};
     bool installRequested = false, aiRetryRequested = false;
@@ -96,11 +97,14 @@ struct LibraryService::Impl
     juce::String preferredAnalysis;
     double semanticDue = 0;
     uint64_t semanticInputVersion = 0, semanticResultVersion = 0;
+    AudioReference reference;
+    bool exampleMode=false;
     struct SemanticResult
     {
         uint64_t request = 0;
         std::vector<Asset> candidates;
         LibrarySnapshot::SemanticTiming timing;
+        bool example=false;
     } semanticResult;
     std::atomic<bool> stopping{false}, initialized{false}, pauseRequested{false};
     std::atomic<uint64_t> version{1}, workToken{1};
@@ -545,6 +549,7 @@ struct LibraryService::Impl
         {
             Catalog read(database,true);
             double lastCoverage = 0;
+            uint64_t coverageVersion=~uint64_t{},coverageAnalysis=~uint64_t{};
             while (!stopping)
             {
                 bool install = false, retry = false;
@@ -606,8 +611,9 @@ struct LibraryService::Impl
                         continue;
                     }
                 }
-                if (monotonicMs()-lastCoverage > 500)
+                if (monotonicMs()-lastCoverage > 500 && (coverageVersion!=version || coverageAnalysis!=analysisGeneration))
                 {
+                    coverageVersion=version;coverageAnalysis=analysisGeneration;
                     auto coverage = read.analysisCounts(modelId(),preprocessingId());
                     std::lock_guard lock(mutex); current.semantic.coverage = coverage;
                     lastCoverage = monotonicMs(); notifyLocked();
@@ -711,24 +717,38 @@ struct LibraryService::Impl
         try
         {
             Catalog read(database,true);
+            ReferenceEncoder referenceEncoder(database.getParentDirectory().getChildFile("references"));
+            RetrievalIndex index(database,[&](const IndexStats &s) {
+                indexWorking=s.building;
+                std::lock_guard lock(mutex);auto &ai=current.semantic;
+                bool published=s.ready && (!ai.indexReady || ai.indexGeneration!=s.sequence);
+                ai.indexReady=s.ready;ai.indexReused=s.reused;ai.indexBuilding=s.building;ai.indexStatus=s.status;ai.indexRegions=s.regions;
+                ai.indexBytes=s.bytes;ai.indexOpenMs=s.openMs;ai.indexBuildMs=s.buildMs;
+                ai.indexGeneration=s.sequence;
+                if(published) ++semanticInputVersion;
+                notifyLocked();
+            },[&]{return pauseRequested.load();});
             uint64_t lastInput = 0, lastAnalysis = 0;
             double lastCompleted = 0;
             std::deque<std::pair<juce::String,std::vector<float>>> cache;
             while (!stopping)
             {
                 juce::String q, root;
+                AudioReference example;
+                bool usingExample=false;
                 uint64_t id, input, token, corpus;
                 {
                     std::unique_lock lock(mutex);
                     input = semanticInputVersion; corpus = analysisGeneration;
-                    if (!aiLoaded || text.trim().isEmpty() ||
+                    if (!aiLoaded || (!exampleMode && text.trim().isEmpty()) ||
                         (input == lastInput && (corpus == lastAnalysis || monotonicMs()-lastCompleted < 500)) ||
                         monotonicMs() < semanticDue)
                     { wake.wait_for(lock,std::chrono::milliseconds(20)); continue; }
                     q = text; root = filter; id = request; token = workToken;
+                    usingExample=exampleMode;example=reference;
                 }
-                SemanticResult result; result.request = id;
-                if (q.length()==32 && q.containsOnly("0123456789abcdefABCDEF"))
+                SemanticResult result; result.request = id;result.example=usingExample;
+                if (!usingExample && q.length()==32 && q.containsOnly("0123456789abcdefABCDEF"))
                 {
                     std::lock_guard lock(mutex);
                     if (request==id && workToken==token) { semanticResult=result; ++semanticResultVersion; wake.notify_all(); }
@@ -737,6 +757,42 @@ struct LibraryService::Impl
                 try
                 {
                     std::vector<float> vector;
+                    juce::String excluded;
+                    std::optional<ReferenceEmbedding> encoded;
+                    if (usingExample)
+                    {
+                        if (!example.external)
+                        {
+                            auto actual=read.asset(example.source.id);
+                            if (actual.id.isEmpty() || actual.revision!=example.source.revision)
+                                throw std::runtime_error("Reference revision changed. Refresh and select it again.");
+                            example.source=std::move(actual); // A confirmed relink changes location, not source identity.
+                        }
+                        else
+                        {
+                            std::error_code pathError;
+                            auto canonical=std::filesystem::canonical(example.source.path.toStdString(),pathError);
+                            if(!pathError)example.source.path=juce::String::fromUTF8(canonical.c_str());
+                            for (const auto &r:read.roots())
+                                if (example.source.path.startsWith(r.path+"/"))
+                                {
+                                    auto known=read.existing(r.id,example.source.path.substring(r.path.length()+1));
+                                    if (known.id.isNotEmpty()) { example.source.id=known.id;example.source.revision=known.revision;break; }
+                                }
+                        }
+                        encoded=referenceEncoder.encode(example,*inference,[&] {return stopping || workToken!=token;},
+                            [&](const AudioReference &ref,int done,int total) {
+                                std::lock_guard lock(mutex);
+                                if (request!=id || workToken!=token) return;
+                                auto &state=current.reference;state.reference=ref;state.loading=true;
+                                state.completedWindows=done;state.totalWindows=total;
+                                state.status="Reference: "+juce::String(done)+" / "+juce::String(total)+" windows";notifyLocked();
+                            });
+                        vector=encoded->vector;
+                        if (!example.includeSource) excluded=encoded->reference.source.id;
+                    }
+                    else
+                    {
                     auto found = std::find_if(cache.begin(),cache.end(),[&](const auto &v) { return v.first == q; });
                     if (found != cache.end())
                     {
@@ -759,22 +815,52 @@ struct LibraryService::Impl
                         { std::lock_guard lock(mutex); current.semantic.helperPeakBytes=std::max<int64_t>(current.semantic.helperPeakBytes,(int64_t)response["peakResidentBytes"]); }
                         cache.emplace_back(q,vector); if (cache.size() > 64) cache.pop_front();
                     }
+                    }
                     if (workToken != token) { lastInput = input; continue; }
                     read.cancelWhen(&workToken,token);
                     RetrievalMetrics metrics;
-                    result.candidates = read.semanticSearch(vector,modelId(),preprocessingId(),root,100,&metrics);
+                    auto retrievalBegan=monotonicMs();
+                    result.candidates = index.search(read,vector,root,excluded,100,&metrics,[&]{return stopping || workToken!=token;});
+                    if (encoded)
+                    {
+                        FileStamp stamp;const auto &a=encoded->reference.source;
+                        if (!fileStamp(juce::File(a.path),stamp) || stamp.size!=a.size || stamp.modified!=a.modified || stamp.inode!=a.inode)
+                            throw std::runtime_error("Reference changed during search. Choose it again.");
+                    }
                     result.timing.fetchFilterMs = metrics.fetchFilterMs;
                     result.timing.vectorScoreMs = metrics.vectorScoreMs;
                     result.timing.rankGroupMs = metrics.rankGroupMs; result.timing.vectors = metrics.vectors;
                     std::lock_guard lock(mutex);
                     if (request == id && workToken == token)
-                    { semanticResult = std::move(result); ++semanticResultVersion; wake.notify_all(); }
+                    {
+                        if (encoded)
+                        {
+                            auto &state=current.reference;state.reference=encoded->reference;state.loading=false;
+                            state.cacheHit=encoded->cacheHit;state.encodingMs=encoded->encodingMs;state.retrievalMs=monotonicMs()-retrievalBegan;
+                            state.status=encoded->cacheHit ? "Cached reference ready" : "Reference ready";state.error.clear();
+                            state.silentWindows=encoded->silentWindows;
+                            if(encoded->silentWindows)state.status+=" ("+juce::String(encoded->silentWindows)+" silent windows skipped)";
+                        }
+                        semanticResult = std::move(result); ++semanticResultVersion; wake.notify_all();
+                    }
                 }
                 catch (const QueryCancelled &) {}
                 catch (const std::exception &e)
                 {
                     if (!stopping)
-                    { std::lock_guard lock(mutex); if (request == id) { current.semantic.error = e.what(); notifyLocked(); } }
+                    {
+                        std::lock_guard lock(mutex);
+                        if (request == id)
+                        {
+                            if (usingExample)
+                            {
+                                current.reference.error=e.what();current.reference.status="Reference unavailable";current.reference.loading=false;
+                                semanticResult=result;++semanticResultVersion;
+                            }
+                            else current.semantic.error = e.what();
+                            notifyLocked();
+                        }
+                    }
                 }
                 lastInput = input; lastAnalysis = corpus; lastCompleted = monotonicMs();
             }
@@ -793,7 +879,7 @@ struct LibraryService::Impl
             std::lock_guard lock(mutex);
             progress.queuedBatches = (int)batches.size();
             progress.paused =
-                pauseRequested && batches.empty() && jobs.empty() && activeWorkers == parkedWorkers && !aiAnalyzing;
+                pauseRequested && batches.empty() && jobs.empty() && activeWorkers == parkedWorkers && !aiAnalyzing && !indexWorking;
         }
         for (auto &r : rows)
             progress.metadataBacklog += r.online ? r.discovered - r.ready - r.failed : 0;
@@ -1140,7 +1226,7 @@ struct LibraryService::Impl
             auto fuse = [&](const SemanticResult &semantic, const juce::String &q, const juce::String &root) {
                 struct Candidate { Asset asset; double rank = 0; bool lexical = false; };
                 std::map<juce::String,Candidate> candidates;
-                auto lexical = db.search(q,root,128);
+                auto lexical = semantic.example ? std::vector<Asset>{} : db.search(q,root,128);
                 for (size_t i = 0; i < lexical.size(); ++i)
                     candidates[lexical[i].id] = {lexical[i],1.0/(60+i+1),true};
                 annotations.clear();
@@ -1152,7 +1238,7 @@ struct LibraryService::Impl
                         (root.isNotEmpty() && now.rootId != root)) continue;
                     auto &candidate = candidates[hit.id];
                     now.matches = hit.matches;
-                    now.matchReason = candidate.lexical ? "Filename + sound similarity" : "Sound similarity";
+                    now.matchReason = semantic.example ? "Similar to reference" : candidate.lexical ? "Filename + sound similarity" : "Sound similarity";
                     candidate.asset = now; candidate.rank += 1.0/(60+i+1);
                     annotations[now.id] = now;
                 }
@@ -1168,7 +1254,7 @@ struct LibraryService::Impl
                 });
                 std::vector<Asset> prefix;
                 for (auto &candidate : ranked) prefix.push_back(std::move(candidate.asset));
-                return db.promote(prefix);
+                return db.promote(prefix,!semantic.example);
             };
             while (!stopping)
             {
@@ -1176,6 +1262,7 @@ struct LibraryService::Impl
                 uint64_t id, token, v = version.load(), membership = membershipVersion.load(), semanticVersion;
                 int offset = 0, limit = 20;
                 bool page = false, isPinned = false;
+                bool usingExample=false;
                 SemanticResult semantic;
                 {
                     std::unique_lock lock(mutex);
@@ -1186,6 +1273,7 @@ struct LibraryService::Impl
                         monotonicMs()-lastBackground < 100 && semanticVersion == lastSemantic)
                     { wake.wait_for(lock,std::chrono::milliseconds(5)); continue; }
                     id = request; token = workToken; q = text; root = filter;
+                    usingExample=exampleMode;
                     page = pagePending; offset = desiredOffset; limit = desiredLimit; isPinned = pinned;
                     pagePending = false;
                     if (semanticResult.request == id) semantic = semanticResult;
@@ -1243,7 +1331,8 @@ struct LibraryService::Impl
                     bool newQuery = id != lastRequest;
                     if (newQuery) annotations.clear();
                     db.exec("BEGIN"); transaction = true;
-                    auto rows = db.search(q,root,20); int count = db.countMatches(q,root);
+                    auto rows = usingExample ? std::vector<Asset>{} : db.search(q,root,20);
+                    int count = usingExample ? 0 : db.countMatches(q,root);
                     // Publish the fast lexical path before building the disk-backed browse sequence.
                     if (newQuery)
                     {
@@ -1257,7 +1346,7 @@ struct LibraryService::Impl
                             ++current.pageSerial; notifyLocked();
                         }
                     }
-                    db.materialize(q,root);
+                    db.materialize(q,root,usingExample);
                     if (!newQuery && semantic.request == id)
                     { count = fuse(semantic,q,root); rows = db.page(0,20); }
                     db.exec("COMMIT"); transaction = false;
@@ -1317,6 +1406,8 @@ void LibraryService::pause(bool value)
 uint64_t LibraryService::search(const juce::String &q, const juce::String &root)
 {
     std::lock_guard lock(impl->mutex);
+    impl->exampleMode=false;impl->current.exampleMode=false;
+    impl->current.reference.loading=false;
     impl->text = q;
     impl->filter = root;
     impl->desiredOffset = 0;
@@ -1375,4 +1466,21 @@ void LibraryService::prioritizeAnalysis(const juce::String &id)
     std::lock_guard lock(impl->mutex); impl->preferredAnalysis = id; impl->wake.notify_all();
 }
 void LibraryService::setAuditionActive(bool value) { impl->auditionActive=value; }
+uint64_t LibraryService::findSimilar(const AudioReference &reference,const juce::String &root)
+{
+    std::lock_guard lock(impl->mutex);
+    impl->reference=reference;impl->exampleMode=true;impl->current.exampleMode=true;
+    impl->text.clear();impl->filter=root;impl->desiredOffset=0;impl->desiredLimit=20;
+    impl->pagePending=false;impl->pinned=false;impl->semanticDue=monotonicMs();
+    ++impl->semanticInputVersion;++impl->workToken;auto id=++impl->request;
+    auto &state=impl->current.reference;state={};state.reference=reference;state.present=true;
+    state.generation=id;state.loading=true;state.status=impl->aiLoaded ? "Preparing reference" : "Waiting for the local model; install it if needed";
+    impl->notifyLocked();return id;
+}
+void LibraryService::clearReference()
+{
+    std::lock_guard lock(impl->mutex);impl->exampleMode=false;impl->current.exampleMode=false;
+    impl->current.reference={};++impl->workToken;++impl->semanticInputVersion;
+    impl->wake.notify_all();
+}
 } // namespace sp

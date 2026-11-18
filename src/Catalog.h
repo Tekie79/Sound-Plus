@@ -3,6 +3,8 @@
 #include <sqlite3.h>
 #include <vector>
 #include <optional>
+#include <array>
+#include <functional>
 
 namespace sp
 {
@@ -45,6 +47,8 @@ struct AnalysisCounts
     double analyzedSeconds = 0;
 };
 struct RetrievalMetrics { double fetchFilterMs = 0, vectorScoreMs = 0, rankGroupMs = 0; int vectors = 0; };
+struct StoredRegion { juce::String asset,root;int64_t revision=0,first=0,last=0;std::array<float,512> vector; };
+struct IndexState { juce::String catalog;int64_t sequence=0,oldest=1; };
 struct FileStamp
 {
     int64_t size = 0, modified = 0, inode = 0;
@@ -91,10 +95,10 @@ class Catalog
     std::vector<Asset> search(const juce::String &, const juce::String &root = {}, int limit = 1000,
                               int offset = 0);
     int countMatches(const juce::String &, const juce::String &root = {});
-    void materialize(const juce::String &, const juce::String &root = {});
+    void materialize(const juce::String &, const juce::String &root = {}, bool empty = false);
     std::vector<Asset> page(int offset, int limit);
     Asset asset(const juce::String &id);
-    int promote(const std::vector<Asset> &prefix);
+    int promote(const std::vector<Asset> &prefix, bool keepLexicalTail = true);
     void seedAnalysis(const juce::String &model, const juce::String &preprocessing,
                        const juce::String &assetId = {});
     std::optional<AnalysisTask> nextAnalysis(const juce::String &model, const juce::String &preprocessing,
@@ -102,9 +106,14 @@ class Catalog
     bool commitAnalysis(const AnalysisUpdate &);
     AnalysisCounts analysisCounts(const juce::String &model, const juce::String &preprocessing);
     void retryAnalysis(const juce::String &model, const juce::String &preprocessing);
+    IndexState indexState();
+    juce::StringArray indexChanges(int64_t since);
+    void visitRegions(const juce::String &model,const juce::String &preprocessing,
+                      const juce::String &asset,const std::function<void(const StoredRegion &)> &);
     std::vector<Asset> semanticSearch(const std::vector<float> &, const juce::String &model,
                                       const juce::String &preprocessing, const juce::String &root = {},
-                                      int limit = 100, RetrievalMetrics *metrics = nullptr);
+                                      int limit = 100, RetrievalMetrics *metrics = nullptr,
+                                      const juce::String &excludeAsset = {});
     Asset existing(const juce::String &root, const juce::String &relative);
     std::vector<Asset> inodeCandidates(const juce::String &root, int64_t inode);
     std::vector<Asset> pendingRoot(const juce::String &, int limit);

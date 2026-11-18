@@ -11,7 +11,8 @@ class LibraryView final : public juce::Component,
                           private juce::TableListBoxModel,
                           private juce::ListBoxModel,
                           private juce::KeyListener,
-                          private juce::AsyncUpdater
+                          private juce::AsyncUpdater,
+                          public juce::FileDragAndDropTarget
 {
   public:
     LibraryView(const juce::File &database, const juce::File &executable, bool enableAI = true,
@@ -27,6 +28,8 @@ class LibraryView final : public juce::Component,
     uint64_t benchmarkSearch(const juce::String &q, const juce::String &root = {});
     void benchmarkScroll(int row);
     uint64_t benchmarkSemanticSearch(const juce::String &q, const juce::String &root = {});
+    bool isInterestedInFileDrag(const juce::StringArray &) override;
+    void filesDropped(const juce::StringArray &,int,int) override;
     Benchmark *benchmark = nullptr;
 
   private:
@@ -53,10 +56,18 @@ class LibraryView final : public juce::Component,
     void timerCallback() override;
     void chooseFolder();
     void toggle();
+    void playFromPlayhead();
     void playSelected(bool useMatch, int64_t seekSample = -1);
     void setRegion(int64_t start, int64_t end, bool zoom = false);
+    void showRangeEditor(bool forReference=false);
     void installModelMenu();
     void requestSearch();
+    void useSelectionAsReference();
+    void chooseReference();
+    void submitReference(const AudioReference &);
+    void playReference(int64_t seek = -1);
+    void navigate(int direction);
+    void updateReference(const ReferenceState &);
     const Asset *selected() const;
     struct SourceModel : juce::ListBoxModel
     {
@@ -91,10 +102,13 @@ class LibraryView final : public juce::Component,
         }
     } sourceModel{*this};
     juce::LookAndFeel_V4 look;
+    juce::TooltipWindow tooltips{this,500};
     LibraryService library;
     AudioClient audio;
     WaveformCache waveformCache;
     WaveformView waveform;
+    WaveformCache referenceWaveformCache;
+    WaveformView referenceWaveform;
     LibrarySnapshot snapshot;
     struct NamedTable : juce::TableListBox
     {
@@ -115,27 +129,46 @@ class LibraryView final : public juce::Component,
     } table{*this};
     juce::ListBox sources{"Library folders", &sourceModel};
     juce::TextEditor search;
-    juce::TextButton add{"Add Folder"}, rescan{"Rescan"}, play{"Play"}, restart{"Reconnect Audio"};
-    juce::TextButton pauseIndex{"Pause Indexing"}, refresh{"Refresh Results"};
-    juce::TextButton installAI{"Install AI Model"}, retryAI{"Retry Analysis"}, cancelInstall{"Cancel Download"};
-    juce::TextButton playMatch{"Play Match"}, playWhole{"Play Whole"};
+    IconButton add{"Add Folder",ActionIcon::folder},rescan{"Rescan",ActionIcon::scanFolder},play{"Play",ActionIcon::play},restart{"Reconnect Audio",ActionIcon::reconnect};
+    IconButton pauseIndex{"Pause Indexing",ActionIcon::pause},refresh{"Refresh Results",ActionIcon::refresh};
+    IconButton installAI{"Install AI Model",ActionIcon::download},retryAI{"Retry Analysis",ActionIcon::retryAnalysis},cancelInstall{"Cancel Download",ActionIcon::cancel};
+    IconButton playMatch{"Play Match",ActionIcon::match},playWhole{"Play Whole",ActionIcon::whole};
+    IconButton previous{"Previous recording",ActionIcon::previous},next{"Next recording",ActionIcon::next};
+    IconButton findSimilar{"Find Similar",ActionIcon::similar,true},externalReference{"Choose reference file",ActionIcon::file};
+    IconButton referencePlay{"Play reference",ActionIcon::play},referenceSearch{"Find Similar",ActionIcon::similar,true};
+    IconButton clearReference{"Clear reference",ActionIcon::cancel},addReference{"Add containing folder to Library",ActionIcon::folder};
+    juce::ToggleButton includeSource{"Include source recording"};
+    juce::TextEditor referenceIn,referenceOut;
+    juce::Label referenceTitle,referenceStatus,referenceUnits;
+    juce::ComboBox auditionChannels;
     juce::ToggleButton context{"+/-0.25 s context"};
     juce::ComboBox moments;
     juce::TextEditor rangeIn, rangeOut;
+    juce::Component::SafePointer<juce::CallOutBox> rangeEditor;
     juce::Label aiStatusLabel, semanticCoverage, inLabel, outLabel;
     void chooseSource(int);
     juce::ComboBox output;
     juce::Slider gain;
     juce::Label summary, detail, assetId, transport, status, volumeLabel;
     std::unique_ptr<juce::FileChooser> chooser;
-    juce::String selectedId, rootFilter, playingName, playingId;
+    juce::String selectedId, rootFilter, playingId, playbackError;
     uint64_t requested = 1, appliedVersion = 0, appliedRequest = 0;
     bool updating = false;
     bool updatingRange = false, matchMode = false, rangeEdited = false, waveformNeedsZoom = false;
     int64_t regionStart = 0, regionEnd = 0, rangeRevision = -1, rangeSamples = 0;
     uint64_t waveformRequest = 0, waveformApplied = 0;
     uint64_t rangeRequest = 0;
-    juce::String rangeAssetId, playingRange;
+    juce::String rangeAssetId;
+    int64_t parkedCandidateSeek=-1,parkedReferenceSeek=-1;
     std::unique_ptr<juce::FileChooser> modelChooser;
+    std::unique_ptr<juce::FileChooser> referenceChooser;
+    AudioReference pinnedReference;
+    bool similarMode=false,updatingReference=false,referenceDraft=false;
+    uint64_t referenceDisplayed=0,referenceWaveRequest=0,referenceWaveApplied=0;
+    int64_t referenceDisplayedSamples=0;
+    juce::String referenceWaveKey;
+    juce::String playingPath;
+    PlaybackRegion playingSpec;
+    int navigationToPlay=-1;
 };
 } // namespace sp
