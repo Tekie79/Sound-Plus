@@ -46,10 +46,18 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
-    for (auto *control : {&zoomIn, &zoomOut, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
+    for (auto *control : {&zoomIn, &zoomOut, &fitAll, &fitSelected, &snap, &snapOptions, &scrub, &verticalIn,
+                          &verticalOut, &accurate})
         addAndMakeVisible(control);
     zoomIn.onClick = [this] { canvas->zoom(1.5); };
     zoomOut.onClick = [this] { canvas->zoom(1 / 1.5); };
+    verticalIn.onClick = [this] { canvas->zoomVertical(1.25); };
+    verticalOut.onClick = [this] { canvas->zoomVertical(1 / 1.25); };
+    canvas->onRowsChanged = [this]
+    {
+        canvas->setSize(std::max(280, canvasViewport.getWidth() - 14),
+                        std::max(canvasViewport.getHeight() - 2, canvas->contentHeight()));
+    };
     fitAll.onClick = [this] { canvas->fitDesign(); };
     fitSelected.onClick = [this] { canvas->fitSelection(); };
     snap.onClick = [this]
@@ -100,6 +108,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     title.setFont(juce::FontOptions(20.0f));
     title.setColour(juce::Label::textColourId, text);
     title.setEditable(false, true, false);
+    title.onEditorShow = [this] { session.protectStartupEdits(); };
     title.onTextChange = [this]
     {
         if (!updating)
@@ -133,7 +142,9 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         {
             auto &entry = session.recoveries[i];
             menu.addItem((int)i + 1, entry.document.name + " / r" + juce::String(entry.document.revision) +
-                                         (entry.dirty ? " / recovered edits" : " / saved"));
+                                         (entry.archived ? " / archived before recall"
+                                          : entry.dirty  ? " / recovered edits"
+                                                         : " / saved"));
         }
         auto entries = session.recoveries;
         auto token = session.beginDialog();
@@ -170,6 +181,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     };
     remove.onClick = [this]
     {
+        if (!session.selectedLayer())
+            return;
         auto id = session.document.selectedLayer;
         session.edit("Remove layer",
                      [&](auto &d)
@@ -198,6 +211,12 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     down.onClick = [reorder] { reorder(1); };
     play.setPrimary();
     play.onClick = [this] { session.play(); };
+    play.setTooltip("Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use "
+                    "Accurate audition to judge long tails.");
+    accurate.onClick = [this] { session.playAccurate(); };
+    accurate.setTooltip(
+        "Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. "
+        "Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.");
     generate.onClick = [this] { session.generate((uint64_t)juce::Random::getSystemRandom().nextInt64()); };
     variationSettings.onClick = [this] { variationPopup(); };
     candidates.setTitle("Original and variation candidates");
@@ -276,6 +295,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     int layerHeaderY = inspectorY;
     inspector.addAndMakeVisible(layerName);
     layerName.setEditable(false, true, false);
+    layerName.onEditorShow = [this] { session.protectStartupEdits(); };
     layerName.setBounds(8, inspectorY, 264, 25);
     inspectorY += 28;
     layerName.onTextChange = [this]
@@ -1023,6 +1043,7 @@ void DesignerView::refresh()
         down.setEnabled(at != layers.end() && at + 1 != layers.end());
     }
     render.setEnabled(!d.activeMix().layers.empty() && !session.rendering);
+    accurate.setEnabled(!d.activeMix().layers.empty() && !session.transitionPending());
     cancel.setVisible(session.rendering);
     newButton.setEnabled(!session.rendering);
     openButton.setEnabled(!session.rendering);
@@ -1039,9 +1060,8 @@ void DesignerView::refresh()
                        juce::dontSendNotification);
     outputInfo.setTooltip(session.lastOutput == juce::File() ? session.outputFolder().getFullPathName()
                                                              : session.lastOutput.getFullPathName());
-    canvas->setSize(std::max(280, canvasViewport.getWidth() - 14),
-                    std::max(canvasViewport.getHeight() - 2, 30 + (int)d.activeMix().layers.size() * 78));
     canvas->syncSelectors();
+    canvas->onRowsChanged();
     canvas->repaint();
     updating = false;
     repaint();
@@ -1058,6 +1078,7 @@ void DesignerView::timerCallback()
         entry->setProperty("inputToCallbackMs", state["editLatencyMs"]);
         entry->setProperty("sourceSample", state["sourceSample"]);
         entry->setProperty("playGeneration", state["playGeneration"]);
+        entry->setProperty("stockPhase", benchmarkStockPhase);
         heardEdits.add(juce::var(entry));
     }
     bool owned = state["id"].toString() == "design:" + session.document.id;
@@ -1146,10 +1167,12 @@ void DesignerView::resized()
     }
     canvasViewport.setBounds(12, 136, std::max(280, creative - 24), getHeight() - 340);
     int toolX = 16;
-    for (auto *button : {&zoomOut, &zoomIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
+    for (auto *button :
+         {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
     {
-        button->setBounds(toolX, 98, 26, 28);
-        toolX += 29;
+        int step = creative < 420 ? 25 : 29;
+        button->setBounds(toolX, 98, step - 3, 28);
+        toolX += step;
     }
     position.setBounds(toolX + 8, 98, std::max(70, creative - toolX - 20), 28);
     inspectorViewport.setVisible(inspectorOpen);
@@ -1172,6 +1195,7 @@ void DesignerView::resized()
     addPrint.setBounds(128, y + 42, 28, 30);
     outputInfo.setBounds(168, y + 42, std::max(60, creative - 186), 30);
     play.setBounds(creative / 2 - 20, getHeight() - 92, 40, 40);
+    accurate.setBounds(creative / 2 + 30, getHeight() - 86, 28, 28);
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);
     monitor.setBounds(getWidth() - 230, getHeight() - 35, 180, 24);
     meter.setBounds(getWidth() - 230, getHeight() - 77, 180, 22);
@@ -1683,6 +1707,77 @@ void DesignerView::benchmarkEndGesture()
     if (benchmarkPhase >= 0)
         canvas->mouseUp(benchmarkPointer(*canvas, benchmarkAnchor, benchmarkAnchor));
     benchmarkPhase = -1;
+    if (benchmarkStockPhase >= 0)
+        effectValues[0].onDragEnd();
+    benchmarkStockPhase = -1;
+}
+void DesignerView::benchmarkStockControls(int phase, double value)
+{
+    if (benchmarkStockPhase != phase)
+    {
+        benchmarkEndGesture();
+        session.selectLayer(session.document.activeMix().layers.front().id);
+        rackTarget.setSelectedId(phase >= 3 ? 2 : 1, juce::sendNotificationSync);
+        effectChoice.setSelectedId(phase >= 3 ? phase - 2 : phase + 1, juce::sendNotificationSync);
+        benchmarkStockPhase = phase;
+        effectValues[0].onDragStart();
+    }
+    // Use the real inspector slider's range, notification and edit callback.
+    auto &slider = effectValues[0];
+    double low = slider.getMinimum(), high = slider.getMaximum();
+    if (phase == 0 || phase == 3)
+    {
+        low = 30;
+        high = 3000;
+    }
+    else if (phase == 1)
+    {
+        low = 40;
+        high = 600;
+    }
+    slider.setValue(low + (high - low) * (.5 + .45 * value), juce::sendNotificationSync);
+}
+juce::var DesignerView::benchmarkSelectionCommands()
+{
+    auto result = juce::var(new juce::DynamicObject());
+    auto record = [&](const char *name, bool ok) { result.getDynamicObject()->setProperty(name, ok); };
+    auto original = session.document;
+    auto primary = original.activeMix().layers.front().id;
+    session.selectLayer(primary);
+    duplicate.onClick();
+    auto copy = session.document.selectedLayer;
+    record("duplicate", copy != primary && session.selectedIds == std::set<juce::String>{copy});
+    undoButton.onClick();
+    record("undoDuplicate", session.document.selectedLayer == primary &&
+                                session.selectedIds == std::set<juce::String>{primary});
+    redoButton.onClick();
+    record("redoDuplicate",
+           session.document.selectedLayer == copy && session.selectedIds == std::set<juce::String>{copy});
+    remove.onClick();
+    record("delete", session.document.selectedLayer != copy && !session.selectedIds.contains(copy));
+    undoButton.onClick();
+    record("undoDelete",
+           session.document.selectedLayer == copy && session.selectedIds == std::set<juce::String>{copy});
+    undoButton.onClick();
+    session.selectLayer(primary, true);
+    auto revision = session.document.revision;
+    remove.onClick();
+    record("deselectThenDelete", session.selectedIds.empty() && session.document.selectedLayer.isEmpty() &&
+                                     session.document.revision == revision);
+    session.generate(23);
+    session.selectVariation(session.document.variations.front().id);
+    record("variation", session.selectedIds == std::set<juce::String>{session.document.selectedLayer});
+    undoButton.onClick();
+    record("undoVariation", session.selectedIds.empty() && session.document.selectedLayer.isEmpty());
+    redoButton.onClick();
+    record("redoVariation", session.selectedIds == std::set<juce::String>{session.document.selectedLayer});
+    undoButton.onClick();
+    undoButton.onClick();
+    session.selectLayer(primary);
+    record("originalRestored",
+           session.document.activeVariation.isEmpty() &&
+               session.document.original.layers.size() == original.original.layers.size());
+    return result;
 }
 
 } // namespace sp

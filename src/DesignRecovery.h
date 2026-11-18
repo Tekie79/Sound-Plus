@@ -8,7 +8,7 @@ struct DesignRecovery
 {
     DesignDocument document;
     juce::File snapshot, savedFile;
-    bool dirty = true;
+    bool dirty = true, archived = false;
     int64_t updated = 0;
 };
 
@@ -20,6 +20,7 @@ class DesignRecoveryStore
     void retain(const DesignDocument &, const juce::File &savedFile, bool dirty);
     std::vector<DesignRecovery> entries();
     DesignRecovery read(const juce::File &);
+    DesignRecovery prepareRecall(DesignRecovery);
     void activate(const juce::String &id);
 
   private:

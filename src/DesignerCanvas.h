@@ -17,6 +17,12 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     void fitDesign();
     void fitSelection();
     void zoom(double factor);
+    void zoomVertical(double factor);
+    std::function<void()> onRowsChanged;
+    int contentHeight() const
+    {
+        return (int)std::ceil(viewport.contentHeight((int)session.document.activeMix().layers.size()));
+    }
     void cancelDrag();
     void setDropGhost(std::optional<int64_t>);
     int64_t frameAt(float x) const
@@ -49,6 +55,8 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     juce::String headerSignature, documentId, feedback;
     bool pointerDown = false, moved = false, slip = false;
     bool needsInitialFit = true, restoredViewport = false;
+    bool clipSelection = true, originalClipSelection = true;
+    double verticalScale = 1, originalHeight = 78;
     CanvasHit hit, hover;
     DesignDocument original;
     std::set<juce::String> selection;
@@ -63,5 +71,8 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     void updateHover(juce::Point<float>);
     void timerCallback() override;
     void saveViewport();
+    void updateRows();
+    juce::String heightKey(const juce::String &) const;
+    void showColours(const juce::String &);
 };
 } // namespace sp

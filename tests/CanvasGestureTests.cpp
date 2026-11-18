@@ -2,6 +2,7 @@
 #include "DesignerCanvas.h"
 #include "UIComponents.h"
 #include "LibraryLayout.h"
+#include "DesignLive.h"
 #include <iostream>
 #include <future>
 namespace
@@ -174,9 +175,28 @@ void runCanvasGestureTests(const juce::File &parent)
     narrow.original.layers[0].region.endSample = 1;
     narrow.original.layers[0].sync = 0;
     auto narrowShape = sp::clipGeometry(narrow.original.layers[0], 0, viewport, 48000);
-    check(sp::canvasHitTest(narrow, viewport, narrowShape.right, narrowShape.top + 10).target ==
+    check(sp::canvasHitTest(narrow, viewport, narrowShape.right, narrowShape.fadeOutY).target ==
               sp::CanvasTarget::fadeOut,
-          "Narrow clips use nearest fade handle precedence");
+          "Narrow clips retain an independently reachable OUT grip");
+    for (auto fades : {std::pair<int64_t, int64_t>{48000, 48000}, {96000, 0}, {0, 96000}})
+    {
+        auto overlap = original;
+        overlap.original.layers[0].fadeIn = fades.first;
+        overlap.original.layers[0].fadeOut = fades.second;
+        auto g = sp::clipGeometry(overlap.original.layers[0], 0, viewport, 48000);
+        check(sp::canvasHitTest(overlap, viewport, g.fadeIn, g.fadeInY).target == sp::CanvasTarget::fadeIn &&
+                  sp::canvasHitTest(overlap, viewport, g.fadeOut, g.fadeOutY).target ==
+                      sp::CanvasTarget::fadeOut,
+              "Both coincident fade handles have separate painted and hit-test positions");
+    }
+    for (float width : {280.f, 700.f, 2200.f})
+    {
+        sp::TimelineViewport fit;
+        fit.width = width;
+        fit.fit(0, 48000LL * 3601, 48000);
+        check(fit.x(48000LL * 3601, 48000) <= width - 18 && fit.startSeconds == 0,
+              "Fit Design fits a full valid hour plus tail at narrow and wide widths");
+    }
     // Exercise the real component's pointer handlers and session history, not a second edit implementation.
     std::deque<std::function<void()>> jobs, posts;
     sp::DesignSessionServices services;
@@ -205,6 +225,86 @@ void runCanvasGestureTests(const juce::File &parent)
     canvas.viewport.pixelsPerSecond = 50;
     canvas.viewport.startSeconds = 0;
     canvas.snapping.enabled = false;
+    // View-only heights and selection must not alter the audio recipe/history.
+    auto image = [&]
+    {
+        juce::Image result(juce::Image::ARGB, 1000, 600, true);
+        juce::Graphics g(result);
+        canvas.paint(g);
+        return result;
+    };
+    shape = sp::clipGeometry(a, 0, canvas.viewport, 48000);
+    juce::Point<float> clipClick{shape.left + 50, shape.top + 52};
+    canvas.mouseDown(pointer(canvas, clipClick, clipClick));
+    canvas.mouseUp(pointer(canvas, clipClick, clipClick));
+    auto clipImage = image();
+    auto lanePixel = clipImage.getPixelAt(950, (int)shape.top + 40);
+    auto clipPixel = clipImage.getPixelAt((int)shape.left + 20, (int)shape.top + 40);
+    juce::Point<float> headerClick{20, shape.top + 20};
+    canvas.mouseDown(pointer(canvas, headerClick, headerClick));
+    canvas.mouseUp(pointer(canvas, headerClick, headerClick));
+    auto trackImage = image();
+    check(lanePixel == sp::ui::surface && trackImage.getPixelAt(950, (int)shape.top + 40) != lanePixel &&
+              trackImage.getPixelAt((int)shape.left + 20, (int)shape.top + 40) != clipPixel,
+          "Clip selection paints only the clip; track selection has a distinct lane and clip state");
+    auto beforeHeight = session.document.revision;
+    juce::Point<float> edge{20, canvas.viewport.rowTop(1) - 3}, taller{20, edge.y + 90};
+    canvas.mouseDown(pointer(canvas, edge, edge));
+    canvas.mouseDrag(pointer(canvas, taller, edge));
+    canvas.mouseUp(pointer(canvas, taller, edge));
+    check(canvas.viewport.rowHeight(0) == 168 && canvas.viewport.rowTop(1) == 200 &&
+              session.document.revision == beforeHeight && !session.canUndo(),
+          "Real lower-edge drag changes only this track's height without audio edits/history");
+    auto resizedShape = sp::clipGeometry(b, 1, canvas.viewport, 48000);
+    check(sp::canvasHitTest(session.document, canvas.viewport, resizedShape.left, resizedShape.fadeInY).row ==
+              1,
+          "Gesture hit mapping follows resized rows");
+    canvas.zoomVertical(1.25);
+    check(canvas.viewport.rowHeight(0) == 210 && canvas.viewport.rowHeight(1) == 97.5,
+          "Vertical zoom scales all rows independently of horizontal zoom");
+    {
+        sp::DesignerCanvas reopened(
+            session, [](const auto &) -> std::shared_ptr<const sp::WaveformData> { return {}; }, preferences);
+        reopened.setBounds(0, 0, 1000, 400);
+        check(reopened.viewport.rowHeight(0) == 210 && reopened.viewport.rowHeight(1) == 97.5,
+              "A reopened canvas restores independent heights and vertical zoom from preferences");
+    }
+    canvas.zoomVertical(1 / 1.25);
+    edge = {20, canvas.viewport.rowTop(1) - 3};
+    canvas.mouseDoubleClick(pointer(canvas, edge, edge));
+    check(canvas.viewport.rowHeight(0) == 78, "Double-click track edge restores default height");
+    auto structure = sp::designStructure(session.document);
+    session.edit("Colour", [](auto &d) { d.original.layers[0].colour = 0xff72b8a2; });
+    auto coloured = sp::designToJson(session.document);
+    check(sp::designFromJson(coloured).original.layers[0].colour == 0xff72b8a2 &&
+              sp::designStructure(session.document) == structure,
+          "Track colour survives serialization without invalidating the audio graph");
+    session.undo();
+    check(session.document.original.layers[0].colour == 0, "Track colour is undoable");
+    session.redo();
+    check(session.document.original.layers[0].colour == 0xff72b8a2, "Track colour is redoable");
+    session.undo();
+    (*coloured["original"]["layers"].getArray())[0].getDynamicObject()->removeProperty("colour");
+    check(sp::designFromJson(coloured).original.layers[0].colour == 0,
+          "Existing version-one documents keep the default colour");
+    session.edit("Coincident fades",
+                 [](auto &d) { d.original.layers[0].fadeIn = d.original.layers[0].fadeOut = 48000; });
+    auto coincident = sp::clipGeometry(session.document.original.layers[0], 0, canvas.viewport, 48000);
+    for (bool in : {false, true})
+    {
+        juce::Point<float> from{in ? coincident.fadeIn : coincident.fadeOut,
+                                in ? coincident.fadeInY : coincident.fadeOutY};
+        auto to = from + juce::Point<float>(10, 0);
+        canvas.mouseDown(pointer(canvas, from, from));
+        canvas.mouseDrag(pointer(canvas, to, from));
+        canvas.mouseUp(pointer(canvas, to, from));
+        auto &layer = session.document.original.layers[0];
+        check((in ? layer.fadeIn == 57600 && layer.fadeOut == 48000
+                  : layer.fadeOut == 38400 && layer.fadeIn == 48000),
+              "Real pointer handlers independently edit both coincident fade handles");
+        session.undo();
+    }
+    session.undo();
     shape = sp::clipGeometry(a, 0, canvas.viewport, 48000);
     juce::Point<float> start{shape.fadeIn, shape.top + 10}, end{shape.fadeIn + 50, shape.top + 10};
     canvas.mouseDown(pointer(canvas, start, start));

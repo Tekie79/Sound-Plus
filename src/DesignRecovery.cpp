@@ -40,11 +40,12 @@ DesignRecovery DesignRecoveryStore::readUnlocked(const juce::File &snapshot)
     {
         result.savedFile = juce::File(state["savedFile"].toString());
         result.dirty = state["state"].toString() == "recoverable";
+        result.archived = (bool)state["archived"];
         result.updated = (int64_t)state["updated"];
     }
     else
         result.updated = snapshot.getLastModificationTime().toMilliseconds();
-    if (result.savedFile.existsAsFile())
+    if (!result.archived && result.savedFile.existsAsFile())
     {
         try
         {
@@ -67,6 +68,38 @@ DesignRecovery DesignRecoveryStore::read(const juce::File &file)
     std::lock_guard lock(mutex);
     return readUnlocked(file);
 }
+DesignRecovery DesignRecoveryStore::prepareRecall(DesignRecovery recalled)
+{
+    std::lock_guard lock(mutex);
+    auto live = directory.getChildFile(recalled.document.id + ".soundplus");
+    if (!live.existsAsFile())
+        return recalled;
+    auto previous = readUnlocked(live);
+    if (previous.document.revision <= recalled.document.revision)
+        return recalled;
+    // Explicit recall is a new edit lineage, unlike an obsolete background write.
+    // Keep the newer retained recipe accessible before giving the recalled recipe
+    // a monotonic revision, so its next fresh edit can actually be published.
+    auto archive =
+        directory.getChildFile(recalled.document.id + "-r" + juce::String(previous.document.revision) + "-" +
+                               juce::Uuid().toString() + ".soundplus");
+    saveDesignAtomic(archive, previous.document);
+    auto metadata = juce::JSON::parse(live.withFileExtension(".json"));
+    if (!metadata.isObject())
+        metadata = juce::var(new juce::DynamicObject());
+    auto *state = metadata.getDynamicObject();
+    state->setProperty("id", previous.document.id);
+    state->setProperty("revision", (juce::int64)previous.document.revision);
+    state->setProperty("savedFile", previous.savedFile.getFullPathName());
+    state->setProperty("state", previous.dirty ? "recoverable" : "saved");
+    state->setProperty("archived", true);
+    state->setProperty("updated", (juce::int64)previous.updated);
+    publishJournal(archive.withFileExtension(".json"), metadata);
+    recalled.document.revision = previous.document.revision + 1;
+    recalled.dirty = true;
+    recalled.archived = false;
+    return recalled;
+}
 
 void DesignRecoveryStore::retain(const DesignDocument &document, const juce::File &saved, bool dirty)
 {
@@ -75,9 +108,15 @@ void DesignRecoveryStore::retain(const DesignDocument &document, const juce::Fil
     if (snapshot.existsAsFile())
     {
         auto previous = readUnlocked(snapshot);
-        if (previous.document.revision > document.revision ||
-            (previous.document.revision == document.revision && !previous.dirty && dirty))
-            return;
+        if (previous.document.revision > document.revision)
+            throw std::runtime_error("Recovery rejected an obsolete revision; snapshot was not acknowledged");
+        if (previous.document.revision == document.revision && !previous.dirty && dirty)
+        {
+            if (juce::JSON::toString(designToJson(previous.document), true) !=
+                juce::JSON::toString(designToJson(document), true))
+                throw std::runtime_error("Recovery revision conflicts with a newer saved recipe");
+            return; // The identical recipe is already durably saved, never demote it.
+        }
     }
     saveDesignAtomic(snapshot, document);
     auto *state = new juce::DynamicObject();
@@ -123,6 +162,8 @@ std::vector<DesignRecovery> DesignRecoveryStore::entries()
               {
                   if ((a.document.id == active) != (b.document.id == active))
                       return a.document.id == active;
+                  if (a.archived != b.archived)
+                      return !a.archived;
                   return a.updated > b.updated;
               });
     return result;

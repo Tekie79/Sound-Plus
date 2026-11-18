@@ -33,7 +33,7 @@ juce::var mixJson(const DesignMix &mix)
         put(s,"rate",l.source.sampleRate);put(s,"samples",(juce::int64)l.source.samples);put(s,"channels",l.source.channels);put(v,"source",s);
         put(v,"first",(juce::int64)l.region.startSample);put(v,"last",(juce::int64)l.region.endSample);put(v,"channelPair",l.region.auditionPair);
         put(v,"placement",(juce::int64)l.placement);put(v,"sync",(juce::int64)l.sync);put(v,"fadeIn",(juce::int64)l.fadeIn);put(v,"fadeOut",(juce::int64)l.fadeOut);
-        put(v,"gainDb",l.gainDb);put(v,"pan",l.pan);put(v,"rate",l.rate);put(v,"reverse",l.reverse);put(v,"mute",l.mute);put(v,"solo",l.solo);put(v,"locked",l.locked);put(v,"locks",(int)l.locks);put(v,"effects",effectsJson(l.effects));layers.add(v);}
+        put(v,"gainDb",l.gainDb);put(v,"pan",l.pan);put(v,"rate",l.rate);put(v,"reverse",l.reverse);put(v,"mute",l.mute);put(v,"solo",l.solo);put(v,"locked",l.locked);put(v,"locks",(int)l.locks);put(v,"colour",(juce::int64)l.colour);put(v,"effects",effectsJson(l.effects));layers.add(v);}
     put(o,"layers",layers);return o;
 }
 DesignMix mixFrom(const juce::var &o)
@@ -45,7 +45,7 @@ DesignMix mixFrom(const juce::var &o)
         l.source.size=integer(s,"size");l.source.modified=integer(s,"modified");l.source.inode=integer(s,"inode");l.source.sampleRate=(double)s["rate"];l.source.samples=integer(s,"samples");l.source.channels=(int)s["channels"];l.source.duration=l.source.samples/l.source.sampleRate;
         l.region.startSample=integer(v,"first");l.region.endSample=integer(v,"last");l.region.auditionPair=(int)v["channelPair"];l.region.revision=l.source.revision;l.region.size=l.source.size;l.region.modified=l.source.modified;l.region.inode=l.source.inode;
         l.placement=integer(v,"placement");l.sync=integer(v,"sync");l.fadeIn=integer(v,"fadeIn");l.fadeOut=integer(v,"fadeOut");l.gainDb=(double)v["gainDb"];l.pan=(double)v["pan"];l.rate=(double)v["rate"];
-        l.reverse=(bool)v["reverse"];l.mute=(bool)v["mute"];l.solo=(bool)v["solo"];l.locked=(bool)v["locked"];l.locks=(uint32_t)(int)v["locks"];l.effects=effectsFrom(v["effects"]);mix.layers.push_back(std::move(l));}
+        l.reverse=(bool)v["reverse"];l.mute=(bool)v["mute"];l.solo=(bool)v["solo"];l.locked=(bool)v["locked"];l.locks=(uint32_t)(int)v["locks"];l.colour=(uint32_t)(juce::int64)v["colour"];l.effects=effectsFrom(v["effects"]);mix.layers.push_back(std::move(l));}
     return mix;
 }
 juce::var renderJson(const DesignRenderSettings &s){auto o=object();put(o,"rate",s.sampleRate);put(o,"tailSeconds",s.tailSeconds);put(o,"channels",s.channels);put(o,"bits",s.bits);put(o,"first",(juce::int64)s.first);put(o,"last",(juce::int64)s.last);put(o,"normalize",s.normalize);put(o,"dither",s.dither);return o;}

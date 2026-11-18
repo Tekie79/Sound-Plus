@@ -32,6 +32,8 @@ class DesignerView final : public juce::Component,
     juce::var interactionMetrics() const;
     void benchmarkGesture(int phase, double displacement);
     void benchmarkEndGesture();
+    void benchmarkStockControls(int phase, double value);
+    juce::var benchmarkSelectionCommands();
     void commitNames();
     bool commandKey(const juce::KeyPress &key)
     {
@@ -44,8 +46,11 @@ class DesignerView final : public juce::Component,
         fitAll{"Fit design", ActionIcon::fit}, fitSelected{"Fit selected layers", ActionIcon::fitSelection},
         snap{"Enable snapping (Command temporarily bypasses)", ActionIcon::snap},
         snapOptions{"Snap targets and grid", ActionIcon::chevron},
-        scrub{"Audible forward-grain preview", ActionIcon::scrub};
+        scrub{"Audible forward-grain preview", ActionIcon::scrub},
+        verticalIn{"Increase track height (Command-Option-wheel)", ActionIcon::verticalIn},
+        verticalOut{"Decrease track height", ActionIcon::verticalOut};
     int benchmarkPhase = -1;
+    int benchmarkStockPhase = -1;
     juce::Point<float> benchmarkAnchor;
     juce::Array<juce::var> heardEdits;
     uint64_t lastHeardEdit = 0;
@@ -89,7 +94,9 @@ class DesignerView final : public juce::Component,
     IconButton undoButton{"Undo", ActionIcon::undo}, redoButton{"Redo", ActionIcon::redo},
         duplicate{"Duplicate layer", ActionIcon::duplicate}, remove{"Remove layer", ActionIcon::trash},
         up{"Move layer up", ActionIcon::up}, down{"Move layer down", ActionIcon::down};
-    IconButton play{"Play design", ActionIcon::play}, generate{"Generate variations", ActionIcon::variations},
+    IconButton play{"Play design", ActionIcon::play},
+        accurate{"Accurate audition from playhead", ActionIcon::accurate},
+        generate{"Generate variations", ActionIcon::variations},
         variationSettings{"Variation bounds and enabled parameters", ActionIcon::settings};
     IconButton keep{"Keep variation", ActionIcon::keep}, rename{"Rename variation", ActionIcon::rename},
         discard{"Discard variation", ActionIcon::trash},

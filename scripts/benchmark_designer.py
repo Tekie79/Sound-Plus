@@ -18,7 +18,8 @@ def main():
     p.add_argument('--app',type=Path,default=Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus'))
     p.add_argument('--tests',type=Path,default=Path('build/SoundPlusTests_artefacts/Release/SoundPlusTests'))
     p.add_argument('--interactions',action='store_true',help='Measure continuous real canvas-handler edits during search/indexing')
-    a=p.parse_args();out=a.output.resolve()
+    p.add_argument('--stock-effects',action='store_true',help='Measure actual inspector stock-effect sliders and selection commands')
+    a=p.parse_args();a.interactions = a.interactions or a.stock_effects;out=a.output.resolve()
     if out.exists():raise RuntimeError('Choose a fresh evidence directory')
     out.mkdir(parents=True);catalog=Path(tempfile.mkdtemp(prefix='soundplus-designer-performance-',dir='/private/tmp'))
     source=sqlite3.connect(a.catalog.resolve().as_uri()+'?mode=ro',uri=True)
@@ -27,7 +28,7 @@ def main():
     sounds=['heavy rain','glass breaking','crickets in the night','a chainsaw running','a metal impact','a door closing','birds singing','water splashing','a quiet room','wind blowing','footsteps on gravel','an engine idling','a small dog barking','fire crackling','waves on a beach','thunder rumbling','a wooden creak','traffic passing','a saw cutting','a crowd talking']
     templates=['{}','The sound of {}','Find {}','A recording of {}','I hear {}','Listen for {}','A close recording of {}','Background: {}','An audio clip of {}','Please find {}']
     queries=[{'text':t.format(s)} for t in templates for s in sounds]
-    plan=dict(mode='semantic-designer-edit' if a.interactions else 'semantic-designer',designFile=str(out/'fixture/workload.soundplus'),queryCount=len(queries),queries=queries)
+    plan=dict(mode='semantic-designer-stock' if a.stock_effects else 'semantic-designer-edit' if a.interactions else 'semantic-designer',designFile=str(out/'fixture/workload.soundplus'),queryCount=len(queries),queries=queries)
     if a.interactions:
         incoming=out/'incoming';incoming.mkdir()
         for n in range(30):
@@ -51,7 +52,11 @@ def main():
         summary['pointerHandlerToPaintMs']=distribution(visual);summary['editToCallbackMs']=distribution(heards)
         summary['editingSamplesWithIndexing']=report['controls']['editingSamplesWithIndexing']
         summary['editingProtocol']='Four seconds of gain-line drags (+/-20 px), then four seconds of fade-duration handle drags (+/-35 px) around a 20-second fade so its envelope affects the current mix; input driver every 25 ms, independent of audio update coalescing. Index 30 generated 5-second mono 48 kHz PCM16 files concurrently.'
-        summary['measurementBoundary']='Visible native canvas mouse-handler driver -> painted frame; last coalesced UI edit -> first tagged device callback PCM. Excludes OS input dispatch and physical DAC/acoustic delay.'
+        if a.stock_effects:
+            summary['editingProtocol']='Ten seconds of real inspector slider notifications at 25 ms intervals: layer high-pass cutoff, delay time, reverb size, master cutoff, master reverb size, two seconds each. Same prepared graph and playback generation throughout, while indexing and searching.'
+            summary['selectionCommands']=report['controls']['selectionCommands']
+            summary['stockPhaseEditToCallbackMs']={str(phase):distribution([float(x['inputToCallbackMs']) for x in interaction['heardEdits'] if x['stockPhase']==phase]) for phase in range(5)}
+        summary['measurementBoundary']=('Actual inspector slider notification -> last coalesced UI edit -> first tagged device callback PCM. No OS pointer or slider-to-paint timing was measured.' if a.stock_effects else 'Visible native canvas mouse-handler driver -> painted frame; last coalesced UI edit -> first tagged device callback PCM.')+' Excludes OS input dispatch and physical DAC/acoustic delay.'
     write(out/'summary.json',summary);print(json.dumps(summary,indent=2))
 
 if __name__=='__main__':main()

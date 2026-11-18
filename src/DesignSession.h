@@ -46,6 +46,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::File outputFolder() const;
     DialogToken beginDialog();
     bool accepts(DialogToken) const;
+    void protectStartupEdits();
     bool transitionPending() const
     {
         return replacing;
@@ -66,6 +67,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void addExternals(const juce::StringArray &, int64_t placement);
     void replaceSource(const juce::String &layer, const juce::File &);
     void play();
+    void playAccurate();
     void seek(int64_t);
     void stop();
     bool ownsPlayback() const;
@@ -96,6 +98,8 @@ class DesignSession final : public juce::Component, private juce::Timer
         save,
         transition,
         import,
+        relink,
+        recoveryList,
         preview,
         output,
         autosave,
@@ -124,6 +128,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     uint64_t lifetime = 1, dialogSerial = 0;
     std::shared_ptr<std::atomic<uint64_t>> lifetimeGate = std::make_shared<std::atomic<uint64_t>>(1);
     std::array<uint64_t, (size_t)Operation::count> operations{};
+    std::set<uint64_t> acceptedImports;
+    uint64_t startupActivity = 0;
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
@@ -132,10 +138,12 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::String autoDocument, publishedStructure;
     Stamp stamp(Operation);
     bool accepts(Stamp) const;
+    void finishOperation(Stamp);
     void enqueue(Stamp, std::function<std::function<void()>()>);
     void notify();
     void changed();
     void restoreDerivedState();
+    void reconcileSelection(const DesignDocument *before = nullptr);
     void transition(const juce::File &, bool recover, std::function<void()> close = {});
     void refreshRecoveries();
     void schedulePreview(const juce::String &mode = "play");

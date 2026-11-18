@@ -1,0 +1,1973 @@
+{
+  "milestone": "SoundPlus Designer v1.1.1",
+  "recordedAt": "2026-11-18T16:47:26.133291+00:00",
+  "reviewedBaseline": "0668ed0a29e11e84458aae43052ad69be5e007ea",
+  "implementationBase": "ef730216c63407bf1c32f75b2280ef536f3cb12f",
+  "candidate": "Commit containing this record, identified by the source/executable fingerprints below",
+  "sourceFingerprintSha256": "1624ea11a0e8e3c02a80c5fcf8afec43e92c4873982cf7f81e672f2420128615",
+  "sourceFileSha256": {
+    "CMakeLists.txt": "4fa4da71cf69f53f9804e6c9eb9003647c79ecc84256af661bfea1909b575196",
+    "scripts/benchmark_designer.py": "d1ade37cd1d7893d0e866a03437b2dbac49282705647dfc6b01444fb5ce87c42",
+    "src/AIHelperMain.cpp": "8ff675b6ae694bc70763e883771ec8b2e4cd0de94cfff9d72a781a9d3642c8ab",
+    "src/AIProcess.cpp": "d903681f491dd5d9aba85240733cfee905dfdd43d942ec6c4f4ca174e8fbd066",
+    "src/AIProcess.h": "575d3080e580be325ca1b8390f0e2e8920c960912dde75440f7639f3a212268d",
+    "src/AudioEngine.cpp": "fd773987927671a314f2b18eb73947e01041409e49763f11ec32511475f9deba",
+    "src/AudioEngine.h": "a5479e9170911b06fb4eb7402b4132a10762a2339ab8d7ac14142bdb3029f454",
+    "src/AudioIPC.cpp": "194292675403eb89e90f1ecba883a659ea3f79df9d68a7277fab986ea32a1167",
+    "src/AudioIPC.h": "c83ff04852760af0b8a99bed1adf9e4d133b4c4e85e325e95561dfa684c1a862",
+    "src/AudioMain.cpp": "ddf5e19f0579db64d1e26f9e82f32ac6d72aab3f9069b71c016bcdc2071f59c4",
+    "src/AudioPlaybackService.cpp": "3a7c57e4e919e81df0a1f7e93dc7c461cc552a846032867fe34977a035701ddb",
+    "src/AudioPlaybackService.h": "f60f84cf8e99f38cd7ced6d89592b124af889e01b89605e3a0cb6ad6102939aa",
+    "src/AudioRegion.h": "1a12cf07be56984c45a0e8408f9c3434eae7363ca1abcf4ada643128a68e883c",
+    "src/AudioStream.cpp": "96ee869d7946f867af8e32871d7b4e817c578ac0b4f2c563e76de7cd3ebfc7c4",
+    "src/AudioStream.h": "22a29a107885e5009920e06ecb467e9a29c5ecded0c3fc14c447707417c27c7a",
+    "src/Benchmark.cpp": "6b266f543ed24cf54afe1e9ebbb923c02d09cf85b5c9bdc47c4343524af1e63e",
+    "src/Benchmark.h": "ceea1f4c4f5e7be331cdc3d3ab4836de2fa063107aac5d8949a4e55e16d66dba",
+    "src/CanvasEditing.cpp": "5be6869e247d2eb883424bc37700684909b58f78baa27c71deff7a83abc62f69",
+    "src/CanvasEditing.h": "89b6e6be33a237ecd818bdd67d6ccd5a7facfad4eec6ffe69ac21dc33fa226aa",
+    "src/Catalog.cpp": "2b56346989599de1e7b4b1a93aaf4f4f784963a44c62d120a95b4410aaf92e4e",
+    "src/Catalog.h": "8bfc75edb2e844067e63af29e60845a69dc59fc5e802a444cc7769d3d7f130bf",
+    "src/ClapRuntime.cpp": "dd709c233b619189af155e6964c5e64e897e8a17e5bbfe690a87859e7dd43ef4",
+    "src/ClapRuntime.h": "fdf289fa109113afd935c9b709585742dda208668f89d67c84c3289ce5458890",
+    "src/DesignAudio.cpp": "ec80f3bc93532d864ae7622b5a4d66701279a6d8b3b08a765a944ad8bd2ac4d7",
+    "src/DesignAudio.h": "ef5bf370de905017efdaff43bf637d1b6c596cd41ec548007dd63989dc7c89e8",
+    "src/DesignLive.cpp": "55499f4c5124599c65bfd02368f7e2719f587c6c55ccf846294d88851141ab0d",
+    "src/DesignLive.h": "dd904447f22f01038ee2c1a9e4a783d8af8b35a505a79b3a65ff2dc0bb11eb13",
+    "src/DesignModel.cpp": "e4ca9f43c20f481a48cef628e4c97c42118c31e3c7b985a2affe621ea6bdd4ba",
+    "src/DesignModel.h": "05efd036bef8e2b58817f93024cabd111489d17ed3095ae66ecec3b14f50e7f3",
+    "src/DesignRecovery.cpp": "6bdf7c41c38f671d577c27e9bad3ed04b73f05068822764f4083548bb163a197",
+    "src/DesignRecovery.h": "6676cd1777c380b0267bfb829bbaf66026d2759668453dc34857d2c03f94b89e",
+    "src/DesignSession.cpp": "a631dac9095c1c1789606b8fdf793616277e3e794880bace6752a2561833294f",
+    "src/DesignSession.h": "de2733205c1ac28f4fc48ea59b50727ef70bb9fde33df7f6d631b8ea8dc90ba5",
+    "src/DesignerCanvas.cpp": "7d06910fac16aacb638565372002b5722828169bf0fa3303bf1c40a25bab3205",
+    "src/DesignerCanvas.h": "2151ed24e92879d6f99ba75df9aca2a56af3598f19a9cb3e01a70b90ae5a8fa7",
+    "src/DesignerView.cpp": "c0727615e714d2d60d4a8c63b7b4f47831df88c80ffc0ec51ec802cc1a90667a",
+    "src/DesignerView.h": "982b093f9036af2c22d2b8de7ce11f0386c9c466ff1321d3450e6bbd35e6fb29",
+    "src/IconButton.h": "90da00d7d1cfbc6223d190d7c222699bbb24606ae944ab389b8e15dd9ec81ed3",
+    "src/LibraryLayout.h": "4c5a0eecf8f7cb21a7a4ed6ede5787dd013e93b148bdf1a1e785621a14ea3628",
+    "src/LibraryService.cpp": "d197cdc8a982f5bc95fa0531ae14b012feba3ee15386f8ea698befb426bdfee3",
+    "src/LibraryService.h": "3d19371d18da10290e7c44c8ec1c2abe1f18029f280b4e8a78d1737e213433ca",
+    "src/LibraryView.cpp": "2f0fe429de5633c12006c231b56048539c6caa9e61bae1b3cea844e6c5b2fda4",
+    "src/LibraryView.h": "756289df43c6c168fe5b7ba95f70a06b8a703f2337dcc441a894235a802886dd",
+    "src/MacSources.h": "1bb1214c13aa12ee6be2e0f80a371ded1cd8418fccc74c5205688f717fd1b85c",
+    "src/MacSources.mm": "0d60eeb8050c9022d0c93ea569e297ee2a520e4f99b64f79fd8200a5a45aed09",
+    "src/Main.cpp": "e55f186f21432851a9f5514cc9e2098c3b4c60401e9dc3aa73fec15b44fe59c9",
+    "src/ModelPack.cpp": "11a7b79d4ffe6b13d317c6bc97025cf2f0ea4b082b220f54a374f8ec02ab6c9f",
+    "src/ModelPack.h": "d52efd9274b1d75947f0951337dd44772d504ac8753b22c470545e9ce6f9297c",
+    "src/Performance.h": "ea77811d53d5338b3dcc4763a05dcb36cca6e152efd0d80438073ed0620a7917",
+    "src/Reference.cpp": "76f433af7fbaf4af1465c4f3661ec45653c085107b53cae83fb514ac2dc2bc82",
+    "src/Reference.h": "9796ce21512066ee445882ef4e76a1b1290097531bc1dfd87094310a0fa61283",
+    "src/RegionRanking.h": "9424bf9f63859137b72516709a56c9cdff0b1cc2d3ca97bf73cb8ddefedc763f",
+    "src/RetrievalIndex.cpp": "8e7e4edaa3e4a7e67756b151a5f3391a94c544d6a01ed132efcab3ffd826d3b7",
+    "src/RetrievalIndex.h": "94d6c323c630080518d2d78b2b14f88750f7be1c46a85b0792cbf264b3646355",
+    "src/SerialWorker.h": "cf9c92575b453eea78f19062332de3efd640aeea00253265f7baf27789da78a7",
+    "src/UIComponents.h": "f2e3890ee7b1f99eb2738243f2b8c8883f13af14c75abe30f154b484769fbd23",
+    "src/Waveform.cpp": "68273fb43f5d3214a9a0723ddf15e68c0b939ed56f8cc068f69efab06b023825",
+    "src/Waveform.h": "e8a021bc1e40724104eb00d3b73c95fe0c52e7d525a9868af62cda6a7a8e72fa",
+    "src/Workstation.h": "ff2ceb7143bb01fe22008cd2f74d639e5197378739962f89a53e7c93685f342c",
+    "tests/CanvasGestureTests.cpp": "31724e5b29128ea5de93eb0b6ac95815262c3e2ccdddccb411474b7a09dbcad5",
+    "tests/CanvasGestureTests.h": "c594ec414fa5d8db7e64dac6a4724eed6cd5323bbdd406d69e169bab50bb6c19",
+    "tests/DesignSessionTests.cpp": "c3c11a0e557c55d2daf254749c00a8f68e7c0d3e4fdc50f10d6e76d6f6d17ed3",
+    "tests/DesignSessionTests.h": "265e0687499f05cd9f2867499ed690127c586c3a73f537b0bfb32b61fca00189",
+    "tests/DesignTests.cpp": "44e7aa7e434d86ed321ef055452af367b21e2c48426edce557a8bfd2bfca679f",
+    "tests/DesignTests.h": "e2aea12e7df2e4573f9c9b34c725e6b0a85aa6576ad888ef5947d6f5fdebac80",
+    "tests/PerformanceTests.cpp": "e6a0920d2ab0bbcdbb8d04759194a59d4ce741702e020c15667fd84244b77e5c",
+    "tests/PerformanceTests.h": "d3a13649bb6706ab9f09f77ce3e4eab1856d2f569db7ad9f33304dbc6e76a6b4",
+    "tests/SemanticTests.cpp": "2c5642ace99279f560a14ce3d40ff7b817d33518e9c0204d85f4d76aa1968d14",
+    "tests/SemanticTests.h": "82227ccc549b360b2e94c6a61e997377b3136416be0f4dd3006e6e427641b808",
+    "tests/SimilarTests.cpp": "044447bfd67b4ad2eaa6e67634f887764a92f2a96e84dfcf705c20e3858ffb96",
+    "tests/SimilarTests.h": "150897327d9b75439ecd21cf0875c98cf713522960fed8650f50b5c99181b510",
+    "tests/Tests.cpp": "6a1e67c7d3a18071b659a179a677f734f1e930e5a216cf1e5d2e0cf44642b533",
+    "tests/TransportInteractionTests.cpp": "499eb13c9f363852a3803efc241d231fa06a93322978bf552eb494193c2bfed6",
+    "tests/TransportInteractionTests.h": "8c4b3236bb7dd2a4446e059e511702ee0e6a58dc6b0b1063ac9bd420db1f782b"
+  },
+  "executables": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "8676d86e352996fdaaac5b3429bc35fa28c570bddcd6be6ae54da00617ca4656",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "db65ba0f0578680fa05b7377f381a05bc2f58592c1ce07f86293e8d5f837156a",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "0e7ded4fe51afe6de165d4b0cdea418d9b4bdb007216b2de42ffd160b9c7d75c",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "81bc28606a4b5f4ea91291e5e5174e517028b71639ceb6a4b03f055ed40d75c4"
+  },
+  "hardware": {
+    "model": "Mac17,8",
+    "cpu": "Apple M5 Pro",
+    "memoryBytes": 51539607552,
+    "macOS": "26.3.2",
+    "build": "25D2150",
+    "architecture": "arm64",
+    "outputDevice": "MacBook Pro Speakers",
+    "sampleRate": 48000,
+    "bufferFrames": 512,
+    "builtInRetinaDisplay": true,
+    "otherDisplayScalesVerified": false
+  },
+  "build": {
+    "command": ".tools/cmake/data/bin/cmake --build build --parallel 6",
+    "exitCode": 0,
+    "configuration": "Release"
+  },
+  "ctest": {
+    "command": ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "exitCode": 0,
+    "seconds": 47.0,
+    "suites": [
+      {
+        "name": "library_and_audio",
+        "status": "PASS",
+        "seconds": 9.3,
+        "checks": [
+          "PASS: 2808 checks. Original fixtures retained at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/test-output/fixture"
+        ]
+      },
+      {
+        "name": "library_selection_audition",
+        "status": "PASS",
+        "seconds": 3.86,
+        "checks": [
+          "Native selection audition passed in full Library and Designer browser"
+        ]
+      },
+      {
+        "name": "library_performance_regression",
+        "status": "PASS",
+        "seconds": 6.3,
+        "checks": [
+          "PASS paging, concurrent import identity, cancellation, source filters, pause/resume, incremental scope, reopen and paused audition"
+        ]
+      },
+      {
+        "name": "library_semantic_integrity",
+        "status": "PASS",
+        "seconds": 0.39,
+        "checks": [
+          "PASS semantic revision/space integrity, window grouping, source ranges, waveform cache and seek generations"
+        ]
+      },
+      {
+        "name": "library_similar_integrity",
+        "status": "PASS",
+        "seconds": 1.28,
+        "checks": [
+          "PASS exact cached retrieval, live deltas, filters, exclusions, invalidation, log gap recovery, cache reuse/integrity, channels and reference windows"
+        ]
+      },
+      {
+        "name": "designer_transport",
+        "status": "PASS",
+        "seconds": 15.96,
+        "checks": [
+          "PASS native live control, search/index, clock, late seek/Stop/cancel and forward grains: 4777 checks"
+        ]
+      },
+      {
+        "name": "designer_canvas",
+        "status": "PASS",
+        "seconds": 0.19,
+        "checks": [
+          "PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1386 checks"
+        ]
+      },
+      {
+        "name": "designer_session",
+        "status": "PASS",
+        "seconds": 0.11,
+        "checks": [
+          "PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport ownership: 121 checks"
+        ]
+      },
+      {
+        "name": "designer_workflow",
+        "status": "PASS",
+        "seconds": 9.6,
+        "checks": [
+          "Designer checks passed: 66299"
+        ]
+      }
+    ],
+    "log": "build/designer-v111/final-ctest.log"
+  },
+  "stockInspectorBenchmark": {
+    "command": "python3 scripts/benchmark_designer.py --catalog /private/tmp/soundplus-v11-native-ke25tiw8/library.sqlite --output build/designer-v111/stock-edit-release --stock-effects",
+    "exitCode": 0,
+    "summary": {
+      "timestamp": {
+        "thermalState": "nominal",
+        "lowPowerMode": false,
+        "elapsedMs": 14093.315416663885
+      },
+      "appSha256": "8676d86e352996fdaaac5b3429bc35fa28c570bddcd6be6ae54da00617ca4656",
+      "catalogCopy": "/private/tmp/soundplus-designer-performance-yktutkm6",
+      "queries": 600,
+      "paintMs": {
+        "p50": 13.247333332896233,
+        "p95": 23.167291671037674,
+        "p99": 41.08591666817665
+      },
+      "allQueriesDuringEightLayerPlayback": true,
+      "nativePlaybackWallSeconds": 12.000264500007033,
+      "audioProcessCpuPercentOfOneCore": 8.128429169202299,
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:e00a4a77969a4dee973ad9b03c43fe8a",
+        "playGeneration": 1,
+        "outputRate": 48000.0,
+        "sourceSample": 576512,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": true,
+        "seconds": 12.010666666666667,
+        "firstCallbackMs": 80112513.75166667,
+        "peak": 0.000748655758798,
+        "preMonitorPeak": 0.018715960904956,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 1.717166677117348,
+        "error": "",
+        "callbacks": 1323,
+        "frames": 677376,
+        "underruns": 0,
+        "designRevision": 13,
+        "heardEdit": 304,
+        "editLatencyMs": 48.48054166138172,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 51937280,
+        "cpuSeconds": 1.036963,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:e00a4a77969a4dee973ad9b03c43fe8a",
+        "pendingPlayback": false
+      },
+      "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+      "monitorGain": 0.04,
+      "interface": "Visible Designer canvas and inspector alongside compact Library browser; 200 queries x three runs",
+      "pointerHandlerToPaintMs": {
+        "n": 0
+      },
+      "editToCallbackMs": {
+        "n": 249,
+        "p50": 58.405666664242744,
+        "p95": 72.7347916662693,
+        "p99": 76.31433333456516
+      },
+      "editingSamplesWithIndexing": 193,
+      "editingProtocol": "Ten seconds of real inspector slider notifications at 25 ms intervals: layer high-pass cutoff, delay time, reverb size, master cutoff, master reverb size, two seconds each. Same prepared graph and playback generation throughout, while indexing and searching.",
+      "selectionCommands": {
+        "duplicate": true,
+        "undoDuplicate": true,
+        "redoDuplicate": true,
+        "delete": true,
+        "undoDelete": true,
+        "deselectThenDelete": true,
+        "variation": true,
+        "undoVariation": true,
+        "redoVariation": true,
+        "originalRestored": true
+      },
+      "stockPhaseEditToCallbackMs": {
+        "0": {
+          "n": 54,
+          "p50": 58.48204167187214,
+          "p95": 72.7347916662693,
+          "p99": 75.91245833039284
+        },
+        "1": {
+          "n": 46,
+          "p50": 58.89229166507721,
+          "p95": 74.71616666018963,
+          "p99": 76.31433333456516
+        },
+        "2": {
+          "n": 49,
+          "p50": 55.87029166519642,
+          "p95": 72.81220833957195,
+          "p99": 76.48587499558926
+        },
+        "3": {
+          "n": 50,
+          "p50": 59.356916666030884,
+          "p95": 71.94104166328907,
+          "p99": 76.48070833086967
+        },
+        "4": {
+          "n": 48,
+          "p50": 57.49695833027363,
+          "p95": 72.4513750076294,
+          "p99": 75.04866667091846
+        }
+      },
+      "measurementBoundary": "Actual inspector slider notification -> last coalesced UI edit -> first tagged device callback PCM. No OS pointer or slider-to-paint timing was measured. Excludes OS input dispatch and physical DAC/acoustic delay."
+    },
+    "controls": {
+      "selectionCommands": {
+        "duplicate": true,
+        "undoDuplicate": true,
+        "redoDuplicate": true,
+        "delete": true,
+        "undoDelete": true,
+        "deselectThenDelete": true,
+        "variation": true,
+        "undoVariation": true,
+        "redoVariation": true,
+        "originalRestored": true
+      },
+      "audioAtStart": {
+        "version": 5,
+        "command": "status",
+        "id": "design:e00a4a77969a4dee973ad9b03c43fe8a",
+        "playGeneration": 1,
+        "outputRate": 48000.0,
+        "sourceSample": 512,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": true,
+        "seconds": 0.010666666666667,
+        "firstCallbackMs": 80112513.75166667,
+        "peak": 0.005899854935706,
+        "preMonitorPeak": 0.020044568926096,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 1.717166677117348,
+        "error": "",
+        "callbacks": 198,
+        "frames": 101376,
+        "underruns": 0,
+        "designRevision": 13,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 51396608,
+        "cpuSeconds": 0.06153,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:e00a4a77969a4dee973ad9b03c43fe8a",
+        "pendingPlayback": false
+      },
+      "eightLayers": true,
+      "samePlaybackGeneration": true,
+      "noUnderruns": true,
+      "editingOverlappedIndexing": true,
+      "editingSamplesWithIndexing": 193,
+      "playbackWallMs": 12000.264500007033
+    },
+    "rawEvidence": "build/designer-v111/stock-edit-release/native.json"
+  },
+  "nativeTransport": {
+    "checks": 4776,
+    "directory": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-transport-output/fdb51a0e43304a3ba65221ddbae004db",
+    "initialAudio": {
+      "version": 5,
+      "command": "status",
+      "id": "design:339108bd882d4298a80d8417d1ff7530",
+      "playGeneration": 1,
+      "outputRate": 48000.0,
+      "sourceSample": 1024,
+      "sourceRate": 48000.0,
+      "auditionPair": 0,
+      "startSample": 0,
+      "endSample": 2242286,
+      "playing": true,
+      "seconds": 0.021333333333333,
+      "firstCallbackMs": 80055470.96016666,
+      "peak": 0.008074629120529,
+      "preMonitorPeak": 0.052582554519176,
+      "design": true,
+      "designLayers": 8,
+      "producerMaxMs": 1.738083332777023,
+      "error": "",
+      "callbacks": 5,
+      "frames": 2560,
+      "underruns": 0,
+      "designRevision": 1,
+      "heardEdit": 0,
+      "editLatencyMs": 0.0,
+      "stalePreparationsDiscarded": 0,
+      "preparing": false,
+      "sampleRate": 48000.0,
+      "outputs": [
+        "MacBook Pro Speakers"
+      ],
+      "peakResidentBytes": 51118080,
+      "cpuSeconds": 0.040767,
+      "bufferFrames": 512,
+      "device": "MacBook Pro Speakers",
+      "availableRates": [
+        44100.0,
+        48000.0,
+        88200.0,
+        96000.0
+      ],
+      "processGeneration": 1,
+      "intentId": "design:339108bd882d4298a80d8417d1ff7530",
+      "pendingPlayback": false
+    },
+    "edits": [
+      {
+        "sequence": 1,
+        "inputToCallbackMs": 39.18304166197777,
+        "sourceSample": 122368,
+        "indexingActive": true
+      },
+      {
+        "sequence": 2,
+        "inputToCallbackMs": 43.58070833981037,
+        "sourceSample": 123904,
+        "indexingActive": true
+      },
+      {
+        "sequence": 3,
+        "inputToCallbackMs": 38.874166667461395,
+        "sourceSample": 125440,
+        "indexingActive": true
+      },
+      {
+        "sequence": 4,
+        "inputToCallbackMs": 45.79041667282581,
+        "sourceSample": 126464,
+        "indexingActive": true
+      },
+      {
+        "sequence": 6,
+        "inputToCallbackMs": 44.83774998784065,
+        "sourceSample": 129024,
+        "indexingActive": true
+      },
+      {
+        "sequence": 7,
+        "inputToCallbackMs": 49.56562499701977,
+        "sourceSample": 130560,
+        "indexingActive": true
+      },
+      {
+        "sequence": 8,
+        "inputToCallbackMs": 44.32220833003521,
+        "sourceSample": 131584,
+        "indexingActive": true
+      },
+      {
+        "sequence": 9,
+        "inputToCallbackMs": 49.53191666305065,
+        "sourceSample": 133120,
+        "indexingActive": true
+      },
+      {
+        "sequence": 10,
+        "inputToCallbackMs": 43.69204166531563,
+        "sourceSample": 134144,
+        "indexingActive": true
+      },
+      {
+        "sequence": 11,
+        "inputToCallbackMs": 48.932875007390976,
+        "sourceSample": 135680,
+        "indexingActive": true
+      },
+      {
+        "sequence": 12,
+        "inputToCallbackMs": 53.44504165649414,
+        "sourceSample": 137216,
+        "indexingActive": true
+      },
+      {
+        "sequence": 13,
+        "inputToCallbackMs": 48.85275000333786,
+        "sourceSample": 138240,
+        "indexingActive": true
+      },
+      {
+        "sequence": 14,
+        "inputToCallbackMs": 44.071374997496605,
+        "sourceSample": 139776,
+        "indexingActive": true
+      },
+      {
+        "sequence": 15,
+        "inputToCallbackMs": 48.663833335042,
+        "sourceSample": 141312,
+        "indexingActive": true
+      },
+      {
+        "sequence": 16,
+        "inputToCallbackMs": 42.35437500476837,
+        "sourceSample": 142336,
+        "indexingActive": true
+      },
+      {
+        "sequence": 17,
+        "inputToCallbackMs": 46.91854166984558,
+        "sourceSample": 143360,
+        "indexingActive": true
+      },
+      {
+        "sequence": 18,
+        "inputToCallbackMs": 42.28441667556763,
+        "sourceSample": 144896,
+        "indexingActive": true
+      },
+      {
+        "sequence": 19,
+        "inputToCallbackMs": 47.250125005841255,
+        "sourceSample": 145920,
+        "indexingActive": true
+      },
+      {
+        "sequence": 20,
+        "inputToCallbackMs": 41.08129167556763,
+        "sourceSample": 147456,
+        "indexingActive": true
+      },
+      {
+        "sequence": 21,
+        "inputToCallbackMs": 46.68391665816307,
+        "sourceSample": 148992,
+        "indexingActive": true
+      },
+      {
+        "sequence": 22,
+        "inputToCallbackMs": 42.57891666889191,
+        "sourceSample": 150016,
+        "indexingActive": true
+      },
+      {
+        "sequence": 23,
+        "inputToCallbackMs": 48.53854167461395,
+        "sourceSample": 151552,
+        "indexingActive": true
+      },
+      {
+        "sequence": 24,
+        "inputToCallbackMs": 42.304458335042,
+        "sourceSample": 153088,
+        "indexingActive": true
+      },
+      {
+        "sequence": 25,
+        "inputToCallbackMs": 47.20258332788944,
+        "sourceSample": 154112,
+        "indexingActive": true
+      },
+      {
+        "sequence": 26,
+        "inputToCallbackMs": 53.84137500822544,
+        "sourceSample": 155136,
+        "indexingActive": true
+      },
+      {
+        "sequence": 27,
+        "inputToCallbackMs": 37.91895833611488,
+        "sourceSample": 156672,
+        "indexingActive": true
+      },
+      {
+        "sequence": 28,
+        "inputToCallbackMs": 43.516708329319954,
+        "sourceSample": 157696,
+        "indexingActive": true
+      },
+      {
+        "sequence": 29,
+        "inputToCallbackMs": 47.62799999117851,
+        "sourceSample": 159232,
+        "indexingActive": true
+      },
+      {
+        "sequence": 30,
+        "inputToCallbackMs": 52.08433333039284,
+        "sourceSample": 160256,
+        "indexingActive": true
+      },
+      {
+        "sequence": 31,
+        "inputToCallbackMs": 46.076125010848045,
+        "sourceSample": 161280,
+        "indexingActive": true
+      },
+      {
+        "sequence": 32,
+        "inputToCallbackMs": 40.41241666674614,
+        "sourceSample": 162816,
+        "indexingActive": true
+      },
+      {
+        "sequence": 33,
+        "inputToCallbackMs": 45.587041676044464,
+        "sourceSample": 164352,
+        "indexingActive": true
+      },
+      {
+        "sequence": 34,
+        "inputToCallbackMs": 51.01804167032242,
+        "sourceSample": 165376,
+        "indexingActive": true
+      },
+      {
+        "sequence": 35,
+        "inputToCallbackMs": 45.242291674017906,
+        "sourceSample": 166400,
+        "indexingActive": true
+      },
+      {
+        "sequence": 36,
+        "inputToCallbackMs": 39.82929167151451,
+        "sourceSample": 167936,
+        "indexingActive": true
+      },
+      {
+        "sequence": 37,
+        "inputToCallbackMs": 45.418458327651024,
+        "sourceSample": 169472,
+        "indexingActive": true
+      },
+      {
+        "sequence": 38,
+        "inputToCallbackMs": 40.843166679143906,
+        "sourceSample": 171008,
+        "indexingActive": true
+      },
+      {
+        "sequence": 39,
+        "inputToCallbackMs": 47.59995833039284,
+        "sourceSample": 172032,
+        "indexingActive": true
+      },
+      {
+        "sequence": 40,
+        "inputToCallbackMs": 52.292250007390976,
+        "sourceSample": 173568,
+        "indexingActive": true
+      },
+      {
+        "sequence": 41,
+        "inputToCallbackMs": 47.81837500631809,
+        "sourceSample": 174592,
+        "indexingActive": true
+      },
+      {
+        "sequence": 42,
+        "inputToCallbackMs": 52.60416667163372,
+        "sourceSample": 176128,
+        "indexingActive": true
+      },
+      {
+        "sequence": 43,
+        "inputToCallbackMs": 46.52466666698456,
+        "sourceSample": 177664,
+        "indexingActive": true
+      },
+      {
+        "sequence": 44,
+        "inputToCallbackMs": 52.065250009298325,
+        "sourceSample": 178688,
+        "indexingActive": true
+      },
+      {
+        "sequence": 45,
+        "inputToCallbackMs": 57.52958333492279,
+        "sourceSample": 180224,
+        "indexingActive": true
+      },
+      {
+        "sequence": 47,
+        "inputToCallbackMs": 46.97958333790302,
+        "sourceSample": 181760,
+        "indexingActive": true
+      },
+      {
+        "sequence": 48,
+        "inputToCallbackMs": 40.852374985814095,
+        "sourceSample": 182784,
+        "indexingActive": true
+      },
+      {
+        "sequence": 49,
+        "inputToCallbackMs": 45.47966668009758,
+        "sourceSample": 184320,
+        "indexingActive": true
+      },
+      {
+        "sequence": 51,
+        "inputToCallbackMs": 45.5080833286047,
+        "sourceSample": 186880,
+        "indexingActive": true
+      },
+      {
+        "sequence": 53,
+        "inputToCallbackMs": 45.23812499642372,
+        "sourceSample": 189440,
+        "indexingActive": true
+      },
+      {
+        "sequence": 55,
+        "inputToCallbackMs": 44.64625000953674,
+        "sourceSample": 192000,
+        "indexingActive": true
+      },
+      {
+        "sequence": 56,
+        "inputToCallbackMs": 51.57879166305065,
+        "sourceSample": 193536,
+        "indexingActive": true
+      },
+      {
+        "sequence": 57,
+        "inputToCallbackMs": 46.458166658878326,
+        "sourceSample": 194560,
+        "indexingActive": true
+      },
+      {
+        "sequence": 58,
+        "inputToCallbackMs": 40.3669999986887,
+        "sourceSample": 196096,
+        "indexingActive": true
+      },
+      {
+        "sequence": 59,
+        "inputToCallbackMs": 45.08087499439716,
+        "sourceSample": 197632,
+        "indexingActive": true
+      },
+      {
+        "sequence": 60,
+        "inputToCallbackMs": 49.90120832622051,
+        "sourceSample": 198656,
+        "indexingActive": true
+      },
+      {
+        "sequence": 61,
+        "inputToCallbackMs": 43.76675000786781,
+        "sourceSample": 200192,
+        "indexingActive": true
+      },
+      {
+        "sequence": 62,
+        "inputToCallbackMs": 48.22050000727177,
+        "sourceSample": 201216,
+        "indexingActive": true
+      },
+      {
+        "sequence": 63,
+        "inputToCallbackMs": 42.94762499630451,
+        "sourceSample": 202752,
+        "indexingActive": true
+      },
+      {
+        "sequence": 64,
+        "inputToCallbackMs": 37.47391666471958,
+        "sourceSample": 204288,
+        "indexingActive": true
+      },
+      {
+        "sequence": 65,
+        "inputToCallbackMs": 41.999208346009254,
+        "sourceSample": 205312,
+        "indexingActive": true
+      },
+      {
+        "sequence": 66,
+        "inputToCallbackMs": 46.49124999344349,
+        "sourceSample": 206336,
+        "indexingActive": true
+      },
+      {
+        "sequence": 67,
+        "inputToCallbackMs": 40.39670832455158,
+        "sourceSample": 207872,
+        "indexingActive": true
+      },
+      {
+        "sequence": 68,
+        "inputToCallbackMs": 44.92854166030884,
+        "sourceSample": 209408,
+        "indexingActive": true
+      },
+      {
+        "sequence": 69,
+        "inputToCallbackMs": 39.14887499809265,
+        "sourceSample": 210432,
+        "indexingActive": true
+      },
+      {
+        "sequence": 70,
+        "inputToCallbackMs": 43.72945833206177,
+        "sourceSample": 211968,
+        "indexingActive": true
+      },
+      {
+        "sequence": 71,
+        "inputToCallbackMs": 37.58783334493637,
+        "sourceSample": 212992,
+        "indexingActive": true
+      },
+      {
+        "sequence": 72,
+        "inputToCallbackMs": 43.538833335042,
+        "sourceSample": 214016,
+        "indexingActive": true
+      },
+      {
+        "sequence": 73,
+        "inputToCallbackMs": 39.166333332657814,
+        "sourceSample": 215552,
+        "indexingActive": true
+      },
+      {
+        "sequence": 74,
+        "inputToCallbackMs": 54.37691666185856,
+        "sourceSample": 217088,
+        "indexingActive": true
+      },
+      {
+        "sequence": 75,
+        "inputToCallbackMs": 39.07616667449474,
+        "sourceSample": 218112,
+        "indexingActive": true
+      },
+      {
+        "sequence": 76,
+        "inputToCallbackMs": 43.0634583234787,
+        "sourceSample": 219648,
+        "indexingActive": true
+      },
+      {
+        "sequence": 77,
+        "inputToCallbackMs": 47.95337501168251,
+        "sourceSample": 221184,
+        "indexingActive": true
+      },
+      {
+        "sequence": 78,
+        "inputToCallbackMs": 42.23337499797344,
+        "sourceSample": 222208,
+        "indexingActive": true
+      },
+      {
+        "sequence": 79,
+        "inputToCallbackMs": 48.54566667973995,
+        "sourceSample": 223232,
+        "indexingActive": true
+      },
+      {
+        "sequence": 80,
+        "inputToCallbackMs": 44.04895833134651,
+        "sourceSample": 224768,
+        "indexingActive": true
+      },
+      {
+        "sequence": 81,
+        "inputToCallbackMs": 50.26304166018963,
+        "sourceSample": 226304,
+        "indexingActive": true
+      },
+      {
+        "sequence": 82,
+        "inputToCallbackMs": 44.957291662693024,
+        "sourceSample": 227328,
+        "indexingActive": true
+      },
+      {
+        "sequence": 83,
+        "inputToCallbackMs": 51.723791658878326,
+        "sourceSample": 228864,
+        "indexingActive": true
+      },
+      {
+        "sequence": 85,
+        "inputToCallbackMs": 42.35704167187214,
+        "sourceSample": 230400,
+        "indexingActive": true
+      },
+      {
+        "sequence": 87,
+        "inputToCallbackMs": 41.155416667461395,
+        "sourceSample": 232960,
+        "indexingActive": true
+      },
+      {
+        "sequence": 88,
+        "inputToCallbackMs": 36.09324999153614,
+        "sourceSample": 233984,
+        "indexingActive": true
+      },
+      {
+        "sequence": 89,
+        "inputToCallbackMs": 40.67016667127609,
+        "sourceSample": 235520,
+        "indexingActive": true
+      },
+      {
+        "sequence": 90,
+        "inputToCallbackMs": 45.166083335876465,
+        "sourceSample": 237056,
+        "indexingActive": true
+      },
+      {
+        "sequence": 91,
+        "inputToCallbackMs": 49.69866666197777,
+        "sourceSample": 238592,
+        "indexingActive": true
+      },
+      {
+        "sequence": 93,
+        "inputToCallbackMs": 48.01375000178814,
+        "sourceSample": 241152,
+        "indexingActive": true
+      },
+      {
+        "sequence": 94,
+        "inputToCallbackMs": 42.27674999833107,
+        "sourceSample": 242176,
+        "indexingActive": true
+      },
+      {
+        "sequence": 95,
+        "inputToCallbackMs": 48.662750005722046,
+        "sourceSample": 243712,
+        "indexingActive": true
+      },
+      {
+        "sequence": 96,
+        "inputToCallbackMs": 53.89512500166893,
+        "sourceSample": 245248,
+        "indexingActive": true
+      },
+      {
+        "sequence": 97,
+        "inputToCallbackMs": 47.95008333027363,
+        "sourceSample": 246272,
+        "indexingActive": true
+      },
+      {
+        "sequence": 98,
+        "inputToCallbackMs": 41.791041657328606,
+        "sourceSample": 247808,
+        "indexingActive": true
+      },
+      {
+        "sequence": 99,
+        "inputToCallbackMs": 46.61820833384991,
+        "sourceSample": 248832,
+        "indexingActive": true
+      },
+      {
+        "sequence": 100,
+        "inputToCallbackMs": 51.10504165291786,
+        "sourceSample": 250368,
+        "indexingActive": true
+      },
+      {
+        "sequence": 101,
+        "inputToCallbackMs": 45.76345834136009,
+        "sourceSample": 251904,
+        "indexingActive": true
+      },
+      {
+        "sequence": 102,
+        "inputToCallbackMs": 40.44370833039284,
+        "sourceSample": 252928,
+        "indexingActive": true
+      },
+      {
+        "sequence": 103,
+        "inputToCallbackMs": 45.02891667187214,
+        "sourceSample": 254464,
+        "indexingActive": true
+      },
+      {
+        "sequence": 104,
+        "inputToCallbackMs": 38.95691667497158,
+        "sourceSample": 255488,
+        "indexingActive": true
+      },
+      {
+        "sequence": 105,
+        "inputToCallbackMs": 43.51579166948795,
+        "sourceSample": 257024,
+        "indexingActive": true
+      },
+      {
+        "sequence": 106,
+        "inputToCallbackMs": 37.58741666376591,
+        "sourceSample": 258048,
+        "indexingActive": true
+      },
+      {
+        "sequence": 107,
+        "inputToCallbackMs": 41.91687500476837,
+        "sourceSample": 259584,
+        "indexingActive": true
+      },
+      {
+        "sequence": 108,
+        "inputToCallbackMs": 46.39958332479,
+        "sourceSample": 260608,
+        "indexingActive": true
+      },
+      {
+        "sequence": 109,
+        "inputToCallbackMs": 40.29050000011921,
+        "sourceSample": 262144,
+        "indexingActive": true
+      },
+      {
+        "sequence": 110,
+        "inputToCallbackMs": 44.917500004172325,
+        "sourceSample": 263168,
+        "indexingActive": true
+      },
+      {
+        "sequence": 111,
+        "inputToCallbackMs": 50.536583334207535,
+        "sourceSample": 264704,
+        "indexingActive": true
+      },
+      {
+        "sequence": 112,
+        "inputToCallbackMs": 45.32508333027363,
+        "sourceSample": 266240,
+        "indexingActive": true
+      },
+      {
+        "sequence": 113,
+        "inputToCallbackMs": 50.83429166674614,
+        "sourceSample": 267264,
+        "indexingActive": true
+      },
+      {
+        "sequence": 114,
+        "inputToCallbackMs": 55.18458333611488,
+        "sourceSample": 268800,
+        "indexingActive": true
+      },
+      {
+        "sequence": 115,
+        "inputToCallbackMs": 40.83220833539963,
+        "sourceSample": 270336,
+        "indexingActive": true
+      },
+      {
+        "sequence": 116,
+        "inputToCallbackMs": 46.25254166126251,
+        "sourceSample": 271360,
+        "indexingActive": true
+      },
+      {
+        "sequence": 117,
+        "inputToCallbackMs": 51.87045831978321,
+        "sourceSample": 272896,
+        "indexingActive": true
+      },
+      {
+        "sequence": 118,
+        "inputToCallbackMs": 56.850500002503395,
+        "sourceSample": 274432,
+        "indexingActive": true
+      },
+      {
+        "sequence": 120,
+        "inputToCallbackMs": 45.33124999701977,
+        "sourceSample": 275968,
+        "indexingActive": true
+      },
+      {
+        "sequence": 121,
+        "inputToCallbackMs": 39.4929166585207,
+        "sourceSample": 276992,
+        "indexingActive": true
+      },
+      {
+        "sequence": 122,
+        "inputToCallbackMs": 44.23112499713898,
+        "sourceSample": 278528,
+        "indexingActive": true
+      },
+      {
+        "sequence": 124,
+        "inputToCallbackMs": 42.98362499475479,
+        "sourceSample": 281088,
+        "indexingActive": true
+      },
+      {
+        "sequence": 126,
+        "inputToCallbackMs": 43.464583337306976,
+        "sourceSample": 283648,
+        "indexingActive": true
+      },
+      {
+        "sequence": 128,
+        "inputToCallbackMs": 43.09141665697098,
+        "sourceSample": 286208,
+        "indexingActive": true
+      },
+      {
+        "sequence": 129,
+        "inputToCallbackMs": 49.116958335042,
+        "sourceSample": 287744,
+        "indexingActive": true
+      },
+      {
+        "sequence": 130,
+        "inputToCallbackMs": 43.13712500035763,
+        "sourceSample": 288768,
+        "indexingActive": true
+      },
+      {
+        "sequence": 131,
+        "inputToCallbackMs": 47.595791667699814,
+        "sourceSample": 290304,
+        "indexingActive": true
+      },
+      {
+        "sequence": 133,
+        "inputToCallbackMs": 48.48558333516121,
+        "sourceSample": 292864,
+        "indexingActive": true
+      },
+      {
+        "sequence": 135,
+        "inputToCallbackMs": 47.79799999296665,
+        "sourceSample": 295424,
+        "indexingActive": true
+      },
+      {
+        "sequence": 136,
+        "inputToCallbackMs": 41.68725000321865,
+        "sourceSample": 296448,
+        "indexingActive": true
+      },
+      {
+        "sequence": 137,
+        "inputToCallbackMs": 47.11175000667572,
+        "sourceSample": 297984,
+        "indexingActive": true
+      },
+      {
+        "sequence": 138,
+        "inputToCallbackMs": 41.6245833337307,
+        "sourceSample": 299520,
+        "indexingActive": true
+      },
+      {
+        "sequence": 139,
+        "inputToCallbackMs": 46.275208324193954,
+        "sourceSample": 300544,
+        "indexingActive": true
+      },
+      {
+        "sequence": 141,
+        "inputToCallbackMs": 47.14208333194256,
+        "sourceSample": 303104,
+        "indexingActive": true
+      },
+      {
+        "sequence": 142,
+        "inputToCallbackMs": 41.72329166531563,
+        "sourceSample": 304640,
+        "indexingActive": true
+      },
+      {
+        "sequence": 144,
+        "inputToCallbackMs": 39.89679166674614,
+        "sourceSample": 307200,
+        "indexingActive": true
+      },
+      {
+        "sequence": 145,
+        "inputToCallbackMs": 45.35279166698456,
+        "sourceSample": 308224,
+        "indexingActive": true
+      },
+      {
+        "sequence": 146,
+        "inputToCallbackMs": 49.86249999701977,
+        "sourceSample": 309760,
+        "indexingActive": true
+      },
+      {
+        "sequence": 147,
+        "inputToCallbackMs": 44.54145832359791,
+        "sourceSample": 311296,
+        "indexingActive": true
+      },
+      {
+        "sequence": 148,
+        "inputToCallbackMs": 40.367416664958,
+        "sourceSample": 312320,
+        "indexingActive": true
+      },
+      {
+        "sequence": 149,
+        "inputToCallbackMs": 35.56341667473316,
+        "sourceSample": 313856,
+        "indexingActive": true
+      },
+      {
+        "sequence": 150,
+        "inputToCallbackMs": 50.754833340644836,
+        "sourceSample": 315392,
+        "indexingActive": true
+      },
+      {
+        "sequence": 151,
+        "inputToCallbackMs": 46.19770833849907,
+        "sourceSample": 316416,
+        "indexingActive": true
+      },
+      {
+        "sequence": 152,
+        "inputToCallbackMs": 51.411125004291534,
+        "sourceSample": 317952,
+        "indexingActive": true
+      },
+      {
+        "sequence": 153,
+        "inputToCallbackMs": 56.588916674256325,
+        "sourceSample": 319488,
+        "indexingActive": true
+      },
+      {
+        "sequence": 155,
+        "inputToCallbackMs": 36.53383333981037,
+        "sourceSample": 320512,
+        "indexingActive": true
+      },
+      {
+        "sequence": 156,
+        "inputToCallbackMs": 41.01095834374428,
+        "sourceSample": 322048,
+        "indexingActive": true
+      },
+      {
+        "sequence": 157,
+        "inputToCallbackMs": 46.51545834541321,
+        "sourceSample": 323584,
+        "indexingActive": true
+      },
+      {
+        "sequence": 159,
+        "inputToCallbackMs": 47.55816666781902,
+        "sourceSample": 326144,
+        "indexingActive": true
+      },
+      {
+        "sequence": 161,
+        "inputToCallbackMs": 46.09545834362507,
+        "sourceSample": 328704,
+        "indexingActive": true
+      },
+      {
+        "sequence": 163,
+        "inputToCallbackMs": 45.722166657447815,
+        "sourceSample": 331264,
+        "indexingActive": true
+      },
+      {
+        "sequence": 165,
+        "inputToCallbackMs": 45.828458324074745,
+        "sourceSample": 333824,
+        "indexingActive": true
+      },
+      {
+        "sequence": 166,
+        "inputToCallbackMs": 50.26533333957195,
+        "sourceSample": 336384,
+        "indexingActive": true
+      },
+      {
+        "sequence": 167,
+        "inputToCallbackMs": 54.896624997258186,
+        "sourceSample": 337408,
+        "indexingActive": true
+      },
+      {
+        "sequence": 169,
+        "inputToCallbackMs": 42.79766666889191,
+        "sourceSample": 338944,
+        "indexingActive": true
+      },
+      {
+        "sequence": 171,
+        "inputToCallbackMs": 42.6326249986887,
+        "sourceSample": 341504,
+        "indexingActive": true
+      },
+      {
+        "sequence": 172,
+        "inputToCallbackMs": 47.99437499046326,
+        "sourceSample": 344064,
+        "indexingActive": true
+      },
+      {
+        "sequence": 174,
+        "inputToCallbackMs": 46.609708338975906,
+        "sourceSample": 345600,
+        "indexingActive": true
+      },
+      {
+        "sequence": 175,
+        "inputToCallbackMs": 40.40316666662693,
+        "sourceSample": 347136,
+        "indexingActive": true
+      },
+      {
+        "sequence": 176,
+        "inputToCallbackMs": 45.271624997258186,
+        "sourceSample": 348160,
+        "indexingActive": true
+      },
+      {
+        "sequence": 178,
+        "inputToCallbackMs": 44.49404166638851,
+        "sourceSample": 350720,
+        "indexingActive": true
+      },
+      {
+        "sequence": 180,
+        "inputToCallbackMs": 43.070999994874,
+        "sourceSample": 353280,
+        "indexingActive": true
+      },
+      {
+        "sequence": 182,
+        "inputToCallbackMs": 43.516958341002464,
+        "sourceSample": 355840,
+        "indexingActive": true
+      },
+      {
+        "sequence": 183,
+        "inputToCallbackMs": 47.98200000822544,
+        "sourceSample": 357376,
+        "indexingActive": true
+      },
+      {
+        "sequence": 184,
+        "inputToCallbackMs": 52.51941667497158,
+        "sourceSample": 358912,
+        "indexingActive": true
+      },
+      {
+        "sequence": 185,
+        "inputToCallbackMs": 48.65275000035763,
+        "sourceSample": 359936,
+        "indexingActive": true
+      },
+      {
+        "sequence": 187,
+        "inputToCallbackMs": 47.11008332669735,
+        "sourceSample": 362496,
+        "indexingActive": true
+      },
+      {
+        "sequence": 188,
+        "inputToCallbackMs": 51.702666670084,
+        "sourceSample": 364032,
+        "indexingActive": true
+      },
+      {
+        "sequence": 189,
+        "inputToCallbackMs": 45.78141666948795,
+        "sourceSample": 365568,
+        "indexingActive": true
+      },
+      {
+        "sequence": 190,
+        "inputToCallbackMs": 40.22979165613651,
+        "sourceSample": 366592,
+        "indexingActive": true
+      },
+      {
+        "sequence": 191,
+        "inputToCallbackMs": 44.74666666984558,
+        "sourceSample": 368128,
+        "indexingActive": true
+      },
+      {
+        "sequence": 192,
+        "inputToCallbackMs": 38.68891666829586,
+        "sourceSample": 369664,
+        "indexingActive": true
+      },
+      {
+        "sequence": 193,
+        "inputToCallbackMs": 53.87020832300186,
+        "sourceSample": 370688,
+        "indexingActive": true
+      },
+      {
+        "sequence": 194,
+        "inputToCallbackMs": 48.58545833826065,
+        "sourceSample": 372224,
+        "indexingActive": true
+      },
+      {
+        "sequence": 195,
+        "inputToCallbackMs": 43.329624995589256,
+        "sourceSample": 373248,
+        "indexingActive": true
+      },
+      {
+        "sequence": 196,
+        "inputToCallbackMs": 48.78074999153614,
+        "sourceSample": 374784,
+        "indexingActive": true
+      },
+      {
+        "sequence": 197,
+        "inputToCallbackMs": 53.858333334326744,
+        "sourceSample": 376320,
+        "indexingActive": true
+      },
+      {
+        "sequence": 198,
+        "inputToCallbackMs": 49.319000005722046,
+        "sourceSample": 377344,
+        "indexingActive": true
+      },
+      {
+        "sequence": 199,
+        "inputToCallbackMs": 54.64283333718777,
+        "sourceSample": 378880,
+        "indexingActive": true
+      },
+      {
+        "sequence": 200,
+        "inputToCallbackMs": 50.3209583312273,
+        "sourceSample": 379904,
+        "indexingActive": true
+      },
+      {
+        "sequence": 201,
+        "inputToCallbackMs": 44.20129166543484,
+        "sourceSample": 381440,
+        "indexingActive": true
+      },
+      {
+        "sequence": 202,
+        "inputToCallbackMs": 49.54316666722298,
+        "sourceSample": 382464,
+        "indexingActive": true
+      },
+      {
+        "sequence": 203,
+        "inputToCallbackMs": 43.858916670084,
+        "sourceSample": 384000,
+        "indexingActive": true
+      },
+      {
+        "sequence": 204,
+        "inputToCallbackMs": 48.58104166388512,
+        "sourceSample": 385024,
+        "indexingActive": true
+      },
+      {
+        "sequence": 205,
+        "inputToCallbackMs": 53.71666666865349,
+        "sourceSample": 386560,
+        "indexingActive": true
+      },
+      {
+        "sequence": 206,
+        "inputToCallbackMs": 58.99004165828228,
+        "sourceSample": 387584,
+        "indexingActive": true
+      },
+      {
+        "sequence": 207,
+        "inputToCallbackMs": 42.86479166150093,
+        "sourceSample": 389120,
+        "indexingActive": true
+      },
+      {
+        "sequence": 208,
+        "inputToCallbackMs": 47.497708320617676,
+        "sourceSample": 390144,
+        "indexingActive": true
+      },
+      {
+        "sequence": 209,
+        "inputToCallbackMs": 52.11720833182335,
+        "sourceSample": 391680,
+        "indexingActive": true
+      },
+      {
+        "sequence": 210,
+        "inputToCallbackMs": 56.61929166316986,
+        "sourceSample": 393216,
+        "indexingActive": true
+      },
+      {
+        "sequence": 211,
+        "inputToCallbackMs": 50.76212500035763,
+        "sourceSample": 394240,
+        "indexingActive": true
+      },
+      {
+        "sequence": 212,
+        "inputToCallbackMs": 44.797708332538605,
+        "sourceSample": 395264,
+        "indexingActive": true
+      },
+      {
+        "sequence": 213,
+        "inputToCallbackMs": 39.1492083221674,
+        "sourceSample": 396800,
+        "indexingActive": true
+      },
+      {
+        "sequence": 214,
+        "inputToCallbackMs": 44.574666664004326,
+        "sourceSample": 398336,
+        "indexingActive": true
+      },
+      {
+        "sequence": 215,
+        "inputToCallbackMs": 49.30333334207535,
+        "sourceSample": 399360,
+        "indexingActive": true
+      },
+      {
+        "sequence": 216,
+        "inputToCallbackMs": 53.88729166984558,
+        "sourceSample": 400896,
+        "indexingActive": true
+      },
+      {
+        "sequence": 217,
+        "inputToCallbackMs": 47.71829165518284,
+        "sourceSample": 401920,
+        "indexingActive": true
+      },
+      {
+        "sequence": 218,
+        "inputToCallbackMs": 41.92566666007042,
+        "sourceSample": 403456,
+        "indexingActive": false
+      },
+      {
+        "sequence": 219,
+        "inputToCallbackMs": 47.05379165709019,
+        "sourceSample": 404480,
+        "indexingActive": false
+      },
+      {
+        "sequence": 220,
+        "inputToCallbackMs": 51.56087499856949,
+        "sourceSample": 406016,
+        "indexingActive": false
+      },
+      {
+        "sequence": 221,
+        "inputToCallbackMs": 45.45099999010563,
+        "sourceSample": 407040,
+        "indexingActive": false
+      },
+      {
+        "sequence": 222,
+        "inputToCallbackMs": 50.901875004172325,
+        "sourceSample": 408576,
+        "indexingActive": false
+      },
+      {
+        "sequence": 224,
+        "inputToCallbackMs": 39.13729166984558,
+        "sourceSample": 410112,
+        "indexingActive": false
+      },
+      {
+        "sequence": 226,
+        "inputToCallbackMs": 38.70437499880791,
+        "sourceSample": 412672,
+        "indexingActive": false
+      },
+      {
+        "sequence": 228,
+        "inputToCallbackMs": 38.57475000619888,
+        "sourceSample": 415232,
+        "indexingActive": false
+      },
+      {
+        "sequence": 229,
+        "inputToCallbackMs": 42.67358334362507,
+        "sourceSample": 417792,
+        "indexingActive": false
+      },
+      {
+        "sequence": 231,
+        "inputToCallbackMs": 41.27091667056084,
+        "sourceSample": 419328,
+        "indexingActive": false
+      },
+      {
+        "sequence": 232,
+        "inputToCallbackMs": 35.677874997258186,
+        "sourceSample": 420352,
+        "indexingActive": false
+      },
+      {
+        "sequence": 233,
+        "inputToCallbackMs": 51.046875,
+        "sourceSample": 422912,
+        "indexingActive": false
+      },
+      {
+        "sequence": 234,
+        "inputToCallbackMs": 45.48250000178814,
+        "sourceSample": 423936,
+        "indexingActive": false
+      },
+      {
+        "sequence": 235,
+        "inputToCallbackMs": 50.66741666197777,
+        "sourceSample": 425472,
+        "indexingActive": false
+      },
+      {
+        "sequence": 236,
+        "inputToCallbackMs": 45.093208342790604,
+        "sourceSample": 427008,
+        "indexingActive": false
+      },
+      {
+        "sequence": 237,
+        "inputToCallbackMs": 49.40412500500679,
+        "sourceSample": 428032,
+        "indexingActive": false
+      },
+      {
+        "sequence": 238,
+        "inputToCallbackMs": 54.161083325743675,
+        "sourceSample": 429056,
+        "indexingActive": false
+      },
+      {
+        "sequence": 239,
+        "inputToCallbackMs": 37.828708320856094,
+        "sourceSample": 430592,
+        "indexingActive": false
+      },
+      {
+        "sequence": 240,
+        "inputToCallbackMs": 52.81587499380112,
+        "sourceSample": 432128,
+        "indexingActive": false
+      },
+      {
+        "sequence": 241,
+        "inputToCallbackMs": 58.32245832681656,
+        "sourceSample": 433152,
+        "indexingActive": false
+      },
+      {
+        "sequence": 242,
+        "inputToCallbackMs": 42.68112500011921,
+        "sourceSample": 434688,
+        "indexingActive": false
+      },
+      {
+        "sequence": 244,
+        "inputToCallbackMs": 43.15904167294502,
+        "sourceSample": 436224,
+        "indexingActive": false
+      },
+      {
+        "sequence": 245,
+        "inputToCallbackMs": 36.75370833277702,
+        "sourceSample": 437248,
+        "indexingActive": false
+      },
+      {
+        "sequence": 246,
+        "inputToCallbackMs": 41.79099999368191,
+        "sourceSample": 438784,
+        "indexingActive": false
+      },
+      {
+        "sequence": 247,
+        "inputToCallbackMs": 46.178833335638046,
+        "sourceSample": 440832,
+        "indexingActive": false
+      },
+      {
+        "sequence": 248,
+        "inputToCallbackMs": 41.11158333718777,
+        "sourceSample": 442368,
+        "indexingActive": false
+      },
+      {
+        "sequence": 249,
+        "inputToCallbackMs": 46.0692083388567,
+        "sourceSample": 443904,
+        "indexingActive": false
+      },
+      {
+        "sequence": 250,
+        "inputToCallbackMs": 50.28320834040642,
+        "sourceSample": 444928,
+        "indexingActive": false
+      },
+      {
+        "sequence": 252,
+        "inputToCallbackMs": 40.51674999296665,
+        "sourceSample": 446464,
+        "indexingActive": false
+      },
+      {
+        "sequence": 254,
+        "inputToCallbackMs": 39.55779166519642,
+        "sourceSample": 449024,
+        "indexingActive": false
+      },
+      {
+        "sequence": 256,
+        "inputToCallbackMs": 38.45804166793823,
+        "sourceSample": 451584,
+        "indexingActive": false
+      },
+      {
+        "sequence": 258,
+        "inputToCallbackMs": 39.24579165875912,
+        "sourceSample": 454144,
+        "indexingActive": false
+      }
+    ],
+    "stockOutputChanges": [
+      {
+        "type": "gain",
+        "maxPcmDelta": 0.049446985125542
+      },
+      {
+        "type": "filter",
+        "maxPcmDelta": 0.061359953135252
+      },
+      {
+        "type": "delay",
+        "maxPcmDelta": 0.094261765480042
+      },
+      {
+        "type": "reverb",
+        "maxPcmDelta": 0.170945689082146
+      }
+    ],
+    "pendingSeekReconciliation": {
+      "oldGeneration": 2,
+      "newGeneration": 3,
+      "oldSequence": 262,
+      "reconciledSequence": 263,
+      "editToObservedCallbackMs": 136.2056249976158,
+      "workerReleaseToObservedCallbackMs": 81.24620833992958,
+      "taggedEditToCallbackMs": 120.81675000488758,
+      "parameterValue": 0.85
+    },
+    "impulseDelayComparison": {
+      "approximatePeak": 0.0,
+      "approximateMaxError": 0.353553384542465,
+      "accuratePeak": 0.353553384542465,
+      "accurateMaxError": 0.0
+    },
+    "searchRequests": 261,
+    "heardSamplesWithIndexing": 189,
+    "lateSeekMs": 53.45216666162014,
+    "preparingObservations": 77,
+    "stopDuringPrepareMs": 29.996124997735023,
+    "offlineRangeCancelMs": 33.38400000333786,
+    "timecodedCaptureMaxError": 0.0,
+    "scrubGrains": [
+      {
+        "position": 240000,
+        "completeMs": 162.51879166066647
+      },
+      {
+        "position": 144000,
+        "completeMs": 162.44833333790302
+      }
+    ],
+    "finalAudio": {
+      "version": 5,
+      "command": "status",
+      "id": "design:tail",
+      "playGeneration": 25,
+      "outputRate": 48000.0,
+      "sourceSample": 96000,
+      "sourceRate": 48000.0,
+      "auditionPair": 0,
+      "startSample": 48000,
+      "endSample": 96000,
+      "playing": false,
+      "seconds": 2.0,
+      "firstCallbackMs": 80070073.62833333,
+      "peak": 0.0,
+      "preMonitorPeak": 0.0,
+      "design": true,
+      "designLayers": 1,
+      "producerMaxMs": 0.936625003814697,
+      "error": "",
+      "callbacks": 1467,
+      "frames": 751104,
+      "underruns": 0,
+      "designRevision": 1,
+      "heardEdit": 0,
+      "editLatencyMs": 0.0,
+      "stalePreparationsDiscarded": 0,
+      "preparing": false,
+      "sampleRate": 48000.0,
+      "outputs": [
+        "MacBook Pro Speakers"
+      ],
+      "peakResidentBytes": 77824000,
+      "cpuSeconds": 1.530826,
+      "bufferFrames": 512,
+      "device": "MacBook Pro Speakers",
+      "availableRates": [
+        44100.0,
+        48000.0,
+        88200.0,
+        96000.0
+      ],
+      "processGeneration": 1,
+      "intentId": "design:tail",
+      "pendingPlayback": false
+    },
+    "timestamp": "2026-11-18T11:42:19.623-05:00"
+  },
+  "findings": [
+    {
+      "id": "C01",
+      "status": "FIXED",
+      "evidence": "Controlled early-edit and uncommitted-editor startup barriers"
+    },
+    {
+      "id": "C02",
+      "status": "FIXED",
+      "evidence": "Historical r1 / retained r20 / fresh r22 restart, explicit save, immutable archive, future archive timestamp, stale rejection and retry"
+    },
+    {
+      "id": "C03",
+      "status": "FIXED",
+      "evidence": "Two separate imports out of order across relink/refresh; duplicate completion and expired-lifetime suppression"
+    },
+    {
+      "id": "C04",
+      "status": "FIXED",
+      "evidence": "Controlled and native held-worker seek/current-parameter reconciliation"
+    },
+    {
+      "id": "C05",
+      "status": "FIXED",
+      "evidence": "Four stock DSP output differences, native continuous updates, five real inspector slider phases"
+    },
+    {
+      "id": "C06",
+      "status": "FIXED",
+      "evidence": "Controlled selection history plus ten actual native view-command checks and CUA Command-D/Backspace/Command-Z"
+    },
+    {
+      "id": "C07",
+      "status": "FIXED",
+      "evidence": "Geometry and real pointer drags for both coincident fade grips, including tiny clips"
+    },
+    {
+      "id": "C08",
+      "status": "FIXED",
+      "evidence": "Full-hour-plus-tail fit at widths 280, 700, 2200"
+    }
+  ],
+  "ui": {
+    "catalog": "build/designer-v111/native-ui",
+    "documentId": "f079cfb5d0bd4d3db119805d64b35d0a",
+    "restoredRevision": 2715,
+    "checks": [
+      "Track selection versus clip-only selection",
+      "Lower-edge drag retains independent row height",
+      "Palette Blue then Sage and Lavender choices",
+      "Vertical height icon changes all rows",
+      "Command-D / Backspace / Command-Z native commands",
+      "Accurate audition action at quiet monitor volume",
+      "Explicit Fit and horizontal zoom retained",
+      "Full Library and expanded Designer at minimum 1040x680 and desktop 1360x828",
+      "Quit and relaunch restores colors, per-layer height and vertical scale 1.25"
+    ],
+    "captures": {
+      "docs/verification/library-v111.png": {
+        "sha256": "48d3f025b6ca0a1892e786d2f91d80e87e170f6c84d3ab533d625d2adf893fd0",
+        "format": "native CUA screenshot"
+      },
+      "docs/verification/designer-v111.png": {
+        "sha256": "e1ea9869e74a52e01487334120071c1ecc926ec86b3ab3bc790adc4ca147ef7d",
+        "format": "native CUA screenshot"
+      },
+      "docs/verification/designer-v111-minimum.png": {
+        "sha256": "8c570c68666db11c4c41f3da20fbdbc19bc024dd1ade71d0e85ce346d0615871",
+        "format": "native CUA screenshot"
+      },
+      "docs/verification/library-v111-minimum.png": {
+        "sha256": "0e7015adf40a3f2e20cfa96e6636d307972257dafec783e8a5588096d5542396",
+        "format": "native CUA screenshot"
+      },
+      "docs/verification/designer-v111-reopened.png": {
+        "sha256": "3d91ca5d4eb56acfce24a3e645a62abca172417d24384222e4897727ca3c519a",
+        "format": "native CUA screenshot of final executable reopening original r2708"
+      }
+    },
+    "originalDocumentRevision": 2708,
+    "originalRecoveryBackup": "build/designer-v111/pre-rebuild-recovery",
+    "originalChecksumUnchangedBeforeFinalUserRelaunch": true,
+    "screenshotNote": "Final canvas/layout source; captured before the final recovery-order and session Undo/Redo command-state guards, which do not change the layout.",
+    "finalOriginalRelaunch": {
+      "status": "PASS",
+      "observedRevisionAtReopen": 2708,
+      "catalog": "/private/tmp/soundplus-v11-native-ke25tiw8",
+      "document": "Rain glass design",
+      "selectedLayer": "rain.wav",
+      "playheadSeconds": 0.3805,
+      "playing": false,
+      "monitorGain": 0.7,
+      "executedAfterFinalBuildAndTests": true
+    },
+    "originalJournalAtReportCompletion": {
+      "revision": 2714,
+      "recipeMatchesBackupIgnoringRevisionAndOptionalDefaultColourMetadata": true,
+      "newerLiveRevisionPreserved": true
+    }
+  },
+  "acceptance": {
+    "audibleScrub": "PCM_VERIFIED; forward 120ms grains, 50ms history, 5ms ramps; no human listening",
+    "accurateAudition": "PCM_VERIFIED; full-history impulse/delay comparison matches offline reader exactly",
+    "crossApplicationDrag": "NOT_VERIFIED; receiving-app drag/save/SoundPlus-exit/reopen workflow has not passed",
+    "humanListening": "NOT_VERIFIED"
+  },
+  "limitations": [
+    "One Mac/output/display configuration",
+    "No human UAT/listening or physical DAC/acoustic latency measurement",
+    "No OS input or slider-to-paint timing in inspector benchmark",
+    "Stock values coalesce; topology changes still prepare a graph",
+    "Accurate audition reconstructs the request snapshot; later edits apply forward",
+    "No long soak, external interface or second Mac qualification",
+    "Cross-application drag remains separate from prior file-open delivery checks"
+  ]
+}

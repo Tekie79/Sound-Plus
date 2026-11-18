@@ -21,7 +21,17 @@ DesignLayer *findLayer(DesignDocument &d, const juce::String &id)
 struct DesignerCanvas::Header : juce::Button
 {
     DesignerCanvas &canvas;
-    Header(DesignerCanvas &owner, const juce::String &name) : Button(name), canvas(owner) {}
+    IconButton colour{"Track colour", ActionIcon::colour};
+    Header(DesignerCanvas &owner, const juce::String &name, const juce::String &id)
+        : Button(name), canvas(owner)
+    {
+        addAndMakeVisible(colour);
+        colour.onClick = [this, id] { canvas.showColours(id); };
+    }
+    void resized() override
+    {
+        colour.setBounds(getWidth() - 26, 5, 24, 24);
+    }
     void paintButton(juce::Graphics &, bool, bool) override {}
     void mouseDown(const juce::MouseEvent &event) override
     {
@@ -35,6 +45,14 @@ struct DesignerCanvas::Header : juce::Button
     {
         canvas.mouseUp(event.getEventRelativeTo(&canvas));
     }
+    void mouseMove(const juce::MouseEvent &event) override
+    {
+        canvas.mouseMove(event.getEventRelativeTo(&canvas));
+    }
+    void mouseDoubleClick(const juce::MouseEvent &event) override
+    {
+        canvas.mouseDoubleClick(event.getEventRelativeTo(&canvas));
+    }
 };
 DesignerCanvas::DesignerCanvas(DesignSession &owner, Peaks provider, juce::PropertiesFile &prefs)
     : session(owner), peaks(std::move(provider)), preferences(prefs)
@@ -45,6 +63,7 @@ DesignerCanvas::DesignerCanvas(DesignSession &owner, Peaks provider, juce::Prope
     restoredViewport = preferences.containsKey("timelineScale");
     viewport.startSeconds = preferences.getDoubleValue("timelineStart", 0);
     viewport.pixelsPerSecond = preferences.getDoubleValue("timelineScale", 100);
+    verticalScale = std::clamp(preferences.getDoubleValue("timelineVerticalScale", 1), .5, 3.);
     snapping.enabled = preferences.getBoolValue("timelineSnap", true);
     startTimerHz(30);
 }
@@ -58,10 +77,11 @@ void DesignerCanvas::saveViewport()
     preferences.setValue("timelineStart", viewport.startSeconds);
     preferences.setValue("timelineScale", viewport.pixelsPerSecond);
     preferences.setValue("timelineSnap", snapping.enabled);
+    preferences.setValue("timelineVerticalScale", verticalScale);
 }
 void DesignerCanvas::resized()
 {
-    if (pointerDown)
+    if (pointerDown && viewport.width != getWidth())
         cancelDrag();
     viewport.width = (float)getWidth();
     viewport.header = getWidth() < 540 ? 110.f : 150.f;
@@ -76,6 +96,10 @@ void DesignerCanvas::syncSelectors()
         needsInitialFit = !restoredViewport || documentId.isNotEmpty();
         documentId = document.id;
     }
+    viewport.rowHeights.clear();
+    for (auto &layer : layers)
+        viewport.rowHeights.push_back((float)std::clamp(
+            preferences.getDoubleValue(heightKey(layer.id), 78) * verticalScale, 64., 400.));
     juce::String signature;
     for (auto &layer : layers)
         signature += layer.id;
@@ -86,11 +110,12 @@ void DesignerCanvas::syncSelectors()
         headers.clear();
         for (auto &layer : layers)
         {
-            auto *header = headers.add(new Header(*this, "Select / reorder layer " + layer.name));
+            auto *header = headers.add(new Header(*this, "Select / reorder layer " + layer.name, layer.id));
             addAndMakeVisible(header);
             auto id = layer.id;
             header->onClick = [this, id]
             {
+                clipSelection = false;
                 session.selectLayer(id);
                 grabKeyboardFocus();
             };
@@ -99,9 +124,12 @@ void DesignerCanvas::syncSelectors()
     }
     for (int i = 0; i < headers.size(); ++i)
     {
-        headers[i]->setBounds(4, 32 + i * 78, (int)viewport.header - 8, 73);
+        headers[i]->setBounds(4, (int)viewport.rowTop(i), (int)viewport.header - 12,
+                              (int)viewport.rowHeight(i) - 1);
         headers[i]->setTitle("Select / reorder layer " + layers[(size_t)i].name);
-        headers[i]->setTooltip("Drag to reorder; Shift-click to select multiple layers");
+        headers[i]->colour.setTitle("Track colour for " + layers[(size_t)i].name);
+        headers[i]->setTooltip(
+            "Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize");
     }
 }
 void DesignerCanvas::fitDesign()
@@ -132,6 +160,52 @@ void DesignerCanvas::zoom(double factor)
     viewport.zoom((viewport.header + getWidth()) * .5f, factor);
     saveViewport();
     repaint();
+}
+juce::String DesignerCanvas::heightKey(const juce::String &id) const
+{
+    return "trackHeight." + session.document.id + "." + id;
+}
+void DesignerCanvas::updateRows()
+{
+    syncSelectors();
+    if (onRowsChanged)
+        onRowsChanged();
+    repaint();
+}
+void DesignerCanvas::zoomVertical(double factor)
+{
+    verticalScale = std::clamp(verticalScale * factor, .5, 3.);
+    updateRows();
+    saveViewport();
+}
+void DesignerCanvas::showColours(const juce::String &id)
+{
+    static constexpr uint32_t palette[]{0,          0xff79b6d2, 0xff72b8a2, 0xffb4a0d4,
+                                        0xffd4a27c, 0xffd38393, 0xffd0bc79};
+    static const char *names[]{"Default", "Blue", "Sage", "Lavender", "Amber", "Rose", "Sand"};
+    juce::PopupMenu menu;
+    auto *layer = findLayer(session.document, id);
+    if (!layer)
+        return;
+    for (int i = 0; i < 7; ++i)
+        menu.addColouredItem(i + 1, names[i], palette[i] ? juce::Colour(palette[i]) : ui::text, true,
+                             layer->colour == palette[i]);
+    auto token = session.beginDialog();
+    juce::Component::SafePointer<DesignerCanvas> safe(this);
+    auto found = std::find_if(session.document.activeMix().layers.begin(),
+                              session.document.activeMix().layers.end(), [&](auto &l) { return l.id == id; });
+    auto index = (int)std::distance(session.document.activeMix().layers.begin(), found);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&headers[index]->colour),
+                       [safe, token, id](int choice)
+                       {
+                           if (safe && safe->session.accepts(token) && choice > 0 && choice <= 7)
+                               safe->session.edit("Track colour",
+                                                  [=](auto &d)
+                                                  {
+                                                      if (auto *selected = findLayer(d, id))
+                                                          selected->colour = palette[choice - 1];
+                                                  });
+                       });
 }
 void DesignerCanvas::setDropGhost(std::optional<int64_t> frame)
 {
@@ -170,18 +244,30 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         auto &layer = layers[row];
         auto shape = clipGeometry(layer, (int)row, viewport, rate);
         bool selected = session.selectedIds.contains(layer.id);
-        graphics.setColour(selected ? juce::Colour(0xff203746) : ui::surface);
-        graphics.fillRoundedRectangle(4, shape.top, getWidth() - 8.f, 73, 5);
+        bool selectedClip = selected && clipSelection, selectedTrack = selected && !clipSelection;
+        auto colour = layer.colour ? juce::Colour(layer.colour) : ui::accent;
+        graphics.setColour(selectedTrack ? juce::Colour(0xff1d2b39) : ui::surface);
+        graphics.fillRoundedRectangle(left, shape.top, getWidth() - left - 4, shape.height - 5, 4);
         {
             juce::Graphics::ScopedSaveState saved(graphics);
-            graphics.reduceClipRegion((int)left, (int)shape.top, getWidth() - (int)left, 77);
-            graphics.setColour(layer.source.error.isEmpty() ? juce::Colour(0xff31516a)
-                                                            : juce::Colour(0xff724a35));
-            graphics.fillRoundedRectangle(shape.left, shape.top + 5, std::max(2.f, shape.right - shape.left),
-                                          62, 3);
+            graphics.reduceClipRegion((int)left, (int)shape.top, getWidth() - (int)left, (int)shape.height);
+            auto rectangle =
+                juce::Rectangle<float>(shape.left, shape.clipTop, std::max(2.f, shape.right - shape.left),
+                                       shape.clipBottom - shape.clipTop);
+            auto fill = layer.source.error.isEmpty()
+                            ? ui::surface.interpolatedWith(colour, selectedClip ? .40f : .22f)
+                            : juce::Colour(0xff724a35);
+            graphics.setColour(fill);
+            graphics.fillRoundedRectangle(rectangle, 3);
+            if (selectedClip)
+            {
+                graphics.setColour(juce::Colour(0xff8ae1ce));
+                graphics.drawRoundedRectangle(rectangle.reduced(.75f), 3, 1.5f);
+            }
             if (auto wave = peaks(layer.source); wave && !wave->peaks.empty())
             {
-                graphics.setColour(layer.mute ? ui::muted : juce::Colour(0xffa2d3ec));
+                graphics.setColour(layer.mute ? ui::muted
+                                              : colour.interpolatedWith(juce::Colours::white, .22f));
                 for (int x = (int)std::max(left, shape.left); x < std::min((float)getWidth(), shape.right);
                      ++x)
                 {
@@ -190,46 +276,57 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                         (int64_t)((double)source / layer.source.samples * wave->peaks.size()), 0,
                         (int64_t)wave->peaks.size() - 1);
                     auto peak = wave->peaks[bin];
-                    graphics.drawVerticalLine(x, shape.top + 36 - peak.second * 23,
-                                              shape.top + 36 - peak.first * 23);
+                    graphics.drawVerticalLine(x, shape.centre - peak.second * shape.amplitude,
+                                              shape.centre - peak.first * shape.amplitude);
                 }
             }
-            graphics.setColour(ui::accent.withAlpha(selected ? .9f : .55f));
-            graphics.drawLine(shape.left, shape.top + 66, shape.fadeIn, shape.top + 10, 1.3f);
-            graphics.drawLine(shape.fadeOut, shape.top + 10, shape.right, shape.top + 66, 1.3f);
+            graphics.setColour(colour.withAlpha(selected ? .9f : .55f));
+            graphics.drawLine(shape.left, shape.clipBottom - 1, shape.fadeIn, shape.fadeInY, 1.3f);
+            graphics.drawLine(shape.fadeOut, shape.fadeInY, shape.right, shape.clipBottom - 1, 1.3f);
             graphics.drawLine(shape.left, shape.gain, shape.right, shape.gain,
                               hover.target == CanvasTarget::gain && hover.row == (int)row ? 2.f : 1.f);
-            graphics.drawVerticalLine((int)shape.left, shape.top + 18, shape.top + 61);
-            graphics.drawVerticalLine((int)shape.right, shape.top + 18, shape.top + 61);
+            graphics.drawVerticalLine((int)shape.left, shape.clipTop + 13, shape.clipBottom - 6);
+            graphics.drawVerticalLine((int)shape.right, shape.clipTop + 13, shape.clipBottom - 6);
             for (bool in : {true, false})
             {
                 auto target = in ? CanvasTarget::fadeIn : CanvasTarget::fadeOut;
                 auto x = in ? shape.fadeIn : shape.fadeOut;
+                auto y = in ? shape.fadeInY : shape.fadeOutY;
                 graphics.setColour(hover.target == target && hover.row == (int)row ? juce::Colours::white
-                                                                                   : ui::accent);
-                graphics.fillRoundedRectangle(x - 4, shape.top + 6, 8, 8, 2);
+                                                                                   : colour);
+                if (!in && shape.fadeOutY != shape.fadeInY)
+                    graphics.drawLine(x, shape.fadeInY, x, y, 1.f);
+                graphics.fillRoundedRectangle(x - 4, y - 4, 8, 8, 2);
             }
             juce::Path sync;
-            sync.addTriangle(shape.sync - 5, shape.top + 73, shape.sync + 5, shape.top + 73, shape.sync,
-                             shape.top + 64);
-            graphics.setColour(hover.target == CanvasTarget::sync && hover.row == (int)row
-                                   ? juce::Colours::white
-                                   : ui::accent);
+            sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,
+                             shape.top + shape.height - 5, shape.sync, shape.clipBottom - 3);
+            graphics.setColour(
+                hover.target == CanvasTarget::sync && hover.row == (int)row ? juce::Colours::white : colour);
             graphics.fillPath(sync);
         }
-        // Headers are repainted after the timeline so they stay fixed while panning.
-        graphics.setColour(selected ? juce::Colour(0xff203746) : ui::surface);
-        graphics.fillRect(4.f, shape.top, left - 4, 73.f);
+        // A gutter and separator keep the fixed track headers separate from clips.
+        graphics.setColour(selectedTrack ? juce::Colour(0xff263d54) : ui::surface);
+        graphics.fillRoundedRectangle(4, shape.top, left - 16, shape.height - 5, 4);
+        graphics.setColour(colour);
+        graphics.fillRoundedRectangle(4, shape.top + 4, 3, shape.height - 13, 1);
+        graphics.setColour(ui::line);
+        graphics.drawVerticalLine((int)left - 8, shape.top, shape.top + shape.height - 5);
         graphics.setColour(layer.mute ? ui::muted : ui::text);
         graphics.setFont(juce::FontOptions(12.f, juce::Font::bold));
-        graphics.drawText(layer.name, 12, (int)shape.top + 8, (int)left - 22, 21, juce::Justification::left,
+        graphics.drawText(layer.name, 13, (int)shape.top + 8, (int)left - 52, 21, juce::Justification::left,
                           true);
         graphics.setColour(ui::muted);
         graphics.setFont(juce::FontOptions(10.f));
         graphics.drawText((layer.mute ? "MUTE " : "") +
                               (layer.solo ? juce::String("SOLO ") : juce::String()) +
                               (layer.locked ? "LOCKED" : ""),
-                          12, (int)shape.top + 35, (int)left - 22, 20, juce::Justification::left, true);
+                          13, (int)shape.top + 35, (int)left - 25, 20, juce::Justification::left, true);
+        if (hover.target == CanvasTarget::rowResize && hover.row == (int)row)
+        {
+            graphics.setColour(ui::accent.withAlpha(.65f));
+            graphics.drawHorizontalLine((int)(shape.top + shape.height - 3), 4, (float)getWidth() - 4);
+        }
     }
     if (layers.empty())
     {
@@ -259,7 +356,7 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
     if (insertion >= 0)
     {
         graphics.setColour(ui::accent);
-        graphics.fillRect(4, 31 + insertion * 78, getWidth() - 8, 2);
+        graphics.fillRect(4, (int)viewport.rowTop(insertion) - 1, getWidth() - 8, 2);
     }
     if (feedback.isNotEmpty())
     {
@@ -288,6 +385,7 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
     modifiers = event.mods;
     hit = canvasHitTest(session.document, viewport, pointer.x, pointer.y);
     original = session.document;
+    originalClipSelection = clipSelection;
     captured = viewport;
     pointerDown = true;
     moved = false;
@@ -297,8 +395,14 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
         session.beginSeekGesture(audibleScrub);
         session.dragSeek(frameAt(pointer.x));
     }
-    else if (hit.row >= 0)
+    else if (hit.target == CanvasTarget::rowResize)
     {
+        auto id = original.activeMix().layers[(size_t)hit.row].id;
+        originalHeight = preferences.getDoubleValue(heightKey(id), 78);
+    }
+    else if (hit.row >= 0 && hit.target != CanvasTarget::none)
+    {
+        clipSelection = hit.target != CanvasTarget::header;
         session.beginGesture();
         auto id = original.activeMix().layers[(size_t)hit.row].id;
         if (event.mods.isShiftDown() || !session.selectedIds.contains(id))
@@ -334,6 +438,13 @@ void DesignerCanvas::applyDrag()
     if (hit.row < 0 || hit.row >= (int)original.activeMix().layers.size())
         return;
     auto &before = original.activeMix().layers[(size_t)hit.row];
+    if (hit.target == CanvasTarget::rowResize)
+    {
+        preferences.setValue(heightKey(before.id),
+                             std::clamp(originalHeight + (pointer.y - anchor.y) / verticalScale, 64., 320.));
+        updateRows();
+        return;
+    }
     auto rate = original.sampleRate;
     auto delta = captured.delta((pointer.x - anchor.x) * (modifiers.isCtrlDown() ? .1f : 1.f), rate) +
                  (int64_t)std::llround((viewport.startSeconds - captured.startSeconds) * rate);
@@ -341,8 +452,7 @@ void DesignerCanvas::applyDrag()
     snap.enabled &= !modifiers.isCommandDown();
     if (hit.target == CanvasTarget::header)
     {
-        insertion =
-            std::clamp((int)std::llround((pointer.y - 32) / 78), 0, (int)original.activeMix().layers.size());
+        insertion = viewport.insertionAt(pointer.y, (int)original.activeMix().layers.size());
         feedback = "Reorder layer";
         repaint();
         return;
@@ -408,7 +518,7 @@ void DesignerCanvas::mouseUp(const juce::MouseEvent &)
                      { reorderLayer(document, original.activeMix().layers[(size_t)hit.row].id, insertion); });
     if (hit.target == CanvasTarget::empty || hit.target == CanvasTarget::playhead)
         session.endSeekGesture();
-    else
+    else if (hit.target != CanvasTarget::rowResize)
         session.endGesture();
     pointerDown = false;
     insertion = -1;
@@ -425,8 +535,14 @@ void DesignerCanvas::cancelDrag()
         session.dragSeek(original.playhead);
         session.endSeekGesture();
     }
+    else if (hit.target == CanvasTarget::rowResize)
+    {
+        preferences.setValue(heightKey(original.activeMix().layers[(size_t)hit.row].id), originalHeight);
+        updateRows();
+    }
     else
         session.cancelGesture();
+    clipSelection = originalClipSelection;
     pointerDown = false;
     insertion = -1;
     feedback.clear();
@@ -458,7 +574,7 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
         hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut ||
         hover.target == CanvasTarget::sync || hover.target == CanvasTarget::playhead)
         cursor = juce::MouseCursor::LeftRightResizeCursor;
-    if (hover.target == CanvasTarget::gain)
+    if (hover.target == CanvasTarget::gain || hover.target == CanvasTarget::rowResize)
         cursor = juce::MouseCursor::UpDownResizeCursor;
     if (hover.target == CanvasTarget::body || hover.target == CanvasTarget::header)
         cursor = juce::MouseCursor::DraggingHandCursor;
@@ -484,6 +600,11 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
 void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
 {
     auto target = canvasHitTest(session.document, viewport, event.x, event.y);
+    if (target.target == CanvasTarget::rowResize && target.row >= 0)
+    {
+        preferences.removeValue(heightKey(session.document.activeMix().layers[(size_t)target.row].id));
+        updateRows();
+    }
     if (target.target == CanvasTarget::gain && target.row >= 0)
     {
         auto id = session.document.activeMix().layers[(size_t)target.row].id;
@@ -497,7 +618,9 @@ void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
 }
 void DesignerCanvas::mouseWheelMove(const juce::MouseEvent &event, const juce::MouseWheelDetails &wheel)
 {
-    if (event.mods.isCommandDown())
+    if (event.mods.isCommandDown() && event.mods.isAltDown())
+        zoomVertical(std::exp(wheel.deltaY * 2));
+    else if (event.mods.isCommandDown())
         viewport.zoom(event.x, std::exp(wheel.deltaY * 2));
     else if (event.mods.isShiftDown() || std::abs(wheel.deltaX) > .01)
         viewport.pan(-(wheel.deltaX + wheel.deltaY) * 150);
@@ -541,6 +664,8 @@ void DesignerCanvas::timerCallback()
         }
         return;
     }
+    if (hit.target == CanvasTarget::rowResize)
+        return;
     double speed = pointer.x < viewport.header + 18 ? -180 : pointer.x > getWidth() - 18 ? 180 : 0;
     if (speed != 0)
     {

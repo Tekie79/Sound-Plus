@@ -7,6 +7,15 @@ struct TimelineViewport
 {
     double startSeconds = 0, pixelsPerSecond = 100;
     float header = 130, width = 700;
+    std::vector<float> rowHeights;
+    float rowTop(int row) const;
+    float rowHeight(int row) const;
+    int rowAt(float y, int count) const;
+    int insertionAt(float y, int count) const;
+    float contentHeight(int count) const
+    {
+        return rowTop(count);
+    }
     float x(int64_t frame, double rate) const;
     int64_t frame(float x, double rate) const;
     int64_t delta(float pixels, double rate) const;
@@ -19,6 +28,7 @@ enum class CanvasTarget
     none,
     empty,
     header,
+    rowResize,
     body,
     trimIn,
     trimOut,
@@ -36,6 +46,8 @@ struct CanvasHit
 struct CanvasClipGeometry
 {
     float left = 0, right = 0, top = 0, fadeIn = 0, fadeOut = 0, sync = 0, gain = 0;
+    float height = 78, clipTop = 0, clipBottom = 0, centre = 0, amplitude = 0;
+    float fadeInY = 0, fadeOutY = 0;
 };
 CanvasClipGeometry clipGeometry(const DesignLayer &, int row, const TimelineViewport &, double rate);
 CanvasHit canvasHitTest(const DesignDocument &, const TimelineViewport &, float x, float y);

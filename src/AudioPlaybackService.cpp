@@ -87,7 +87,9 @@ void AudioPlaybackService::prepare()
                 auto end = grain ? std::min(designPreviewEnd(document),
                                             frame + (int64_t)std::llround(document.sampleRate * .12))
                                  : -1;
-                auto warmup = (int64_t)std::llround(document.sampleRate * (grain ? .05 : .25));
+                auto warmup = result.mode == "accurate"
+                                  ? (int64_t)-1
+                                  : (int64_t)std::llround(document.sampleRate * (grain ? .05 : .25));
                 // Offline render retains full history; interactive seeks explicitly reset
                 // stock state at most 250 ms before the requested location.
                 result.stream = std::make_unique<PcmStream>(document, request.rate, frame,

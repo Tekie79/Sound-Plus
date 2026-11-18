@@ -3,6 +3,31 @@
 #include <limits>
 namespace sp
 {
+float TimelineViewport::rowHeight(int row) const
+{
+    return row >= 0 && row < (int)rowHeights.size() ? rowHeights[(size_t)row] : 78.f;
+}
+float TimelineViewport::rowTop(int row) const
+{
+    float top = 32;
+    for (int i = 0; i < row; ++i)
+        top += rowHeight(i);
+    return top;
+}
+int TimelineViewport::rowAt(float y, int count) const
+{
+    for (int i = 0; i < count; ++i)
+        if (y >= rowTop(i) && y < rowTop(i + 1))
+            return i;
+    return -1;
+}
+int TimelineViewport::insertionAt(float y, int count) const
+{
+    for (int i = 0; i < count; ++i)
+        if (y < rowTop(i) + rowHeight(i) * .5f)
+            return i;
+    return count;
+}
 float TimelineViewport::x(int64_t frame, double rate) const
 {
     return header + (float)((frame / rate - startSeconds) * pixelsPerSecond);
@@ -19,7 +44,7 @@ int64_t TimelineViewport::delta(float pixels, double rate) const
 void TimelineViewport::zoom(float anchor, double factor)
 {
     double time = startSeconds + (anchor - header) / pixelsPerSecond;
-    pixelsPerSecond = std::clamp(pixelsPerSecond * factor, 2., 200000.);
+    pixelsPerSecond = std::clamp(pixelsPerSecond * factor, .01, 200000.);
     startSeconds = std::max(0., time - (anchor - header) / pixelsPerSecond);
 }
 void TimelineViewport::pan(double pixels)
@@ -30,19 +55,28 @@ void TimelineViewport::fit(int64_t first, int64_t last, double rate)
 {
     startSeconds = std::max(0., first / rate - .03);
     pixelsPerSecond =
-        std::clamp((width - header - 20) / std::max(.1, (last - first) / rate + .06), 2., 200000.);
+        std::clamp((width - header - 20) / std::max(.1, (last - first) / rate + .06), .01, 200000.);
 }
 CanvasClipGeometry clipGeometry(const DesignLayer &layer, int row, const TimelineViewport &view, double rate)
 {
     auto duration = layerDuration(layer, rate);
-    float top = 32 + row * 78.f;
-    return {view.x(layer.placement, rate),
-            view.x(layer.placement + duration, rate),
-            top,
-            view.x(layer.placement + std::min(duration, layer.fadeIn), rate),
-            view.x(layer.placement + duration - std::min(duration, layer.fadeOut), rate),
-            view.x(layerSyncFrame(layer, rate), rate),
-            top + 36 - (float)std::clamp(layer.gainDb, -40., 24.) * .65f};
+    float top = view.rowTop(row), height = view.rowHeight(row);
+    CanvasClipGeometry shape{view.x(layer.placement, rate),
+                             view.x(layer.placement + duration, rate),
+                             top,
+                             view.x(layer.placement + std::min(duration, layer.fadeIn), rate),
+                             view.x(layer.placement + duration - std::min(duration, layer.fadeOut), rate),
+                             view.x(layerSyncFrame(layer, rate), rate),
+                             top + (height - 6) * .5f - (float)std::clamp(layer.gainDb, -40., 24.) * .65f};
+    shape.height = height;
+    shape.clipTop = top + 5;
+    shape.clipBottom = top + height - 11;
+    shape.centre = (shape.clipTop + shape.clipBottom) * .5f;
+    shape.amplitude = (shape.clipBottom - shape.clipTop) * .37f;
+    shape.fadeInY = top + 10;
+    // Stagger the OUT grip vertically when both fades meet, including tiny clips.
+    shape.fadeOutY = shape.fadeInY + (std::abs(shape.fadeIn - shape.fadeOut) < 15 ? 17.f : 0.f);
+    return shape;
 }
 CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &view, float x, float y)
 {
@@ -50,26 +84,31 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
         return {};
     if (y < 30)
         return {x >= view.header ? CanvasTarget::playhead : CanvasTarget::none, -1};
-    int row = (int)((y - 32) / 78);
     auto &layers = document.activeMix().layers;
+    int row = view.rowAt(y, (int)layers.size());
     if (row < 0 || row >= (int)layers.size())
         return {x >= view.header ? CanvasTarget::empty : CanvasTarget::none, -1};
-    if (x < view.header)
+    if (std::abs(y - (view.rowTop(row + 1) - 3)) <= 3)
+        return {CanvasTarget::rowResize, row};
+    if (x < view.header - 8)
         return {CanvasTarget::header, row};
+    if (x < view.header)
+        return {CanvasTarget::none, row};
     auto clip = clipGeometry(layers[(size_t)row], row, view, document.sampleRate);
     bool inside = x >= clip.left && x <= clip.right;
     // Fade corners have precedence over trim edges. Sync lives below the waveform
     // so a zero fade and a source sync at IN remain individually reachable.
-    if (std::abs(y - (clip.top + 10)) <= 7)
+    if (std::abs(y - clip.fadeInY) <= 7 || std::abs(y - clip.fadeOutY) <= 7)
     {
-        bool in = std::abs(x - clip.fadeIn) <= 7, out = std::abs(x - clip.fadeOut) <= 7;
+        bool in = std::abs(x - clip.fadeIn) <= 7 && std::abs(y - clip.fadeInY) <= 7;
+        bool out = std::abs(x - clip.fadeOut) <= 7 && std::abs(y - clip.fadeOutY) <= 7;
         if (in || out)
             return {in && (!out || std::abs(x - clip.fadeIn) <= std::abs(x - clip.fadeOut))
                         ? CanvasTarget::fadeIn
                         : CanvasTarget::fadeOut,
                     row};
     }
-    if (y >= clip.top + 18 && y <= clip.top + 61)
+    if (y >= clip.clipTop + 13 && y <= clip.clipBottom - 6)
     {
         bool left = std::abs(x - clip.left) <= 6, right = std::abs(x - clip.right) <= 6;
         if (left || right)
@@ -77,13 +116,13 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
                                                                            : CanvasTarget::trimOut,
                     row};
     }
-    if (std::abs(x - clip.sync) <= 7 && y >= clip.top + 62 && y <= clip.top + 76)
+    if (std::abs(x - clip.sync) <= 7 && y >= clip.clipBottom - 3 && y <= clip.top + clip.height - 5)
         return {CanvasTarget::sync, row};
     if (inside && std::abs(y - clip.gain) <= 4)
         return {CanvasTarget::gain, row};
     if (std::abs(x - view.x(document.playhead, document.sampleRate)) <= 3)
         return {CanvasTarget::playhead, row};
-    if (inside && y >= clip.top + 5 && y <= clip.top + 69)
+    if (inside && y >= clip.clipTop && y <= clip.clipBottom + 2)
         return {CanvasTarget::body, row};
     return {CanvasTarget::empty, row};
 }

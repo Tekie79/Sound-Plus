@@ -56,34 +56,40 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
         startTimer(16);
     if (services.automaticRecovery)
     {
+        const auto initialId = document.id;
+        const auto initialRevision = document.revision;
+        const auto initialActivity = startupActivity;
         auto token = stamp(Operation::transition);
         juce::Component::SafePointer<DesignSession> safe(this);
-        enqueue(token,
-                [store = recovery, resolve = services.resolve, safe]
+        enqueue(
+            token,
+            [store = recovery, resolve = services.resolve, safe, initialId, initialRevision, initialActivity]
+            {
+                auto entries = store->entries();
+                if (!entries.empty())
+                    resolve(entries.front().document);
+                return [safe, entries = std::move(entries), initialId, initialRevision,
+                        initialActivity]() mutable
                 {
-                    auto entries = store->entries();
-                    if (!entries.empty())
-                        resolve(entries.front().document);
-                    return [safe, entries = std::move(entries)]() mutable
+                    if (!safe)
+                        return;
+                    safe->recoveries = std::move(entries);
+                    if (!safe->recoveries.empty() && safe->document.id == initialId &&
+                        safe->document.revision == initialRevision &&
+                        safe->startupActivity == initialActivity && !safe->dirty)
                     {
-                        if (!safe)
-                            return;
-                        safe->recoveries = std::move(entries);
-                        if (!safe->recoveries.empty())
-                        {
-                            auto latest = safe->recoveries.front();
-                            safe->document = std::move(latest.document);
-                            safe->savedFile = latest.savedFile;
-                            safe->dirty = latest.dirty;
-                            safe->autoRevision = safe->document.revision;
-                            safe->autoDocument = safe->document.id;
-                            safe->message =
-                                latest.dirty ? "Recovered latest changes" : "Reopened saved design";
-                            safe->restoreDerivedState();
-                        }
-                        safe->notify();
-                    };
-                });
+                        auto latest = safe->recoveries.front();
+                        safe->document = std::move(latest.document);
+                        safe->savedFile = latest.savedFile;
+                        safe->dirty = latest.dirty;
+                        safe->autoRevision = safe->document.revision;
+                        safe->autoDocument = safe->document.id;
+                        safe->message = latest.dirty ? "Recovered latest changes" : "Reopened saved design";
+                        safe->restoreDerivedState();
+                    }
+                    safe->notify();
+                };
+            });
     }
 }
 
@@ -123,14 +129,29 @@ DesignSession::~DesignSession()
 
 DesignSession::Stamp DesignSession::stamp(Operation kind)
 {
-    return {lifetime, ++operations[(size_t)kind], kind};
+    auto serial = ++operations[(size_t)kind];
+    if (kind == Operation::import)
+        acceptedImports.insert(serial);
+    return {lifetime, serial, kind};
 }
 bool DesignSession::accepts(Stamp token) const
 {
-    return token.lifetime == lifetime && token.operation == operations[(size_t)token.kind] && !quitting;
+    return token.lifetime == lifetime && !quitting &&
+           (token.kind == Operation::import ? acceptedImports.contains(token.operation)
+                                            : token.operation == operations[(size_t)token.kind]);
+}
+void DesignSession::finishOperation(Stamp token)
+{
+    if (token.kind == Operation::import)
+        acceptedImports.erase(token.operation);
+}
+void DesignSession::protectStartupEdits()
+{
+    ++startupActivity;
 }
 DesignSession::DialogToken DesignSession::beginDialog()
 {
+    protectStartupEdits();
     return {lifetime, ++dialogSerial};
 }
 bool DesignSession::accepts(DialogToken token) const
@@ -153,6 +174,7 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                     {
                         if (safe && safe->accepts(token))
                         {
+                            safe->finishOperation(token);
                             completion();
                             safe->notify();
                         }
@@ -166,7 +188,8 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                     {
                         if (!safe || !safe->accepts(token))
                             return;
-                        safe->working = false;
+                        safe->finishOperation(token);
+                        safe->working = !safe->acceptedImports.empty();
                         if (token.kind == Operation::transition)
                             safe->replacing = false;
                         if (token.kind == Operation::autosave)
@@ -183,6 +206,7 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
         });
     if (!accepted)
     {
+        finishOperation(token);
         working = replacing = autoPending = false;
         message = "Background queue is busy; current design retained. Try again.";
         notify();
@@ -207,6 +231,17 @@ void DesignSession::restoreDerivedState()
         selectedIds.insert(document.selectedLayer);
     lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
 }
+void DesignSession::reconcileSelection(const DesignDocument *before)
+{
+    if (before && (before->selectedLayer != document.selectedLayer ||
+                   before->activeVariation != document.activeVariation))
+        selectedIds.clear();
+    std::erase_if(selectedIds, [&](const auto &id) { return !layerById(document, id); });
+    if (layerById(document, document.selectedLayer))
+        selectedIds.insert(document.selectedLayer);
+    else
+        document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
+}
 void DesignSession::changed()
 {
     dirty = true;
@@ -219,10 +254,13 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
 {
     if (replacing)
         return;
+    protectStartupEdits();
     auto before = document;
+    auto beforeSelection = selectedIds;
     try
     {
         edit(document);
+        reconcileSelection(&before);
         validateDesign(document);
         if (juce::JSON::toString(designToJson(before), true) ==
             juce::JSON::toString(designToJson(document), true))
@@ -232,13 +270,14 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
     catch (const std::exception &error)
     {
         document = std::move(before);
+        selectedIds = std::move(beforeSelection);
         message = error.what();
         notify();
         return;
     }
     if (!gesture)
     {
-        undoHistory.push_back({std::move(before), selectedIds, label});
+        undoHistory.push_back({std::move(before), std::move(beforeSelection), label});
         if (undoHistory.size() > 100)
             undoHistory.erase(undoHistory.begin());
         redoHistory.clear();
@@ -247,6 +286,7 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
 }
 void DesignSession::beginGesture()
 {
+    protectStartupEdits();
     if (!gesture && !replacing)
         gesture = History{document, selectedIds, "Canvas edit"};
 }
@@ -254,7 +294,8 @@ void DesignSession::endGesture()
 {
     if (!gesture)
         return;
-    if (document.revision != gesture->document.revision)
+    bool committed = document.revision != gesture->document.revision;
+    if (committed)
     {
         undoHistory.push_back(std::move(*gesture));
         if (undoHistory.size() > 100)
@@ -262,6 +303,8 @@ void DesignSession::endGesture()
         redoHistory.clear();
     }
     gesture.reset();
+    if (committed)
+        notify();
 }
 void DesignSession::cancelGesture()
 {
@@ -294,20 +337,24 @@ void DesignSession::undo()
     document = std::move(undoHistory.back().document);
     selectedIds = std::move(undoHistory.back().selection);
     undoHistory.pop_back();
+    reconcileSelection();
     document.revision = revision;
     lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
     changed();
 }
 void DesignSession::redo()
 {
-    if (replacing || redoHistory.empty())
+    if (replacing)
         return;
     endGesture();
+    if (redoHistory.empty())
+        return;
     auto revision = document.revision + 1;
     undoHistory.push_back({document, selectedIds, redoHistory.back().label});
     document = std::move(redoHistory.back().document);
     selectedIds = std::move(redoHistory.back().selection);
     redoHistory.pop_back();
+    reconcileSelection();
     document.revision = revision;
     lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
     changed();
@@ -328,6 +375,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
     endGesture();
     stop();
     ++lifetime;
+    acceptedImports.clear();
     *lifetimeGate = lifetime;
     ++dialogSerial;
     replacing = working = true;
@@ -347,6 +395,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                 if (changed || path != juce::File())
                     retain(snapshot, path, changed);
                 DesignRecovery replacement;
+                bool historicalRecall = false;
                 if (file != juce::File())
                 {
                     if (recover)
@@ -370,12 +419,18 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                         store->activate(snapshot.id);
                     else
                     {
+                        if (file != juce::File())
+                        {
+                            auto recalledRevision = replacement.document.revision;
+                            replacement = store->prepareRecall(std::move(replacement));
+                            historicalRecall = replacement.document.revision != recalledRevision;
+                        }
                         retain(replacement.document, replacement.savedFile, replacement.dirty);
                         store->activate(replacement.document.id);
                     }
                 }
                 auto entries = store->entries();
-                return [safe, replacement = std::move(replacement), close,
+                return [safe, replacement = std::move(replacement), close, historicalRecall,
                         entries = std::move(entries)]() mutable
                 {
                     if (!safe)
@@ -398,7 +453,10 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                     safe->gesture.reset();
                     safe->publishedStructure.clear();
                     safe->restoreDerivedState();
-                    safe->message = safe->dirty ? "Recovered latest changes" : "Design ready";
+                    safe->message = historicalRecall
+                                        ? "Opened historical recipe; newer work retained in recovery"
+                                    : safe->dirty ? "Recovered latest changes"
+                                                  : "Design ready";
                 };
             });
 }
@@ -430,7 +488,7 @@ void DesignSession::recoverAutosave(const juce::File &file)
 }
 void DesignSession::refreshRecoveries()
 {
-    auto token = stamp(Operation::import);
+    auto token = stamp(Operation::recoveryList);
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,
             [safe, store = recovery]
@@ -490,7 +548,6 @@ void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool e
              d.selectedLayer = layer.id;
              d.activeMix().layers.push_back(std::move(layer));
          });
-    selectedIds = {document.selectedLayer};
 }
 void DesignSession::addExternal(const juce::File &file, int64_t placement)
 {
@@ -498,6 +555,9 @@ void DesignSession::addExternal(const juce::File &file, int64_t placement)
 }
 void DesignSession::addExternals(const juce::StringArray &files, int64_t placement)
 {
+    if (replacing || files.isEmpty())
+        return;
+    protectStartupEdits();
     auto token = stamp(Operation::import);
     working = true;
     juce::Component::SafePointer<DesignSession> safe(this);
@@ -511,7 +571,7 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
                 {
                     if (!safe)
                         return;
-                    safe->working = false;
+                    safe->working = !safe->acceptedImports.empty();
                     safe->edit("Drop sources",
                                [&](auto &d)
                                {
@@ -523,13 +583,13 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
                                        d.activeMix().layers.push_back(std::move(layer));
                                    }
                                });
-                    safe->selectedIds = {safe->document.selectedLayer};
                 };
             });
 }
 void DesignSession::replaceSource(const juce::String &id, const juce::File &file)
 {
-    auto token = stamp(Operation::import);
+    protectStartupEdits();
+    auto token = stamp(Operation::relink);
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,
             [safe, file, id]
@@ -566,6 +626,16 @@ void DesignSession::replaceSource(const juce::String &id, const juce::File &file
 }
 void DesignSession::selectLayer(const juce::String &id, bool additive)
 {
+    protectStartupEdits();
+    if (id.isEmpty())
+    {
+        selectedIds.clear();
+        document.selectedLayer.clear();
+        notify();
+        return;
+    }
+    if (!layerById(document, id))
+        return;
     if (!additive)
         selectedIds.clear();
     if (additive && selectedIds.contains(id))
@@ -574,8 +644,8 @@ void DesignSession::selectLayer(const juce::String &id, bool additive)
         selectedIds.insert(id);
     if (selectedIds.contains(id))
         document.selectedLayer = id;
-    else if (!selectedIds.empty())
-        document.selectedLayer = *selectedIds.begin();
+    else if (!selectedIds.contains(document.selectedLayer))
+        document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
     notify();
 }
 void DesignSession::selectVariation(const juce::String &id)
@@ -586,8 +656,9 @@ void DesignSession::selectVariation(const juce::String &id)
              d.activeVariation = id;
              if (!d.activeMix().layers.empty())
                  d.selectedLayer = d.activeMix().layers.front().id;
+             else
+                 d.selectedLayer.clear();
          });
-    selectedIds = {document.selectedLayer};
 }
 void DesignSession::generate(uint64_t seed)
 {
@@ -619,23 +690,33 @@ void DesignSession::schedulePreview(const juce::String &mode)
     auto cancellation = previewSerial;
     previewWaiting = true;
     juce::Component::SafePointer<DesignSession> safe(this);
-    enqueue(token,
-            [safe, serial, cancellation, snapshot, position, file, mode, resolve = services.resolve]() mutable
+    enqueue(
+        token,
+        [safe, serial, cancellation, snapshot, position, file, mode, resolve = services.resolve]() mutable
+        {
+            if (serial != *cancellation)
+                throw QueryCancelled();
+            resolve(snapshot);
+            saveDesignAtomic(file, snapshot, [=] { return serial != *cancellation; });
+            return [safe, snapshot, position, file, mode]
             {
-                if (serial != *cancellation)
-                    throw QueryCancelled();
-                resolve(snapshot);
-                saveDesignAtomic(file, snapshot, [=] { return serial != *cancellation; });
-                return [safe, snapshot, position, file, mode]
+                if (!safe)
+                    return;
+                safe->expectedGeneration = safe->services.play("design:" + snapshot.id, file, position, mode);
+                safe->publishedStructure = designStructure(snapshot);
+                safe->previewWaiting = false;
+                // Edits made while the snapshot/seek was preparing belong to
+                // the newly requested generation, not the previous stream.
+                if (safe->publishedStructure == designStructure(safe->document))
                 {
-                    if (!safe)
-                        return;
-                    safe->expectedGeneration =
-                        safe->services.play("design:" + snapshot.id, file, position, mode);
-                    safe->publishedStructure = designStructure(snapshot);
-                    safe->previewWaiting = false;
-                };
-            });
+                    if (safe->document.revision != snapshot.revision)
+                        safe->services.parameters(safe->document, safe->expectedGeneration, safe->lastEdit);
+                    safe->previewDue = 0;
+                }
+                else
+                    safe->previewDue = safe->services.now() + 25;
+            };
+        });
 }
 void DesignSession::play()
 {
@@ -651,6 +732,20 @@ void DesignSession::play()
         onBeforePlay();
     active = true;
     schedulePreview();
+    notify();
+}
+void DesignSession::playAccurate()
+{
+    if (document.activeMix().layers.empty() || replacing)
+        return;
+    auto parked = document.playhead;
+    stop();
+    document.playhead = designPlayStart(document, parked);
+    if (onBeforePlay)
+        onBeforePlay();
+    active = true;
+    schedulePreview("accurate");
+    message = "Accurate audition: full effect history. Stop cancels preparation.";
     notify();
 }
 void DesignSession::stop()

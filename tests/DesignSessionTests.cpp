@@ -39,6 +39,8 @@ struct Harness
     juce::var state = sp::message("status");
     int failRetain = 0, retains = 0, plays = 0, parameters = 0;
     int64_t lastPlay = -1;
+    uint64_t lastParameterGeneration = 0;
+    sp::DesignDocument lastParameters;
     explicit Harness(juce::File root)
         : directory(std::move(root)),
           store(std::make_shared<sp::DesignRecoveryStore>(directory.getChildFile("designer-autosave")))
@@ -82,7 +84,12 @@ struct Harness
             object->setProperty("pendingPlayback", false);
             return generation;
         };
-        result.parameters = [this](const auto &, uint64_t, double) { ++parameters; };
+        result.parameters = [this](const auto &document, uint64_t generation, double)
+        {
+            ++parameters;
+            lastParameterGeneration = generation;
+            lastParameters = document;
+        };
         return result;
     }
     void run(std::deque<std::function<void()>> &queue, size_t index = 0)
@@ -109,6 +116,241 @@ void runDesignSessionTests(const juce::File &parent)
     juce::ScopedJuceInitialiser_GUI initialise;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
+    {
+        Harness h(root.getChildFile("startup-edit"));
+        auto retained = recipe();
+        retained.name = "Earlier retained document";
+        h.store->retain(retained, {}, true);
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services(true));
+        session.edit("Early input", [](auto &d) { d.name = "Fresh launch edit"; });
+        auto fresh = session.document;
+        h.drain();
+        check(session.document.id == fresh.id && session.document.name == "Fresh launch edit" &&
+                  session.dirty && session.recoveries.size() == 1,
+              "Delayed startup recovery cannot overwrite early edits; old work stays recoverable");
+    }
+    {
+        Harness h(root.getChildFile("startup-active-editor"));
+        auto old = recipe();
+        h.store->retain(old, {}, true);
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services(true));
+        auto freshId = session.document.id;
+        session.protectStartupEdits(); // The actual name editor calls this before it commits text.
+        h.drain();
+        check(session.document.id == freshId && session.recoveries.size() == 1,
+              "An active uncommitted editor also blocks automatic startup replacement");
+    }
+    {
+        Harness h(root.getChildFile("historical-open"));
+        auto old = recipe();
+        old.name = "Historical recipe";
+        auto file = h.directory.getChildFile("older.soundplus");
+        sp::saveDesignAtomic(file, old);
+        auto newer = old;
+        newer.name = "Newer retained work";
+        newer.revision = 20;
+        h.store->retain(newer, file, true);
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+        session.open(file);
+        h.drain();
+        check(session.document.name == old.name && session.document.revision == 21 && session.dirty &&
+                  session.message.contains("historical"),
+              "Explicit older same-ID open creates a new monotonic recovery lineage");
+        session.edit("Fresh after recall", [](auto &d) { d.name = "Fresh after historical open"; });
+        h.now = 600;
+        session.poll();
+        h.drain();
+        auto entries = h.store->entries();
+        check(entries.front().document.revision == 22 &&
+                  entries.front().document.name == "Fresh after historical open",
+              "Fresh historical-open edit is actually retained, not silently acknowledged");
+        check(std::any_of(entries.begin(), entries.end(),
+                          [&](auto &entry) { return entry.archived && entry.document.name == newer.name; }),
+              "Prior newer work remains available as an exact archived recovery");
+        for (auto &entry : entries)
+            if (entry.archived)
+            {
+                auto path = entry.snapshot.withFileExtension(".json");
+                auto metadata = juce::JSON::parse(path);
+                metadata.getDynamicObject()->setProperty(
+                    "updated", (juce::int64)(juce::Time::currentTimeMillis() + 86400000));
+                check(path.replaceWithText(juce::JSON::toString(metadata)),
+                      "Simulate a retained archive timestamp ahead of the wall clock");
+            }
+        bool rejected = false;
+        try
+        {
+            h.store->retain(old, file, true);
+        }
+        catch (const std::exception &)
+        {
+            rejected = true;
+        }
+        check(rejected, "Obsolete background retention is explicitly rejected, never acknowledged");
+        auto replacement =
+            std::make_unique<sp::DesignSession>(h.directory.getChildFile("library.sqlite"), h.services(true));
+        h.drain();
+        check(replacement->document.name == "Fresh after historical open" &&
+                  replacement->document.revision == 22,
+              "Restart returns the fresh historical-open edit with the same document identity");
+        session.save(file);
+        h.drain();
+        check(!session.dirty && sp::loadDesign(file).revision == 22 &&
+                  h.store->entries().front().savedFile == file,
+              "A fresh historical-open edit can be explicitly saved and acknowledged clean");
+        auto afterSave = h.store->entries();
+        check(std::any_of(afterSave.begin(), afterSave.end(),
+                          [&](auto &entry) {
+                              return entry.archived && entry.document.name == newer.name &&
+                                     entry.document.revision == 20;
+                          }),
+              "Archived recipe stays exact even after its associated named file advances");
+    }
+    {
+        Harness h(root.getChildFile("obsolete-write-no-ack"));
+        auto older = recipe(), newer = older;
+        newer.revision = 20;
+        h.store->retain(newer, {}, true);
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+        session.document = older;
+        session.edit("Obsolete writer", [](auto &d) { d.name = "Obsolete"; });
+        h.now = 600;
+        session.poll();
+        h.drain();
+        check(h.retains == 1 && session.message.contains("obsolete") && session.dirty,
+              "Obsolete background write reports rejection without acknowledging retention");
+        h.now = 1700;
+        session.poll();
+        h.drain();
+        check(h.retains == 2 && h.store->entries().front().document.revision == 20,
+              "Rejected stale write retries rather than falsely advancing autosave acknowledgment");
+        session.document = newer; // Do not deliberately repeat the expected failure at harness teardown.
+    }
+    {
+        Harness h(root.getChildFile("independent-imports"));
+        auto file = h.directory.getChildFile("import.wav");
+        juce::WavAudioFormat format;
+        auto stream = file.createOutputStream();
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            format.createWriterFor(stream.release(), 48000, 1, 16, {}, 0));
+        juce::AudioBuffer<float> samples(1, 480);
+        samples.clear();
+        check(writer && writer->writeFromAudioSampleBuffer(samples, 0, 480), "Import fixture written");
+        writer.reset();
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+        session.document = recipe();
+        auto original = session.document.selectedLayer;
+        session.addExternal(file, 1200);
+        session.addExternal(file, 2400);
+        session.replaceSource(original, file);
+        session.recoverAutosave(); // Refreshing an empty recovery list must not retire accepted imports.
+        h.run(h.io, 1);
+        h.run(h.io);
+        auto duplicateCompletion = h.ui.front();
+        h.run(h.ui);
+        duplicateCompletion();
+        h.drain();
+        auto &layers = session.document.activeMix().layers;
+        check(layers.size() == 3 && layers[1].placement == 2400 && layers[2].placement == 1200 &&
+                  layers[1].id != layers[2].id && layers[0].source.path == file.getFullPathName(),
+              "Separate out-of-order accepted imports complete exactly once across relink and refresh");
+        session.addExternal(file);
+        session.newDesign();
+        h.run(h.io, 1);
+        h.run(h.ui);
+        h.drain();
+        check(session.document.activeMix().layers.empty(), "Old lifetime import cannot populate New");
+    }
+    {
+        Harness h(root.getChildFile("selection"));
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+        session.document = recipe();
+        auto a = session.document.selectedLayer;
+        session.selectLayer(a);
+        session.edit("Duplicate command",
+                     [](auto &d)
+                     {
+                         auto copy = d.activeMix().layers.front();
+                         copy.id = juce::Uuid().toString();
+                         d.selectedLayer = copy.id;
+                         d.activeMix().layers.push_back(copy);
+                     });
+        auto b = session.document.selectedLayer;
+        check(session.selectedIds == std::set<juce::String>{b}, "Duplicate selects only the new primary");
+        session.undo();
+        check(session.document.selectedLayer == a && session.selectedIds == std::set<juce::String>{a},
+              "Undo restores pre-duplicate selection");
+        session.redo();
+        check(session.document.selectedLayer == b && session.selectedIds == std::set<juce::String>{b},
+              "Redo restores duplicate selection");
+        session.selectLayer(b, true);
+        check(session.selectedIds.empty() && session.document.selectedLayer.isEmpty() &&
+                  !session.selectedLayer(),
+              "Last additive deselect clears the primary");
+        session.selectLayer(a);
+        session.selectLayer(b, true);
+        session.edit("Delete command",
+                     [&](auto &d)
+                     {
+                         std::erase_if(d.activeMix().layers, [&](auto &l) { return l.id == b; });
+                         d.selectedLayer = a;
+                     });
+        check(session.selectedIds == std::set<juce::String>{a}, "Delete prunes removed IDs");
+        session.undo();
+        check(session.selectedIds == std::set<juce::String>{a, b} && session.document.selectedLayer == b,
+              "Undo restores multi-selection and primary");
+        session.generate(7);
+        session.selectVariation(session.document.variations.front().id);
+        check(session.selectedIds == std::set<juce::String>{session.document.selectedLayer},
+              "Variation selection reconciles before notification");
+        session.selectLayer({});
+        check(session.selectedIds.empty() && session.document.selectedLayer.isEmpty(),
+              "Deselect-all clears both representations");
+        session.undo();
+        session.selectLayer(a);
+        session.beginGesture();
+        session.edit("New gesture after Undo", [](auto &d) { d.activeMix().layers[0].gainDb = -4; });
+        int notifications = 0;
+        session.onChange = [&] { ++notifications; };
+        session.redo(); // Committing a new gesture invalidates the previous redo branch.
+        session.onChange = {};
+        check(!session.canRedo() && session.canUndo() &&
+                  session.document.activeMix().layers[0].gainDb == -4 &&
+                  session.selectedIds == std::set<juce::String>{a} && notifications == 1,
+              "Redo during a fresh gesture safely commits it, updates command state and keeps selection "
+              "consistent");
+    }
+    {
+        Harness h(root.getChildFile("pending-seek-parameters"));
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+        session.document = recipe();
+        session.document.activeMix().layers[0].effects = {sp::makeStockEffect("gain")};
+        session.play();
+        h.drain();
+        auto oldGeneration = h.generation;
+        session.seek(120000);
+        session.edit("Edit during seek",
+                     [](auto &d) { d.activeMix().layers[0].effects[0].parameters[0] = -18; });
+        h.now = 100;
+        session.poll(); // Previously acknowledged against the old generation only.
+        h.drain();
+        check(h.generation > oldGeneration && h.lastParameterGeneration == h.generation &&
+                  h.lastParameters.activeMix().layers[0].effects[0].parameters[0] == -18,
+              "Pending seek publishes current parameters to the newly adopted generation");
+        auto plays = h.plays, parameters = h.parameters;
+        session.beginGesture();
+        for (int i = 0; i < 150; ++i)
+        {
+            h.now += 10;
+            session.edit("Stock gain",
+                         [&](auto &d) { d.activeMix().layers[0].effects[0].parameters[0] = -i * .1; });
+            session.poll();
+            h.drain();
+        }
+        session.endGesture();
+        check(h.plays == plays && h.parameters > parameters + 30,
+              "Sustained stock dragging uses the live path without replacement starvation");
+    }
     {
         Harness h(root.getChildFile("save-race"));
         sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());

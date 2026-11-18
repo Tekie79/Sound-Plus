@@ -544,7 +544,7 @@ void Benchmark::semanticTick(double now)
             complete();
         return;
     }
-    if (mode == "semantic-designer-edit")
+    if (mode == "semantic-designer-edit" || mode == "semantic-designer-stock")
     {
         if (!ai.ready)
             return;
@@ -554,6 +554,17 @@ void Benchmark::semanticTick(double now)
                 designer->session.document.activeMix().layers.size() != 8)
                 return;
             semanticDemoId = "design:" + designer->session.document.id;
+            if (mode == "semantic-designer-stock")
+            {
+                auto commands = designer->benchmarkSelectionCommands();
+                controls.getDynamicObject()->setProperty("selectionCommands", commands);
+                for (auto &property : commands.getDynamicObject()->getProperties())
+                    if (!(bool)property.value)
+                    {
+                        save(false, "Actual view selection command failed: " + property.name.toString());
+                        return;
+                    }
+            }
             view.audio.gain(.04f);
             designer->session.play();
             phase = 1;
@@ -583,15 +594,22 @@ void Benchmark::semanticTick(double now)
                 return;
             }
             lastDesignerFrame = (int64_t)state["sourceSample"];
-            if (elapsed < 8000 && now - lastDesignerInput >= 25)
+            auto editingDuration = mode == "semantic-designer-stock" ? 10000 : 8000;
+            if (elapsed < editingDuration && now - lastDesignerInput >= 25)
             {
-                int stage = elapsed < 4000 ? 0 : 1;
-                designer->benchmarkGesture(stage, (stage == 0 ? 20 : 35) * std::sin(elapsed * .003));
+                if (mode == "semantic-designer-stock")
+                    designer->benchmarkStockControls(std::min(4, (int)(elapsed / 2000)),
+                                                     std::sin(elapsed * .006));
+                else
+                {
+                    int stage = elapsed < 4000 ? 0 : 1;
+                    designer->benchmarkGesture(stage, (stage == 0 ? 20 : 35) * std::sin(elapsed * .003));
+                }
                 lastDesignerInput = now;
                 if (ai.coverage.pending > 0 || view.snapshot.progress.activeWorkers > 0)
                     ++editingIndexOverlap;
             }
-            else if (elapsed >= 8000 && !designerGestureEnded)
+            else if (elapsed >= editingDuration && !designerGestureEnded)
             {
                 designer->benchmarkEndGesture();
                 designerGestureEnded = true;
@@ -606,6 +624,8 @@ void Benchmark::semanticTick(double now)
             else if (index >= count && elapsed >= 12000)
             {
                 record("eightLayers", (int)state["designLayers"] == 8);
+                record("samePlaybackGeneration",
+                       state["playGeneration"] == controls["audioAtStart"]["playGeneration"]);
                 record("noUnderruns",
                        (int64_t)state["underruns"] == (int64_t)controls["audioAtStart"]["underruns"]);
                 record("editingOverlappedIndexing", editingIndexOverlap > 0);

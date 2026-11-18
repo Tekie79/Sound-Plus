@@ -2,6 +2,48 @@
 #include <juce_cryptography/juce_cryptography.h>
 namespace sp
 {
+namespace
+{
+void stripRack(juce::var rack)
+{
+    if (auto *effects = rack.getArray())
+        for (auto &effect : *effects)
+            for (auto key : {"parameters", "bypass", "locked", "parameterLocks"})
+                effect.getDynamicObject()->removeProperty(key);
+}
+juce::var rackParameters(const std::vector<StockEffect> &rack)
+{
+    juce::Array<juce::var> values;
+    for (auto &effect : rack)
+    {
+        auto *value = new juce::DynamicObject();
+        value->setProperty("id", effect.id);
+        value->setProperty("bypass", effect.bypass);
+        juce::Array<juce::var> parameters;
+        for (auto parameter : effect.parameters)
+            parameters.add(parameter);
+        value->setProperty("parameters", parameters);
+        values.add(value);
+    }
+    return values;
+}
+void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
+{
+    auto *values = value.getArray();
+    if (!values || values->size() != (int)rack.size())
+        throw std::runtime_error("Live insert set changed");
+    for (size_t i = 0; i < rack.size(); ++i)
+    {
+        auto item = (*values)[(int)i];
+        auto *parameters = item["parameters"].getArray();
+        if (rack[i].id != item["id"].toString() || !parameters || parameters->size() != 4)
+            throw std::runtime_error("Live insert identity mismatch");
+        rack[i].bypass = (bool)item["bypass"];
+        for (int p = 0; p < 4; ++p)
+            rack[i].parameters[(size_t)p] = (double)(*parameters)[p];
+    }
+}
+} // namespace
 juce::String designStructure(const DesignDocument &document)
 {
     auto value = designToJson(document);
@@ -13,10 +55,14 @@ juce::String designStructure(const DesignDocument &document)
     mix = mix.clone();
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
+    stripRack(mix["masterEffects"]);
     for (auto &layer : *mix["layers"].getArray())
+    {
+        stripRack(layer["effects"]);
         for (const char *key : {"name", "first", "last", "placement", "sync", "fadeIn", "fadeOut", "gainDb",
-                                "pan", "rate", "reverse", "locked", "locks"})
+                                "pan", "rate", "reverse", "locked", "locks", "colour"})
             layer.getDynamicObject()->removeProperty(key);
+    }
     auto text = juce::JSON::toString(mix, true);
     return juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
 }
@@ -24,6 +70,7 @@ juce::var designParameters(const DesignDocument &document)
 {
     auto *object = new juce::DynamicObject();
     object->setProperty("masterDb", document.activeMix().masterDb);
+    object->setProperty("masterEffects", rackParameters(document.activeMix().masterEffects));
     juce::Array<juce::var> layers;
     for (auto &layer : document.activeMix().layers)
     {
@@ -39,6 +86,7 @@ juce::var designParameters(const DesignDocument &document)
         value->setProperty("sync", (juce::int64)layer.sync);
         value->setProperty("fadeIn", (juce::int64)layer.fadeIn);
         value->setProperty("fadeOut", (juce::int64)layer.fadeOut);
+        value->setProperty("effects", rackParameters(layer.effects));
         layers.add(juce::var(value));
     }
     object->setProperty("layers", layers);
@@ -48,6 +96,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
 {
     auto changed = document;
     changed.activeMix().masterDb = (double)parameters["masterDb"];
+    applyRack(changed.activeMix().masterEffects, parameters["masterEffects"]);
     auto *layers = parameters["layers"].getArray();
     if (!layers || layers->size() != (int)changed.activeMix().layers.size())
         throw std::runtime_error("Live layer set changed; prepare a graph instead");
@@ -67,6 +116,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         layer.sync = (int64_t)value["sync"];
         layer.fadeIn = (int64_t)value["fadeIn"];
         layer.fadeOut = (int64_t)value["fadeOut"];
+        applyRack(layer.effects, value["effects"]);
     }
     validateDesign(changed);
     document = std::move(changed);

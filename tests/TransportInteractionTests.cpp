@@ -4,6 +4,8 @@
 #include "AudioIPC.h"
 #include "LibraryService.h"
 #include "Performance.h"
+#include "DesignLive.h"
+#include "DesignSession.h"
 #include <future>
 #include <iostream>
 #include <map>
@@ -47,11 +49,57 @@ void fixture(const juce::File &file, double seconds, bool timecode = false, bool
 } // namespace
 void runTransportInteractionTests(const juce::File &parent, const juce::File &application)
 {
+    juce::ScopedJuceInitialiser_GUI initialise;
     auto directory = parent.getChildFile(juce::Uuid().toString());
     directory.createDirectory();
     auto workload = directory.getChildFile("workload");
     prepareDesignWorkload(workload);
     auto document = sp::loadDesign(workload.getChildFile("workload.soundplus"));
+    // The prepared processors must actually change their output, not just report
+    // an adopted control tag. Exercise every stock type without rebuilding it.
+    juce::Array<juce::var> stockDeltas;
+    auto tone = directory.getChildFile("stock-tone.wav");
+    fixture(tone, 12);
+    for (auto type : {"gain", "filter", "delay", "reverb"})
+    {
+        sp::DesignDocument d;
+        d.original.masterDb = 0;
+        auto layer = sp::makeDesignLayer(sp::inspectDesignSource(tone), 0, -1, true);
+        layer.effects = {sp::makeStockEffect(type)};
+        d.original.layers = {layer};
+        sp::DesignGraph reference(d), changed(d);
+        reference.seek(24000);
+        changed.seek(24000);
+        auto structure = sp::designStructure(d);
+        auto &fx = d.original.layers[0].effects[0];
+        if (fx.type == "gain")
+            fx.parameters[0] = -18;
+        if (fx.type == "filter")
+            fx.parameters[1] = 100;
+        if (fx.type == "delay")
+        {
+            fx.parameters[0] = 410;
+            fx.parameters[2] = .9;
+        }
+        if (fx.type == "reverb")
+        {
+            fx.parameters[0] = .9;
+            fx.parameters[2] = .9;
+        }
+        check(sp::designStructure(d) == structure, "Stock values preserve graph identity");
+        changed.updateParameters(sp::designParameters(d));
+        juce::AudioBuffer<float> before(2, 24000), after(2, 24000);
+        reference.render(before, 0, 24000);
+        changed.render(after, 0, 24000);
+        double delta = 0;
+        for (int n = 1000; n < 24000; ++n)
+            delta = std::max(delta, (double)std::abs(before.getSample(0, n) - after.getSample(0, n)));
+        check(delta > .001, "Live stock control changes actual prepared DSP output");
+        auto *entry = new juce::DynamicObject();
+        entry->setProperty("type", type);
+        entry->setProperty("maxPcmDelta", delta);
+        stockDeltas.add(juce::var(entry));
+    }
     sp::AudioClient audio(application);
     until([&] { return (double)audio.status()["sampleRate"] > 0; }, "Native device is available");
     auto initial = audio.status();
@@ -96,6 +144,12 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
             layer.pan = .5 * std::sin(input * .11);
             layer.fadeIn = (int64_t)(480 + 240 * std::sin(input * .09));
             layer.fadeOut = 960;
+            layer.effects[0].parameters[0] = 30 + 1500 * (1 + std::sin(input * .07));
+            layer.effects[1].parameters[0] = 150 + 70 * std::sin(input * .08);
+            layer.effects[1].parameters[1] = .4 + .2 * std::sin(input * .09);
+            layer.effects[1].parameters[2] = .4 + .2 * std::sin(input * .10);
+            layer.effects[2].parameters[0] = .5 + .4 * std::sin(input * .11);
+            document.activeMix().masterEffects[1].parameters[2] = .3 + .2 * std::sin(input * .12);
             auto sequence = audio.updateDesign(document, generation, now);
             sent[sequence] = now;
             library.search(input % 2 ? "effect" : "fixture");
@@ -137,6 +191,88 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
     directory.getChildFile("edit-phase.json").replaceWithText(juce::JSON::toString(juce::var(partial), true));
     check(measurements.size() > 100 && samplesWithIndexing > 0,
           "Actual heard control updates overlap real index work");
+    check(edited["playGeneration"] == playing["playGeneration"],
+          "Sustained stock updates never request a replacement generation");
+    // Hold the session's snapshot worker, change an insert while its seek is
+    // pending, let the old generation consume the edit, then adopt the seek.
+    juce::var pendingEvidence;
+    {
+        std::deque<std::function<void()>> work, completions;
+        sp::DesignSessionServices services;
+        services.automaticRecovery = services.timers = false;
+        services.submit = [&](auto job)
+        {
+            work.push_back(std::move(job));
+            return true;
+        };
+        services.post = [&](auto job) { completions.push_back(std::move(job)); };
+        services.resolve = [](auto &) {};
+        services.retain = [](const auto &, const auto &, bool) {};
+        services.status = [&] { return audio.status(); };
+        services.stop = [&] { audio.stop(); };
+        uint64_t pendingGeneration = 0, reconciledSequence = 0;
+        services.play = [&](const auto &id, const auto &file, int64_t frame, const auto &mode)
+        { return pendingGeneration = audio.playDesign(id, file, frame, {}, mode); };
+        services.parameters = [&](const auto &d, uint64_t generation, double event)
+        { reconciledSequence = audio.updateDesign(d, generation, event); };
+        auto drain = [&]
+        {
+            while (!work.empty())
+            {
+                auto job = std::move(work.front());
+                work.pop_front();
+                job();
+            }
+            while (!completions.empty())
+            {
+                auto job = std::move(completions.front());
+                completions.pop_front();
+                job();
+            }
+        };
+        sp::DesignSession session(directory.getChildFile("pending/library.sqlite"), services);
+        session.document = document;
+        session.play();
+        drain();
+        until(
+            [&]
+            {
+                return (uint64_t)(int64_t)audio.status()["playGeneration"] == pendingGeneration &&
+                       (bool)audio.status()["playing"];
+            },
+            "Pending reconciliation initial generation starts");
+        auto oldGeneration = pendingGeneration;
+        session.seek(96000);
+        auto event = sp::monotonicMs();
+        session.edit("Pending seek insert",
+                     [](auto &d) { d.activeMix().layers[0].effects[1].parameters[2] = .85; });
+        session.poll();
+        auto oldSequence = reconciledSequence;
+        until([&] { return (uint64_t)(int64_t)audio.status()["heardEdit"] >= oldSequence; },
+              "Old generation hears pending edit");
+        drain();
+        auto released = sp::monotonicMs();
+        check(pendingGeneration > oldGeneration, "Seek adopts a new native generation");
+        until(
+            [&]
+            {
+                auto s = audio.status();
+                return (uint64_t)(int64_t)s["playGeneration"] == pendingGeneration &&
+                       (uint64_t)(int64_t)s["heardEdit"] >= reconciledSequence && !(bool)s["pendingPlayback"];
+            },
+            "Current insert edit reaches the pending seek generation");
+        auto *entry = new juce::DynamicObject();
+        entry->setProperty("oldGeneration", (juce::int64)oldGeneration);
+        entry->setProperty("newGeneration", (juce::int64)pendingGeneration);
+        entry->setProperty("oldSequence", (juce::int64)oldSequence);
+        entry->setProperty("reconciledSequence", (juce::int64)reconciledSequence);
+        entry->setProperty("editToObservedCallbackMs", sp::monotonicMs() - event);
+        entry->setProperty("workerReleaseToObservedCallbackMs", sp::monotonicMs() - released);
+        entry->setProperty("taggedEditToCallbackMs", audio.status()["editLatencyMs"]);
+        entry->setProperty("parameterValue", session.document.activeMix().layers[0].effects[1].parameters[2]);
+        pendingEvidence = juce::var(entry);
+        session.stop();
+    }
     // Substantially longer timeline; seek cost is bounded by 250 ms live warmup,
     // not by the silent fifteen-minute prefix. Offline range rendering remains exact.
     auto longDocument = document;
@@ -292,11 +428,74 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
         grains.add(juce::var(entry));
     }
     audio.stop();
+    // One impulse, a one-second delay. A seek at one second needs history
+    // older than the live 250 ms window; accurate audition must match full render.
+    auto impulseFile = directory.getChildFile("impulse.wav");
+    {
+        juce::WavAudioFormat format;
+        auto stream = impulseFile.createOutputStream();
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            format.createWriterFor(stream.release(), 48000, 1, 32, {}, 0));
+        juce::AudioBuffer<float> samples(1, 96000);
+        samples.clear();
+        samples.setSample(0, 0, .5f);
+        check(writer && writer->writeFromAudioSampleBuffer(samples, 0, 96000), "Impulse written");
+    }
+    sp::DesignDocument tail;
+    tail.original.masterDb = 0;
+    tail.renderSettings.tailSeconds = 0;
+    auto impulse = sp::makeDesignLayer(sp::inspectDesignSource(impulseFile), 0, -1, true);
+    auto delay = sp::makeStockEffect("delay");
+    delay.parameters = {1000, .5, 1, 0};
+    impulse.effects = {delay};
+    tail.original.layers = {impulse};
+    auto tailFile = directory.getChildFile("tail.soundplus");
+    sp::saveDesignAtomic(tailFile, tail);
+    sp::DesignReader accurateReference(tail, 48000, 48000, 72000, 0);
+    juce::AudioBuffer<float> expected(2, 24000);
+    check(accurateReference.read(expected, 24000) == 24000, "Exact impulse reference range prepared");
+    auto peakOfCapture = [&](const char *mode)
+    {
+        auto captureFile = directory.getChildFile(juce::String(mode) + "-tail.f32");
+        auto g = audio.playDesign("design:tail", tailFile, 48000, captureFile, mode);
+        until(
+            [&]
+            {
+                auto s = audio.status();
+                return (uint64_t)(int64_t)s["playGeneration"] == g && !(bool)s["pendingPlayback"] &&
+                       !(bool)s["playing"];
+            },
+            "Tail comparison capture completes");
+        juce::MemoryBlock data;
+        check(captureFile.loadFileAsData(data) && data.getSize() == 48000 * 8, "Tail capture exact length");
+        auto *pcm = (const float *)data.getData();
+        double delta = 0, peak = 0;
+        for (int n = 0; n < 24000; ++n)
+            for (int c = 0; c < 2; ++c)
+            {
+                peak = std::max(peak, (double)std::abs(pcm[n * 2 + c]));
+                delta = std::max(delta, (double)std::abs(pcm[n * 2 + c] - expected.getSample(c, n)));
+            }
+        return std::pair<double, double>{peak, delta};
+    };
+    auto approximate = peakOfCapture("seek"), accurate = peakOfCapture("accurate");
+    check(approximate.first < 1e-8 && approximate.second > .3 && accurate.first > .3 &&
+              accurate.second < 1e-7,
+          "Accurate native audition preserves the impulse delay history and matches offline; bounded live "
+          "seek intentionally omits it");
     auto *report = new juce::DynamicObject();
     report->setProperty("checks", checks);
     report->setProperty("directory", directory.getFullPathName());
     report->setProperty("initialAudio", playing);
     report->setProperty("edits", measurements);
+    report->setProperty("stockOutputChanges", stockDeltas);
+    report->setProperty("pendingSeekReconciliation", pendingEvidence);
+    auto *tailEvidence = new juce::DynamicObject();
+    tailEvidence->setProperty("approximatePeak", approximate.first);
+    tailEvidence->setProperty("approximateMaxError", approximate.second);
+    tailEvidence->setProperty("accuratePeak", accurate.first);
+    tailEvidence->setProperty("accurateMaxError", accurate.second);
+    report->setProperty("impulseDelayComparison", juce::var(tailEvidence));
     report->setProperty("searchRequests", queries);
     report->setProperty("heardSamplesWithIndexing", samplesWithIndexing);
     report->setProperty("lateSeekMs", lateSeekMs);

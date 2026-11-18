@@ -22,6 +22,7 @@ struct DesignLayer
     int64_t placement=0,sync=0,fadeIn=0,fadeOut=0;
     double gainDb=0,pan=0,rate=1;
     uint32_t locks=0;
+    uint32_t colour=0; // Optional ARGB track colour. Zero uses the application palette.
     std::vector<StockEffect> effects;
 };
 struct DesignMix

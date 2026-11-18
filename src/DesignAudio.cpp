@@ -25,6 +25,7 @@ class EffectProcessor
   public:
     virtual ~EffectProcessor() = default;
     virtual void process(juce::AudioBuffer<float> &, int) = 0;
+    virtual void update(const StockEffect &) = 0;
 };
 class StockProcessor final : public EffectProcessor
 {
@@ -32,11 +33,15 @@ class StockProcessor final : public EffectProcessor
     juce::Reverb reverb;
     juce::dsp::IIR::Filter<float> high[2], low[2];
     juce::AudioBuffer<float> delay;
-    int write = 0, delayFrames = 1;
+    int write = 0;
+    double sampleRate;
+    juce::SmoothedValue<float> gain, feedback, wet, delayFrames;
 
   public:
-    StockProcessor(const StockEffect &e, double rate) : effect(e)
+    StockProcessor(const StockEffect &e, double rate) : effect(e), sampleRate(rate)
     {
+        for (auto *value : {&gain, &feedback, &wet, &delayFrames})
+            value->reset(rate, .01);
         if (e.type == "filter")
             for (int c = 0; c < 2; ++c)
             {
@@ -49,8 +54,8 @@ class StockProcessor final : public EffectProcessor
             }
         if (e.type == "delay")
         {
-            delayFrames = std::max(1, (int)std::llround(rate * e.parameters[0] / 1000));
-            delay.setSize(2, delayFrames);
+            // Fixed capacity preserves the delay history when its tap moves.
+            delay.setSize(2, (int)std::ceil(rate * 2) + 2);
             delay.clear();
         }
         if (e.type == "reverb")
@@ -66,6 +71,35 @@ class StockProcessor final : public EffectProcessor
             reverb.setParameters(p);
             reverb.reset();
         }
+        update(e);
+        for (auto *value : {&gain, &feedback, &wet, &delayFrames})
+            value->setCurrentAndTargetValue(value->getTargetValue());
+    }
+    void update(const StockEffect &e) override
+    {
+        effect = e;
+        gain.setTargetValue(e.type == "gain" ? juce::Decibels::decibelsToGain((float)e.parameters[0]) : 1.f);
+        feedback.setTargetValue((float)e.parameters[1]);
+        wet.setTargetValue((float)e.parameters[2]);
+        delayFrames.setTargetValue((float)std::llround(sampleRate * e.parameters[0] / 1000));
+        if (e.type == "filter")
+            for (int c = 0; c < 2; ++c)
+            {
+                *high[c].coefficients = *juce::dsp::IIR::Coefficients<float>::makeHighPass(
+                    sampleRate, std::clamp(e.parameters[0], 10., sampleRate * .45));
+                *low[c].coefficients = *juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                    sampleRate, std::clamp(e.parameters[1], 20., sampleRate * .45));
+            }
+        if (e.type == "reverb")
+        {
+            juce::Reverb::Parameters p;
+            p.roomSize = (float)e.parameters[0];
+            p.damping = (float)e.parameters[1];
+            p.wetLevel = (float)e.parameters[2];
+            p.dryLevel = 1 - p.wetLevel;
+            p.width = (float)e.parameters[3];
+            reverb.setParameters(p);
+        }
     }
     void process(juce::AudioBuffer<float> &b, int count) override
     {
@@ -73,7 +107,12 @@ class StockProcessor final : public EffectProcessor
             return;
         if (effect.type == "gain")
         {
-            b.applyGain(0, count, juce::Decibels::decibelsToGain((float)effect.parameters[0]));
+            for (int n = 0; n < count; ++n)
+            {
+                auto value = gain.getNextValue();
+                for (int c = 0; c < 2; ++c)
+                    b.setSample(c, n, b.getSample(c, n) * value);
+            }
             return;
         }
         if (effect.type == "filter")
@@ -88,16 +127,21 @@ class StockProcessor final : public EffectProcessor
             reverb.processStereo(b.getWritePointer(0), b.getWritePointer(1), count);
             return;
         }
-        auto feedback = (float)effect.parameters[1], wet = (float)effect.parameters[2];
         for (int n = 0; n < count; ++n)
         {
+            float tap = write - delayFrames.getNextValue();
+            if (tap < 0)
+                tap += delay.getNumSamples();
+            int first = (int)tap, second = (first + 1) % delay.getNumSamples();
+            float fraction = tap - first, mix = wet.getNextValue(), repeat = feedback.getNextValue();
             for (int c = 0; c < 2; ++c)
             {
-                float dry = b.getSample(c, n), echo = delay.getSample(c, write);
-                delay.setSample(c, write, dry + echo * feedback);
-                b.setSample(c, n, dry * (1 - wet) + echo * wet);
+                float dry = b.getSample(c, n);
+                float echo = juce::jmap(fraction, delay.getSample(c, first), delay.getSample(c, second));
+                delay.setSample(c, write, dry + echo * repeat);
+                b.setSample(c, n, dry * (1 - mix) + echo * mix);
             }
-            write = (write + 1) % delayFrames;
+            write = (write + 1) % delay.getNumSamples();
         }
     }
 };
@@ -113,6 +157,11 @@ void processRack(Rack &rack, juce::AudioBuffer<float> &buffer, int n)
 {
     for (auto &effect : rack)
         effect->process(buffer, n);
+}
+void updateRack(Rack &rack, const std::vector<StockEffect> &effects)
+{
+    for (size_t i = 0; i < rack.size(); ++i)
+        rack[i]->update(effects[i]);
 }
 class Voice
 {
@@ -294,6 +343,7 @@ class Voice
         if (rateChanged)
             buildCoefficients();
         gainTargets(false);
+        updateRack(rack, layer.effects);
     }
     void verify()
     {
@@ -385,6 +435,7 @@ void DesignGraph::updateParameters(const juce::var &parameters)
                 voice->update(layer);
     impl->masterGain.setTargetValue(
         juce::Decibels::decibelsToGain((float)impl->document.activeMix().masterDb));
+    updateRack(impl->masterRack, impl->document.activeMix().masterEffects);
 }
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)

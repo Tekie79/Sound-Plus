@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace sp
 {
-enum class ActionIcon { play,match,whole,previous,next,pause,refresh,folder,download,cancel,similar,file,zoom,fit,reconnect,markIn,markOut,scanFolder,retryAnalysis,addLayer,duplicate,up,down,trash,save,open,undo,redo,variations,lock,render,drag,keep,settings,layers,browser,chevron,mute,solo,newDocument,rename,history,compare,zoomOut,fitSelection,snap,scrub };
+enum class ActionIcon { play,match,whole,previous,next,pause,refresh,folder,download,cancel,similar,file,zoom,fit,reconnect,markIn,markOut,scanFolder,retryAnalysis,addLayer,duplicate,up,down,trash,save,open,undo,redo,variations,lock,render,drag,keep,settings,layers,browser,chevron,mute,solo,newDocument,rename,history,compare,zoomOut,fitSelection,snap,scrub,verticalIn,verticalOut,accurate,colour };
 // Keep native button names and keyboard focus; indicate focus with colour, without a border.
 class IconButton : public juce::TextButton
 {
@@ -33,6 +33,9 @@ class IconButton : public juce::TextButton
         else if(k==ActionIcon::snap){outline.startNewSubPath(5,5);outline.lineTo(5,13);outline.cubicTo(5,23,19,23,19,13);outline.lineTo(19,5);line(5,9,9,9);line(15,9,19,9);line(9,5,9,13);line(15,5,15,13);}
         else if(k==ActionIcon::scrub){line(5,8,5,17);line(9,5,9,20);line(13,9,13,16);line(17,6,17,19);line(21,10,21,15);}
 
+        else if(k==ActionIcon::verticalIn || k==ActionIcon::verticalOut){line(3,3,21,3);line(3,21,21,21);line(12,6,12,18);line(7,12,17,12);if(k==ActionIcon::verticalIn){line(12,6,9,9);line(12,6,15,9);line(12,18,9,15);line(12,18,15,15);} }
+        else if(k==ActionIcon::accurate){outline.addEllipse(3,3,18,18);line(8,12,11,15);line(11,15,17,8);}
+        else if(k==ActionIcon::colour){outline.addEllipse(3,3,18,18);for(auto p:{juce::Point<float>(8,8),{16,8},{8,16},{16,16}})fill.addEllipse(p.x-1.5f,p.y-1.5f,3,3);}
         else if (k==ActionIcon::match) {triangle();line(3,5,3,19);line(21,5,21,19);}
         else if (k==ActionIcon::whole) {triangle(1);line(4,5,4,19);}
         else if (k==ActionIcon::previous || k==ActionIcon::next)
