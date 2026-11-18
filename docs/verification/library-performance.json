@@ -1,0 +1,476 @@
+{
+  "generatedAt": "2026-11-17T16:51:01.676968-05:00",
+  "scope": "Library performance milestone; lexical retrieval, browsing and incremental indexing control; full architecture M1 remains partial",
+  "baseCommit": "d545ace40e6f49c50c728c2c7cebf18276266223",
+  "artifacts": {
+    "baselineApp": {
+      "path": "build/benchmark/Baseline.app/Contents/MacOS/SoundPlus",
+      "sha256": "c496ff51fcbf90673ad6daf4f78db8f4d538c89972fe7dda4b53d0c931a277b0"
+    },
+    "candidateApp": {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "sha256": "7628c07b17bc275ea64a2b563e34b5617da559d960be5b44ffb5ce3bb66856a1"
+    },
+    "candidateAudioHelper": {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "sha256": "8ea82becbff2522e3bc1d128518a74749d3d6a469eddabdf43ae47aabeb3ddc5"
+    },
+    "candidateTests": {
+      "path": "build/SoundPlusTests_artefacts/Release/SoundPlusTests",
+      "sha256": "7d96d27744b71f3b63584b312b59a0cc617ce4c47a1b2f9a64f416b1761ad0b5"
+    },
+    "baselineSourceArchive": {
+      "path": "build/benchmark/baseline-source.tar.gz",
+      "sha256": "b1646e9690c08d8eeba13df22e8a44af8d9312aae3e6d04e07aeab6a4153d6d7"
+    },
+    "baselineInstrumentation": {
+      "path": "build/benchmark/instrumentation.patch",
+      "sha256": "e4e45b6fbfdae1041908894c079a2f3099a173a61bf184560795cb2bc0dc9ee0"
+    }
+  },
+  "sourceSha256": {
+    "CMakeLists.txt": "b70b38ac6e15ceac3778b91297ea3113828c489d2ddd83406f7dbd9d60e17fef",
+    "src/AudioEngine.cpp": "e954979c8cdb8d44d3d046acb10b623531f3c5a05a54deace96e8354a9e73fd1",
+    "src/AudioEngine.h": "628e908ee2607660f97104354be47cc2731ceea2c0910e8ed5de99868217bb50",
+    "src/AudioIPC.cpp": "c63f7dc6f78c8477405940bc6264bb9329fced38e3ea26166bc1e9d11cacc293",
+    "src/AudioIPC.h": "8c02b73a02ee126725db330f8a07bf3c71880e23d186b9a25d67b5c275c6fd1c",
+    "src/AudioMain.cpp": "ddf5e19f0579db64d1e26f9e82f32ac6d72aab3f9069b71c016bcdc2071f59c4",
+    "src/AudioStream.cpp": "78c7254615f99306cb18c1f295c001a663482f074dd622e2d5be06a3907c6687",
+    "src/AudioStream.h": "8f1c902bd33a7cc443c047a1bf753326138ae2736eeefb63f06de735b1a215aa",
+    "src/Benchmark.cpp": "1bc4debaebb1d98bcf8ce6a9072517d4cf49da360f09116dadbc3f130fd09d91",
+    "src/Benchmark.h": "0e335344ea1552939176de095240b11f306728f10b81fc975a052816be7437e0",
+    "src/Catalog.cpp": "ad389cf05ee272db2ffb67e97bfc20a94914ad2bf6ef5d14b45980466ff3b871",
+    "src/Catalog.h": "14af4ec0319c8fbe31e6b7fa3dade56de4fee5dfd3ff07d7103b55ac256132ad",
+    "src/LibraryService.cpp": "e41bf770c5e4253a189be1d80b8e25915c1fbb0bec49c1c938caaabaf71dc0bc",
+    "src/LibraryService.h": "3d616c20ebe454dd3d0fa41b201e76453f0b0d9da72d36169489644f4c0cfee9",
+    "src/LibraryView.cpp": "0c21144d2597ec1d0420eaec409992a7198eca1639ec07200472380e24ad8686",
+    "src/LibraryView.h": "2af392357fec2817868f0baae73fc11e78a593ec939d80191e334d743bd0381d",
+    "src/MacSources.h": "69f58de57ae5b7c25201e042f0c5daeb47be203d001e611054c425571a5bc4f4",
+    "src/MacSources.mm": "526bb490c46f01f0f68bd611278e67d4f832034f05afb08dec0006c25ee921e3",
+    "src/Main.cpp": "02b216163acd26ecfc8c60e5a16b29026924fbe50e79e688d6bf7fbf608c4ae4",
+    "src/Performance.h": "784402799befef5372c4008bd7d23209a1276baf64192ba71fd1591564097059",
+    "tests/PerformanceTests.cpp": "e6a0920d2ab0bbcdbb8d04759194a59d4ce741702e020c15667fd84244b77e5c",
+    "tests/PerformanceTests.h": "d3a13649bb6706ab9f09f77ce3e4eab1856d2f569db7ad9f33304dbc6e76a6b4",
+    "tests/Tests.cpp": "47d3e48cadcd3d0b3b4bedd931dc0423fdc156a814cf31f6d92bfb4b57a52951",
+    "scripts/benchmark.py": "d15bd41b7bfbf42640c431375f4c6ebe6c1dbbf90c9351dec532402a7a083e0a"
+  },
+  "environment": {
+    "cpu": "Apple M5 Pro",
+    "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.3.2\nBuildVersion:\t\t25D2150",
+    "machine": "Mac17,8\n51539607552",
+    "configuration": "Release arm64",
+    "physicalHardware": true,
+    "ramBytes": 51539607552,
+    "compiler": "Apple Clang 21.0.0",
+    "sdk": "26.5",
+    "minimumMacOS": "12.0 (not hardware-tested)",
+    "juce": "8.0.6",
+    "cmake": "3.31.6",
+    "date": "2026-11-17",
+    "cacheState": "OS file cache uncontrolled and not purged; fixture construction separate; fresh application/catalog process; repeated queries warm",
+    "thermalPowerTimeSeries": "not captured"
+  },
+  "fixture": {
+    "fixtureRoot": "/private/tmp/soundplus-benchmark-o4yd8oi2",
+    "roots": [
+      "/private/tmp/soundplus-benchmark-o4yd8oi2/library-A",
+      "/private/tmp/soundplus-benchmark-o4yd8oi2/library-B"
+    ],
+    "fileCount": 100000,
+    "logicalBytes": 70428810,
+    "allocatedBytes": 450551808,
+    "audioSeconds": 266.63733333333334,
+    "malformed": 11,
+    "formats": {
+      "wav": 90000,
+      "aiff": 5000,
+      "flac": 5000
+    },
+    "layout": "Two roots; alternating files; 100 entries per bucket per root; 50 buckets per bank; no hardlinks/clones",
+    "constructionSeconds": 6.266289665999466,
+    "seedHashes": {
+      "wav": "5b1fdeae08ee0d48dcf50fc17165a0b851339ef1d40458e7e325737907987cb0",
+      "aiff": "aba521fa8ab7107eaae2b17be31768be665e2291b3110b58638b05fb77b8e224",
+      "flac": "cc51a29d77db743f602b3baa18518124a96f18cf013f557d131bbedd2af4c343"
+    },
+    "longCorpus": {
+      "fileCount": 6,
+      "seconds": 405,
+      "bytes": 62694264
+    },
+    "longAudio": "/private/tmp/soundplus-benchmark-o4yd8oi2/long-recordings/long-0.wav",
+    "templateAudio": "/private/tmp/soundplus-benchmark-o4yd8oi2/seeds/seed.wav",
+    "changeFolder": "/private/tmp/soundplus-benchmark-o4yd8oi2/library-A/bank-00/bucket-00",
+    "storage": {
+      "FilesystemType": "apfs",
+      "SolidState": true,
+      "DeviceIdentifier": "disk3s5",
+      "BusProtocol": "Apple Fabric",
+      "APFSContainerReference": "disk3"
+    }
+  },
+  "endpoints": {
+    "search": "query dispatch through matching-request native paintOverChildren after up to 20 first-window records or completed empty state; visible rows painted; excludes compositor/display scanout; debounceMs=0",
+    "coldOpen": "Python monotonic process-launch boundary to first nonempty native paint; JUCE uses same macOS mach_absolute_time clock; n=1 each; uncontrolled warm OS caches",
+    "incremental": "file close to applied searchable UI state, NOT first paint; n=5",
+    "firstBatch": "first eligible source entry to committed searchable batch; n=1 import each",
+    "discovery": "100000 expected filenames / elapsed first-eligible to last expected filename committed",
+    "memory": "main process full-workload peak RSS; excludes helper; controls run separately peaked at 142393344 bytes",
+    "filesystem": "explicit source-file lstat and directory fingerprints/enumeration/entry counters; excludes implicit OS/framework operations",
+    "audition": "dispatch to first Core Audio callback copying PCM; cached 180s file; 48kHz/512 frames built-in speakers; NOT acoustic latency or spec 256-frame qualification",
+    "slowSource": "service-result boundary with one controlled 5000ms root delay; not UI paint or proof of arbitrary blocked network syscalls",
+    "auditioningSearch": "Three runs of 200; playback command issued before query loop; first requests may overlap playback startup, no per-query playing flag. Continuous playback across searches independently verified by callback frames and native controls."
+  },
+  "before": {
+    "uiDispatchToFirstPaintMs": {
+      "indexing": {
+        "n": 200,
+        "p50": 99.13687499985099,
+        "p95": 199.02641666680574,
+        "p99": 207.46262499969453
+      },
+      "warm": {
+        "n": 600,
+        "p50": 98.74904166627675,
+        "p95": 106.84495833329856,
+        "p99": 198.76729166693985
+      },
+      "auditioning": {
+        "n": 600,
+        "p50": 99.01045833341777,
+        "p95": 107.08816666714847,
+        "p99": 199.0629166662693
+      }
+    },
+    "auditionDispatchToFirstCallbackMs": {
+      "n": 20,
+      "p50": 42.725083333440125,
+      "p95": 47.01391666661948,
+      "p99": 48.582166666164994
+    },
+    "incrementalCloseToVisibleMs": {
+      "n": 5,
+      "p50": 2207.9994166670367,
+      "p95": 2313.0054166661575,
+      "p99": 2313.0054166661575
+    },
+    "firstEligibleToCommittedSearchableMs": 0.35737499967217445,
+    "discoveryFilesPerSecond": 19904.964080745714,
+    "peakMemoryBytes": 153911296,
+    "peakDurableMetadataBacklog": 99986,
+    "launchToFirstNonemptyPaintMs": 397.14787566289306,
+    "reopen35SecondCounters": {
+      "fileStats": 200010,
+      "directories": 2044,
+      "entries": 202050,
+      "discovered": 200010,
+      "commits": 6256,
+      "scans": 4,
+      "headers": 0,
+      "queries": 87,
+      "cancelled": 0,
+      "firstEligibleMs": 8527735.085833333,
+      "firstCommitMs": 8527735.896833332,
+      "discoveryFinishedMs": 8528759.967125,
+      "peakResidentBytes": 142131200
+    },
+    "controlledSlowSource": {
+      "healthyVisibleMs": 5017.804416665807,
+      "controlledSlowRootDelayMs": 5000
+    }
+  },
+  "after": {
+    "uiDispatchToFirstPaintMs": {
+      "indexing": {
+        "n": 200,
+        "p50": 7.698499999940395,
+        "p95": 10.182125000283122,
+        "p99": 13.316541666164994
+      },
+      "warm": {
+        "n": 600,
+        "p50": 7.460500000044703,
+        "p95": 8.491374999284744,
+        "p99": 12.367333333939314
+      },
+      "auditioning": {
+        "n": 600,
+        "p50": 7.394416667521,
+        "p95": 8.44683333300054,
+        "p99": 8.75912499986589
+      }
+    },
+    "auditionDispatchToFirstCallbackMs": {
+      "n": 20,
+      "p50": 36.81720833480358,
+      "p95": 43.09650000371039,
+      "p99": 43.31899999640882
+    },
+    "incrementalCloseToVisibleMs": {
+      "n": 5,
+      "p50": 878.6187916658819,
+      "p95": 1388.1054166667163,
+      "p99": 1388.1054166667163
+    },
+    "firstEligibleToCommittedSearchableMs": 0.7435833401978016,
+    "discoveryFilesPerSecond": 14549.24237457536,
+    "peakMemoryBytes": 129613824,
+    "peakDurableMetadataBacklog": 99400,
+    "launchToFirstNonemptyPaintMs": 190.35775066539645,
+    "reopen35SecondCounters": {
+      "fileStats": 0,
+      "directories": 2044,
+      "entries": 0,
+      "discovered": 0,
+      "commits": 0,
+      "scans": 36,
+      "headers": 0,
+      "queries": 1,
+      "cancelled": 0,
+      "directoryEnumerations": 0,
+      "peakBatches": 2,
+      "firstEligibleMs": 0.0,
+      "firstCommitMs": 0.0,
+      "discoveryFinishedMs": 0.0,
+      "peakResidentBytes": 131448832
+    },
+    "controlledSlowSource": {
+      "healthyVisibleMs": 128.80604166723788,
+      "controlledSlowRootDelayMs": 5000
+    },
+    "perRunUi": {
+      "warm": [
+        {
+          "n": 200,
+          "p50": 7.397541666403413,
+          "p95": 8.840500000864267,
+          "p99": 13.235416667535901
+        },
+        {
+          "n": 200,
+          "p50": 7.476749999448657,
+          "p95": 8.53800000064075,
+          "p99": 8.868916666135192
+        },
+        {
+          "n": 200,
+          "p50": 7.510833334177732,
+          "p95": 8.4083749987185,
+          "p99": 8.509083332493901
+        }
+      ],
+      "auditioning": [
+        {
+          "n": 200,
+          "p50": 7.392833333462477,
+          "p95": 8.420250000432134,
+          "p99": 8.734208334237337
+        },
+        {
+          "n": 200,
+          "p50": 7.220750000327826,
+          "p95": 8.391625000163913,
+          "p99": 12.906583333387971
+        },
+        {
+          "n": 200,
+          "p50": 7.475541666150093,
+          "p95": 8.484874999150634,
+          "p99": 8.595750000327826
+        }
+      ]
+    },
+    "importStageCounters": {
+      "fileStats": 300000,
+      "directories": 1022,
+      "entries": 101020,
+      "discovered": 100000,
+      "commits": 4588,
+      "scans": 2,
+      "headers": 100000,
+      "queries": 252,
+      "cancelled": 0,
+      "directoryEnumerations": 1022,
+      "peakBatches": 8,
+      "firstEligibleMs": 11930814.56945833,
+      "firstCommitMs": 11930815.31304167,
+      "discoveryFinishedMs": 11937687.77958333,
+      "peakResidentBytes": 124600320,
+      "allHeadersCommittedElapsedMs": 10666.488083332777,
+      "filenameStageElapsedMs": 6873.210124999285
+    },
+    "nativeControls": {
+      "pausedDuringImport": true,
+      "committedAtPause": 4364,
+      "clearQueryPaintedWhilePaused": true,
+      "paintedBeyondRow1000": true,
+      "viewportTopRow": 1530,
+      "latestSourceFilterPainted": true,
+      "searchAndAuditionWhilePaused": true,
+      "resumeCompleted": true,
+      "selectionSurvivesEarlierImport": true,
+      "refreshRetainsSelectedId": true
+    },
+    "longDecode": {
+      "mode": "offline full-file decoding; separate from UI and device latency",
+      "clips": [
+        {
+          "file": "long-0.wav",
+          "bytes": 15876044,
+          "outputFrames": 8640000,
+          "audioSeconds": 180.0,
+          "wallMs": 50.194833332672715
+        },
+        {
+          "file": "long-1.wav",
+          "bytes": 8640044,
+          "outputFrames": 2160000,
+          "audioSeconds": 45.0,
+          "wallMs": 13.385833332315087
+        },
+        {
+          "file": "long-2.wav",
+          "bytes": 8640044,
+          "outputFrames": 2160000,
+          "audioSeconds": 45.0,
+          "wallMs": 13.451625000685453
+        },
+        {
+          "file": "long-3.wav",
+          "bytes": 7938044,
+          "outputFrames": 2160000,
+          "audioSeconds": 45.0,
+          "wallMs": 13.424624999985099
+        },
+        {
+          "file": "long-4.wav",
+          "bytes": 4320044,
+          "outputFrames": 2160000,
+          "audioSeconds": 45.0,
+          "wallMs": 12.55929166637361
+        },
+        {
+          "file": "long-5.wav",
+          "bytes": 17280044,
+          "outputFrames": 2160000,
+          "audioSeconds": 45.0,
+          "wallMs": 15.8965416662395
+        }
+      ],
+      "audioSeconds": 405.0,
+      "wallMs": 127.30104166641831
+    }
+  },
+  "queueBounds": {
+    "filesystemWorkers": 4,
+    "sourceJobsActiveOrScheduled": 4,
+    "queuedWriteBatches": 8,
+    "maxRecordsPerWriteBatch": 64,
+    "pendingQuery": 1,
+    "pendingViewportRequest": 1,
+    "eventPathsPerSet": 2048,
+    "observedPeakWriteBatches": 8,
+    "metadataBacklogStorage": "SQLite pending records; not an in-memory job list",
+    "baselinePendingQueries": 1,
+    "baselineArchitecture": "one serial indexer; no separate filesystem-to-writer queue",
+    "limitation": "owned workers cannot interrupt kernel-blocked filesystem calls; pause and shutdown wait; four blocked calls exhaust pool"
+  },
+  "proposedTargets": {
+    "warmP95AtMost50ms": true,
+    "firstBatchAtMost2000ms": true,
+    "discoveryAtLeast500FilesPerSecond": true,
+    "zeroUnchangedHeaderJobs": true,
+    "cachedAuditionP95AtMost150ms": true,
+    "auditionQualification": "observed 48kHz/512 only; spec 256-frame tuple remains unqualified"
+  },
+  "functionalTests": {
+    "ctest": "2/2 passed; 15.53 seconds",
+    "migration": {
+      "passed": true,
+      "records": 100005,
+      "identityRevisionMetadataDigestBefore": "d2d1f87042e87c4d9d4df6939ba6bd82c7481f3bd007550d67dd026dcc04c2e7",
+      "identityRevisionMetadataDigestAfter": "d2d1f87042e87c4d9d4df6939ba6bd82c7481f3bd007550d67dd026dcc04c2e7",
+      "schemaVersion": 2,
+      "foreignKeyErrors": [],
+      "sqliteIntegrity": "ok",
+      "seconds": 1.8897523330015247,
+      "output": "Catalog and FTS integrity checked: 100005 records"
+    },
+    "volume": {
+      "fixture": "disposable HFS+ disk image",
+      "passed": true,
+      "volume_identity_stored": true,
+      "offline_entries_retained": true,
+      "remount_at_new_path": true,
+      "stable_asset_id": true,
+      "unchanged_revision": true
+    }
+  },
+  "nativeInteractiveObservation": {
+    "fixture": "isolated temporary copy of 100000-file control catalog plus generated 6-file long corpus",
+    "AddFolder": true,
+    "commandFSearch": true,
+    "downSelect": true,
+    "spaceStartStop": true,
+    "emptySearchPreservesAdvancingAudition": true,
+    "pauseResume": true,
+    "commandQQuit": true,
+    "note": "Raised app and focused editor to deliver keys reliably; final measured binary repeated Command-F, Down, Space, uninterrupted empty-query playback and pause; native Add Folder observed before the selection-only fix. Direct open of test catalog under Documents blocked in guarded_open; temporary catalog worked.",
+    "finalMeasuredBinaryRepeatedKeyboardAndPause": true
+  },
+  "manualRemaining": [
+    "human listening and VoiceOver UAT",
+    "physical external drives and interfaces",
+    "SMB/NFS and truly kernel-blocked calls",
+    "sleep/wake hardware cycling",
+    "older macOS and reference M2",
+    "48kHz/256 frame performance tuple",
+    "semantic throughput/thermal/model windows and source-hours/hour"
+  ],
+  "coverage": {
+    "partial": [
+      "LIB-01",
+      "LIB-02",
+      "LIB-03",
+      "LIB-04",
+      "LIB-06",
+      "SRCH-01",
+      "SRCH-02",
+      "PERF-01",
+      "PERF-02"
+    ],
+    "note": "See report for per-ID portions; no complete specification requirement claimed from ID alone"
+  },
+  "evidence": {
+    "build/benchmark/baseline/full.json": "4ee379193756d4e96220a8ac1abc861df984722a8cd5b60865d7454e24573f7b",
+    "build/benchmark/baseline/summary.json": "baacf3825ef2294813e04adccf11944658fbff454f97e8fa00ebbf49db15d342",
+    "build/benchmark/baseline/reopen-completed.json": "f7bde2e40dc1c06413b7ae1409c480ce3b1af2166bf794d652f739e95faa662b",
+    "build/benchmark/baseline/cold-open.json": "7aa7d094e754118aa5d1bb6ad27c17fdba670e14530b8dd5b33068c92b6db0b8",
+    "build/benchmark/baseline-slow/result.json": "c9c7e1c5892a94c8726a92162348bc5302f40824cced86d1bc6899c5756b88d2",
+    "build/benchmark/after-final/full.json": "e986ac7b93aedc3e7474753379a7149cfb38fdc78ef04e018cc3af4b4116f0b6",
+    "build/benchmark/after-final/summary.json": "fcf98e9bf027dcb28d8608392b23fd9b31bc9e0db2cccfb406debcd75e788417",
+    "build/benchmark/after-final/reopen.json": "3f79d330fcb4b89ef891c1371cc17a372d1652dbaf2bc22e1deb8cea28075f98",
+    "build/benchmark/after-final/controls.json": "095a65dbd1ddf5f1b70d82ee899e1692c7888ccf4533321d01866344564009a2",
+    "build/benchmark/after-final/long-decode.json": "8a53649ef657226835e02b8369df6c4b17dfd7e7677075c3139112c5bc1e9d90",
+    "build/benchmark/after-final-slow/result.json": "5a2c543c852de31ef893a3d6c7d5699571bde50bd2958ec092e1768ba2223a1d",
+    "build/benchmark/migration/result.json": "8dc8d73f16f9d3b2a3adf270cf7e9957f09502c8bfcf9e4770bd2ee861dfb7d8",
+    "build/benchmark/final-volume/volume-result.json": "7919903bee9c3a0b87be2e3b74d47aea91032d4048fea7205e16414600030d96",
+    "build/benchmark/candidate-test.log": "618e74f25eabfa6154903f01ac698f740767e31091fea67daa8e4fbfbddc5b09",
+    "build/benchmark/final-build.log": "3cee3d6a6a0554c9f2fc32c1d6d8dff65568f79b7360207873d6e071120f8219"
+  },
+  "excludedRuns": [
+    "baseline-invalid-fixture: collision invariant failed",
+    "after-1: exploratory, concurrent volume work",
+    "baseline/reopen-with-unfinished-header.json: not an unchanged completed-library measurement",
+    "after: predecessor before final selection fix"
+  ],
+  "slowFixture": {
+    "files": 2,
+    "format": "mono PCM16 WAV, 48kHz",
+    "secondsPerFile": 0.25,
+    "totalSeconds": 0.5,
+    "totalBytes": 48208,
+    "storage": "same internal APFS SSD",
+    "delayMs": 5000
+  }
+}

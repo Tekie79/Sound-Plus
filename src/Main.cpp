@@ -1,5 +1,7 @@
 #include "LibraryView.h"
 #include "MacSources.h"
+#include "Benchmark.h"
+#include "Performance.h"
 class SoundPlusApplication final : public juce::JUCEApplication
 {
   public:
@@ -18,6 +20,14 @@ class SoundPlusApplication final : public juce::JUCEApplication
     void initialise(const juce::String &) override
     {
         auto args = getCommandLineParameterArray();
+        auto planAt = args.indexOf("--benchmark-plan");
+        if (planAt >= 0 && planAt + 1 < args.size())
+        {
+            auto p = juce::JSON::parse(juce::File(args[planAt + 1]));
+            sp::performance.delayedRoot = p["delayedRoot"].toString();
+            sp::performance.delayMs = (int)p["delayMs"];
+            sp::performance.expectedFiles=(juce::int64)p["expectedFiles"];
+        }
         auto dir = juce::File::getSpecialLocation(juce::File::userApplicationDataDirectory)
                        .getChildFile("Application Support")
                        .getChildFile("SoundPlus");
@@ -40,9 +50,14 @@ class SoundPlusApplication final : public juce::JUCEApplication
         for (int i = 0; i + 1 < args.size(); ++i)
             if (args[i] == "--add-folder")
                 window->view->addFolder(juce::File(args[++i]));
+        auto outputAt = args.indexOf("--benchmark-output");
+        if (planAt >= 0 && outputAt >= 0)
+            benchmark = std::make_unique<sp::Benchmark>(*window->view, juce::File(args[planAt + 1]),
+                                                        juce::File(args[outputAt + 1]));
     }
     void shutdown() override
     {
+        benchmark.reset();
         window.reset();
         if (instanceLock)
             instanceLock->exit();
@@ -76,6 +91,7 @@ class SoundPlusApplication final : public juce::JUCEApplication
         }
     };
     std::unique_ptr<Window> window;
+    std::unique_ptr<sp::Benchmark> benchmark;
     std::unique_ptr<juce::InterProcessLock> instanceLock;
 };
 START_JUCE_APPLICATION(SoundPlusApplication)

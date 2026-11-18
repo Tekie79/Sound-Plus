@@ -82,6 +82,8 @@ struct SourceWatch::Impl
     FSEventStreamRef stream = nullptr;
     dispatch_queue_t queue = nullptr;
     std::atomic<bool> *dirty = nullptr;
+    DirectoryEvents *events = nullptr;
+    bool running = false;
     juce::String excluded;
     static void callback(ConstFSEventStreamRef, void *context, size_t count, void *paths,
                          const FSEventStreamEventFlags *flags, const FSEventStreamEventId *)
@@ -97,17 +99,36 @@ struct SourceWatch::Impl
                                        kFSEventStreamEventFlagRootChanged | kFSEventStreamEventFlagItemIsDir;
             if ((flags[i] & mustReconcile) != 0 || supportedExtension(juce::File(path)))
             {
-                self.dirty->store(true);
-                break;
+                if (self.dirty)
+                    self.dirty->store(true);
+                if (self.events)
+                {
+                    bool recovery = (flags[i] & (kFSEventStreamEventFlagMustScanSubDirs |
+                                                 kFSEventStreamEventFlagRootChanged)) != 0;
+                    if (flags[i] & kFSEventStreamEventFlagItemIsDir)
+                        self.events->push(path, recovery);
+                    self.events->push(path.upToLastOccurrenceOf("/", false, false), recovery);
+                }
             }
         }
     }
 };
 SourceWatch::SourceWatch(const std::vector<juce::String> &paths, std::atomic<bool> &dirty,
                          const juce::String &excludedDirectory)
+    : SourceWatch(paths, &dirty, nullptr, excludedDirectory)
+{
+}
+SourceWatch::SourceWatch(const std::vector<juce::String> &paths, DirectoryEvents &events,
+                         const juce::String &excluded)
+    : SourceWatch(paths, nullptr, &events, excluded)
+{
+}
+SourceWatch::SourceWatch(const std::vector<juce::String> &paths, std::atomic<bool> *dirty,
+                         DirectoryEvents *events, const juce::String &excludedDirectory)
     : impl(std::make_unique<Impl>())
 {
-    impl->dirty = &dirty;
+    impl->dirty = dirty;
+    impl->events = events;
     impl->excluded = excludedDirectory;
     if (paths.empty())
         return;
@@ -127,8 +148,12 @@ SourceWatch::SourceWatch(const std::vector<juce::String> &paths, std::atomic<boo
     {
         impl->queue = dispatch_queue_create("org.soundplus.file-events", DISPATCH_QUEUE_SERIAL);
         FSEventStreamSetDispatchQueue(impl->stream, impl->queue);
-        FSEventStreamStart(impl->stream);
+        impl->running = FSEventStreamStart(impl->stream);
     }
+}
+bool SourceWatch::started() const
+{
+    return impl->running;
 }
 SourceWatch::~SourceWatch()
 {

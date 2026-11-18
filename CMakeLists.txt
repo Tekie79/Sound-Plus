@@ -25,7 +25,7 @@ juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
 juce_add_console_app(SoundPlusAudio PRODUCT_NAME "SoundPlusAudio")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp)
+target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp src/Benchmark.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>")
@@ -36,9 +36,12 @@ add_custom_command(TARGET SoundPlus POST_BUILD
 include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
-  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   add_test(NAME library_and_audio COMMAND SoundPlusTests
     "$<TARGET_FILE:SoundPlus>" "${CMAKE_BINARY_DIR}/test-output")
   set_tests_properties(library_and_audio PROPERTIES TIMEOUT 90)
+  add_test(NAME library_performance_regression COMMAND SoundPlusTests --performance
+    "${CMAKE_BINARY_DIR}/performance-test-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(library_performance_regression PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
 endif()

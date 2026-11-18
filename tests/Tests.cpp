@@ -2,6 +2,8 @@
 #include "LibraryService.h"
 #include "AudioStream.h"
 #include "AudioIPC.h"
+#include "Performance.h"
+#include "PerformanceTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -59,6 +61,82 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--long-decode")
+        {
+            juce::Array<juce::var> rows;
+            double totalSeconds = 0, start = sp::monotonicMs();
+            for (int i = 0; i < 6; ++i)
+            {
+                auto file = juce::File(argv[2]).getChildFile("long-" + juce::String(i) + ".wav");
+                sp::PcmStream stream(file, 48000);
+                juce::AudioBuffer<float> output(2, 512);
+                int64_t frames = 0;
+                float gain = 1;
+                double began = sp::monotonicMs(), energy = 0;
+                while (!stream.ended())
+                {
+                    stream.fill();
+                    output.clear();
+                    int n = stream.read(output.getArrayOfWritePointers(), 2, 512, gain, 1);
+                    frames += n;
+                    for (int j = 0; j < n; ++j)
+                        energy += std::abs(output.getSample(0, j));
+                }
+                require(energy > 0, "Long corpus non-silent decode");
+                auto *o = new juce::DynamicObject();
+                o->setProperty("file", file.getFileName());
+                o->setProperty("bytes", (juce::int64)file.getSize());
+                o->setProperty("outputFrames", (juce::int64)frames);
+                o->setProperty("audioSeconds", (double)frames / 48000);
+                o->setProperty("wallMs", sp::monotonicMs() - began);
+                rows.add(juce::var(o));
+                totalSeconds += (double)frames / 48000;
+            }
+            auto *o = new juce::DynamicObject();
+            o->setProperty("mode", "offline full-file decoding; separate from UI and device latency");
+            o->setProperty("clips", rows);
+            o->setProperty("audioSeconds", totalSeconds);
+            o->setProperty("wallMs", sp::monotonicMs() - start);
+            juce::File(argv[3]).replaceWithText(juce::JSON::toString(juce::var(o)));
+            std::cout << "Decoded " << totalSeconds << " source seconds\n";
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--open-catalog")
+        {
+            sp::Catalog db(juce::File{argv[2]});
+            db.exec("INSERT INTO names(names,rank) VALUES('integrity-check',1)");
+            std::cout << "Catalog and FTS integrity checked: " << db.count() << " records\n";
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--performance")
+        {
+            runPerformanceTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--slow-source-report")
+        {
+            auto base = juce::File(argv[2]);
+            base.createDirectory();
+            auto slow = base.getChildFile("A-slow"), healthy = base.getChildFile("Z-healthy");
+            fixture(slow.getChildFile("slow.wav"));
+            fixture(healthy.getChildFile("healthy.wav"));
+            sp::performance.delayedRoot = slow.getFullPathName();
+            sp::performance.delayMs = 5000;
+            auto start = sp::monotonicMs();
+            {
+                sp::LibraryService service(base.getChildFile("library.sqlite"));
+                service.addFolder(slow);
+                service.addFolder(healthy);
+                service.search("healthy");
+                until([&] { return !service.snapshot().results.empty(); }, "Healthy root progresses", 15000);
+                auto *o = new juce::DynamicObject();
+                o->setProperty("healthyVisibleMs", sp::monotonicMs() - start);
+                o->setProperty("controlledSlowRootDelayMs", 5000);
+                base.getChildFile("result.json").replaceWithText(juce::JSON::toString(juce::var(o)));
+            }
+            std::cout << base.getChildFile("result.json").loadFileAsString() << "\n";
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--crash")
         {
             sp::Catalog db{juce::File(argv[2])};

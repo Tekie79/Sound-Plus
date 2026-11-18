@@ -1,18 +1,26 @@
 #pragma once
 #include "Catalog.h"
-#include <condition_variable>
-#include <mutex>
-#include <thread>
-#include <atomic>
+#include <functional>
+#include <memory>
 namespace sp
 {
+struct IndexProgress
+{
+    bool pauseRequested = false, paused = false;
+    int activeWorkers = 0, parkedWorkers = 0, queuedBatches = 0, queuedDirectories = 0, metadataBacklog = 0,
+        completedJobs = 0;
+    juce::String root, stage = "Opening";
+};
 struct LibrarySnapshot
 {
     std::vector<Root> roots;
     std::vector<Asset> results;
     juce::String error;
-    uint64_t request = 0, version = 0;
+    uint64_t request = 0, version = 0, pageSerial = 0;
     int64_t headersRead = 0;
+    int total = 0, offset = 0;
+    bool newResultsAvailable = false;
+    IndexProgress progress;
 };
 class LibraryService
 {
@@ -21,28 +29,15 @@ class LibraryService
     ~LibraryService();
     void addFolder(const juce::File &);
     void rescan();
+    void pause(bool);
     uint64_t search(const juce::String &, const juce::String &root = {});
+    void page(int offset, int limit = 256);
+    void setChangeCallback(std::function<void()>);
     LibrarySnapshot snapshot();
-    bool ready() const
-    {
-        return initialized.load();
-    }
+    bool ready() const;
 
   private:
-    void indexLoop();
-    void searchLoop();
-    void scan(Catalog &, Root);
-    void publish();
-    juce::File database;
-    std::atomic<bool> stopping{false}, initialized{false}, dirty{true}, retryRequested{false};
-    std::atomic<uint64_t> version{1};
-    std::atomic<int64_t> headers{0};
-    std::thread indexer, reader;
-    std::mutex mutex;
-    std::condition_variable wake;
-    std::vector<juce::File> additions;
-    juce::String text, rootFilter;
-    uint64_t request = 1;
-    LibrarySnapshot current;
+    struct Impl;
+    std::unique_ptr<Impl> impl;
 };
 } // namespace sp

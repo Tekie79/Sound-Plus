@@ -1,5 +1,7 @@
 # Library and audition milestone
 
+Historical first-milestone report. The result cap, serial source scanning and reconciliation behavior described below are superseded by [the library performance milestone](LIBRARY_PERFORMANCE.md).
+
 This implementation follows the repository's `Sound_Design_Workstation_Architecture_and_Requirements.docx`, version 1.0, 17 November 2026, with the user's narrower first-milestone scope. It implements a general-purpose global library and whole-file audition. The specification's complete M1 gate, hybrid retrieval and region audition remain future work.
 
 ## Implemented architecture

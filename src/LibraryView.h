@@ -4,11 +4,13 @@
 #include <juce_gui_extra/juce_gui_extra.h>
 namespace sp
 {
+class Benchmark;
 class LibraryView final : public juce::Component,
                           private juce::Timer,
                           private juce::TableListBoxModel,
                           private juce::ListBoxModel,
-                          private juce::KeyListener
+                          private juce::KeyListener,
+                          private juce::AsyncUpdater
 {
   public:
     LibraryView(const juce::File &database, const juce::File &executable);
@@ -20,11 +22,23 @@ class LibraryView final : public juce::Component,
     {
         library.addFolder(f);
     }
+    uint64_t benchmarkSearch(const juce::String &q, const juce::String &root = {});
+    void benchmarkScroll(int row);
+    Benchmark *benchmark = nullptr;
 
   private:
+    friend class Benchmark;
+    double dispatchedMs = 0, appliedMs = 0;
+    uint64_t appliedPage = 0;
+    int requestedPage = -1;
+    std::optional<Asset> selectedAsset;
+    int selectedAssetRow = -1;
+    const Asset *rowAsset(int row) const;
+    void requestPageForRow(int row);
+    void handleAsyncUpdate() override;
     int getNumRows() override
     {
-        return (int)snapshot.results.size();
+        return snapshot.total;
     }
     void paintRowBackground(juce::Graphics &, int, int, int, bool) override;
     void paintCell(juce::Graphics &, int, int, int, int, bool) override;
@@ -64,6 +78,11 @@ class LibraryView final : public juce::Component,
         {
             owner.listBoxItemClicked(n, e);
         }
+        void selectedRowsChanged(int n) override
+        {
+            if (!owner.updating && n >= 0)
+                owner.chooseSource(n);
+        }
     } sourceModel{*this};
     juce::LookAndFeel_V4 look;
     LibraryService library;
@@ -75,9 +94,10 @@ class LibraryView final : public juce::Component,
         explicit NamedTable(LibraryView &v) : TableListBox("Recordings", &v), owner(v) {}
         juce::String getNameForRow(int n) override
         {
-            if (!juce::isPositiveAndBelow(n, (int)owner.snapshot.results.size()))
-                return {};
-            const auto &a = owner.snapshot.results[(size_t)n];
+            const auto *asset = owner.rowAsset(n);
+            if (!asset)
+                return "Loading recording";
+            const auto &a = *asset;
             return a.name + ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
                    " channels, " + juce::String(a.sampleRate, 0) + " Hz, " +
                    (a.online ? a.state : "Offline") + ", " + a.path;
@@ -86,6 +106,8 @@ class LibraryView final : public juce::Component,
     juce::ListBox sources{"Library folders", &sourceModel};
     juce::TextEditor search;
     juce::TextButton add{"Add Folder"}, rescan{"Rescan"}, play{"Play"}, restart{"Reconnect Audio"};
+    juce::TextButton pauseIndex{"Pause Indexing"}, refresh{"Refresh Results"};
+    void chooseSource(int);
     juce::ComboBox output;
     juce::Slider gain;
     juce::Label summary, detail, assetId, transport, status, volumeLabel;

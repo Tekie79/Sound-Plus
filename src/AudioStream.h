@@ -29,6 +29,7 @@ class PcmStream
     {
         return reads;
     }
+    std::atomic<double> firstCallbackMs{0};
 
   private:
     static constexpr uint64_t capacity = 131072;
@@ -55,6 +56,10 @@ class AuditionCore
     double seconds() const
     {
         return stream ? stream->seconds() : 0;
+    }
+    double firstCallbackMs() const
+    {
+        return stream ? stream->firstCallbackMs.load() : 0;
     }
     std::atomic<float> volume{0.7f}, peak{0};
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};

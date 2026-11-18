@@ -1,4 +1,5 @@
 #include "AudioStream.h"
+#include "Performance.h"
 #include <cmath>
 #include <stdexcept>
 namespace sp
@@ -100,6 +101,8 @@ void AuditionCore::render(float *const *out, int channels, int frames) noexcept
     if (p && active.load() == p)
     {
         const int read = p->read(out, channels, frames, gain, volume.load(std::memory_order_relaxed));
+        if (read > 0 && p->firstCallbackMs.load(std::memory_order_relaxed) == 0)
+            p->firstCallbackMs.store(monotonicMs(), std::memory_order_relaxed);
         if (read < frames && !p->ended())
             underruns.fetch_add(1, std::memory_order_relaxed);
     }

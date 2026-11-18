@@ -1,5 +1,6 @@
 #include "Catalog.h"
 #include "MacSources.h"
+#include "Performance.h"
 #include <sys/stat.h>
 #include <stdexcept>
 #include <filesystem>
@@ -14,7 +15,10 @@ struct Statement
     sqlite3_stmt *s = nullptr;
     Statement(sqlite3 *d, const char *sql) : db(d)
     {
-        if (sqlite3_prepare_v2(db, sql, -1, &s, nullptr) != SQLITE_OK)
+        int rc = sqlite3_prepare_v2(db, sql, -1, &s, nullptr);
+        if (rc == SQLITE_INTERRUPT)
+            throw QueryCancelled();
+        if (rc != SQLITE_OK)
             throw std::runtime_error(sqlite3_errmsg(db));
     }
     ~Statement()
@@ -32,6 +36,8 @@ struct Statement
     bool step()
     {
         int rc = sqlite3_step(s);
+        if (rc == SQLITE_INTERRUPT)
+            throw QueryCancelled();
         if (rc != SQLITE_ROW && rc != SQLITE_DONE)
             throw std::runtime_error(sqlite3_errmsg(db));
         return rc == SQLITE_ROW;
@@ -76,6 +82,7 @@ constexpr auto columns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.i
 
 bool fileStamp(const juce::File &f, FileStamp &out)
 {
+    ++performance.fileStats;
     struct stat st{};
     if (lstat(f.getFullPathName().toRawUTF8(), &st) != 0 || !S_ISREG(st.st_mode))
         return false;
@@ -101,12 +108,17 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
     try
     {
         exec("PRAGMA foreign_keys=ON");
+        exec("PRAGMA cache_size=-4096; PRAGMA temp_store=FILE; PRAGMA temp.cache_size=-2048;");
         if (readOnly)
             return;
         exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;");
-        Statement version(db, "PRAGMA user_version");
-        version.step();
-        if (version.integer(0) > 1)
+        int64_t schemaVersion = 0;
+        {
+            Statement version(db, "PRAGMA user_version");
+            version.step();
+            schemaVersion = version.integer(0);
+        }
+        if (schemaVersion > 2)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         exec(R"SQL(BEGIN IMMEDIATE;
           CREATE TABLE IF NOT EXISTS roots(id TEXT PRIMARY KEY,path TEXT UNIQUE NOT NULL,volume TEXT NOT NULL,
@@ -127,8 +139,59 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
           CREATE TRIGGER IF NOT EXISTS asset_name_update AFTER UPDATE OF name,relative ON assets BEGIN
             INSERT INTO names(names,rowid,name,relative) VALUES('delete',old.rowid,old.name,old.relative);
             INSERT INTO names(rowid,name,relative) VALUES(new.rowid,new.name,new.relative); END;
-          PRAGMA user_version=1; COMMIT;)SQL");
-        exec("UPDATE roots SET scanning=0");
+          COMMIT;)SQL");
+        if (schemaVersion < 2)
+        {
+            exec(R"SQL(BEGIN IMMEDIATE;
+            ALTER TABLE roots ADD COLUMN discovered INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE roots ADD COLUMN ready INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE roots ADD COLUMN failed INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE assets ADD COLUMN parent TEXT NOT NULL DEFAULT '';
+            CREATE INDEX asset_parent ON assets(root_id,parent);
+            CREATE INDEX asset_browse ON assets(name COLLATE NOCASE,id);
+            CREATE INDEX asset_root_browse ON assets(root_id,name COLLATE NOCASE,id);
+            CREATE TABLE directories(root_id TEXT NOT NULL REFERENCES roots(id),relative TEXT NOT NULL,
+              modified INTEGER NOT NULL,inode INTEGER NOT NULL,children TEXT NOT NULL,PRIMARY KEY(root_id,relative));
+            DROP TRIGGER asset_insert; DROP TRIGGER asset_delete; DROP TRIGGER asset_name_update;
+            DROP TABLE names;
+            CREATE VIRTUAL TABLE names USING fts5(name,relative,root_id,content='assets',content_rowid='rowid',tokenize='unicode61',prefix='2 3 4');
+            INSERT INTO names(rowid,name,relative,root_id) SELECT rowid,name,relative,root_id FROM assets;
+            CREATE TRIGGER asset_insert AFTER INSERT ON assets BEGIN
+              INSERT INTO names(rowid,name,relative,root_id) VALUES(new.rowid,new.name,new.relative,new.root_id);
+              UPDATE roots SET discovered=discovered+1,ready=ready+(new.state='ready'),failed=failed+(new.state='failed') WHERE id=new.root_id; END;
+            CREATE TRIGGER asset_delete AFTER DELETE ON assets BEGIN
+              INSERT INTO names(names,rowid,name,relative,root_id) VALUES('delete',old.rowid,old.name,old.relative,old.root_id);
+              UPDATE roots SET discovered=discovered-1,ready=ready-(old.state='ready'),failed=failed-(old.state='failed') WHERE id=old.root_id; END;
+            CREATE TRIGGER asset_name_update AFTER UPDATE OF name,relative ON assets BEGIN
+              INSERT INTO names(names,rowid,name,relative,root_id) VALUES('delete',old.rowid,old.name,old.relative,old.root_id);
+              INSERT INTO names(rowid,name,relative,root_id) VALUES(new.rowid,new.name,new.relative,new.root_id); END;
+            CREATE TRIGGER asset_status AFTER UPDATE OF state ON assets WHEN old.state<>new.state BEGIN
+              UPDATE roots SET ready=ready+(new.state='ready')-(old.state='ready'),failed=failed+(new.state='failed')-(old.state='failed') WHERE id=new.root_id; END;
+            UPDATE roots SET discovered=(SELECT count(*) FROM assets WHERE root_id=roots.id),
+              ready=(SELECT count(*) FROM assets WHERE root_id=roots.id AND state='ready'),failed=(SELECT count(*) FROM assets WHERE root_id=roots.id AND state='failed');
+            )SQL");
+            std::vector<std::pair<juce::String, juce::String>> parents;
+            {
+                Statement rows(db, "SELECT id,relative FROM assets");
+                while (rows.step())
+                {
+                    auto relative = rows.str(1);
+                    parents.emplace_back(rows.str(0), (relative.containsChar('/')
+                                                           ? relative.upToLastOccurrenceOf("/", false, false)
+                                                           : juce::String()));
+                }
+            }
+            for (auto &[id, parent] : parents)
+            {
+                Statement update(db, "UPDATE assets SET parent=? WHERE id=?");
+                update.bind(1, parent);
+                update.bind(2, id);
+                update.step();
+            }
+            exec("PRAGMA user_version=2; COMMIT;");
+        }
+        exec("CREATE INDEX IF NOT EXISTS asset_root_pending ON assets(root_id,state,online); UPDATE roots "
+             "SET scanning=0;");
     }
     catch (...)
     {
@@ -145,10 +208,13 @@ Catalog::~Catalog()
 void Catalog::exec(const char *sql)
 {
     char *msg = nullptr;
-    if (sqlite3_exec(db, sql, nullptr, nullptr, &msg) != SQLITE_OK)
+    int rc = sqlite3_exec(db, sql, nullptr, nullptr, &msg);
+    if (rc != SQLITE_OK)
     {
         std::string e = msg ? msg : "SQLite error";
         sqlite3_free(msg);
+        if (rc == SQLITE_INTERRUPT)
+            throw QueryCancelled();
         throw std::runtime_error(e);
     }
 }
@@ -159,12 +225,17 @@ void Catalog::begin()
 void Catalog::commit()
 {
     exec("COMMIT");
+    ++performance.commits;
+}
+void Catalog::rollback()
+{
+    if (!sqlite3_get_autocommit(db))
+        exec("ROLLBACK");
 }
 std::vector<Root> Catalog::roots()
 {
-    Statement s(db, "SELECT r.id,r.path,r.volume,r.volume_relative,r.online,r.scanning,r.error,"
-                    "COUNT(a.id),COALESCE(SUM(a.state='ready'),0),COALESCE(SUM(a.state='failed'),0) "
-                    "FROM roots r LEFT JOIN assets a ON a.root_id=r.id GROUP BY r.id ORDER BY r.path");
+    Statement s(db, "SELECT id,path,volume,volume_relative,online,scanning,error,discovered,ready,failed "
+                    "FROM roots ORDER BY path");
     std::vector<Root> v;
     while (s.step())
     {
@@ -207,31 +278,48 @@ Root Catalog::addRoot(const juce::File &path)
 }
 void Catalog::rootState(const Root &r)
 {
-    Statement s(db, "UPDATE roots SET path=?,online=?,scanning=?,error=? WHERE id=?");
+    Statement s(db,
+                "UPDATE roots SET path=?,online=?,scanning=?,error=?,volume=?,volume_relative=? WHERE id=?");
     s.bind(1, r.path);
     s.bind(2, (int64_t)r.online);
     s.bind(3, (int64_t)r.scanning);
     s.bind(4, r.error);
-    s.bind(5, r.id);
+    s.bind(5, r.volume);
+    s.bind(6, r.volumeRelative);
+    s.bind(7, r.id);
     s.step();
 }
-bool Catalog::discover(const Root &r, const juce::String &relative, const FileStamp &st, int64_t scan)
+bool Catalog::discover(const Root &r, const juce::String &relative, const FileStamp &st, int64_t scan,
+                       bool legacyRelink, const juce::String &confirmedRename)
 {
     juce::String id;
     bool changed = true;
     int64_t revision = 1;
     {
-        Statement s(db, "SELECT id,size,modified,inode,revision FROM assets WHERE root_id=? AND relative=?");
+        Statement s(
+            db, "SELECT id,size,modified,inode,revision,state FROM assets WHERE root_id=? AND relative=?");
         s.bind(1, r.id);
         s.bind(2, relative);
         if (s.step())
         {
             id = s.str(0);
             changed = s.integer(1) != st.size || s.integer(2) != st.modified || s.integer(3) != st.inode;
-            revision = s.integer(4) + (changed ? 1 : 0);
+            revision = s.integer(4) + (changed && s.str(5) != "pending" ? 1 : 0);
         }
     }
-    if (id.isEmpty())
+    if (id.isEmpty() && confirmedRename.isNotEmpty())
+    {
+        Statement old(db, "SELECT id,revision,size,modified FROM assets WHERE id=? AND root_id=?");
+        old.bind(1, confirmedRename);
+        old.bind(2, r.id);
+        if (old.step())
+        {
+            id = old.str(0);
+            changed = old.integer(2) != st.size || old.integer(3) != st.modified;
+            revision = old.integer(1) + (changed ? 1 : 0);
+        }
+    }
+    if (id.isEmpty() && legacyRelink)
     {
         // Only a unique inode whose previous path disappeared is a confirmed rename.
         Statement s(db, "SELECT id,relative,revision,size,modified FROM assets WHERE root_id=? AND inode=?");
@@ -255,11 +343,11 @@ bool Catalog::discover(const Root &r, const juce::String &relative, const FileSt
             revision = candidates[0].rev + (changed ? 1 : 0);
         }
     }
+    bool inserted = id.isEmpty();
     if (id.isEmpty())
     {
-        Statement s(
-            db,
-            "INSERT INTO assets(id,root_id,relative,name,size,modified,inode,seen) VALUES(?,?,?,?,?,?,?,?)");
+        Statement s(db, "INSERT INTO assets(id,root_id,relative,name,size,modified,inode,seen,parent) "
+                        "VALUES(?,?,?,?,?,?,?,?,?)");
         s.bind(1, juce::Uuid().toString());
         s.bind(2, r.id);
         s.bind(3, relative);
@@ -268,6 +356,8 @@ bool Catalog::discover(const Root &r, const juce::String &relative, const FileSt
         s.bind(6, st.modified);
         s.bind(7, st.inode);
         s.bind(8, scan);
+        s.bind(9, relative.containsChar('/') ? relative.upToLastOccurrenceOf("/", false, false)
+                                             : juce::String());
         s.step();
     }
     else
@@ -301,6 +391,18 @@ bool Catalog::discover(const Root &r, const juce::String &relative, const FileSt
             move.bind(4, relative);
             move.step();
         }
+    }
+    {
+        if (inserted)
+            return changed;
+        Statement parent(db, "UPDATE assets SET parent=? WHERE root_id=? AND relative=? AND parent<>?");
+        auto value =
+            (relative.containsChar('/') ? relative.upToLastOccurrenceOf("/", false, false) : juce::String());
+        parent.bind(1, value);
+        parent.bind(2, r.id);
+        parent.bind(3, relative);
+        parent.bind(4, value);
+        parent.step();
     }
     return changed;
 }
@@ -337,23 +439,10 @@ void Catalog::metadata(const Asset &a, double duration, int channels, double rat
     s.bind(8, a.modified);
     s.step();
 }
-std::vector<Asset> Catalog::search(const juce::String &query, const juce::String &root, int limit)
+namespace
 {
-    if (query.length() == 32 && query.containsOnly("0123456789abcdefABCDEF"))
-    {
-        juce::String sql =
-            "SELECT " + juce::String(columns) +
-            " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.id=? AND (?='' OR a.root_id=?)";
-        Statement s(db, sql.toRawUTF8());
-        s.bind(1, query);
-        s.bind(2, root);
-        s.bind(3, root);
-        std::vector<Asset> v;
-        while (s.step())
-            v.push_back(readAsset(s));
-        return v;
-    }
-    // Escape every token: user text can never become an FTS operator or SQL.
+juce::String matchText(const juce::String &query, const juce::String &root)
+{
     auto tokens = juce::StringArray::fromTokens(query, " \t\r\n", "\"");
     juce::String match;
     for (auto token : tokens)
@@ -366,34 +455,302 @@ std::vector<Asset> Catalog::search(const juce::String &query, const juce::String
             match += "\"" + token + "\"*";
         }
     }
-    juce::String sql = "SELECT " + juce::String(columns) + " FROM assets a JOIN roots r ON r.id=a.root_id ";
-    if (match.isNotEmpty())
-        sql += "JOIN names ON names.rowid=a.rowid ";
-    sql += "WHERE (?='' OR a.root_id=?) ";
-    if (match.isNotEmpty())
-        sql += "AND (names MATCH ?) ";
-    sql += "ORDER BY (a.name=? COLLATE NOCASE OR a.id=?) DESC,";
-    if (match.isNotEmpty())
-        sql += "bm25(names),";
-    sql += "a.name COLLATE NOCASE,a.id LIMIT ?";
+    if (match.isNotEmpty() && root.isNotEmpty())
+        match = "root_id : \"" + root.replace("\"", "\"\"") + "\" AND (" + match + ")";
+    return match;
+}
+bool uuidQuery(const juce::String &q)
+{
+    return q.length() == 32 && q.containsOnly("0123456789abcdefABCDEF");
+}
+} // namespace
+void Catalog::cancelWhen(const std::atomic<uint64_t> *generation, uint64_t expected)
+{
+    cancellation = generation;
+    expectedGeneration = expected;
+    sqlite3_progress_handler(
+        db, generation ? 500 : 0,
+        [](void *p)
+        {
+            auto &self = *static_cast<Catalog *>(p);
+            return self.cancellation && self.cancellation->load() != self.expectedGeneration ? 1 : 0;
+        },
+        this);
+}
+int Catalog::countMatches(const juce::String &q, const juce::String &root)
+{
+    auto match = matchText(q, root);
+    juce::String sql;
+    if (uuidQuery(q))
+        sql = "SELECT count(*) FROM assets WHERE id=?" + (root.isEmpty() ? juce::String() : " AND root_id=?");
+    else if (match.isNotEmpty())
+        sql = "SELECT count(*) FROM names WHERE names MATCH ?";
+    else
+        sql = "SELECT count(*) FROM assets" + (root.isEmpty() ? juce::String() : " WHERE root_id=?");
     Statement s(db, sql.toRawUTF8());
     int n = 1;
-    s.bind(n++, root);
-    s.bind(n++, root);
-    if (match.isNotEmpty())
+    if (uuidQuery(q))
+    {
+        s.bind(n++, q);
+        if (root.isNotEmpty())
+            s.bind(n++, root);
+    }
+    else if (match.isNotEmpty())
         s.bind(n++, match);
-    s.bind(n++, query);
-    s.bind(n++, query);
-    s.bind(n++, (int64_t)limit);
-    std::vector<Asset> v;
+    else if (root.isNotEmpty())
+        s.bind(n++, root);
+    s.step();
+    return (int)s.integer(0);
+}
+std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &root, int limit, int offset)
+{
+    ++performance.queries;
+    std::vector<Asset> result;
+    auto collect = [&](Statement &s)
+    {
+        while (s.step())
+            result.push_back(readAsset(s));
+    };
+    const auto base = "SELECT " + juce::String(columns) + " FROM assets a JOIN roots r ON r.id=a.root_id ";
+    if (uuidQuery(q))
+    {
+        Statement s(
+            db, (base + "WHERE a.id=?" + (root.isEmpty() ? juce::String() : " AND a.root_id=?")).toRawUTF8());
+        s.bind(1, q);
+        if (root.isNotEmpty())
+            s.bind(2, root);
+        if (offset == 0)
+            collect(s);
+        return result;
+    }
+    auto match = matchText(q, root);
+    if (match.isEmpty())
+    {
+        auto sql = base + (root.isEmpty() ? juce::String() : "WHERE a.root_id=? ") +
+                   "ORDER BY a.name COLLATE NOCASE,a.id LIMIT ? OFFSET ?";
+        Statement s(db, sql.toRawUTF8());
+        int n = 1;
+        if (root.isNotEmpty())
+            s.bind(n++, root);
+        s.bind(n++, (int64_t)limit);
+        s.bind(n++, (int64_t)offset);
+        collect(s);
+        return result;
+    }
+    int exact = 0;
+    {
+        Statement s(db, ("SELECT count(*) FROM assets WHERE name=? COLLATE NOCASE" +
+                         (root.isEmpty() ? juce::String() : " AND root_id=?"))
+                            .toRawUTF8());
+        s.bind(1, q);
+        if (root.isNotEmpty())
+            s.bind(2, root);
+        s.step();
+        exact = (int)s.integer(0);
+    }
+    if (offset < exact)
+    {
+        Statement s(db, (base + "WHERE a.name=? COLLATE NOCASE " +
+                         (root.isEmpty() ? juce::String() : "AND a.root_id=? ") +
+                         "ORDER BY a.rowid LIMIT ? OFFSET ?")
+                            .toRawUTF8());
+        int n = 1;
+        s.bind(n++, q);
+        if (root.isNotEmpty())
+            s.bind(n++, root);
+        s.bind(n++, (int64_t)limit);
+        s.bind(n++, (int64_t)offset);
+        collect(s);
+    }
+    if ((int)result.size() < limit)
+    {
+        Statement s(db, (base + "JOIN names ON names.rowid=a.rowid WHERE names MATCH ? AND a.name<>? COLLATE "
+                                "NOCASE ORDER BY names.rowid LIMIT ? OFFSET ?")
+                            .toRawUTF8());
+        s.bind(1, match);
+        s.bind(2, q);
+        s.bind(3, (int64_t)(limit - result.size()));
+        s.bind(4, (int64_t)std::max(0, offset - exact));
+        collect(s);
+    }
+    return result;
+}
+void Catalog::materialize(const juce::String &q, const juce::String &root)
+{
+    exec("DROP TABLE IF EXISTS temp.browse_ids; CREATE TEMP TABLE browse_ids(position INTEGER PRIMARY KEY,id "
+         "TEXT NOT NULL);");
+    auto match = matchText(q, root);
+    juce::String sql;
+    if (uuidQuery(q))
+        sql = "INSERT INTO browse_ids(id) SELECT id FROM assets WHERE id=?" +
+              (root.isEmpty() ? juce::String() : " AND root_id=?");
+    else if (match.isEmpty())
+        sql = "INSERT INTO browse_ids(id) SELECT id FROM assets " +
+              (root.isEmpty() ? juce::String() : "WHERE root_id=? ") + "ORDER BY name COLLATE NOCASE,id";
+    else
+    {
+        {
+            Statement s(db, ("INSERT INTO browse_ids(id) SELECT id FROM assets WHERE name=? COLLATE NOCASE " +
+                             (root.isEmpty() ? juce::String() : "AND root_id=? ") + "ORDER BY rowid")
+                                .toRawUTF8());
+            s.bind(1, q);
+            if (root.isNotEmpty())
+                s.bind(2, root);
+            s.step();
+        }
+        sql = "INSERT INTO browse_ids(id) SELECT a.id FROM names JOIN assets a ON a.rowid=names.rowid WHERE "
+              "names MATCH ? AND a.name<>? COLLATE NOCASE ORDER BY names.rowid";
+    }
+    Statement s(db, sql.toRawUTF8());
+    int n = 1;
+    if (uuidQuery(q))
+    {
+        s.bind(n++, q);
+        if (root.isNotEmpty())
+            s.bind(n++, root);
+    }
+    else if (match.isNotEmpty())
+    {
+        s.bind(n++, match);
+        s.bind(n++, q);
+    }
+    else if (root.isNotEmpty())
+        s.bind(n++, root);
+    s.step();
+}
+std::vector<Asset> Catalog::page(int offset, int limit)
+{
+    Statement s(db, ("SELECT " + juce::String(columns) +
+                     " FROM temp.browse_ids b JOIN assets a ON a.id=b.id JOIN roots r ON r.id=a.root_id "
+                     "WHERE b.position>? ORDER BY b.position LIMIT ?")
+                        .toRawUTF8());
+    s.bind(1, (int64_t)offset);
+    s.bind(2, (int64_t)limit);
+    std::vector<Asset> rows;
     while (s.step())
-        v.push_back(readAsset(s));
-    return v;
+        rows.push_back(readAsset(s));
+    return rows;
+}
+Asset Catalog::existing(const juce::String &root, const juce::String &relative)
+{
+    Statement s(db, ("SELECT " + juce::String(columns) +
+                     " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.root_id=? AND a.relative=?")
+                        .toRawUTF8());
+    s.bind(1, root);
+    s.bind(2, relative);
+    return s.step() ? readAsset(s) : Asset{};
+}
+std::vector<Asset> Catalog::inodeCandidates(const juce::String &root, int64_t inode)
+{
+    Statement s(db, ("SELECT " + juce::String(columns) +
+                     " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.root_id=? AND a.inode=? LIMIT 3")
+                        .toRawUTF8());
+    s.bind(1, root);
+    s.bind(2, inode);
+    std::vector<Asset> rows;
+    while (s.step())
+        rows.push_back(readAsset(s));
+    return rows;
+}
+std::vector<Asset> Catalog::pendingRoot(const juce::String &root, int limit)
+{
+    Statement s(db, ("SELECT " + juce::String(columns) +
+                     " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.root_id=? AND a.state='pending' "
+                     "AND a.online=1 LIMIT ?")
+                        .toRawUTF8());
+    s.bind(1, root);
+    s.bind(2, (int64_t)limit);
+    std::vector<Asset> rows;
+    while (s.step())
+        rows.push_back(readAsset(s));
+    return rows;
+}
+DirectoryRecord Catalog::directory(const juce::String &root, const juce::String &relative)
+{
+    DirectoryRecord d;
+    d.relative = relative;
+    Statement s(db, "SELECT modified,inode,children FROM directories WHERE root_id=? AND relative=?");
+    s.bind(1, root);
+    s.bind(2, relative);
+    if (s.step())
+    {
+        d.valid = true;
+        d.modified = s.integer(0);
+        d.inode = s.integer(1);
+        auto a = juce::JSON::parse(s.str(2));
+        if (auto *children = a.getArray())
+            for (auto &v : *children)
+                d.children.add(v.toString());
+    }
+    return d;
+}
+void Catalog::directoryDone(const Root &root, const DirectoryRecord &d, int64_t generation)
+{
+    {
+        Statement s(db, "UPDATE assets SET online=0 WHERE root_id=? AND parent=? AND seen<>?");
+        s.bind(1, root.id);
+        s.bind(2, d.relative);
+        s.bind(3, generation);
+        s.step();
+    }
+    juce::Array<juce::var> children;
+    for (auto &child : d.children)
+        children.add(child);
+    Statement s(db, "INSERT INTO directories(root_id,relative,modified,inode,children) VALUES(?,?,?,?,?) ON "
+                    "CONFLICT(root_id,relative) DO UPDATE SET "
+                    "modified=excluded.modified,inode=excluded.inode,children=excluded.children");
+    s.bind(1, root.id);
+    s.bind(2, d.relative);
+    s.bind(3, d.modified);
+    s.bind(4, d.inode);
+    s.bind(5, juce::JSON::toString(children, true));
+    s.step();
+}
+void Catalog::removeTree(const juce::String &root, const juce::String &relative)
+{
+    auto prefix = relative.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_") + "/%";
+    {
+        Statement s(
+            db, "UPDATE assets SET online=0 WHERE root_id=? AND (relative=? OR relative LIKE ? ESCAPE '\\')");
+        s.bind(1, root);
+        s.bind(2, relative);
+        s.bind(3, prefix);
+        s.step();
+    }
+    Statement s(db,
+                "DELETE FROM directories WHERE root_id=? AND (relative=? OR relative LIKE ? ESCAPE '\\')");
+    s.bind(1, root);
+    s.bind(2, relative);
+    s.bind(3, prefix);
+    s.step();
+}
+Root Catalog::addRootRecord(const juce::File &path)
+{
+    for (auto r : roots())
+        if (r.path == path.getFullPathName())
+            return r;
+    Root r;
+    r.id = juce::Uuid().toString();
+    r.path = path.getFullPathName();
+    r.online = true;
+    Statement s(db, "INSERT INTO roots(id,path,volume,volume_relative) VALUES(?,?,?,?)");
+    s.bind(1, r.id);
+    s.bind(2, r.path);
+    s.bind(3, juce::String());
+    s.bind(4, juce::String());
+    s.step();
+    return r;
 }
 int Catalog::count()
 {
     Statement s(db, "SELECT count(*) FROM assets");
     s.step();
     return (int)s.integer(0);
+}
+void Catalog::removeEmptyRoot(const juce::String &id)
+{
+    Statement s(db, "DELETE FROM roots WHERE id=? AND discovered=0");
+    s.bind(1, id);
+    s.step();
 }
 } // namespace sp

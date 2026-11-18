@@ -144,6 +144,9 @@ void AudioEngine::sendStatus()
     o->setProperty("id", id);
     o->setProperty("playing", core.playing());
     o->setProperty("seconds", core.seconds());
+    o->setProperty("firstCallbackMs", core.firstCallbackMs());
+    if (auto *d = devices.getCurrentAudioDevice())
+        o->setProperty("bufferFrames", d->getCurrentBufferSizeSamples());
     o->setProperty("peak", core.peak.load());
     o->setProperty("error", error);
     o->setProperty("sampleRate", deviceRate.load());

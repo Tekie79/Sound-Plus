@@ -1,4 +1,6 @@
 #include "LibraryView.h"
+#include "Benchmark.h"
+#include "Performance.h"
 namespace sp
 {
 namespace
@@ -33,9 +35,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     look.setColour(juce::Slider::thumbColourId, accent);
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
-    for (auto *c : std::initializer_list<juce::Component *>{&table, &sources, &search, &add, &rescan, &play,
-                                                            &restart, &output, &gain, &summary, &detail,
-                                                            &assetId, &transport, &status, &volumeLabel})
+    for (auto *c : std::initializer_list<juce::Component *>{
+             &table, &sources, &search, &add, &rescan, &play, &restart, &output, &gain, &summary, &detail,
+             &assetId, &transport, &status, &volumeLabel, &pauseIndex, &refresh})
         addAndMakeVisible(c);
     for (auto *l : {&summary, &detail, &assetId, &transport, &status, &volumeLabel})
     {
@@ -95,10 +97,15 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     detail.setText("Choose a recording to listen", juce::dontSendNotification);
     summary.setText("Your sounds, in place. No project needed.", juce::dontSendNotification);
     setSize(1200, 780);
-    startTimerHz(10);
+    pauseIndex.onClick = [this] { library.pause(!library.snapshot().progress.pauseRequested); };
+    refresh.onClick = [this] { requestSearch(); };
+    library.setChangeCallback([this] { triggerAsyncUpdate(); });
+    startTimerHz(30);
 }
 LibraryView::~LibraryView()
 {
+    library.setChangeCallback({});
+    cancelPendingUpdate();
     stopTimer();
     table.setModel(nullptr);
     sources.setModel(nullptr);
@@ -134,7 +141,7 @@ void LibraryView::paint(juce::Graphics &g)
 }
 void LibraryView::paintOverChildren(juce::Graphics &g)
 {
-    if (snapshot.results.empty())
+    if (snapshot.total == 0)
     {
         g.setColour(text);
         g.setFont(juce::FontOptions(22.0f));
@@ -146,14 +153,18 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
                                     : "Try a shorter filename or choose All recordings.",
                    270, 305, getWidth() - 310, 30, juce::Justification::centred);
     }
+    if (benchmark && snapshot.request == requested)
+        benchmark->painted(requested, (int)snapshot.results.size(), dispatchedMs, appliedMs);
 }
 void LibraryView::resized()
 {
     add.setBounds(getWidth() - 162, 24, 136, 35);
     rescan.setBounds(142, 101, 76, 28);
     summary.setBounds(264, 50, getWidth() - 450, 24);
-    search.setBounds(264, 103, getWidth() - 292, 44);
-    sources.setBounds(12, 143, 216, getHeight() - 265);
+    search.setBounds(264, 103, getWidth() - 464, 44);
+    refresh.setBounds(getWidth() - 186, 103, 158, 44);
+    pauseIndex.setBounds(16, 140, 204, 28);
+    sources.setBounds(12, 180, 216, getHeight() - 302);
     table.setBounds(253, 165, getWidth() - 277, getHeight() - 353);
     int fixed = 90 + 85 + 90 + 120;
     table.getHeader().setColumnWidth(1, std::max(200, table.getWidth() - fixed - 18));
@@ -168,10 +179,41 @@ void LibraryView::resized()
     restart.setBounds(755, y + 91, 150, 28);
     status.setBounds(264, getHeight() - 30, getWidth() - 290, 25);
 }
+const Asset *LibraryView::rowAsset(int row) const
+{
+    auto local = row - snapshot.offset;
+    return juce::isPositiveAndBelow(local, (int)snapshot.results.size()) ? &snapshot.results[(size_t)local]
+                                                                         : nullptr;
+}
 const Asset *LibraryView::selected() const
 {
-    auto n = table.getSelectedRow();
-    return juce::isPositiveAndBelow(n, (int)snapshot.results.size()) ? &snapshot.results[(size_t)n] : nullptr;
+    int row = table.getSelectedRow();
+    if (row < 0)
+        return nullptr;
+    if (auto *a = rowAsset(row))
+        return a;
+    return selectedAsset && selectedAssetRow == row && selectedAsset->id == selectedId ? &*selectedAsset
+                                                                                       : nullptr;
+}
+void LibraryView::requestPageForRow(int row)
+{
+    if (row < 0 || row >= snapshot.total)
+        return;
+    int top = table.getViewport()->getViewPositionY() / table.getRowHeight();
+    int page = std::max(0, (top / 128) * 128 - 128);
+    if (requestedPage == page)
+        return;
+    requestedPage = page;
+    library.page(page, 512);
+}
+void LibraryView::benchmarkScroll(int row)
+{
+    table.scrollToEnsureRowIsOnscreen(row);
+    requestPageForRow(row);
+}
+void LibraryView::handleAsyncUpdate()
+{
+    timerCallback();
 }
 void LibraryView::paintRowBackground(juce::Graphics &g, int row, int w, int h, bool isSelected)
 {
@@ -186,9 +228,18 @@ void LibraryView::paintRowBackground(juce::Graphics &g, int row, int w, int h, b
 }
 void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h, bool)
 {
-    if (!juce::isPositiveAndBelow(row, (int)snapshot.results.size()))
+    auto *asset = rowAsset(row);
+    if (!asset)
+    {
+        requestPageForRow(row);
+        if (column == 1)
+        {
+            g.setColour(muted);
+            g.drawText("Loading recording...", 12, 0, w - 24, h, juce::Justification::centredLeft);
+        }
         return;
-    const auto &a = snapshot.results[(size_t)row];
+    }
+    const auto &a = *asset;
     g.setColour(a.online ? text : muted);
     g.setFont(juce::FontOptions(14.0f));
     juce::String value;
@@ -226,7 +277,12 @@ void LibraryView::selectedRowsChanged(int)
         return;
     if (auto *a = selected())
     {
+        // Freeze the matching ID sequence as soon as the user selects a row.
+        // A new alphabetically earlier recording must not retarget that selection.
+        requestPageForRow(table.getSelectedRow());
         selectedId = a->id;
+        selectedAsset = *a;
+        selectedAssetRow = table.getSelectedRow();
         detail.setText(a->name, juce::dontSendNotification);
         assetId.setText("Asset " + a->id + juce::String::fromUTF8("  •  Revision ") +
                             juce::String(a->revision) +
@@ -270,14 +326,30 @@ void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool 
     g.drawText(juce::String(label) + juce::String::fromUTF8("  ·  ") + juce::String(r.discovered) + " files",
                12, 35, w - 24, 22, juce::Justification::centredLeft, true);
 }
+void LibraryView::chooseSource(int n)
+{
+    auto root = n > 0 && n <= (int)snapshot.roots.size() ? snapshot.roots[(size_t)n - 1].id : juce::String();
+    if (root == rootFilter)
+        return;
+    rootFilter = root;
+    requestSearch();
+}
 void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &)
 {
-    rootFilter = n > 0 ? snapshot.roots[(size_t)n - 1].id : juce::String();
-    requestSearch();
+    chooseSource(n);
 }
 void LibraryView::requestSearch()
 {
+    requestedPage = -1;
+    dispatchedMs = monotonicMs();
     requested = library.search(search.getText(), rootFilter);
+}
+uint64_t LibraryView::benchmarkSearch(const juce::String &q, const juce::String &root)
+{
+    search.setText(q, juce::dontSendNotification);
+    rootFilter = root;
+    requestSearch();
+    return requested;
 }
 bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
 {
@@ -291,7 +363,7 @@ bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
         (key.isKeyCode(juce::KeyPress::downKey) || key.isKeyCode(juce::KeyPress::escapeKey)))
     {
         table.grabKeyboardFocus();
-        if (table.getSelectedRow() < 0 && !snapshot.results.empty())
+        if (table.getSelectedRow() < 0 && snapshot.total > 0)
             table.selectRow(0);
         return true;
     }
@@ -329,7 +401,15 @@ void LibraryView::toggle()
     }
     if (!a)
         return;
-    if (!a->online)
+    bool online = a->online;
+    juce::String path = a->path;
+    for (auto &root : snapshot.roots)
+        if (root.id == a->rootId)
+        {
+            online &= root.online;
+            path = juce::File(root.path).getChildFile(a->relative).getFullPathName();
+        }
+    if (!online)
     {
         transport.setText(
             juce::String::fromUTF8("Offline recording — reconnect its source folder to audition."),
@@ -338,25 +418,48 @@ void LibraryView::toggle()
     }
     playingName = a->name;
     playingId = a->id;
-    audio.play(a->id, juce::File(a->path));
+    audio.play(a->id, juce::File(path));
 }
 void LibraryView::timerCallback()
 {
     auto next = library.snapshot();
-    if (next.request == requested && (next.version != appliedVersion || next.request != appliedRequest))
+    const auto progress = next.progress;
+    pauseIndex.setButtonText(progress.pauseRequested ? "Resume Indexing" : "Pause Indexing");
+    refresh.setEnabled(next.newResultsAvailable);
+    auto progressText =
+        progress.stage +
+        (progress.root.isNotEmpty() ? " - " + juce::File(progress.root).getFileName() : juce::String()) +
+        " | " + juce::String(progress.metadataBacklog) + " pending headers | " +
+        juce::String(progress.activeWorkers) + " workers | " + juce::String(progress.queuedDirectories) +
+        " queued directories";
+    if (next.request == requested &&
+        (next.version != appliedVersion || next.request != appliedRequest || next.pageSerial != appliedPage))
     {
-        auto scroll = table.getViewport()->getViewPosition();
+        const bool sameQuery = next.request == appliedRequest;
+        auto scroll = sameQuery ? table.getViewport()->getViewPosition() : juce::Point<int>{};
+        const int previousSelection = table.getSelectedRow();
         snapshot = std::move(next);
+        appliedMs = monotonicMs();
         appliedVersion = snapshot.version;
         appliedRequest = snapshot.request;
+        appliedPage = snapshot.pageSerial;
+        for (auto &asset : snapshot.results)
+            for (auto &root : snapshot.roots)
+                if (asset.rootId == root.id)
+                {
+                    asset.online = asset.online && root.online;
+                    asset.path = juce::File(root.path).getChildFile(asset.relative).getFullPathName();
+                }
         updating = true;
         table.updateContent();
         int row = -1;
         for (size_t i = 0; i < snapshot.results.size(); ++i)
             if (snapshot.results[i].id == selectedId)
-                row = (int)i;
+                row = (int)i + snapshot.offset;
         if (row >= 0)
             table.selectRow(row, true, false);
+        else if (sameQuery && previousSelection >= 0)
+            row = previousSelection;
         else
             table.deselectAllRows();
         table.getViewport()->setViewPosition(scroll);
@@ -385,10 +488,9 @@ void LibraryView::timerCallback()
             if (r.error.isNotEmpty())
                 sourceError = r.error;
         }
-        summary.setText(juce::String((int)snapshot.results.size()) +
-                            (snapshot.results.size() == 1000 ? "+ results" : " results") +
-                            juce::String::fromUTF8("  ·  ") + juce::String(total) +
-                            juce::String::fromUTF8(" indexed  ·  ") + juce::String(ready) + " ready" +
+        summary.setText(juce::String(snapshot.total) + " results" + juce::String::fromUTF8("  ·  ") +
+                            juce::String(total) + juce::String::fromUTF8(" indexed  ·  ") +
+                            juce::String(ready) + " ready" +
                             (scanning ? juce::String::fromUTF8("  ·  Scanning…") : ""),
                         juce::dontSendNotification);
         status.setText(snapshot.error.isNotEmpty() ? snapshot.error
@@ -401,6 +503,11 @@ void LibraryView::timerCallback()
     }
     else if (next.error.isNotEmpty())
         status.setText(next.error, juce::dontSendNotification);
+    if (next.error.isEmpty())
+        status.setText(progressText + (snapshot.newResultsAvailable
+                                           ? " | New recordings available - Refresh Results"
+                                           : ""),
+                       juce::dontSendNotification);
     auto state = audio.status();
     bool isPlaying = (bool)state["playing"];
     play.setButtonText(isPlaying ? "Stop  [Space]" : "Play  [Space]");
