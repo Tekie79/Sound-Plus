@@ -5,9 +5,10 @@
 #include <deque>
 #include <atomic>
 #include "AudioRegion.h"
+#include "DesignModel.h"
 namespace sp
 {
-constexpr int protocolVersion = 4;
+constexpr int protocolVersion = 5;
 juce::var message(const juce::String &command);
 bool sendMessage(int fd, const juce::var &);
 // Private inherited socketpair: no listening port or discoverable endpoint.
@@ -18,13 +19,18 @@ class AudioClient
     ~AudioClient();
     void play(const juce::String &id, const juce::File &);
     uint64_t playRegion(const juce::String &id, const juce::File &, const PlaybackRegion &);
-    uint64_t playDesign(const juce::String &id,const juce::File &snapshot,int64_t position=0,const juce::File &capture={});
+    uint64_t playDesign(const juce::String &id, const juce::File &snapshot, int64_t position = 0,
+                        const juce::File &capture = {}, const juce::String &mode = "play");
+    uint64_t updateDesign(const DesignDocument &, uint64_t generation, double eventMs);
     void stop();
     void gain(float);
     void restart();
     void device(const juce::String &);
     void deviceRate(double);
-    float monitorGain() const { return targetGain.load(); }
+    float monitorGain() const
+    {
+        return targetGain.load();
+    }
     juce::var status();
 
   private:
@@ -37,7 +43,7 @@ class AudioClient
     std::mutex mutex;
     std::deque<juce::var> outgoing;
     juce::var latest;
-    std::atomic<uint64_t> playbackGeneration{0};
+    std::atomic<uint64_t> playbackGeneration{0}, parameterSequence{0};
     bool desiredPlaying = false;
     juce::String desiredId;
 };

@@ -1,5 +1,5 @@
 #pragma once
-#include "AudioStream.h"
+#include "AudioPlaybackService.h"
 #include "AudioIPC.h"
 #include <juce_audio_utils/juce_audio_utils.h>
 namespace sp
@@ -19,18 +19,15 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     void audioDeviceError(const juce::String &) override;
     void command(const juce::var &);
     void sendStatus();
-    AuditionCore core;
+    AudioPlaybackService playback;
     juce::AudioDeviceManager devices;
-    juce::String input, id, error;
-    uint64_t playGeneration = 0;
+    juce::String input, deviceError;
+    juce::var lastPlay;
+    uint64_t requestedGeneration = 0;
     juce::Array<juce::var> outputs;
     std::atomic<double> deviceRate{0};
     std::atomic<bool> deviceChanged{false};
     bool hello = false;
     int ticks = 0;
-    juce::File designFile;
-    juce::String designId;
-    int64_t resumeFrame=0;
-    bool resumeDesign=false;
 };
 } // namespace sp

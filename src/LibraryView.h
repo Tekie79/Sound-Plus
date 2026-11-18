@@ -17,7 +17,7 @@ class LibraryView final : public juce::Component,
 {
   public:
     LibraryView(const juce::File &database, const juce::File &executable, bool enableAI = true,
-                 const juce::File &modelDirectory = {});
+                const juce::File &modelDirectory = {});
     ~LibraryView() override;
     void paint(juce::Graphics &) override;
     void paintOverChildren(juce::Graphics &) override;
@@ -30,15 +30,22 @@ class LibraryView final : public juce::Component,
     void benchmarkScroll(int row);
     uint64_t benchmarkSemanticSearch(const juce::String &q, const juce::String &root = {});
     bool isInterestedInFileDrag(const juce::StringArray &) override;
-    void filesDropped(const juce::StringArray &,int,int) override;
+    void filesDropped(const juce::StringArray &, int, int) override;
     Benchmark *benchmark = nullptr;
-    AudioClient &audioClient() { return audio; }
+    AudioClient &audioClient()
+    {
+        return audio;
+    }
     void setCompact(bool);
     void parkPlayback();
-    void focusSearch(){search.grabKeyboardFocus();search.selectAll();}
+    void focusSearch()
+    {
+        search.grabKeyboardFocus();
+        search.selectAll();
+    }
     std::function<void()> onShowDesigner;
     std::function<void()> onBeforeAudition;
-    std::function<void(const Asset &,int64_t,int64_t,bool,int)> onAddToDesigner;
+    std::function<void(const Asset &, int64_t, int64_t, bool, int)> onAddToDesigner;
 
   private:
     friend class Benchmark;
@@ -69,7 +76,7 @@ class LibraryView final : public juce::Component,
     void playFromPlayhead();
     void playSelected(bool useMatch, int64_t seekSample = -1);
     void setRegion(int64_t start, int64_t end, bool zoom = false);
-    void showRangeEditor(bool forReference=false);
+    void showRangeEditor(bool forReference = false);
     void installModelMenu();
     void requestSearch();
     void useSelectionAsReference();
@@ -132,26 +139,42 @@ class LibraryView final : public juce::Component,
             return a.name + ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
                    " channels, " + juce::String(a.sampleRate, 0) + " Hz, " +
                    (a.online ? a.state : "Offline") + ", " + a.matchReason +
-                   (!a.matches.empty() && a.sampleRate>0 ? ", match "+juce::String(a.matches.front().startSample/a.sampleRate,3)+
-                       " to "+juce::String(a.matches.front().endSample/a.sampleRate,3)+" seconds" : "")+", " + a.path;
+                   (!a.matches.empty() && a.sampleRate > 0
+                        ? ", match " + juce::String(a.matches.front().startSample / a.sampleRate, 3) +
+                              " to " + juce::String(a.matches.front().endSample / a.sampleRate, 3) +
+                              " seconds"
+                        : "") +
+                   ", " + a.path;
         }
     } table{*this};
     juce::ListBox sources{"Library folders", &sourceModel};
     juce::TextEditor search;
-    IconButton add{"Add Folder",ActionIcon::folder},rescan{"Rescan",ActionIcon::scanFolder},play{"Play",ActionIcon::play},restart{"Reconnect Audio",ActionIcon::reconnect};
-    IconButton pauseIndex{"Pause Indexing",ActionIcon::pause},refresh{"Refresh Results",ActionIcon::refresh};
-    IconButton installAI{"Install AI Model",ActionIcon::download},retryAI{"Retry Analysis",ActionIcon::retryAnalysis},cancelInstall{"Cancel Download",ActionIcon::cancel};
-    IconButton playMatch{"Play Match",ActionIcon::match},playWhole{"Play Whole",ActionIcon::whole};
-    IconButton previous{"Previous recording",ActionIcon::previous},next{"Next recording",ActionIcon::next};
-    IconButton findSimilar{"Find Similar",ActionIcon::similar,true},externalReference{"Choose reference file",ActionIcon::file};
-    IconButton referencePlay{"Play reference",ActionIcon::play},referenceSearch{"Find Similar",ActionIcon::similar,true};
-    IconButton clearReference{"Clear reference",ActionIcon::cancel},addReference{"Add containing folder to Library",ActionIcon::folder};
-    IconButton designer{"Designer",ActionIcon::layers,true},addDesigner{"Add marked region to Designer",ActionIcon::addLayer},referenceDesigner{"Add reference to Designer",ActionIcon::addLayer};
+    IconButton add{"Add Folder", ActionIcon::folder}, rescan{"Rescan", ActionIcon::scanFolder},
+        play{"Play", ActionIcon::play}, restart{"Reconnect Audio", ActionIcon::reconnect};
+    IconButton pauseIndex{"Pause Indexing", ActionIcon::pause},
+        refresh{"Refresh Results", ActionIcon::refresh};
+    IconButton installAI{"Install AI Model", ActionIcon::download},
+        retryAI{"Retry Analysis", ActionIcon::retryAnalysis},
+        cancelInstall{"Cancel Download", ActionIcon::cancel};
+    IconButton playMatch{"Play Match", ActionIcon::match}, playWhole{"Play Whole", ActionIcon::whole};
+    IconButton previous{"Previous recording", ActionIcon::previous}, next{"Next recording", ActionIcon::next};
+    IconButton findSimilar{"Find Similar", ActionIcon::similar, true},
+        externalReference{"Choose reference file", ActionIcon::file};
+    IconButton referencePlay{"Play reference", ActionIcon::play},
+        referenceSearch{"Find Similar", ActionIcon::similar, true};
+    IconButton clearReference{"Clear reference", ActionIcon::cancel},
+        addReference{"Add containing folder to Library", ActionIcon::folder};
+    IconButton designer{"Designer", ActionIcon::layers, true},
+        addDesigner{"Add marked region to Designer", ActionIcon::addLayer},
+        referenceDesigner{"Add reference to Designer", ActionIcon::addLayer};
     ui::FileDragButton dragOriginal{"Drag complete original file"};
-    bool compact=false;
+    bool compact = false;
+    juce::Label scopeLabel;
+    IconButton clearScope{"All sources / clear search scope", ActionIcon::cancel};
+    void updateScope();
     juce::ToggleButton includeSource{"Include source recording"};
-    juce::TextEditor referenceIn,referenceOut;
-    juce::Label referenceTitle,referenceStatus,referenceUnits;
+    juce::TextEditor referenceIn, referenceOut;
+    juce::Label referenceTitle, referenceStatus, referenceUnits;
     juce::ComboBox auditionChannels;
     juce::ToggleButton context{"+/-0.25 s context"};
     juce::ComboBox moments;
@@ -171,16 +194,16 @@ class LibraryView final : public juce::Component,
     uint64_t waveformRequest = 0, waveformApplied = 0;
     uint64_t rangeRequest = 0;
     juce::String rangeAssetId;
-    int64_t parkedCandidateSeek=-1,parkedReferenceSeek=-1;
+    int64_t parkedCandidateSeek = -1, parkedReferenceSeek = -1;
     std::unique_ptr<juce::FileChooser> modelChooser;
     std::unique_ptr<juce::FileChooser> referenceChooser;
     AudioReference pinnedReference;
-    bool similarMode=false,updatingReference=false,referenceDraft=false;
-    uint64_t referenceDisplayed=0,referenceWaveRequest=0,referenceWaveApplied=0;
-    int64_t referenceDisplayedSamples=0;
+    bool similarMode = false, updatingReference = false, referenceDraft = false;
+    uint64_t referenceDisplayed = 0, referenceWaveRequest = 0, referenceWaveApplied = 0;
+    int64_t referenceDisplayedSamples = 0;
     juce::String referenceWaveKey;
     juce::String playingPath;
     PlaybackRegion playingSpec;
-    int navigationToPlay=-1;
+    int navigationToPlay = -1;
 };
 } // namespace sp

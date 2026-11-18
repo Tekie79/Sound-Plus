@@ -11,20 +11,46 @@ namespace sp
 class PcmStream
 {
   public:
-    PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1, int auditionPair = 0);
-    PcmStream(const DesignDocument &,double outputRate,int64_t first,const juce::File &capture={});
-    void fill(int budget = 16384);
+    PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1,
+              int auditionPair = 0);
+    PcmStream(
+        const DesignDocument &, double outputRate, int64_t first, const juce::File &capture = {},
+        const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1, int64_t last = -1,
+        bool grain = false);
+    void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
+    void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
+    void discardTo(int64_t sourceFrame);
+    std::atomic<uint64_t> heardEdit{0};
+    std::atomic<double> editLatencyMs{0};
     int read(float *const *output, int channels, int frames, float &gain, float targetGain) noexcept;
     double seconds() const
     {
         return (double)sourceStart / sourceRate + (double)readIndex.load() / rate;
     }
-    int64_t sourceSample() const { return std::min(sourceEnd,sourceStart+(int64_t)(readIndex.load()*ratio)); }
-    int64_t startSample() const { return sourceStart; }
-    int64_t endSample() const { return sourceEnd; }
-    double originalRate() const { return sourceRate; }
-    double outputRate() const { return rate; }
-    int channelPair() const { return pair; }
+    int64_t sourceSample() const
+    {
+        return std::min(sourceEnd, sourceStart + (int64_t)(readIndex.load() * ratio));
+    }
+    int64_t startSample() const
+    {
+        return sourceStart;
+    }
+    int64_t endSample() const
+    {
+        return sourceEnd;
+    }
+    double originalRate() const
+    {
+        return sourceRate;
+    }
+    double outputRate() const
+    {
+        return rate;
+    }
+    int channelPair() const
+    {
+        return pair;
+    }
     bool ended() const
     {
         return eof.load() && readIndex.load() == writeIndex.load();
@@ -39,14 +65,28 @@ class PcmStream
     }
     std::atomic<double> firstCallbackMs{0};
     std::atomic<float> preMonitorPeak{0};
-    bool isDesign() const { return designReader!=nullptr; }
-    int designLayers() const { return designReader ? designReader->layers() : 0; }
-    double producerMaxMs() const { return maxFillMs; }
+    bool isDesign() const
+    {
+        return designReader != nullptr;
+    }
+    int designLayers() const
+    {
+        return designReader ? designReader->layers() : 0;
+    }
+    double producerMaxMs() const
+    {
+        return maxFillMs;
+    }
 
   private:
     static constexpr uint64_t capacity = 131072;
     std::array<std::array<float, capacity>, 2> pcm{};
     std::atomic<uint64_t> readIndex{0}, writeIndex{0};
+    std::array<uint64_t, capacity> editTags{};
+    std::array<double, capacity> editEvents{};
+    uint64_t editSequence = 0;
+    double editEvent = 0;
+    bool previewGrain = false;
     std::atomic<bool> eof{false};
     juce::AudioFormatManager formats;
     std::unique_ptr<juce::AudioFormatReader> reader;
@@ -57,18 +97,34 @@ class PcmStream
     double sourceRate = 48000;
     int pair = 0;
     std::unique_ptr<DesignReader> designReader;
-    juce::AudioBuffer<float> designBlock{2,4096};
+    juce::AudioBuffer<float> designBlock{2, 4096};
     std::unique_ptr<juce::FileOutputStream> capture;
-    std::array<float,8192> captureData{};
-    double maxFillMs=0;
+    std::array<float, 8192> captureData{};
+    double maxFillMs = 0;
 };
 class AuditionCore
 {
   public:
-    void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1, int auditionPair = 0);
-    void openDesign(const DesignDocument &,double sampleRate,int64_t first=0,const juce::File &capture={});
+    void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1,
+              int auditionPair = 0);
+    void openDesign(const DesignDocument &, double sampleRate, int64_t first = 0,
+                    const juce::File &capture = {});
     void stop();
-    void service();
+    void service(int ahead = 1536);
+    void adopt(std::unique_ptr<PcmStream>);
+    void updateParameters(const juce::var &p, uint64_t sequence, double event)
+    {
+        if (stream)
+            stream->updateParameters(p, sequence, event);
+    }
+    uint64_t heardEdit() const
+    {
+        return stream ? stream->heardEdit.load() : 0;
+    }
+    double editLatencyMs() const
+    {
+        return stream ? stream->editLatencyMs.load() : 0;
+    }
     void render(float *const *, int channels, int frames) noexcept;
     bool playing() const
     {
@@ -83,15 +139,42 @@ class AuditionCore
         return stream ? stream->firstCallbackMs.load() : 0;
     }
     std::atomic<float> volume{0.7f}, peak{0};
-    int64_t sourceSample() const { return stream ? stream->sourceSample() : 0; }
-    int64_t startSample() const { return stream ? stream->startSample() : 0; }
-    int64_t endSample() const { return stream ? stream->endSample() : 0; }
-    double sourceRate() const { return stream ? stream->originalRate() : 0; }
-    double outputRate() const { return stream ? stream->outputRate() : 0; }
-    int channelPair() const { return stream ? stream->channelPair() : 0; }
-    bool designPlaying() const { return stream && stream->isDesign(); }
-    int designLayers() const { return stream ? stream->designLayers() : 0; }
-    double producerMaxMs() const { return stream ? stream->producerMaxMs() : 0; }
+    int64_t sourceSample() const
+    {
+        return stream ? stream->sourceSample() : 0;
+    }
+    int64_t startSample() const
+    {
+        return stream ? stream->startSample() : 0;
+    }
+    int64_t endSample() const
+    {
+        return stream ? stream->endSample() : 0;
+    }
+    double sourceRate() const
+    {
+        return stream ? stream->originalRate() : 0;
+    }
+    double outputRate() const
+    {
+        return stream ? stream->outputRate() : 0;
+    }
+    int channelPair() const
+    {
+        return stream ? stream->channelPair() : 0;
+    }
+    bool designPlaying() const
+    {
+        return stream && stream->isDesign();
+    }
+    int designLayers() const
+    {
+        return stream ? stream->designLayers() : 0;
+    }
+    double producerMaxMs() const
+    {
+        return stream ? stream->producerMaxMs() : 0;
+    }
     std::atomic<float> preMonitorPeak{0};
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};
 
@@ -100,8 +183,8 @@ class AuditionCore
     std::vector<std::unique_ptr<PcmStream>> retired;
     std::atomic<PcmStream *> active{nullptr}, hazard{nullptr};
     float gain = 0.7f; // Callback-owned, smoothed monitor gain.
-    PcmStream *lastRendered=nullptr;
-    std::array<float,2> lastOut{},transitionTail{};
-    int transitionFrame=240;
+    PcmStream *lastRendered = nullptr;
+    std::array<float, 2> lastOut{}, transitionTail{};
+    int transitionFrame = 240;
 };
 } // namespace sp

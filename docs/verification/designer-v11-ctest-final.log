@@ -1,0 +1,22 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 1: library_and_audio
+1/8 Test #1: library_and_audio ................   Passed    9.07 sec
+    Start 2: library_performance_regression
+2/8 Test #2: library_performance_regression ...   Passed    6.34 sec
+    Start 3: library_semantic_integrity
+3/8 Test #3: library_semantic_integrity .......   Passed    0.38 sec
+    Start 4: library_similar_integrity
+4/8 Test #4: library_similar_integrity ........   Passed    1.09 sec
+    Start 5: designer_transport
+5/8 Test #5: designer_transport ...............   Passed   13.67 sec
+    Start 6: designer_canvas
+6/8 Test #6: designer_canvas ..................   Passed    0.17 sec
+    Start 7: designer_session
+7/8 Test #7: designer_session .................   Passed    0.06 sec
+    Start 8: designer_workflow
+8/8 Test #8: designer_workflow ................   Passed    9.54 sec
+
+100% tests passed, 0 tests failed out of 8
+
+Total Test time (real) =  40.33 sec

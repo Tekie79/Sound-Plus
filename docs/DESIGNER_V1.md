@@ -1,5 +1,7 @@
 # Designer v1 — implementation and verification
 
+**Historical v1 report.** The current [Designer v1.1 implementation and verification](DESIGNER_V1_1.md) supersedes the lifecycle, live-update, seek-policy and canvas behavior below.
+
 SoundPlus now has a native Layer Editor beside its independently usable Library. It captures a recording or marked region, mixes original sources in place, applies stock inserts, generates and retains variations, saves an editable referenced design and renders a durable WAV. The interface uses original vector artwork, a restrained dark palette, contextual controls and collapsible inspectors; no Krotos assets or proprietary interface elements are used.
 
 The checkpoint before Designer work is commit `aca882119a58dd678d09afe15311b28756ad42de` (`Add Find Similar, scalable retrieval and refined audition controls`). That commit includes the Library UI revisions made after the earlier measured milestone. Designer changes are subsequent working-tree changes. Exact source/application fingerprints and machine-readable results are in [the verification record](verification/designer-v1.json). The architecture specification, [Find Similar report](FIND_SIMILAR.md), [local search report](LOCAL_AI_SEARCH.md) and actual source supplied the baseline.

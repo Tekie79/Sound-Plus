@@ -3,7 +3,7 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace sp
 {
-enum class ActionIcon { play,match,whole,previous,next,pause,refresh,folder,download,cancel,similar,file,zoom,fit,reconnect,markIn,markOut,scanFolder,retryAnalysis,addLayer,duplicate,up,down,trash,save,open,undo,redo,variations,lock,render,drag,keep,settings,layers,browser,chevron,mute,solo,newDocument,rename,history,compare };
+enum class ActionIcon { play,match,whole,previous,next,pause,refresh,folder,download,cancel,similar,file,zoom,fit,reconnect,markIn,markOut,scanFolder,retryAnalysis,addLayer,duplicate,up,down,trash,save,open,undo,redo,variations,lock,render,drag,keep,settings,layers,browser,chevron,mute,solo,newDocument,rename,history,compare,zoomOut,fitSelection,snap,scrub };
 // Keep native button names and keyboard focus; indicate focus with colour, without a border.
 class IconButton : public juce::TextButton
 {
@@ -28,6 +28,11 @@ class IconButton : public juce::TextButton
         auto k=kind;
         if (k==ActionIcon::play && getButtonText().startsWith("Stop")) fill.addRoundedRectangle(6,6,12,12,2);
         else if (k==ActionIcon::play) triangle();
+        else if(k==ActionIcon::zoomOut){outline.addEllipse(3,3,13,13);line(7,9.5f,12,9.5f);line(15,15,22,22);}
+        else if(k==ActionIcon::fitSelection){line(4,5,4,19);line(20,5,20,19);line(8,12,16,12);line(8,12,11,9);line(8,12,11,15);line(16,12,13,9);line(16,12,13,15);}
+        else if(k==ActionIcon::snap){outline.startNewSubPath(5,5);outline.lineTo(5,13);outline.cubicTo(5,23,19,23,19,13);outline.lineTo(19,5);line(5,9,9,9);line(15,9,19,9);line(9,5,9,13);line(15,5,15,13);}
+        else if(k==ActionIcon::scrub){line(5,8,5,17);line(9,5,9,20);line(13,9,13,16);line(17,6,17,19);line(21,10,21,15);}
+
         else if (k==ActionIcon::match) {triangle();line(3,5,3,19);line(21,5,21,19);}
         else if (k==ActionIcon::whole) {triangle(1);line(4,5,4,19);}
         else if (k==ActionIcon::previous || k==ActionIcon::next)

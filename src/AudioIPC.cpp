@@ -1,4 +1,5 @@
 #include "AudioIPC.h"
+#include "DesignLive.h"
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <poll.h>
@@ -21,7 +22,7 @@ bool sendMessage(int fd, const juce::var &msg)
     auto line = juce::JSON::toString(msg, true) + "\n";
     auto bytes = line.getNumBytesAsUTF8();
     // Commands are deliberately bounded to fit the socket send buffer in one write.
-    if (bytes > 16384)
+    if (bytes > 65536)
         return false;
     auto result = send(fd, line.toRawUTF8(), bytes, 0);
     return result == (ssize_t)bytes;
@@ -41,19 +42,35 @@ void AudioClient::enqueue(juce::var v)
 {
     std::lock_guard lock(mutex);
     const auto command = v["command"].toString();
-    if (command == "play" || command=="play_design") { desiredPlaying = true; desiredId = v["id"].toString(); }
-    if (command == "stop") { desiredPlaying = false; desiredId.clear(); }
-    if (command == "play" || command=="play_design" || command == "stop")
-        std::erase_if(outgoing,[](const auto &old) { auto name = old["command"].toString(); return name == "play" || name=="play_design" || name == "stop"; });
+    if (command == "play" || command == "play_design")
+    {
+        desiredPlaying = true;
+        desiredId = v["id"].toString();
+    }
+    if (command == "stop")
+    {
+        desiredPlaying = false;
+        desiredId.clear();
+    }
+    if (command == "play" || command == "play_design" || command == "stop")
+        std::erase_if(outgoing,
+                      [](const auto &old)
+                      {
+                          auto name = old["command"].toString();
+                          return name == "play" || name == "play_design" || name == "stop";
+                      });
+    else if (command == "design_parameters")
+        std::erase_if(outgoing,
+                      [](const auto &old) { return old["command"].toString() == "design_parameters"; });
     else if (command == "gain")
-        std::erase_if(outgoing,[](const auto &old) { return old["command"].toString() == "gain"; });
+        std::erase_if(outgoing, [](const auto &old) { return old["command"].toString() == "gain"; });
     if (outgoing.size() >= 16)
         outgoing.pop_front();
     outgoing.push_back(std::move(v));
 }
 void AudioClient::play(const juce::String &id, const juce::File &f)
 {
-    playRegion(id,f,{});
+    playRegion(id, f, {});
 }
 uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, const PlaybackRegion &region)
 {
@@ -62,26 +79,59 @@ uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, co
     m.getDynamicObject()->setProperty("path", f.getFullPathName());
     auto generation = ++playbackGeneration;
     auto *o = m.getDynamicObject();
-    o->setProperty("playGeneration",(juce::int64)generation);
-    o->setProperty("startSample",(juce::int64)region.startSample);
-    o->setProperty("endSample",(juce::int64)region.endSample);
-    o->setProperty("positionSample",(juce::int64)region.positionSample);
-    o->setProperty("auditionPair",region.auditionPair);
-    o->setProperty("size",(juce::int64)region.size); o->setProperty("modified",(juce::int64)region.modified);
-    o->setProperty("inode",(juce::int64)region.inode); o->setProperty("revision",(juce::int64)region.revision);
+    o->setProperty("playGeneration", (juce::int64)generation);
+    o->setProperty("startSample", (juce::int64)region.startSample);
+    o->setProperty("endSample", (juce::int64)region.endSample);
+    o->setProperty("positionSample", (juce::int64)region.positionSample);
+    o->setProperty("auditionPair", region.auditionPair);
+    o->setProperty("size", (juce::int64)region.size);
+    o->setProperty("modified", (juce::int64)region.modified);
+    o->setProperty("inode", (juce::int64)region.inode);
+    o->setProperty("revision", (juce::int64)region.revision);
     enqueue(m);
     return generation;
 }
 void AudioClient::stop()
 {
-    auto m = message("stop"); m.getDynamicObject()->setProperty("playGeneration",(juce::int64)++playbackGeneration);
+    auto m = message("stop");
+    m.getDynamicObject()->setProperty("playGeneration", (juce::int64)++playbackGeneration);
     enqueue(m);
 }
-uint64_t AudioClient::playDesign(const juce::String &id,const juce::File &snapshot,int64_t position,const juce::File &capture)
+uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
+                                 const juce::File &capture, const juce::String &mode)
 {
-    auto m=message("play_design");auto *o=m.getDynamicObject();auto generation=++playbackGeneration;o->setProperty("id",id);o->setProperty("path",snapshot.getFullPathName());o->setProperty("positionSample",(juce::int64)position);o->setProperty("capture",capture==juce::File() ? juce::String() : capture.getFullPathName());o->setProperty("playGeneration",(juce::int64)generation);enqueue(m);return generation;
+    auto m = message("play_design");
+    auto *o = m.getDynamicObject();
+    auto generation = ++playbackGeneration;
+    o->setProperty("id", id);
+    o->setProperty("path", snapshot.getFullPathName());
+    o->setProperty("positionSample", (juce::int64)position);
+    o->setProperty("capture", capture == juce::File() ? juce::String() : capture.getFullPathName());
+    o->setProperty("playGeneration", (juce::int64)generation);
+    o->setProperty("mode", mode);
+    enqueue(m);
+    return generation;
 }
-void AudioClient::deviceRate(double rate){auto m=message("device_rate");m.getDynamicObject()->setProperty("rate",rate);enqueue(m);}
+uint64_t AudioClient::updateDesign(const DesignDocument &document, uint64_t generation, double eventMs)
+{
+    auto command = message("design_parameters");
+    auto *object = command.getDynamicObject();
+    object->setProperty("id", "design:" + document.id);
+    object->setProperty("playGeneration", (juce::int64)generation);
+    auto sequence = ++parameterSequence;
+    object->setProperty("sequence", (juce::int64)sequence);
+    object->setProperty("eventMs", eventMs);
+    object->setProperty("parameters", designParameters(document));
+    object->setProperty("structure", designStructure(document));
+    enqueue(command);
+    return sequence;
+}
+void AudioClient::deviceRate(double rate)
+{
+    auto m = message("device_rate");
+    m.getDynamicObject()->setProperty("rate", rate);
+    enqueue(m);
+}
 void AudioClient::gain(float g)
 {
     targetGain = g;
@@ -91,7 +141,11 @@ void AudioClient::gain(float g)
 }
 void AudioClient::restart()
 {
-    { std::lock_guard lock(mutex); desiredPlaying = false; desiredId.clear(); }
+    {
+        std::lock_guard lock(mutex);
+        desiredPlaying = false;
+        desiredId.clear();
+    }
     restartRequested = true;
 }
 void AudioClient::device(const juce::String &name)
@@ -106,14 +160,20 @@ juce::var AudioClient::status()
     auto copy = latest.clone();
     if (auto *object = copy.getDynamicObject())
     {
-        object->setProperty("intentId",desiredId);
-        bool awaitingCommand=(uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
+        object->setProperty("intentId", desiredId);
+        bool awaitingCommand = (uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
         bool pending = desiredPlaying && awaitingCommand;
-        object->setProperty("pendingPlayback",pending);
-        if (pending) { object->setProperty("id",desiredId); object->setProperty("playing",false); object->setProperty("error",juce::String()); }
+        object->setProperty("pendingPlayback", pending);
+        if (pending)
+        {
+            object->setProperty("id", desiredId);
+            object->setProperty("playing", false);
+            object->setProperty("error", juce::String());
+        }
         // Stop intent is immediate, even before the audio process acknowledges it.
         // A waveform click in this gap must not restart the previous audition.
-        if(awaitingCommand && !desiredPlaying)object->setProperty("playing",false);
+        if (awaitingCommand && !desiredPlaying)
+            object->setProperty("playing", false);
     }
     return copy;
 }
@@ -127,7 +187,8 @@ void AudioClient::run()
         pid_t pid = -1;
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0)
             break;
-        for (int socket : sockets) fcntl(socket,F_SETFD,FD_CLOEXEC);
+        for (int socket : sockets)
+            fcntl(socket, F_SETFD, FD_CLOEXEC);
         int noSig = 1;
         setsockopt(sockets[0], SOL_SOCKET, SO_NOSIGPIPE, &noSig, sizeof(noSig));
         // stdin is the inherited private channel; the engine has no network listener.
@@ -174,7 +235,7 @@ void AudioClient::run()
                     break;
                 }
             pollfd p{fd, POLLIN, 0};
-            poll(&p, 1, 30);
+            poll(&p, 1, 10);
             if (p.revents & POLLIN)
             {
                 char buffer[8192];
@@ -185,7 +246,7 @@ void AudioClient::run()
                     break;
                 }
                 pending += juce::String::fromUTF8(buffer, (int)n);
-                if (pending.length() > 65536)
+                if (pending.length() > 131072)
                 {
                     healthy = false;
                     break;
@@ -204,7 +265,10 @@ void AudioClient::run()
                     {
                         object->setProperty("processGeneration", (juce::int64)generation);
                         if ((uint64_t)(juce::int64)state["playGeneration"] < playbackGeneration)
-                        { object->setProperty("playing",false); object->setProperty("pendingPlayback",true); }
+                        {
+                            object->setProperty("playing", false);
+                            object->setProperty("pendingPlayback", true);
+                        }
                     }
                     {
                         std::lock_guard lock(mutex);
@@ -242,7 +306,8 @@ void AudioClient::run()
         {
             std::lock_guard lock(mutex);
             outgoing.clear();
-            desiredPlaying = false; desiredId.clear();
+            desiredPlaying = false;
+            desiredId.clear();
             latest = message("status");
             latest.getDynamicObject()->setProperty(
                 "error", "Audio process restarted. Select a sound to audition again.");

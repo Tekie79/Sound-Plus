@@ -18,7 +18,7 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 add_library(soundplus_core STATIC
   src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/DesignModel.cpp src/DesignAudio.cpp src/DesignSession.cpp)
+  src/DesignModel.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -40,7 +40,7 @@ target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp src/DesignerView.cpp src/Benchmark.cpp)
+target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp src/DesignerView.cpp src/DesignerCanvas.cpp src/Benchmark.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>")
@@ -64,7 +64,7 @@ add_custom_command(TARGET SoundPlus POST_BUILD
 include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
-  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp src/DesignerCanvas.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   add_test(NAME library_and_audio COMMAND SoundPlusTests
     "$<TARGET_FILE:SoundPlus>" "${CMAKE_BINARY_DIR}/test-output")
@@ -78,6 +78,12 @@ if(BUILD_TESTING)
   add_test(NAME library_similar_integrity COMMAND SoundPlusTests --similar-integrity
     "${CMAKE_BINARY_DIR}/similar-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_similar_integrity PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
+  add_test(NAME designer_transport COMMAND SoundPlusTests --designer-transport "${CMAKE_BINARY_DIR}/designer-transport-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(designer_transport PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+  add_test(NAME designer_canvas COMMAND SoundPlusTests --canvas-gestures "${CMAKE_BINARY_DIR}/designer-gesture-output")
+  set_tests_properties(designer_canvas PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
+  add_test(NAME designer_session COMMAND SoundPlusTests --designer-session "${CMAKE_BINARY_DIR}/designer-session-output")
+  set_tests_properties(designer_session PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME designer_workflow COMMAND SoundPlusTests --designer "${CMAKE_BINARY_DIR}/designer-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(designer_workflow PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
 endif()

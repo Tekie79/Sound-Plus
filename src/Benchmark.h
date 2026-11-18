@@ -8,7 +8,8 @@ class DesignerView;
 class Benchmark final : private juce::Timer
 {
   public:
-    Benchmark(LibraryView &, const juce::File &plan, const juce::File &output,DesignerView *designer=nullptr);
+    Benchmark(LibraryView &, const juce::File &plan, const juce::File &output,
+              DesignerView *designer = nullptr);
     void painted(uint64_t request, int rows, double dispatchMs, double appliedMs);
 
   private:
@@ -16,7 +17,7 @@ class Benchmark final : private juce::Timer
     void save(bool success, const juce::String &error = {});
     void dispatch();
     LibraryView &view;
-    DesignerView *designer=nullptr;
+    DesignerView *designer = nullptr;
     juce::File output;
     juce::var plan;
     juce::Array<juce::var> samples, auditions, changes;
@@ -37,7 +38,7 @@ class Benchmark final : private juce::Timer
     void referenceTick(double now);
     Asset exampleSource;
     AudioReference exampleLast;
-    bool referenceProgressSeen=false;
+    bool referenceProgressSeen = false;
     double firstSemanticPaint = 0;
     juce::String semanticDemoId;
     int64_t pausedAiWindows = 0, semanticAudioFrames = 0;
@@ -50,5 +51,9 @@ class Benchmark final : private juce::Timer
     int64_t transportPosition = 0;
     int64_t semanticOtherMoment = 0;
     int semanticJobsBefore = 0;
+    double lastDesignerInput = 0;
+    int64_t lastDesignerFrame = 0;
+    bool designerGestureEnded = false;
+    int editingIndexOverlap = 0;
 };
 } // namespace sp
