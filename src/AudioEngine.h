@@ -28,5 +28,9 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     std::atomic<bool> deviceChanged{false};
     bool hello = false;
     int ticks = 0;
+    juce::File designFile;
+    juce::String designId;
+    int64_t resumeFrame=0;
+    bool resumeDesign=false;
 };
 } // namespace sp

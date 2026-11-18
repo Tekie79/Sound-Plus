@@ -6,6 +6,7 @@
 #include "PerformanceTests.h"
 #include "SemanticTests.h"
 #include "SimilarTests.h"
+#include "DesignTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -63,6 +64,12 @@ int main(int argc, char **argv)
 {
     try
     {
+        if(argc>=4 && juce::String(argv[1])=="--designer")
+        {runDesignTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
+        if(argc>=3 && juce::String(argv[1])=="--prepare-designer-workload")
+        {prepareDesignWorkload(juce::File(argv[2]));return 0;}
+        if(argc>=5 && (juce::String(argv[1])=="--interrupt-designer-save" || juce::String(argv[1])=="--interrupt-designer-render"))
+        {interruptDesignOperation(juce::String(argv[1]).endsWith("render"),juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]));return 0;}
         if(argc>=4 && juce::String(argv[1])=="--similar-integrity")
         {runSimilarIntegrity(juce::File(argv[2]),juce::File(argv[3]));return 0;}
         if(argc>=6 && juce::String(argv[1])=="--similar-workflow")

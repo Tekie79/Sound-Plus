@@ -1,0 +1,674 @@
+{
+  "recordedAt": "2026-11-18T09:32:01.514906+00:00",
+  "scope": "Designer v1 implementation and native development evidence; cross-app drag qualification incomplete",
+  "baselineCommit": "aca882119a58dd678d09afe15311b28756ad42de",
+  "workingTreeUncommitted": true,
+  "sourceSHA256": {
+    "CMakeLists.txt": "ce5e4600cfe1a2f6c00d4ec98a1f6a9213ea38b017b5245bddbb70bd6d2f6782",
+    "resources/clap-model.json": "c1b75fcc23f464d2fceb2b4903b1efed3426908630344da43fd1ea6e11c02bcc",
+    "resources/licenses/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "resources/licenses/CLAP-upstream-CC0.txt": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+    "scripts/benchmark.py": "d15bd41b7bfbf42640c431375f4c6ebe6c1dbbf90c9351dec532402a7a083e0a",
+    "scripts/benchmark_capacity.py": "0e704ed8fb006d2ec887516a57afbf30d878f8c0c1b42b873764dd7aafcb79f4",
+    "scripts/benchmark_designer.py": "37b016976d0597bfa3bdbb5ffceb3beaa7bac11f302a1229f344926351af3cef",
+    "scripts/benchmark_semantic.py": "1b1f6b2d620446968a229d020a9c61e3f2108b72165d61011010c2f60e43ecc0",
+    "scripts/benchmark_similar.py": "0dc9268a2dbc06749746e2a9d39fc955a6f3bb9b3480a96d6d8a032d63841713",
+    "scripts/bootstrap.sh": "67067311047b5a8034cc730b45e3ae27d2f300c173c06745a6cc3076d4e8e2c3",
+    "scripts/check_model_reference.py": "bdf22d60ea77509d5d91622a82b345d159ee675396ecffb996fd724c45dc6bab",
+    "scripts/fetch_runtime.py": "0f68e552106161d8aeda17cc415023743a665fc380bc7c027c8e622203d07d8e",
+    "scripts/install_model.py": "790f565de677fb9ea633a0d1567f4a943cbf0669afa633e7d3ac554c8e2b1e3d",
+    "scripts/make_fixture.py": "3bea44a4000f27eab9aae328cce9b8c991856955c064d64f38c98e81a0282c2d",
+    "scripts/make_listener_review.py": "e21885ece34535d236d169a753087357cca13fb0311a36c6742e0cb77623c457",
+    "scripts/make_semantic_fixture.py": "12ba3378624008fa7a3835c03336195f149995b7036335a4f5eee5b642bc5431",
+    "scripts/test_volume.py": "10e3eb5fbbab1d40f23fee64a56fb0e501f4582d399e1cf20b08a353c629ec53",
+    "src/AIHelperMain.cpp": "8ff675b6ae694bc70763e883771ec8b2e4cd0de94cfff9d72a781a9d3642c8ab",
+    "src/AIProcess.cpp": "d903681f491dd5d9aba85240733cfee905dfdd43d942ec6c4f4ca174e8fbd066",
+    "src/AIProcess.h": "575d3080e580be325ca1b8390f0e2e8920c960912dde75440f7639f3a212268d",
+    "src/AudioEngine.cpp": "83a51eda84f938e5c7d4bb17d85575f1d5b1e540fa27e3941b04c880b1b6e125",
+    "src/AudioEngine.h": "3947a88e1a0d89dc1c2559bc1ab9c3b9855287767787818185bccd35dc0fc234",
+    "src/AudioIPC.cpp": "677f59fa586987184940eb89d9c24937b388aa3a68370d008530fd7eefad2bb9",
+    "src/AudioIPC.h": "75c7449ae4db23cd0ea7f67b1257aea147ad0a23c9e1e7dad4cb0f9cadda0973",
+    "src/AudioMain.cpp": "ddf5e19f0579db64d1e26f9e82f32ac6d72aab3f9069b71c016bcdc2071f59c4",
+    "src/AudioRegion.h": "1a12cf07be56984c45a0e8408f9c3434eae7363ca1abcf4ada643128a68e883c",
+    "src/AudioStream.cpp": "76649925880f3aeb0a45532a419a1ff9f6298bd160d864d7547ad0b1b9acc15e",
+    "src/AudioStream.h": "3906aae105703f2f63df050b467352422ce383a87ddd5a7e06f25c905927fab6",
+    "src/Benchmark.cpp": "8e1306f157e150fd2d88d02d02c33259eaf1ec012c7563fb9372881a30205891",
+    "src/Benchmark.h": "0eeb037c05cdbd19b4073f39272408ddf2a07b3a247e553a1eb1d76242e2d33f",
+    "src/Catalog.cpp": "2b56346989599de1e7b4b1a93aaf4f4f784963a44c62d120a95b4410aaf92e4e",
+    "src/Catalog.h": "8bfc75edb2e844067e63af29e60845a69dc59fc5e802a444cc7769d3d7f130bf",
+    "src/ClapRuntime.cpp": "dd709c233b619189af155e6964c5e64e897e8a17e5bbfe690a87859e7dd43ef4",
+    "src/ClapRuntime.h": "fdf289fa109113afd935c9b709585742dda208668f89d67c84c3289ce5458890",
+    "src/DesignAudio.cpp": "3d909dd01e5ebf4fe8972330ee1862a8cd40f662ed8685f05e2b35131eef6579",
+    "src/DesignAudio.h": "64e06948a4d34ded0a74a5dea1e5668c8b159bc03ff8808ea59a3710ac62c46b",
+    "src/DesignModel.cpp": "536dfe1495a8ce51e851e4919ef6581a5d11d2e766ea0056d6918e903df2fae9",
+    "src/DesignModel.h": "4c86d1f98c124e19f9e27fcda46570640de2b1e2abd49966df861e7f6ffa514a",
+    "src/DesignSession.cpp": "c7b70159658e795870f83601cab96b6363853f13ad9767b465298887c0a1ffdd",
+    "src/DesignSession.h": "58f24dcd71ae5d3ec8aa3d6578af74356c7a2c79086dda7cbe3cff5b30f87128",
+    "src/DesignerView.cpp": "9127d6523cc4b55b8fad404b9df1910cb40fd60768b086579c2d348a57ec4022",
+    "src/DesignerView.h": "05c9f72c05bf835614c16620f1498a987066b9dbac37471e0534202b5183efdc",
+    "src/IconButton.h": "547c0cc9794d48b663325e036b040c1f6b9e9fa1ccd34d0b897a8c696c55b74e",
+    "src/LibraryService.cpp": "d197cdc8a982f5bc95fa0531ae14b012feba3ee15386f8ea698befb426bdfee3",
+    "src/LibraryService.h": "3d19371d18da10290e7c44c8ec1c2abe1f18029f280b4e8a78d1737e213433ca",
+    "src/LibraryView.cpp": "ffe7b41f589a0e443320adb180ee821b4ac9b1b91af7aba17a306f249c5ae1a1",
+    "src/LibraryView.h": "af721ff2b15bbec4a722e733f99f96933e365d7cba579fc3afa40797cb16614f",
+    "src/MacSources.h": "1bb1214c13aa12ee6be2e0f80a371ded1cd8418fccc74c5205688f717fd1b85c",
+    "src/MacSources.mm": "0d60eeb8050c9022d0c93ea569e297ee2a520e4f99b64f79fd8200a5a45aed09",
+    "src/Main.cpp": "075afb7c87a10f8721790b1873ad675bba804e171328c032c9da878e89799f36",
+    "src/ModelPack.cpp": "11a7b79d4ffe6b13d317c6bc97025cf2f0ea4b082b220f54a374f8ec02ab6c9f",
+    "src/ModelPack.h": "d52efd9274b1d75947f0951337dd44772d504ac8753b22c470545e9ce6f9297c",
+    "src/Performance.h": "ea77811d53d5338b3dcc4763a05dcb36cca6e152efd0d80438073ed0620a7917",
+    "src/Reference.cpp": "76f433af7fbaf4af1465c4f3661ec45653c085107b53cae83fb514ac2dc2bc82",
+    "src/Reference.h": "9796ce21512066ee445882ef4e76a1b1290097531bc1dfd87094310a0fa61283",
+    "src/RegionRanking.h": "9424bf9f63859137b72516709a56c9cdff0b1cc2d3ca97bf73cb8ddefedc763f",
+    "src/RetrievalIndex.cpp": "8e7e4edaa3e4a7e67756b151a5f3391a94c544d6a01ed132efcab3ffd826d3b7",
+    "src/RetrievalIndex.h": "94d6c323c630080518d2d78b2b14f88750f7be1c46a85b0792cbf264b3646355",
+    "src/UIComponents.h": "f2e3890ee7b1f99eb2738243f2b8c8883f13af14c75abe30f154b484769fbd23",
+    "src/Waveform.cpp": "b07ec095a49fe7a2b6d9bc59b8528a891d438caab305c271867c08a4a51aacdb",
+    "src/Waveform.h": "044335fc93004370bb5f514d57ecb96962f1a98640c1882c3049866073b170e7",
+    "src/Workstation.h": "ff2ceb7143bb01fe22008cd2f74d639e5197378739962f89a53e7c93685f342c",
+    "tests/DesignTests.cpp": "44e7aa7e434d86ed321ef055452af367b21e2c48426edce557a8bfd2bfca679f",
+    "tests/DesignTests.h": "e2aea12e7df2e4573f9c9b34c725e6b0a85aa6576ad888ef5947d6f5fdebac80",
+    "tests/PerformanceTests.cpp": "e6a0920d2ab0bbcdbb8d04759194a59d4ce741702e020c15667fd84244b77e5c",
+    "tests/PerformanceTests.h": "d3a13649bb6706ab9f09f77ce3e4eab1856d2f569db7ad9f33304dbc6e76a6b4",
+    "tests/SemanticTests.cpp": "2c5642ace99279f560a14ce3d40ff7b817d33518e9c0204d85f4d76aa1968d14",
+    "tests/SemanticTests.h": "82227ccc549b360b2e94c6a61e997377b3136416be0f4dd3006e6e427641b808",
+    "tests/SimilarTests.cpp": "044447bfd67b4ad2eaa6e67634f887764a92f2a96e84dfcf705c20e3858ffb96",
+    "tests/SimilarTests.h": "150897327d9b75439ecd21cf0875c98cf713522960fed8650f50b5c99181b510",
+    "tests/Tests.cpp": "a3bf5973e156572e2014fb764d37a71bd890e049ae41f52585b8b0703f7b2102"
+  },
+  "sourceManifestSHA256": "d0c63356919dd1644084319b0cf29bfce21f410c465b3be0bdeb0e2c4e83f0a4",
+  "artifacts": {
+    "app": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "sha256": "1534d413742408bfa4611fb5fdbf9f672af94d7e997c6d8a838f94cc1604093f",
+      "bytes": 12279688
+    },
+    "audioHelper": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "sha256": "a90eb631f934d8d714f70796b0346ee05b4a495734337040eec26dc780d02bf7",
+      "bytes": 11083936
+    },
+    "aiHelper": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "sha256": "5f55d8d71171c34ec4c7c8b3a176549497900a32788e451fd94097b37e1bfdf9",
+      "bytes": 11001960
+    },
+    "tests": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests",
+      "sha256": "bfc936915e7d59093a85e7dc71a05105e8ff8abb4e5f2e6b53b646c2f74e3d23",
+      "bytes": 11527968
+    },
+    "runtime": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Frameworks/libonnxruntime.1.22.1.dylib",
+      "sha256": "36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be",
+      "bytes": 33548864
+    }
+  },
+  "environment": {
+    "hardware": "MacBook Pro Mac17,8, Apple M5 Pro, 48 GiB",
+    "macOS": "26.3.2 (25D2150)",
+    "display": "Built-in Liquid Retina XDR 3456x2234 Retina",
+    "build": "Release arm64, C++20, JUCE 8.0.6, Clang 21, SDK 26.5",
+    "device": "MacBook Pro Speakers",
+    "storage": "Internal APFS SSD; no physical external-drive Designer qualification"
+  },
+  "tests": {
+    "status": "PASS",
+    "command": ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 1: library_and_audio\n1/5 Test #1: library_and_audio ................   Passed    9.26 sec\n    Start 2: library_performance_regression\n2/5 Test #2: library_performance_regression ...   Passed    6.07 sec\n    Start 3: library_semantic_integrity\n3/5 Test #3: library_semantic_integrity .......   Passed    0.76 sec\n    Start 4: library_similar_integrity\n4/5 Test #4: library_similar_integrity ........   Passed    1.31 sec\n    Start 5: designer_workflow\n5/5 Test #5: designer_workflow ................   Passed   10.93 sec\n\n100% tests passed, 0 tests failed out of 5\n\nTotal Test time (real) =  28.34 sec\n",
+    "designer": {
+      "checks": 66298,
+      "directory": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-test-output/daea29648fe842d2ae4d6a35e1aef7bb",
+      "renderMaxAbsoluteError": 0.0,
+      "streamMaxAbsoluteError": 0.0,
+      "devicePreMonitorMaxAbsoluteError": 0.0,
+      "deviceRateChecks": [
+        {
+          "version": 4,
+          "command": "status",
+          "id": "design:rate-switch",
+          "playGeneration": 2,
+          "sourceSample": 34142,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 6279,
+          "endSample": 124766,
+          "playing": true,
+          "seconds": 0.711311366213152,
+          "firstCallbackMs": 53871152.67704166,
+          "bufferFrames": 512,
+          "peak": 0.004156616516411,
+          "preMonitorPeak": 0.024450151249766,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 49.99604166299105,
+          "error": "",
+          "sampleRate": 44100.0,
+          "callbacks": 447,
+          "frames": 228864,
+          "underruns": 0,
+          "peakResidentBytes": 53035008,
+          "cpuSeconds": 0.540054,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:rate-switch",
+          "pendingPlayback": false
+        },
+        {
+          "version": 4,
+          "command": "status",
+          "id": "design:rate-switch",
+          "playGeneration": 4,
+          "sourceSample": 33536,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 6912,
+          "endSample": 124766,
+          "playing": true,
+          "seconds": 0.698666666666667,
+          "firstCallbackMs": 53873386.39466666,
+          "bufferFrames": 512,
+          "peak": 0.004985646344721,
+          "preMonitorPeak": 0.029326690360904,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 25.275750003755093,
+          "error": "",
+          "sampleRate": 96000.0,
+          "callbacks": 647,
+          "frames": 331264,
+          "underruns": 0,
+          "peakResidentBytes": 53084160,
+          "cpuSeconds": 0.870069,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:rate-switch",
+          "pendingPlayback": false
+        },
+        {
+          "version": 4,
+          "command": "status",
+          "id": "design:rate-switch",
+          "playGeneration": 6,
+          "sourceSample": 27648,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 0,
+          "endSample": 124766,
+          "playing": true,
+          "seconds": 0.576,
+          "firstCallbackMs": 53875042.310125,
+          "bufferFrames": 512,
+          "peak": 0.002920690691099,
+          "preMonitorPeak": 0.017180157825351,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 51.4450416713953,
+          "error": "",
+          "sampleRate": 48000.0,
+          "callbacks": 787,
+          "frames": 402944,
+          "underruns": 0,
+          "peakResidentBytes": 53166080,
+          "cpuSeconds": 1.011909,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:rate-switch",
+          "pendingPlayback": false
+        }
+      ],
+      "nativeWallMs": 8500.018833331764,
+      "nativeStatus": {
+        "version": 4,
+        "command": "status",
+        "id": "design:4cc2d0fa57814ee69cb9acbfb59c52e5",
+        "playGeneration": 1,
+        "sourceSample": 124766,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 124766,
+        "playing": false,
+        "seconds": 2.599291666666667,
+        "firstCallbackMs": 53867313.13004167,
+        "bufferFrames": 512,
+        "peak": 0.0,
+        "preMonitorPeak": 0.0,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 47.1908750012517,
+        "error": "",
+        "sampleRate": 48000.0,
+        "callbacks": 316,
+        "frames": 161792,
+        "underruns": 0,
+        "peakResidentBytes": 44154880,
+        "cpuSeconds": 0.190033,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:4cc2d0fa57814ee69cb9acbfb59c52e5",
+        "pendingPlayback": false
+      },
+      "nativeRunningStatus": {
+        "version": 4,
+        "command": "status",
+        "id": "design:4cc2d0fa57814ee69cb9acbfb59c52e5",
+        "playGeneration": 1,
+        "sourceSample": 4096,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 124766,
+        "playing": true,
+        "seconds": 0.085333333333333,
+        "firstCallbackMs": 53867313.13004167,
+        "bufferFrames": 512,
+        "peak": 0.004334679339081,
+        "preMonitorPeak": 0.0254728179425,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 47.1908750012517,
+        "error": "",
+        "sampleRate": 48000.0,
+        "callbacks": 77,
+        "frames": 39424,
+        "underruns": 0,
+        "peakResidentBytes": 44105728,
+        "cpuSeconds": 0.168721,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:4cc2d0fa57814ee69cb9acbfb59c52e5",
+        "pendingPlayback": false
+      },
+      "timestamp": "2026-11-18T04:25:44.288-05:00"
+    },
+    "fixture": [
+      {
+        "rate": 44100,
+        "channels": 1,
+        "frames": 44100
+      },
+      {
+        "rate": 48000,
+        "channels": 4,
+        "frames": 96000
+      },
+      {
+        "rate": 96000,
+        "channels": 2,
+        "frames": 96000
+      }
+    ],
+    "failureHistory": [
+      {
+        "status": "FAIL",
+        "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 1: library_and_audio\n1/5 Test #1: library_and_audio ................   Passed    9.22 sec\n    Start 2: library_performance_regression\n2/5 Test #2: library_performance_regression ...   Passed    6.34 sec\n    Start 3: library_semantic_integrity\n3/5 Test #3: library_semantic_integrity .......   Passed    0.75 sec\n    Start 4: library_similar_integrity\n4/5 Test #4: library_similar_integrity ........   Passed    1.30 sec\n    Start 5: designer_workflow\n5/5 Test #5: designer_workflow ................***Failed   19.55 sec\nFAIL after 0 checks: Prepare rate-switch test\n\n\n80% tests passed, 1 tests failed out of 5\n\nTotal Test time (real) =  37.16 sec\n\nThe following tests FAILED:\n\t  5 - designer_workflow (Failed)\nErrors while running CTest\n",
+        "context": "VLC was open; hardware rate preparation timed out. No definitive external-causation claim."
+      },
+      {
+        "status": "FAIL",
+        "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 5: designer_workflow\n1/1 Test #5: designer_workflow ................***Failed    5.00 sec\nFAIL after 0 checks: Native producer capture length\n\n\n0% tests passed, 1 tests failed out of 1\n\nTotal Test time (real) =   5.00 sec\n\nThe following tests FAILED:\n\t  5 - designer_workflow (Failed)\nErrors while running CTest\n",
+        "context": "Capture length mismatch before redundant same-rate notification handling fix."
+      },
+      {
+        "status": "FAIL",
+        "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 1: library_and_audio\n1/5 Test #1: library_and_audio ................   Passed    9.01 sec\n    Start 2: library_performance_regression\n2/5 Test #2: library_performance_regression ...   Passed    6.42 sec\n    Start 3: library_semantic_integrity\n3/5 Test #3: library_semantic_integrity .......   Passed    0.76 sec\n    Start 4: library_similar_integrity\n4/5 Test #4: library_similar_integrity ........   Passed    1.35 sec\n    Start 5: designer_workflow\n5/5 Test #5: designer_workflow ................***Failed   19.55 sec\nFAIL after 0 checks: Prepare rate-switch test\n\n\n80% tests passed, 1 tests failed out of 5\n\nTotal Test time (real) =  37.09 sec\n\nThe following tests FAILED:\n\t  5 - designer_workflow (Failed)\nErrors while running CTest\n",
+        "context": "Delayed nominal rate / equal cached JUCE setup; added explicit close/reopen and stable hardware-rate observation."
+      }
+    ]
+  },
+  "performance": {
+    "timestamp": {
+      "thermalState": "nominal",
+      "lowPowerMode": false,
+      "elapsedMs": 32104.02433332801
+    },
+    "appSha256": "1534d413742408bfa4611fb5fdbf9f672af94d7e997c6d8a838f94cc1604093f",
+    "catalogCopy": "/private/tmp/soundplus-designer-performance-xxzk1tcg",
+    "queries": 600,
+    "paintMs": {
+      "p50": 7.497583329677582,
+      "p95": 13.767000004649162,
+      "p99": 14.343208335340023
+    },
+    "allQueriesDuringEightLayerPlayback": true,
+    "nativePlaybackWallSeconds": 30.000561458334328,
+    "audioProcessCpuPercentOfOneCore": 9.222400733541521,
+    "audio": {
+      "version": 4,
+      "command": "status",
+      "id": "design:92cd51854bdc468db36146f481a4f883",
+      "playGeneration": 1,
+      "sourceSample": 1444864,
+      "sourceRate": 48000.0,
+      "auditionPair": 0,
+      "startSample": 0,
+      "endSample": 2242286,
+      "playing": true,
+      "seconds": 30.101333333333333,
+      "firstCallbackMs": 53878686.98983333,
+      "bufferFrames": 512,
+      "peak": 0.002419672673568,
+      "preMonitorPeak": 0.048392556607723,
+      "design": true,
+      "designLayers": 8,
+      "producerMaxMs": 31.38495833426714,
+      "error": "",
+      "sampleRate": 48000.0,
+      "callbacks": 3044,
+      "frames": 1558528,
+      "underruns": 0,
+      "peakResidentBytes": 44728320,
+      "cpuSeconds": 2.95093,
+      "outputs": [
+        "MacBook Pro Speakers"
+      ],
+      "device": "MacBook Pro Speakers",
+      "availableRates": [
+        44100.0,
+        48000.0,
+        88200.0,
+        96000.0
+      ],
+      "processGeneration": 1,
+      "intentId": "design:92cd51854bdc468db36146f481a4f883",
+      "pendingPlayback": false
+    },
+    "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+    "monitorGain": 0.05,
+    "interface": "Visible Designer canvas and inspector alongside compact Library browser; 200 queries x three runs",
+    "mainProcess": {
+      "fileStats": 25,
+      "directories": 2,
+      "entries": 0,
+      "discovered": 0,
+      "commits": 1,
+      "scans": 17,
+      "headers": 0,
+      "queries": 1201,
+      "cancelled": 0,
+      "directoryEnumerations": 0,
+      "peakBatches": 1,
+      "firstEligibleMs": 0.0,
+      "firstCommitMs": 0.0,
+      "discoveryFinishedMs": 0.0,
+      "peakResidentBytes": 142278656,
+      "cpuSeconds": 10.15541
+    },
+    "aiProcess": {
+      "model": "clap-htsat-unfused-q8-c28f2883575e",
+      "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1",
+      "ready": true,
+      "error": "",
+      "modelLoadMs": 2128.8816250041127,
+      "files": 43,
+      "pending": 0,
+      "failed": 0,
+      "regions": 74,
+      "vectorBytes": 151552,
+      "sourceSecondsThisSession": 0.0,
+      "windowsThisSession": 0,
+      "analysisWallMs": 0.0,
+      "firstWindowStartedMs": 0.0,
+      "lastWindowPublishedMs": 0.0,
+      "helperPeakResidentBytes": 444284928,
+      "indexReady": true,
+      "indexReused": false,
+      "indexBuilding": false,
+      "indexRegions": 74,
+      "indexBytes": 152736,
+      "indexOpenMs": 0.0,
+      "indexBuildMs": 2.858249999582767,
+      "indexStatus": "Sound index ready"
+    },
+    "rawLogSHA256": "231fd7088ab0be74417cbb9436cd6493bfce27d5d72aedbef1e5735f0ce31d78"
+  },
+  "nativeCreativeWorkflow": {
+    "operator": "agent, native UI",
+    "media": "Three real attributed ESC-50 subset recordings: indexed marked crickets + indexed glass break + unindexed external rain copy",
+    "catalogAssetsBeforeAndAfter": 43,
+    "fixedDesignClock": 48000,
+    "cricketsOriginalInterval": [
+      22050,
+      154350
+    ],
+    "glassLinkedRate": 0.8,
+    "locks": [
+      "entire crickets layer",
+      "glass linked rate"
+    ],
+    "generatedCandidates": 5,
+    "keptCandidates": 2,
+    "selectedKeptName": "Rain glass - kept B",
+    "savedReopened": true,
+    "nativeLibraryDrag": "PASS; fourth clip-002 layer added; immediate Command-Z returned to three layers after focus fix",
+    "nativeReadyWavDropIntoDesigner": "PASS in same app; output became external fourth layer, then undo",
+    "humanListening": "NOT_RUN; no listener or first-time user sign-off inferred"
+  },
+  "delivery": {
+    "render": {
+      "designFile": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/delivery/Final-creative.soundplus",
+      "designRevision": 41,
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "header": {
+        "frames": 271553,
+        "rate": 48000,
+        "channels": 2,
+        "bits": 24
+      },
+      "receipt": {
+        "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav",
+        "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "variation": "9b3647860f744def9786ee0091fede3e",
+        "kind": "design-render",
+        "created": "2026-11-18T04:26:56.805-05:00",
+        "samples": 271553,
+        "revision": 40,
+        "peak": 0.12539254128933,
+        "clipped": 0,
+        "settings": {
+          "rate": 48000.0,
+          "tailSeconds": 1.0,
+          "channels": 2,
+          "bits": 24,
+          "first": 0,
+          "last": -1,
+          "normalize": false,
+          "dither": false
+        }
+      }
+    },
+    "cacheSurvival": {
+      "time": "2026-11-18T04:10:43-0500",
+      "retiredRebuildableCaches": [
+        "designer-preview",
+        "waveforms"
+      ],
+      "appExited": true,
+      "outputExists": true,
+      "outputSHA256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "playlist": "#EXTM3U\n#EXTINF:5,Rain glass design-variation-r34-07f75f53.wav\nRenders/Rain%20glass%20design-variation-r34-07f75f53.wav\n"
+    },
+    "receivingApp": {
+      "name": "VLC",
+      "version": "3.0.24",
+      "route": "Native File > Open, not drag",
+      "status": "PASS",
+      "playlist": "/Users/harvest/Music/SoundPlus/Designer QA/SoundPlus-delivery-QA.m3u",
+      "reopenedAfterSoundPlusExitAndCacheRetirement": true,
+      "observed": "WAV listed with duration and Pause transport / advancing playback position"
+    },
+    "finder": {
+      "version": "26.3",
+      "destination": "/Users/harvest/Music/SoundPlus/Designer QA/Finder delivery",
+      "dragStatus": "BLOCKED; gestures attempted but no destination file observed"
+    },
+    "crossApplicationDrag": {
+      "status": "BLOCKED",
+      "reason": "Automated Source-to-Finder/VLC gestures produced no observed destination; Finder-to-VLC control also did not land. Product-versus-automation cause unresolved. Manual check requested; no answer received.",
+      "userAuthorizedFinderAndVLC": true
+    },
+    "deniedApplications": [
+      {
+        "name": "GarageBand",
+        "reason": "Automatic approval review rejected access; no reason supplied; not tested"
+      },
+      {
+        "name": "QuickTime Player",
+        "reason": "Automatic approval review rejected access; no reason supplied; not tested"
+      }
+    ]
+  },
+  "ui": {
+    "operator": "Agent via native cua_repl",
+    "finalBuildShown": true,
+    "largeStoredJuceBounds": "184 109 1359 861",
+    "minimumStoredJuceBounds": "184 109 1040 651",
+    "frameNote": "JUCE saved client bounds; compact CUA capture includes native title bar.",
+    "display": "Built-in Retina only",
+    "workspaceRecall": "PASS; Designer active with browser and inspector hidden after exit/relaunch; restored both for handoff",
+    "monitorRecall": "PASS; 0.70",
+    "sourceTimingDisclosureRecall": "PASS; collapsed Source & Timing",
+    "keyboard": [
+      "Space from canvas plays/stops",
+      "Command-O from canvas opens native design picker",
+      "Command-R and Command-S with browser focus render/save",
+      "Library row drop focuses canvas; immediate Command-Z removes the added fourth layer"
+    ],
+    "waveforms": "Visible for all three originals; source sync/fade edges visible; parked clicks remained stopped",
+    "meter": "Native pre-monitor meter observed during playback; no persistent numeric readout",
+    "minimalUI": "IDs/revisions in tooltips; routine idle worker counters and persistent audition volume number hidden; errors and scan stages preserved",
+    "screenshots": {
+      "library-v1.jpg": {
+        "sha256": "b716b753f03b68b8b3db2c51fadb6acb52c4b14c5d3374f6a661bc8a19f37687",
+        "pixels": [
+          1169,
+          768
+        ],
+        "source": "Unedited native CUA screenshot"
+      },
+      "designer-v1.jpg": {
+        "sha256": "94acf42f1a37528966d1e32cac5810ed7b659f4956865423971217d3d5f1ba83",
+        "pixels": [
+          1169,
+          768
+        ],
+        "source": "Unedited native CUA screenshot"
+      },
+      "designer-compact.jpg": {
+        "sha256": "4c53064c3a2e059efcc306472f3dada49739a4e8a1ce84aea54de5f8f702fcd8",
+        "pixels": [
+          1040,
+          683
+        ],
+        "source": "Unedited native CUA screenshot"
+      },
+      "library-compact.jpg": {
+        "sha256": "c3beb8c9cea24c028dbbe093429c199ca4360b05400d631cb245207fe8438894",
+        "pixels": [
+          1040,
+          683
+        ],
+        "source": "Unedited native CUA screenshot"
+      },
+      "vlc-delivery.jpg": {
+        "sha256": "8ee1dc75fe86454153e4a742a8d0edc41647d236e3fe634f09bedf00575c9dc3",
+        "pixels": [
+          768,
+          900
+        ],
+        "source": "Unedited native CUA screenshot"
+      }
+    }
+  },
+  "requirements": {
+    "slices": "See docs/DESIGNER_V1.md requirement table; these are partial slices, not blanket requirement completion",
+    "ids": [
+      "DSP-01",
+      "DSP-02",
+      "DSP-03",
+      "DSP-04",
+      "SMP-05",
+      "SMP-06",
+      "PRJ-01",
+      "PRJ-02",
+      "PRJ-03",
+      "PRJ-04",
+      "DATA-01",
+      "DATA-03",
+      "EXP-01",
+      "EXP-02",
+      "EXP-03",
+      "EXP-04",
+      "UX-01",
+      "UX-02",
+      "UX-03",
+      "UX-04",
+      "UX-05",
+      "OPS-01",
+      "OPS-02",
+      "OPS-04",
+      "OPS-07",
+      "OPS-08",
+      "PERF-01"
+    ],
+    "notQualified": [
+      "Cross-app native drag destination acceptance",
+      "30-minute 256-frame soak",
+      "Physical external interface / second Mac / M2",
+      "Long state-reconstruction seek and pathological network I/O",
+      "Global cache quota and disk-exhaustion handling",
+      "VoiceOver / external display scaling / human UAT / acoustic listening",
+      "Plugin hosting, independent time/pitch, AIFF/BWF/stems, collected media, Performance Mixer v2, MIDI/takes, Resolve placement"
+    ]
+  },
+  "referenceSHA256": {
+    "docs/Sound_Design_Workstation_Architecture_and_Requirements.docx": "bce0a4021408282a4bdea61ca99fc981e1e38080f689a26ebb9503fc2c6eaa4e",
+    "docs/Sound_Design_Workstation_Architecture_and_Requirements.pdf": "6af341018e68ac57756169fd3443342204f1a02a85f5db1f52ae1eda4863f996"
+  }
+}

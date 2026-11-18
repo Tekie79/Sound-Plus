@@ -4,10 +4,11 @@
 namespace sp
 {
 class LibraryView;
+class DesignerView;
 class Benchmark final : private juce::Timer
 {
   public:
-    Benchmark(LibraryView &, const juce::File &plan, const juce::File &output);
+    Benchmark(LibraryView &, const juce::File &plan, const juce::File &output,DesignerView *designer=nullptr);
     void painted(uint64_t request, int rows, double dispatchMs, double appliedMs);
 
   private:
@@ -15,6 +16,7 @@ class Benchmark final : private juce::Timer
     void save(bool success, const juce::String &error = {});
     void dispatch();
     LibraryView &view;
+    DesignerView *designer=nullptr;
     juce::File output;
     juce::var plan;
     juce::Array<juce::var> samples, auditions, changes;

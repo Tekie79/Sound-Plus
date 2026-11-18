@@ -2,7 +2,7 @@
 
 A standalone macOS sound library built with C++20, JUCE 8.0.6, CMake and SQLite FTS5. Add existing folders, search filenames or describe a sound, and audition original files or matching regions. No project, account or DAW is needed. Sound-description search runs locally and works offline after installing its optional model.
 
-The product reference is [the architecture and requirements specification](docs/Sound_Design_Workstation_Architecture_and_Requirements.docx). The current milestone adds **Find Similar** from indexed audio, an edited region or a temporary external file, plus a reusable exact search index for larger libraries. Transport, navigation, folder, retry and zoom actions use vector icons with tooltips and accessible names. See [Find Similar and scaling verification](docs/FIND_SIMILAR.md), the preceding [local AI-search report](docs/LOCAL_AI_SEARCH.md) and [library performance report](docs/LIBRARY_PERFORMANCE.md). Designer, plugin hosting and Resolve placement remain future work.
+The product reference is [the architecture and requirements specification](docs/Sound_Design_Workstation_Architecture_and_Requirements.docx). The current milestone adds **Designer v1**: captured Library regions, layered editing, stock processing, saved variations, editable referenced designs and durable WAV delivery. Library and **Find Similar** remain independently usable. Transport, navigation, folder, retry and zoom actions use vector icons with tooltips and accessible names. See [Find Similar and scaling verification](docs/FIND_SIMILAR.md), the preceding [local AI-search report](docs/LOCAL_AI_SEARCH.md) and [library performance report](docs/LIBRARY_PERFORMANCE.md). See [Designer v1 and native verification](docs/DESIGNER_V1.md). Performance Mixer, plugin hosting and Resolve marker placement remain future work.
 
 ## Build and launch
 
@@ -69,7 +69,7 @@ Click a stopped waveform to position its playhead silently; Play or Space starts
 .tools/cmake/data/bin/ctest --test-dir build --output-on-failure
 ```
 
-CTest generates small audio fixtures under four isolated test-output directories. It checks identity, interrupted indexing, 4,096-result paging, cancellation, pause/resume, reuse, source ranges at 44.1/48/96 kHz, waveform caching, revision invalidation and embedding-space separation. The new suite checks exact cached retrieval, live deltas, source exclusion, dense-window grouping, binary/metadata checksums, cache recovery, background-index pause and multichannel transport. It launches the real audio helper, requiring an available Core Audio output and a logged-in macOS session. See [Find Similar verification](docs/FIND_SIMILAR.md) for real-model workflows, 10k/100k/500k-region benchmarks and accuracy/recovery commands.
+CTest generates small audio fixtures under five isolated test-output directories, including fresh per-run Designer fixtures. It checks identity, interrupted indexing, 4,096-result paging, cancellation, pause/resume, reuse, source ranges at 44.1/48/96 kHz, waveform caching, revision invalidation and embedding-space separation. The new suite checks exact cached retrieval, live deltas, source exclusion, dense-window grouping, binary/metadata checksums, cache recovery, background-index pause and multichannel transport. It launches the real audio helper, requiring an available Core Audio output and a logged-in macOS session. The Designer suite checks mixed-rate sample timing, reverse/linked rate, source mapping, locked variations, exact document recall, cancellation and abrupt process interruption before publication, copy checksums and native eight-layer live/offline parity before monitor gain. See [Find Similar verification](docs/FIND_SIMILAR.md) for real-model workflows, 10k/100k/500k-region benchmarks and accuracy/recovery commands.
 
 ## 100,000-file native benchmark
 
@@ -100,3 +100,16 @@ python3 scripts/test_volume.py \
 ```
 
 See [current performance and coverage](docs/LIBRARY_PERFORMANCE.md), [the historical first milestone](docs/MILESTONE_1.md) and [dependency versions and licensing](docs/DEPENDENCIES.md).
+
+
+## Editable designs and delivered audio
+
+Open Designer using the layers icon. Add a selected Library recording or its marked range with the layer-plus icon, drag a Library row onto the canvas, or use Designer's add-source icon for an external file. External sources do not index their containing folder. Library monitoring's Analysis Mix preference does not choose Designer channels: layers start with the original mono or first stereo pair.
+
+The optional browser stays beside the canvas. Drag its divider to resize it; use the browser and inspector icons to hide panels. Timing, fades, inserts and master settings are collapsible. Icon tooltips and accessible names identify actions. Space plays/stops; I/O mark source IN/OUT; Command-F searches; Command-Z/Shift-Command-Z undo/redo; Command-D duplicates; Command-O opens and Command-S saves. Panel choices, browser width, workspace, monitor volume and window bounds persist per catalog.
+
+A `.soundplus` file is a versioned, checksummed JSON **referenced design**. It stores source identities/revisions, original integer ranges, mappings, a fixed sample clock, ordered effects, fully resolved candidates, render settings and output receipts. It does not contain source audio. Keep the original files and originating catalog, or explicitly relink sources on another machine. Collected media packages are not implemented. Saves use staging and a previous `.bak`; unsaved edits recover from the catalog's `designer-autosave` folder. `designer-preview` contains rebuildable playback snapshots and is separate from documents and exports.
+
+The render icon writes a uniquely named verified WAV to `~/Music/SoundPlus/Renders` by default. The folder icon chooses another permanent folder, saved in the design. Default output is 48 kHz, 24-bit stereo; render settings expose mono/stereo, 44.1/48/96 kHz, 16/24-bit PCM or 32-bit float WAV, a range, a fixed tail (default one second, maximum 30), explicit normalization and optional TPDF dither. Mono output averages the stereo mix `(L+R)/2`; mono layer pan uses a constant-power law, while a centered stereo layer preserves its channel levels. Monitor volume is excluded from renders. Cutoffs are limited to the saved design rate's usable band.
+
+After finalization, drag the ready output icon into Finder or another audio application. Outputs remain in the chosen folder after restart or preview-cache cleanup. The print-back icon adds that file as a new external layer. Drag Original transfers an applicable complete source URL; a destination may reference that original path. Copy Original to Project makes a byte-identical verified copy in a folder you choose. Rendering always uses an immutable revision with independent DSP state, so editing during a render affects subsequent results.

@@ -40,6 +40,7 @@ struct Performance
         struct rusage usage{};
         getrusage(RUSAGE_SELF, &usage);
         o->setProperty("peakResidentBytes", (juce::int64)usage.ru_maxrss);
+        o->setProperty("cpuSeconds",usage.ru_utime.tv_sec+usage.ru_utime.tv_usec/1e6+usage.ru_stime.tv_sec+usage.ru_stime.tv_usec/1e6);
         return juce::var(o);
     }
 };

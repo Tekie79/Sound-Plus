@@ -3,10 +3,11 @@
 #include "Performance.h"
 #include <cmath>
 #include "MacSources.h"
+#include "DesignerView.h"
 namespace sp
 {
-Benchmark::Benchmark(LibraryView &v, const juce::File &file, const juce::File &out)
-    : view(v), output(out), plan(juce::JSON::parse(file)), startMs(monotonicMs()), phaseStart(startMs)
+Benchmark::Benchmark(LibraryView &v, const juce::File &file, const juce::File &out,DesignerView *designView)
+    : view(v), designer(designView),output(out), plan(juce::JSON::parse(file)), startMs(monotonicMs()), phaseStart(startMs)
 {
     view.benchmark = this;
     startTimer(2);
@@ -34,6 +35,8 @@ void Benchmark::painted(uint64_t id, int rows, double sent, double applied)
         o->setProperty("sourceFilter",view.rootFilter);
         o->setProperty("analysisPending",view.snapshot.semantic.coverage.pending);
         o->setProperty("auditionActive",(bool)view.audio.status()["playing"]);
+        o->setProperty("audioId",view.audio.status()["id"]);
+        o->setProperty("designLayers",view.audio.status()["designLayers"]);
         bool newRegionHit=false;
         if(plan["updateFolder"].toString().isNotEmpty())
             for(auto &a:view.snapshot.results)for(auto &r:view.snapshot.roots)
@@ -358,6 +361,22 @@ void Benchmark::semanticTick(double now)
     auto count=(int)plan["queryCount"];
     bool analyzed=ai.ready && ai.coverage.complete>=(int)plan["expectedFiles"] && ai.coverage.pending==0;
     if (mode=="semantic-analyze") { if (analyzed) complete(); return; }
+    if(mode=="semantic-designer")
+    {
+        if(!ai.ready)return;
+        if(phase==0){if(!designer || designer->session.working || designer->session.document.activeMix().layers.size()!=8)return;semanticDemoId="design:"+designer->session.document.id;view.audio.gain(.05f);designer->session.play();phase=1;return;}
+        auto state=view.audio.status();
+        if(phase==1 && (bool)state["playing"] && state["id"].toString()==semanticDemoId)
+        {audioDispatch=now;phase=2;workload="designer-search";controls.getDynamicObject()->setProperty("audioAtStart",state);}
+        if(phase==2)
+        {
+            if(!(bool)state["playing"] || state["id"].toString()!=semanticDemoId){save(false,"Designer transport interrupted during search");return;}
+            if(!waiting && index<count)dispatch();
+            if(index>=count && run<2){++run;index=0;}
+            else if(index>=count && now-audioDispatch>=30000){record("eightLayers",(int)state["designLayers"]==8);record("noUnderruns",(int64_t)state["underruns"]==(int64_t)controls["audioAtStart"]["underruns"]);controls.getDynamicObject()->setProperty("playbackWallMs",now-audioDispatch);complete();}
+        }
+        return;
+    }
     if (mode=="semantic-capacity")
     {
         if (!ai.ready || ai.coverage.regions<(int)plan["expectedRegions"]) return;

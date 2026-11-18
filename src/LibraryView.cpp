@@ -3,6 +3,7 @@
 #include "Performance.h"
 #include <cmath>
 #include "ClapRuntime.h"
+#include "DesignModel.h"
 namespace sp
 {
 namespace
@@ -47,7 +48,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
              &retryAI, &cancelInstall, &playMatch, &playWhole, &moments, &context,
              &aiStatusLabel, &semanticCoverage,&previous,&next,&findSimilar,
              &externalReference,&referenceWaveform,&referencePlay,&referenceSearch,&clearReference,
-             &addReference,&includeSource,&referenceTitle,&referenceStatus,&referenceUnits,&auditionChannels})
+             &addReference,&includeSource,&referenceTitle,&referenceStatus,&referenceUnits,&auditionChannels,
+             &designer,&addDesigner,&referenceDesigner,&dragOriginal})
         addAndMakeVisible(c);
     addAndMakeVisible(waveform.markInButton());addAndMakeVisible(waveform.markOutButton());
     for (auto *l : {&summary, &detail, &assetId, &transport, &status, &volumeLabel})
@@ -77,7 +79,13 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     rescan.setTooltip("Reconcile all sources. Unchanged audio headers are reused.");
     play.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff334c61));
     play.setPrimary();
-    play.onClick = [this] {auto s=audio.status();if((bool)s["playing"] || (bool)s["pendingPlayback"])audio.stop();else playFromPlayhead();};
+    play.onClick = [this] { toggle(); };
+    designer.onClick=[this]{if(onShowDesigner)onShowDesigner();};
+    addDesigner.onClick=[this]{if(selectedAsset && onAddToDesigner && selectedAsset->samples>0)
+        onAddToDesigner(*selectedAsset,regionEnd>regionStart ? regionStart : 0,regionEnd>regionStart ? regionEnd : selectedAsset->samples,false,0);};
+    addDesigner.setTooltip("Capture this marked range as a Designer layer, using its original mono/stereo channels. I / O mark the range; later searches leave the layer unchanged.");
+    referenceDesigner.onClick=[this]{if(onAddToDesigner && pinnedReference.source.samples>0)
+        onAddToDesigner(pinnedReference.source,pinnedReference.startSample,pinnedReference.endSample,pinnedReference.external,0);};
     restart.onClick = [this] { audio.restart(); };
     output.setTitle("Audio output device");
     output.setTextWhenNothingSelected(juce::String::fromUTF8("Starting audio…"));
@@ -89,7 +97,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     gain.setSliderStyle(juce::Slider::LinearHorizontal);
     gain.setRange(0, 1, 0.01);
     gain.setValue(0.7);
-    gain.setTextBoxStyle(juce::Slider::TextBoxRight, false, 48, 24);
+    gain.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+    gain.setPopupDisplayEnabled(true,true,this);
     gain.setTitle("Audition volume");
     gain.setTextValueSuffix("");
     gain.textFromValueFunction = [](double v) { return juce::String((int)(v * 100)) + "%"; };
@@ -207,7 +216,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     auditionChannels.setSelectedId(1,juce::dontSendNotification);
     auditionChannels.onChange=[this]{
         auto state=audio.status();
-        if(((bool)state["playing"] || (bool)state["pendingPlayback"]) && playingPath.isNotEmpty())
+        if(((bool)state["playing"] || (bool)state["pendingPlayback"]) && !state["id"].toString().startsWith("design:") && playingPath.isNotEmpty())
         {
             playingSpec.positionSample=std::max(playingSpec.startSample,(int64_t)state["sourceSample"]);
             if((bool)state["pendingPlayback"])playingSpec.positionSample=playingSpec.startSample;
@@ -237,6 +246,7 @@ LibraryView::~LibraryView()
 }
 void LibraryView::paint(juce::Graphics &g)
 {
+    if(compact){g.fillAll(bg);g.setColour(text);g.setFont(juce::FontOptions(14.f,juce::Font::bold));g.drawText("LIBRARY",14,16,130,24,juce::Justification::left);return;}
     g.fillAll(bg);
     g.setColour(panel);
     g.fillRect(0, 84, 238, getHeight() - 84);
@@ -287,6 +297,18 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
 }
 void LibraryView::resized()
 {
+    if(compact)
+    {
+        compactVisibility();
+        add.setBounds(getWidth()-46,13,30,30);search.setBounds(12,54,getWidth()-24,38);
+        table.setBounds(8,104,getWidth()-16,std::max(120,getHeight()-306));
+        table.getHeader().setColumnWidth(1,std::max(160,table.getWidth()-18));
+        waveform.setBounds(12,getHeight()-180,getWidth()-24,94);
+        play.setBounds(getWidth()/2-20,getHeight()-71,40,40);addDesigner.setBounds(getWidth()-46,getHeight()-67,30,30);dragOriginal.setBounds(16,getHeight()-67,30,30);
+        transport.setBounds(12,getHeight()-27,getWidth()-24,20);
+        return;
+    }
+    designer.setBounds(264,14,125,32);
     add.setBounds(getWidth()-66,24,40,35);
     externalReference.setBounds(getWidth()-114,24,40,35);
     rescan.setBounds(176,101,34,28);
@@ -301,12 +323,13 @@ void LibraryView::resized()
     sources.setBounds(12,270,216,std::max(70,getHeight()-396));
     bool hasReference=snapshot.reference.present;
     for(auto *c:std::initializer_list<juce::Component *>{&referenceTitle,&referenceStatus,&referenceUnits,
-        &referenceWaveform,&referencePlay,&referenceSearch,&clearReference,&includeSource})c->setVisible(hasReference);
+        &referenceWaveform,&referencePlay,&referenceSearch,&clearReference,&includeSource,&referenceDesigner})c->setVisible(hasReference);
     addReference.setVisible(hasReference && pinnedReference.external);
     referenceTitle.setBounds(264,182,getWidth()-480,26);
     referencePlay.setBounds(getWidth()-142,184,32,30);addReference.setBounds(getWidth()-104,184,32,30);clearReference.setBounds(getWidth()-66,184,32,30);
     referenceUnits.setBounds(264,211,getWidth()-304,20);
     includeSource.setBounds(264,235,215,28);referenceSearch.setBounds(getWidth()-184,235,150,28);
+    referenceDesigner.setBounds(getWidth()-224,235,32,28);
     referenceStatus.setBounds(264,265,getWidth()-300,23);
     referenceWaveform.setBounds(264,290,getWidth()-292,72);
     int tableTop=hasReference ? 373 : 181;
@@ -314,9 +337,9 @@ void LibraryView::resized()
     int fixed=90+85+90+120+170;
     table.getHeader().setColumnWidth(1,std::max(200,table.getWidth()-fixed-18));
     int y=getHeight()-320,left=264,right=getWidth()-28,centre=(left+right)/2;
-    detail.setBounds(left,y,right-left-365,26);
-    findSimilar.setBounds(right-148,y,148,32);
-    moments.setBounds(right-350,y+2,190,28);
+    detail.setBounds(left,y,std::max(80,right-left-410),26);
+    findSimilar.setBounds(right-148,y,148,32);addDesigner.setBounds(right-188,y,32,32);
+    moments.setBounds(right-390,y+2,190,28);
     assetId.setBounds(left,y+28,right-left,20);
     waveform.setBounds(left,getHeight()-268,right-left,126);
     // One centered transport strip, independent of the filename and editing tools.
@@ -337,6 +360,29 @@ void LibraryView::resized()
     auditionChannels.setBounds(left+479,getHeight()-60,right-left-529,26);
     restart.setBounds(right-36,getHeight()-60,36,26);
     status.setBounds(264,getHeight()-30,getWidth()-290,25);
+    dragOriginal.setBounds(left,getHeight()-124,30,30);
+}
+void LibraryView::compactVisibility()
+{
+    for(auto *c:getChildren())
+    {
+        if(dynamic_cast<juce::CallOutBox *>(c))continue;
+        c->setVisible(c==&search || c==&add || c==&table || c==&waveform || c==&play || c==&addDesigner || c==&dragOriginal || (c==&transport && transport.getText().isNotEmpty()));
+    }
+}
+void LibraryView::setCompact(bool value)
+{
+    if(compact==value)return;compact=value;
+    for(auto *c:getChildren())c->setVisible(!value);
+    for(int id=2;id<=6;++id)table.getHeader().setColumnVisible(id,!value);
+    table.setHeaderHeight(value ? 0 : 34);table.setRowHeight(value ? 44 : 58);search.setTextToShowWhenEmpty(value ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"),muted);resized();
+}
+void LibraryView::parkPlayback(){auto state=audio.status();if(selectedAsset && state["id"].toString()==selectedAsset->id && (bool)state["playing"])parkedCandidateSeek=(int64_t)state["sourceSample"];}
+juce::var LibraryView::getDragSourceDescription(const juce::SparseSet<int> &rows)
+{
+    if(rows.isEmpty())return {};auto *a=rowAsset(rows[0]);if(!a || a->samples<=0)return {};
+    DesignDocument captured;auto first=rangeAssetId==a->id ? regionStart : 0,last=rangeAssetId==a->id ? regionEnd : a->samples;
+    captured.original.layers={makeDesignLayer(*a,first,last)};return juce::JSON::toString(designToJson(captured),true);
 }
 const Asset *LibraryView::rowAsset(int row) const
 {
@@ -399,6 +445,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         return;
     }
     const auto &a = *asset;
+    if(compact){g.setColour(a.online ? text : muted);g.setFont(juce::FontOptions(13.f));g.drawText(a.name,12,0,w-24,h,juce::Justification::centredLeft,true);return;}
     g.setColour(a.online ? text : muted);
     g.setFont(juce::FontOptions(14.0f));
     juce::String value;
@@ -488,11 +535,8 @@ void LibraryView::selectedRowsChanged(int)
         moments.setSelectedId(moment,juce::dontSendNotification);
         updatingRange=false;
         detail.setText(a->name, juce::dontSendNotification);
-        assetId.setText("Asset " + a->id + juce::String::fromUTF8("  •  Revision ") +
-                            juce::String(a->revision) +
-                            (a->error.isEmpty() ? "" : juce::String::fromUTF8("  •  ") + a->error),
-                        juce::dontSendNotification);
-        detail.setTooltip(a->path);
+        assetId.setText(a->error,juce::dontSendNotification);
+        detail.setTooltip(a->path+"\nAsset "+a->id+" | Revision "+juce::String(a->revision));
         assetId.setTooltip(a->path + "\n" + a->error);
     }
 }
@@ -686,6 +730,7 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     }
     playingId=a->id;
     playingPath=path;playingSpec=region;
+    if(onBeforeAudition)onBeforeAudition();
     audio.playRegion(a->id,juce::File(path),region);
 }
 void LibraryView::playFromPlayhead()
@@ -722,6 +767,8 @@ void LibraryView::timerCallback()
     if (ai.installing)
         semanticCoverage.setText("Installing local AI model: "+juce::String(ai.downloadedBytes/1000000.0,1)+
             " / "+juce::String(ai.downloadTotalBytes/1000000.0,1)+" MB",juce::dontSendNotification);
+    else if (ai.ready && ai.coverage.pending==0 && ai.coverage.failed==0 && !ai.indexBuilding)
+        semanticCoverage.setText({},juce::dontSendNotification);
     else if (ai.ready)
         semanticCoverage.setText("Sound search: "+juce::String(ai.coverage.complete)+" / "+juce::String(ai.coverage.total)+
             " analyzed · "+juce::String(ai.coverage.regions)+" regions · "+juce::String(ai.coverage.pending)+
@@ -734,12 +781,8 @@ void LibraryView::timerCallback()
     const auto progress = next.progress;
     pauseIndex.setButtonText(progress.pauseRequested ? "Resume Indexing" : "Pause Indexing");
     refresh.setEnabled(next.newResultsAvailable);
-    auto progressText =
-        progress.stage +
-        (progress.root.isNotEmpty() ? " - " + juce::File(progress.root).getFileName() : juce::String()) +
-        " | " + juce::String(progress.metadataBacklog) + " pending headers | " +
-        juce::String(progress.activeWorkers) + " workers | " + juce::String(progress.queuedDirectories) +
-        " queued directories";
+    auto progressText = progress.stage=="Up to date" ? juce::String() : progress.stage +
+        (progress.root.isNotEmpty() ? " - " + juce::File(progress.root).getFileName() : juce::String());
     if (next.request == requested &&
         (next.version != appliedVersion || next.request != appliedRequest || next.pageSerial != appliedPage))
     {
@@ -820,7 +863,12 @@ void LibraryView::timerCallback()
     bool isPlaying = (bool)state["playing"];
     bool pending=(bool)state["pendingPlayback"];
     library.setAuditionActive(isPlaying || pending);
-    play.setButtonText(isPlaying || pending ? "Stop  [Space]" : "Play  [Space]");
+    bool libraryOwned=!state["id"].toString().startsWith("design:");
+    play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
+    addDesigner.setEnabled(selectedAsset && selectedAsset->samples>0);
+    dragOriginal.file=selectedAsset ? juce::File(selectedAsset->path) : juce::File();
+    dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples>0 && regionStart==0 && regionEnd==selectedAsset->samples);
+    referenceDesigner.setEnabled(pinnedReference.source.samples>0);
     bool canPlay=selectedAsset.has_value();
     previous.setEnabled(snapshot.total>0);this->next.setEnabled(snapshot.total>0);
     findSimilar.setEnabled(canPlay && ai.ready && selectedAsset->samples>0 && selectedAsset->state=="ready");
@@ -846,11 +894,12 @@ void LibraryView::timerCallback()
     }
     if(isPlaying && selectedAsset && state["id"].toString()==selectedAsset->id)
         waveform.setCursor((int64_t)state["sourceSample"]);
-    auto err = state["error"].toString();
+    auto err = state["intentId"].toString().startsWith("design:") ? juce::String() : state["error"].toString();
     if(err.isEmpty())err=playbackError;
     transport.setText(err,juce::dontSendNotification);
     transport.setVisible(err.isNotEmpty());
     updating = true;
+    if(!gain.isMouseButtonDown())gain.setValue(audio.monitorGain(),juce::dontSendNotification);
     if (auto *options = state["outputs"].getArray())
     {
         juce::StringArray list;
@@ -867,6 +916,7 @@ void LibraryView::timerCallback()
         output.setText(state["device"].toString(), juce::dontSendNotification);
     }
     updating = false;
+    if(compact)compactVisibility();
 }
 bool LibraryView::isInterestedInFileDrag(const juce::StringArray &files)
 {return files.size()==1 && supportedExtension(juce::File(files[0]));}
@@ -910,6 +960,7 @@ void LibraryView::playReference(int64_t seek)
     region.auditionPair=auditionChannels.getSelectedId()-2;
     playingId=id;
     playingPath=a.path;playingSpec=region;
+    if(onBeforeAudition)onBeforeAudition();
     audio.playRegion(id,juce::File(a.path),region);
 }
 void LibraryView::navigate(int direction)

@@ -41,7 +41,7 @@ def main():
     stream=parent.makefile('rwb',buffering=0);seq=0
     def call(command):
         nonlocal seq
-        seq+=1;command.update(version=3,sequence=seq)
+        seq+=1;command.update(version=4,sequence=seq)
         stream.write((json.dumps(command)+'\n').encode());reply=json.loads(stream.readline())
         assert not reply.get('error'),reply
         return reply

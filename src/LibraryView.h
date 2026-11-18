@@ -2,6 +2,7 @@
 #include "LibraryService.h"
 #include "AudioIPC.h"
 #include "Waveform.h"
+#include "UIComponents.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 namespace sp
 {
@@ -31,6 +32,13 @@ class LibraryView final : public juce::Component,
     bool isInterestedInFileDrag(const juce::StringArray &) override;
     void filesDropped(const juce::StringArray &,int,int) override;
     Benchmark *benchmark = nullptr;
+    AudioClient &audioClient() { return audio; }
+    void setCompact(bool);
+    void parkPlayback();
+    void focusSearch(){search.grabKeyboardFocus();search.selectAll();}
+    std::function<void()> onShowDesigner;
+    std::function<void()> onBeforeAudition;
+    std::function<void(const Asset &,int64_t,int64_t,bool,int)> onAddToDesigner;
 
   private:
     friend class Benchmark;
@@ -50,11 +58,13 @@ class LibraryView final : public juce::Component,
     void paintCell(juce::Graphics &, int, int, int, int, bool) override;
     void selectedRowsChanged(int) override;
     void cellDoubleClicked(int, int, const juce::MouseEvent &) override;
+    juce::var getDragSourceDescription(const juce::SparseSet<int> &) override;
     void paintListBoxItem(int, juce::Graphics &, int, int, bool) override;
     void listBoxItemClicked(int, const juce::MouseEvent &) override;
     bool keyPressed(const juce::KeyPress &, juce::Component *) override;
     void timerCallback() override;
     void chooseFolder();
+    void compactVisibility();
     void toggle();
     void playFromPlayhead();
     void playSelected(bool useMatch, int64_t seekSample = -1);
@@ -101,8 +111,7 @@ class LibraryView final : public juce::Component,
                 owner.chooseSource(n);
         }
     } sourceModel{*this};
-    juce::LookAndFeel_V4 look;
-    juce::TooltipWindow tooltips{this,500};
+    ui::LookAndFeel look;
     LibraryService library;
     AudioClient audio;
     WaveformCache waveformCache;
@@ -137,6 +146,9 @@ class LibraryView final : public juce::Component,
     IconButton findSimilar{"Find Similar",ActionIcon::similar,true},externalReference{"Choose reference file",ActionIcon::file};
     IconButton referencePlay{"Play reference",ActionIcon::play},referenceSearch{"Find Similar",ActionIcon::similar,true};
     IconButton clearReference{"Clear reference",ActionIcon::cancel},addReference{"Add containing folder to Library",ActionIcon::folder};
+    IconButton designer{"Designer",ActionIcon::layers,true},addDesigner{"Add marked region to Designer",ActionIcon::addLayer},referenceDesigner{"Add reference to Designer",ActionIcon::addLayer};
+    ui::FileDragButton dragOriginal{"Drag complete original file"};
+    bool compact=false;
     juce::ToggleButton includeSource{"Include source recording"};
     juce::TextEditor referenceIn,referenceOut;
     juce::Label referenceTitle,referenceStatus,referenceUnits;

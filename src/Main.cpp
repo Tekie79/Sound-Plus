@@ -2,6 +2,7 @@
 #include "MacSources.h"
 #include "Benchmark.h"
 #include "Performance.h"
+#include "Workstation.h"
 class SoundPlusApplication final : public juce::JUCEApplication
 {
   public:
@@ -50,7 +51,7 @@ class SoundPlusApplication final : public juce::JUCEApplication
         juce::File modelDirectory;
         auto modelAt=args.indexOf("--model-dir");
         if (modelAt>=0 && modelAt+1<args.size()) modelDirectory=juce::File(args[modelAt+1]);
-        window = std::make_unique<Window>(dir.getChildFile("library.sqlite"),enableAI,modelDirectory);
+        window = std::make_unique<Window>(dir.getChildFile("library.sqlite"),enableAI,modelDirectory,planAt>=0);
         sp::activateDesktopApplication();
         window->toFront(true);
         for (int i = 0; i + 1 < args.size(); ++i)
@@ -58,8 +59,12 @@ class SoundPlusApplication final : public juce::JUCEApplication
                 window->view->addFolder(juce::File(args[++i]));
         auto outputAt = args.indexOf("--benchmark-output");
         if (planAt >= 0 && outputAt >= 0)
+        {
+            auto plan=juce::JSON::parse(juce::File(args[planAt+1]));
+            if(plan["mode"].toString()=="semantic-designer"){window->workstation->showDesigner(true);window->workstation->designer.session.open(juce::File(plan["designFile"].toString()));}
             benchmark = std::make_unique<sp::Benchmark>(*window->view, juce::File(args[planAt + 1]),
-                                                        juce::File(args[outputAt + 1]));
+                                                        juce::File(args[outputAt + 1]),&window->workstation->designer);
+        }
     }
     void shutdown() override
     {
@@ -78,19 +83,21 @@ class SoundPlusApplication final : public juce::JUCEApplication
   private:
     struct Window : juce::DocumentWindow
     {
-        sp::LibraryView *view = nullptr;
-        explicit Window(const juce::File &db, bool enableAI, const juce::File &modelDirectory)
+        sp::LibraryView *view = nullptr;Workstation *workstation=nullptr;
+        explicit Window(const juce::File &db, bool enableAI, const juce::File &modelDirectory,bool benchmark)
             : DocumentWindow("SoundPlus", juce::Colour(0xff101419), DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
-            view = new sp::LibraryView(db, juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory);
-            setContentOwned(view, true);
+            workstation=new Workstation(db,enableAI,modelDirectory,benchmark);view=&workstation->library;
+            setContentOwned(workstation, true);
             setResizable(true, true);
-            setResizeLimits(1080, 900, 2600, 1800);
-            centreWithSize(1200, 1000);
+            setResizeLimits(1040, 680, 3200, 2200);
+            centreWithSize(1360, 860);
+            if(!benchmark)restoreWindowStateFromString(workstation->preferences.getValue("window"));
             setVisible(true);
             toFront(true);
         }
+        ~Window() override {if(workstation)workstation->preferences.setValue("window",getWindowStateAsString());}
         void closeButtonPressed() override
         {
             juce::JUCEApplication::getInstance()->systemRequestedQuit();

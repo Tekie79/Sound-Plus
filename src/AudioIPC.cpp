@@ -41,10 +41,10 @@ void AudioClient::enqueue(juce::var v)
 {
     std::lock_guard lock(mutex);
     const auto command = v["command"].toString();
-    if (command == "play") { desiredPlaying = true; desiredId = v["id"].toString(); }
+    if (command == "play" || command=="play_design") { desiredPlaying = true; desiredId = v["id"].toString(); }
     if (command == "stop") { desiredPlaying = false; desiredId.clear(); }
-    if (command == "play" || command == "stop")
-        std::erase_if(outgoing,[](const auto &old) { auto name = old["command"].toString(); return name == "play" || name == "stop"; });
+    if (command == "play" || command=="play_design" || command == "stop")
+        std::erase_if(outgoing,[](const auto &old) { auto name = old["command"].toString(); return name == "play" || name=="play_design" || name == "stop"; });
     else if (command == "gain")
         std::erase_if(outgoing,[](const auto &old) { return old["command"].toString() == "gain"; });
     if (outgoing.size() >= 16)
@@ -77,6 +77,11 @@ void AudioClient::stop()
     auto m = message("stop"); m.getDynamicObject()->setProperty("playGeneration",(juce::int64)++playbackGeneration);
     enqueue(m);
 }
+uint64_t AudioClient::playDesign(const juce::String &id,const juce::File &snapshot,int64_t position,const juce::File &capture)
+{
+    auto m=message("play_design");auto *o=m.getDynamicObject();auto generation=++playbackGeneration;o->setProperty("id",id);o->setProperty("path",snapshot.getFullPathName());o->setProperty("positionSample",(juce::int64)position);o->setProperty("capture",capture==juce::File() ? juce::String() : capture.getFullPathName());o->setProperty("playGeneration",(juce::int64)generation);enqueue(m);return generation;
+}
+void AudioClient::deviceRate(double rate){auto m=message("device_rate");m.getDynamicObject()->setProperty("rate",rate);enqueue(m);}
 void AudioClient::gain(float g)
 {
     targetGain = g;
@@ -101,6 +106,7 @@ juce::var AudioClient::status()
     auto copy = latest.clone();
     if (auto *object = copy.getDynamicObject())
     {
+        object->setProperty("intentId",desiredId);
         bool awaitingCommand=(uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
         bool pending = desiredPlaying && awaitingCommand;
         object->setProperty("pendingPlayback",pending);

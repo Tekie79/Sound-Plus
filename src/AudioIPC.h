@@ -7,7 +7,7 @@
 #include "AudioRegion.h"
 namespace sp
 {
-constexpr int protocolVersion = 3;
+constexpr int protocolVersion = 4;
 juce::var message(const juce::String &command);
 bool sendMessage(int fd, const juce::var &);
 // Private inherited socketpair: no listening port or discoverable endpoint.
@@ -18,10 +18,13 @@ class AudioClient
     ~AudioClient();
     void play(const juce::String &id, const juce::File &);
     uint64_t playRegion(const juce::String &id, const juce::File &, const PlaybackRegion &);
+    uint64_t playDesign(const juce::String &id,const juce::File &snapshot,int64_t position=0,const juce::File &capture={});
     void stop();
     void gain(float);
     void restart();
     void device(const juce::String &);
+    void deviceRate(double);
+    float monitorGain() const { return targetGain.load(); }
     juce::var status();
 
   private:

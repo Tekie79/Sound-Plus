@@ -24,11 +24,26 @@ PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, i
     ratio = sourceRate / rate;
     outputLength = (int64_t)std::ceil((double)(sourceEnd-sourceStart) / ratio);
 }
+PcmStream::PcmStream(const DesignDocument &d,double outputRate,int64_t first,const juce::File &captureFile):rate(outputRate),sourceStart(first),sourceRate(d.sampleRate)
+{
+    designReader=std::make_unique<DesignReader>(d,outputRate,first,-1,d.renderSettings.tailSeconds);sourceEnd=designReader->endFrame();ratio=sourceRate/rate;outputLength=designReader->length();
+    if(captureFile!=juce::File()){captureFile.getParentDirectory().createDirectory();capture=captureFile.createOutputStream();if(!capture)throw std::runtime_error("Cannot capture pre-monitor preview");capture->setPosition(0);capture->truncate();}
+}
 void PcmStream::fill(int budget)
 {
+    auto began=monotonicMs();
     auto write = writeIndex.load(std::memory_order_relaxed);
     auto free = capacity - (write - readIndex.load(std::memory_order_acquire));
     auto count = std::min<int64_t>({budget, (int64_t)free, outputLength - outputFrame});
+    if(designReader)
+    {
+        while(count>0){auto n=designReader->read(designBlock,(int)std::min<int64_t>(4096,count));if(n<=0)break;
+            for(int i=0;i<n;++i,++write)for(int c=0;c<2;++c){auto v=designBlock.getSample(c,i);pcm[(size_t)c][write%capacity]=v;if(capture)captureData[(size_t)i*2+c]=v;}
+            if(capture && !capture->write(captureData.data(),(size_t)n*2*sizeof(float)))throw std::runtime_error("Preview capture write failed");
+            outputFrame+=n;count-=n;}
+        writeIndex.store(write,std::memory_order_release);if(outputFrame>=outputLength){eof.store(true,std::memory_order_release);if(capture){capture->flush();capture.reset();}}
+        maxFillMs=std::max(maxFillMs,monotonicMs()-began);return;
+    }
     for (int64_t n = 0; n < count; ++n, ++write, ++outputFrame)
     {
         const double pos = sourceStart + (double)outputFrame * ratio;
@@ -64,20 +79,23 @@ void PcmStream::fill(int budget)
     writeIndex.store(write, std::memory_order_release);
     if (outputFrame >= outputLength)
         eof.store(true, std::memory_order_release);
+    maxFillMs=std::max(maxFillMs,monotonicMs()-began);
 }
 int PcmStream::read(float *const *output, int channels, int frames, float &gain, float target) noexcept
 {
     auto read = readIndex.load(std::memory_order_relaxed);
     const int count =
         (int)std::min<uint64_t>((uint64_t)frames, writeIndex.load(std::memory_order_acquire) - read);
+    float rawPeak=0;
     for (int i = 0; i < count; ++i, ++read)
     {
         gain += (target - gain) * 0.002f;
         for (int c = 0; c < channels; ++c)
             if (output[c])
-                output[c][i] = pcm[(size_t)std::min(c, 1)][read % capacity] * gain;
+            {auto raw=pcm[(size_t)std::min(c, 1)][read % capacity];rawPeak=std::max(rawPeak,std::abs(raw));output[c][i]=raw*gain;}
     }
     readIndex.store(read, std::memory_order_release);
+    preMonitorPeak.store(rawPeak,std::memory_order_relaxed);
     return count;
 }
 void AuditionCore::open(const juce::File &file, double rate, int64_t start, int64_t end, int auditionPair)
@@ -95,6 +113,11 @@ void AuditionCore::stop()
     active.store(nullptr);
     if (stream)
         retired.push_back(std::move(stream));
+}
+void AuditionCore::openDesign(const DesignDocument &d,double rate,int64_t first,const juce::File &captureFile)
+{
+    // Prepare readers/DSP and the initial FIFO while the callback can still use its old graph.
+    auto next=std::make_unique<PcmStream>(d,rate,first,captureFile);next->fill(32768);stop();stream=std::move(next);active.store(stream.get());
 }
 void AuditionCore::service()
 {
@@ -119,7 +142,13 @@ void AuditionCore::render(float *const *out, int channels, int frames) noexcept
             p->firstCallbackMs.store(monotonicMs(), std::memory_order_relaxed);
         if (read < frames && !p->ended())
             underruns.fetch_add(1, std::memory_order_relaxed);
+        preMonitorPeak.store(p->preMonitorPeak.load(std::memory_order_relaxed),std::memory_order_relaxed);
     }
+    else preMonitorPeak.store(0,std::memory_order_relaxed);
+    if(p!=lastRendered){transitionTail=lastOut;transitionFrame=0;lastRendered=p;}
+    // A short monitor-only transition uses the previous sample, never obsolete queued PCM.
+    for(int i=0;i<frames;++i){if(transitionFrame<240)++transitionFrame;float blend=(float)transitionFrame/240;
+        for(int c=0;c<channels;++c)if(out[c]){auto channel=(size_t)std::min(c,1);out[c][i]=out[c][i]*blend+transitionTail[channel]*(1-blend);lastOut[channel]=out[c][i];}}
     hazard.store(nullptr);
     float max = 0;
     for (int c = 0; c < channels; ++c)
