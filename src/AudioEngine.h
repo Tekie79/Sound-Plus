@@ -22,6 +22,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     AuditionCore core;
     juce::AudioDeviceManager devices;
     juce::String input, id, error;
+    uint64_t playGeneration = 0;
     juce::Array<juce::var> outputs;
     std::atomic<double> deviceRate{0};
     std::atomic<bool> deviceChanged{false};

@@ -10,13 +10,17 @@ namespace sp
 class PcmStream
 {
   public:
-    PcmStream(const juce::File &, double outputRate);
+    PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1);
     void fill(int budget = 16384);
     int read(float *const *output, int channels, int frames, float &gain, float targetGain) noexcept;
     double seconds() const
     {
-        return (double)readIndex.load() / rate;
+        return (double)sourceStart / sourceRate + (double)readIndex.load() / rate;
     }
+    int64_t sourceSample() const { return std::min(sourceEnd,sourceStart+(int64_t)(readIndex.load()*ratio)); }
+    int64_t startSample() const { return sourceStart; }
+    int64_t endSample() const { return sourceEnd; }
+    double originalRate() const { return sourceRate; }
     bool ended() const
     {
         return eof.load() && readIndex.load() == writeIndex.load();
@@ -41,11 +45,13 @@ class PcmStream
     juce::AudioBuffer<float> cache{2, 8192};
     int64_t cacheStart = -1, outputFrame = 0, outputLength = 0, reads = 0;
     double rate = 48000, ratio = 1;
+    int64_t sourceStart = 0, sourceEnd = 0;
+    double sourceRate = 48000;
 };
 class AuditionCore
 {
   public:
-    void open(const juce::File &, double sampleRate);
+    void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1);
     void stop();
     void service();
     void render(float *const *, int channels, int frames) noexcept;
@@ -62,6 +68,10 @@ class AuditionCore
         return stream ? stream->firstCallbackMs.load() : 0;
     }
     std::atomic<float> volume{0.7f}, peak{0};
+    int64_t sourceSample() const { return stream ? stream->sourceSample() : 0; }
+    int64_t startSample() const { return stream ? stream->startSample() : 0; }
+    int64_t endSample() const { return stream ? stream->endSample() : 0; }
+    double sourceRate() const { return stream ? stream->originalRate() : 0; }
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};
 
   private:

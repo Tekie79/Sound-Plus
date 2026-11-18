@@ -7,6 +7,34 @@
 #include <filesystem>
 namespace sp
 {
+juce::var powerAndThermalState()
+{
+    auto state=juce::var(new juce::DynamicObject());
+    const char *names[]{"nominal","fair","serious","critical"};
+    NSInteger thermal=NSProcessInfo.processInfo.thermalState;
+    state.getDynamicObject()->setProperty("thermalState",juce::String(names[std::clamp<int>((int)thermal,0,3)]));
+    if (@available(macOS 12.0,*)) state.getDynamicObject()->setProperty("lowPowerMode",(bool)NSProcessInfo.processInfo.lowPowerModeEnabled);
+    return state;
+}
+bool localAiSupported()
+{
+    if (@available(macOS 13.3, *)) return true;
+    return false;
+}
+std::vector<juce::String> robertaPieces(const juce::String &text)
+{
+    @autoreleasepool
+    {
+        static NSRegularExpression *regex = [[NSRegularExpression alloc]
+            initWithPattern:@"'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+"
+            options:0 error:nil]; // Owned for the process lifetime in this non-ARC translation unit.
+        NSString *input = [NSString stringWithUTF8String:text.toRawUTF8()];
+        std::vector<juce::String> out;
+        for (NSTextCheckingResult *m in [regex matchesInString:input options:0 range:NSMakeRange(0, input.length)])
+            out.emplace_back(juce::String::fromUTF8([[input substringWithRange:m.range] UTF8String]));
+        return out;
+    }
+}
 void makeAudioProcessBackground()
 {
     // The helper must never compete with the Library window for keyboard focus.

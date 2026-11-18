@@ -1,5 +1,7 @@
 # Library performance milestone
 
+This report records the preceding performance slice. The subsequent [local AI search milestone](LOCAL_AI_SEARCH.md) adds semantic retrieval and region audition, reruns representative regressions, and records current coverage. Measurements below retain their original scope and artifact identities.
+
 Implemented and verified on 17 November 2026 against the repository's architecture and requirements specification and the existing Library/audition milestone. This completes the requested library-performance slice. Semantic retrieval, Designer, plugins and Resolve placement remain outside it; this is not the specification's complete M1 release gate.
 
 ## Behavior and architecture

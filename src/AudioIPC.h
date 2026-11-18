@@ -4,9 +4,10 @@
 #include <mutex>
 #include <deque>
 #include <atomic>
+#include "AudioRegion.h"
 namespace sp
 {
-constexpr int protocolVersion = 1;
+constexpr int protocolVersion = 2;
 juce::var message(const juce::String &command);
 bool sendMessage(int fd, const juce::var &);
 // Private inherited socketpair: no listening port or discoverable endpoint.
@@ -16,6 +17,7 @@ class AudioClient
     explicit AudioClient(juce::File executable);
     ~AudioClient();
     void play(const juce::String &id, const juce::File &);
+    uint64_t playRegion(const juce::String &id, const juce::File &, const PlaybackRegion &);
     void stop();
     void gain(float);
     void restart();
@@ -32,5 +34,8 @@ class AudioClient
     std::mutex mutex;
     std::deque<juce::var> outgoing;
     juce::var latest;
+    std::atomic<uint64_t> playbackGeneration{0};
+    bool desiredPlaying = false;
+    juce::String desiredId;
 };
 } // namespace sp

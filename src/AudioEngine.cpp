@@ -1,4 +1,6 @@
 #include "AudioEngine.h"
+#include "Catalog.h"
+#include "Performance.h"
 #include <sys/socket.h>
 #include <fcntl.h>
 #include <unistd.h>
@@ -61,6 +63,9 @@ void AudioEngine::command(const juce::var &m)
     }
     if (cmd == "stop")
     {
+        auto generation = (uint64_t)(juce::int64)m["playGeneration"];
+        if (generation < playGeneration) return;
+        playGeneration = generation;
         core.stop();
         id.clear();
         return;
@@ -81,9 +86,23 @@ void AudioEngine::command(const juce::var &m)
     }
     if (cmd == "play")
     {
+        auto generation = (uint64_t)(juce::int64)m["playGeneration"];
+        if (generation < playGeneration) return;
+        playGeneration = generation;
+        core.stop(); id.clear();
         try
         {
-            core.open(juce::File(m["path"].toString()), deviceRate.load());
+            juce::File file(m["path"].toString());
+            if ((int64_t)m["modified"] != 0)
+            {
+                FileStamp stamp;
+                if (!fileStamp(file,stamp) || stamp.size != (int64_t)m["size"] ||
+                    stamp.modified != (int64_t)m["modified"] || stamp.inode != (int64_t)m["inode"])
+                    throw std::runtime_error("Recording changed or is offline; refresh before playing its region");
+            }
+            auto first = (int64_t)m["startSample"], position = (int64_t)m["positionSample"];
+            if (position >= 0) first = std::max(first,position);
+            core.open(file, deviceRate.load(),first,(int64_t)m["endSample"]);
             id = m["id"].toString();
             error.clear();
         }
@@ -133,7 +152,8 @@ void AudioEngine::timerCallback()
         input = input.fromFirstOccurrenceOf("\n", false, false);
         command(juce::JSON::parse(line));
     }
-    core.service();
+    try { core.service(); }
+    catch (const std::exception &e) { core.stop(); id.clear(); error=e.what(); }
     if (++ticks % 10 == 0 && hello)
         sendStatus();
 }
@@ -142,6 +162,11 @@ void AudioEngine::sendStatus()
     auto m = message("status");
     auto *o = m.getDynamicObject();
     o->setProperty("id", id);
+    o->setProperty("playGeneration",(juce::int64)playGeneration);
+    o->setProperty("sourceSample",(juce::int64)core.sourceSample());
+    o->setProperty("sourceRate",core.sourceRate());
+    o->setProperty("startSample",(juce::int64)core.startSample());
+    o->setProperty("endSample",(juce::int64)core.endSample());
     o->setProperty("playing", core.playing());
     o->setProperty("seconds", core.seconds());
     o->setProperty("firstCallbackMs", core.firstCallbackMs());
@@ -153,6 +178,7 @@ void AudioEngine::sendStatus()
     o->setProperty("callbacks", (juce::int64)core.callbacks.load());
     o->setProperty("frames", (juce::int64)core.framesRendered.load());
     o->setProperty("underruns", (juce::int64)core.underruns.load());
+    o->setProperty("peakResidentBytes",performance.json()["peakResidentBytes"]);
     o->setProperty("outputs", outputs);
     if (auto *d = devices.getCurrentAudioDevice())
         o->setProperty("device", d->getName());

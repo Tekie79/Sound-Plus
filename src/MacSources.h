@@ -9,6 +9,7 @@ namespace sp
 {
 void makeAudioProcessBackground();
 void activateDesktopApplication();
+juce::var powerAndThermalState();
 struct VolumeLocation
 {
     juce::String identity, relative;

@@ -1,6 +1,9 @@
 #include "LibraryService.h"
 #include "MacSources.h"
 #include "Performance.h"
+#include "AIProcess.h"
+#include "AudioIPC.h"
+#include "ClapRuntime.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <condition_variable>
 #include <deque>
@@ -11,6 +14,7 @@
 #include <sys/mount.h>
 #include <thread>
 #include <cstdio>
+#include <map>
 
 namespace sp
 {
@@ -64,6 +68,7 @@ struct LibraryService::Impl
         double seconds = 0, rate = 0;
         int channels = 0;
         juce::String error;
+        int64_t samples = 0;
     };
     struct Batch
     {
@@ -76,8 +81,27 @@ struct LibraryService::Impl
         bool rootInfo = false, finished = false, local = true, watchWorking = true;
         int64_t scan = 0;
         std::shared_ptr<std::promise<void>> barrier;
+        std::optional<AnalysisUpdate> analysis;
+        bool seedAnalysis = false, retryAnalysis = false;
     };
     juce::File database;
+    juce::File modelDirectory;
+    std::unique_ptr<AIProcess> inference;
+    std::thread analysisWorker, semanticReader;
+    std::atomic<bool> aiLoaded{false}, aiAnalyzing{false}, installCancelled{false};
+    std::atomic<bool> auditionActive{false};
+    std::atomic<uint64_t> analysisGeneration{0};
+    bool installRequested = false, aiRetryRequested = false;
+    juce::File importModelDirectory;
+    juce::String preferredAnalysis;
+    double semanticDue = 0;
+    uint64_t semanticInputVersion = 0, semanticResultVersion = 0;
+    struct SemanticResult
+    {
+        uint64_t request = 0;
+        std::vector<Asset> candidates;
+        LibrarySnapshot::SemanticTiming timing;
+    } semanticResult;
     std::atomic<bool> stopping{false}, initialized{false}, pauseRequested{false};
     std::atomic<uint64_t> version{1}, workToken{1};
     std::atomic<uint64_t> membershipVersion{1};
@@ -100,20 +124,33 @@ struct LibraryService::Impl
     DirectoryEvents events; // Outlives root watchers and all owned workers.
     std::vector<std::shared_ptr<Runtime>> roots;
     int completedJobs = 0;
-    explicit Impl(juce::File file) : database(std::move(file))
+    explicit Impl(juce::File file, juce::File executable, juce::File model)
+        : database(std::move(file)), modelDirectory(model == juce::File() ? defaultModelDirectory() : model)
     {
+        current.semantic.enabled = executable != juce::File();
+        current.semantic.model = modelId(); current.semantic.preprocessing = preprocessingId();
+        if (current.semantic.enabled) inference = std::make_unique<AIProcess>(executable,modelDirectory);
         writer = std::thread([this] { indexLoop(); });
         reader = std::thread([this] { searchLoop(); });
+        if (inference)
+        {
+            analysisWorker = std::thread([this] { analysisLoop(); });
+            semanticReader = std::thread([this] { semanticLoop(); });
+        }
     }
     ~Impl()
     {
         stopping = true;
         pauseRequested = false;
+        installCancelled = true;
+        if (inference) inference->cancel();
         wake.notify_all();
         if (writer.joinable())
             writer.join();
         if (reader.joinable())
             reader.join();
+        if (analysisWorker.joinable()) analysisWorker.join();
+        if (semanticReader.joinable()) semanticReader.join();
     }
     void notifyLocked()
     {
@@ -201,6 +238,7 @@ struct LibraryService::Impl
             h.seconds = (double)audio->lengthInSamples / audio->sampleRate;
             h.rate = audio->sampleRate;
             h.channels = (int)audio->numChannels;
+            h.samples = audio->lengthInSamples;
         }
         else
             h.error = "Unsupported codec, empty or unreadable audio. Rescan to retry.";
@@ -474,6 +512,275 @@ struct LibraryService::Impl
             wake.notify_all();
         }
     }
+    bool derived(Batch batch)
+    {
+        auto promise = std::make_shared<std::promise<void>>();
+        auto done = promise->get_future(); batch.barrier = promise;
+        {
+            std::unique_lock lock(mutex);
+            wake.wait(lock,[&] { return stopping || batches.size() < 8; });
+            if (stopping) return false;
+            batches.push_back(std::move(batch));
+            performance.peakBatches = std::max<int64_t>(performance.peakBatches.load(),(int64_t)batches.size());
+        }
+        wake.notify_all();
+        while (!stopping && done.wait_for(std::chrono::milliseconds(10)) != std::future_status::ready) {}
+        return !stopping;
+    }
+    void aiStatus(const juce::String &status, const juce::String &error = {})
+    {
+        std::lock_guard lock(mutex);
+        current.semantic.status = status; current.semantic.error = error;
+        current.semantic.ready = aiLoaded; current.semantic.active = aiAnalyzing;
+        notifyLocked();
+    }
+    void analysisLoop()
+    {
+        while (!initialized && !stopping) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (stopping) return;
+        if (!localAiSupported()) { aiStatus("Local AI needs macOS 13.3 or later"); return; }
+        bool attempted = false;
+        int transportFailures = 0;
+        try
+        {
+            Catalog read(database,true);
+            double lastCoverage = 0;
+            while (!stopping)
+            {
+                bool install = false, retry = false;
+                juce::File import;
+                {
+                    std::lock_guard lock(mutex);
+                    install = std::exchange(installRequested,false);
+                    retry = std::exchange(aiRetryRequested,false);
+                    import = importModelDirectory;
+                }
+                if (install)
+                {
+                    { std::lock_guard lock(mutex); current.semantic.installing = true; }
+                    aiStatus("Installing verified local model");
+                    juce::String error;
+                    bool installed = installModelPack(modelDirectory,import,installCancelled,
+                        [&](int64_t bytes, int64_t total) {
+                            std::lock_guard lock(mutex);
+                            current.semantic.downloadedBytes = bytes; current.semantic.downloadTotalBytes = total;
+                            notifyLocked();
+                        },error);
+                    { std::lock_guard lock(mutex); current.semantic.installing = false; }
+                    aiStatus(installed ? "Model installed; loading" : "Model installation stopped",error);
+                    attempted = !installed;
+                }
+                if (retry)
+                {
+                    inference->retry(); attempted = false; transportFailures = 0;
+                    Batch b; b.retryAnalysis = true; if (!derived(std::move(b))) break;
+                    aiLoaded = false;
+                }
+                if (!aiLoaded)
+                {
+                    if (!attempted && modelDirectory.isDirectory())
+                    {
+                        attempted = true;
+                        aiStatus("Verifying and loading local model");
+                        try
+                        {
+                            auto response = inference->call(message("status"),true);
+                            if (response["error"].toString().isNotEmpty()) throw std::runtime_error(response["error"].toString().toStdString());
+                            aiLoaded = true;
+                            Batch b; b.seedAnalysis = true;
+                            if (!derived(std::move(b))) break;
+                            {
+                                std::lock_guard lock(mutex);
+                                current.semantic.modelLoadMs = inference->lastLoadMs;
+                                current.semantic.helperPeakBytes = (int64_t)response["peakResidentBytes"];
+                                ++semanticInputVersion; semanticDue = monotonicMs();
+                            }
+                            aiStatus("Local AI ready");
+                        }
+                        catch (const std::exception &e) { aiLoaded = false; aiStatus("Model unavailable; filename search is ready",e.what()); }
+                    }
+                    else if (!attempted) aiStatus("Install AI Model to search by sound description");
+                    if (!aiLoaded)
+                    {
+                        std::unique_lock lock(mutex); wake.wait_for(lock,std::chrono::milliseconds(500));
+                        continue;
+                    }
+                }
+                if (monotonicMs()-lastCoverage > 500)
+                {
+                    auto coverage = read.analysisCounts(modelId(),preprocessingId());
+                    std::lock_guard lock(mutex); current.semantic.coverage = coverage;
+                    lastCoverage = monotonicMs(); notifyLocked();
+                }
+                if (pauseRequested)
+                {
+                    aiAnalyzing = false; aiStatus("Analysis paused; search and audition stay available");
+                    std::unique_lock lock(mutex);
+                    wake.wait_for(lock,std::chrono::milliseconds(100),[&] { return stopping || !pauseRequested || aiRetryRequested; });
+                    continue;
+                }
+                juce::String preferred;
+                { std::lock_guard lock(mutex); preferred = preferredAnalysis; }
+                auto task = read.nextAnalysis(modelId(),preprocessingId(),preferred);
+                if (!task)
+                {
+                    aiAnalyzing = false; aiStatus("Local AI ready");
+                    std::unique_lock lock(mutex); wake.wait_for(lock,std::chrono::milliseconds(200));
+                    continue;
+                }
+                auto started = monotonicMs();
+                {
+                    std::lock_guard lock(mutex);
+                    if (pauseRequested) continue;
+                    aiAnalyzing = true; current.semantic.asset = task->asset.name;
+                    if (!current.semantic.firstWindowStartedMs) current.semantic.firstWindowStartedMs=started;
+                }
+                aiStatus("Analyzing " + task->asset.name);
+                AnalysisUpdate result;
+                result.asset = task->asset; result.model = modelId(); result.preprocessing = preprocessingId();
+                result.start = task->nextStart;
+                auto window = (int64_t)std::llround(10*task->asset.sampleRate);
+                auto stride = (int64_t)std::llround(5*task->asset.sampleRate);
+                result.end = std::min(task->asset.samples,result.start+window);
+                result.nextStart = result.start+stride;
+                result.done = result.end == task->asset.samples;
+                bool stale = false;
+                try
+                {
+                    auto command = message("audio"); auto *o = command.getDynamicObject();
+                    o->setProperty("path",task->asset.path);
+                    o->setProperty("startSample",(juce::int64)result.start);
+                    o->setProperty("endSample",(juce::int64)result.end);
+                    o->setProperty("sourceRate",task->asset.sampleRate);
+                    o->setProperty("sourceSamples",(juce::int64)task->asset.samples);
+                    o->setProperty("size",(juce::int64)task->asset.size);
+                    o->setProperty("modified",(juce::int64)task->asset.modified);
+                    o->setProperty("inode",(juce::int64)task->asset.inode);
+                    auto response = inference->call(command);
+                    stale = (bool)response["staleSource"];
+                    result.error = response["error"].toString();
+                    if (auto *values = response["embedding"].getArray())
+                        for (auto &value : *values) result.embedding.push_back((float)(double)value);
+                    transportFailures = 0;
+                    { std::lock_guard lock(mutex); current.semantic.helperPeakBytes = std::max<int64_t>(current.semantic.helperPeakBytes,(int64_t)response["peakResidentBytes"]); }
+                }
+                catch (const std::exception &e) { result.error = e.what(); ++transportFailures; }
+                if (stopping) break;
+                if (stale)
+                {
+                    events.push(juce::File(task->asset.path).getParentDirectory().getFullPathName());
+                    aiAnalyzing = false;
+                    std::unique_lock lock(mutex); wake.wait_for(lock,std::chrono::milliseconds(500));
+                    continue;
+                }
+                if (result.error.isEmpty() && result.embedding.size() != 512) result.error = "Invalid model output; Retry Analysis";
+                Batch b; b.analysis = result;
+                if (!derived(std::move(b))) break;
+                {
+                    std::lock_guard lock(mutex);
+                    current.semantic.analysisWallMs += monotonicMs()-started;
+                    current.semantic.lastWindowPublishedMs=monotonicMs();
+                    if (result.error.isEmpty())
+                    {
+                        ++current.semantic.windowsThisSession;
+                        auto previousEnd = result.start == 0 ? 0 : std::min(task->asset.samples,result.start-stride+window);
+                        current.semantic.sourceSecondsThisSession += (double)std::max<int64_t>(0,result.end-previousEnd)/task->asset.sampleRate;
+                    }
+                    current.semantic.error = result.error;
+                }
+                aiAnalyzing = false;
+                if (transportFailures >= 3)
+                { aiLoaded = false; aiStatus("AI worker stopped; choose Retry Analysis",result.error); }
+                else aiStatus("Local AI ready",result.error);
+                // Leave headroom during audition/indexing; at most one inference window is in flight.
+                bool yieldingToAudition=auditionActive;
+                std::unique_lock lock(mutex);
+                wake.wait_for(lock,std::chrono::milliseconds(yieldingToAudition ? 150 : 20),[&] {
+                    return stopping || pauseRequested || aiRetryRequested || installRequested ||
+                           (yieldingToAudition && !auditionActive);
+                });
+            }
+        }
+        catch (const std::exception &e) { if (!stopping) aiStatus("Analysis stopped; choose Retry Analysis",e.what()); }
+        aiAnalyzing = false;
+    }
+    void semanticLoop()
+    {
+        while (!initialized && !stopping) std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        if (stopping) return;
+        try
+        {
+            Catalog read(database,true);
+            uint64_t lastInput = 0, lastAnalysis = 0;
+            double lastCompleted = 0;
+            std::deque<std::pair<juce::String,std::vector<float>>> cache;
+            while (!stopping)
+            {
+                juce::String q, root;
+                uint64_t id, input, token, corpus;
+                {
+                    std::unique_lock lock(mutex);
+                    input = semanticInputVersion; corpus = analysisGeneration;
+                    if (!aiLoaded || text.trim().isEmpty() ||
+                        (input == lastInput && (corpus == lastAnalysis || monotonicMs()-lastCompleted < 500)) ||
+                        monotonicMs() < semanticDue)
+                    { wake.wait_for(lock,std::chrono::milliseconds(20)); continue; }
+                    q = text; root = filter; id = request; token = workToken;
+                }
+                SemanticResult result; result.request = id;
+                if (q.length()==32 && q.containsOnly("0123456789abcdefABCDEF"))
+                {
+                    std::lock_guard lock(mutex);
+                    if (request==id && workToken==token) { semanticResult=result; ++semanticResultVersion; wake.notify_all(); }
+                    lastInput=input; lastAnalysis=corpus; lastCompleted=monotonicMs(); continue;
+                }
+                try
+                {
+                    std::vector<float> vector;
+                    auto found = std::find_if(cache.begin(),cache.end(),[&](const auto &v) { return v.first == q; });
+                    if (found != cache.end())
+                    {
+                        vector = found->second; result.timing.textCacheHit = true;
+                        auto entry = std::move(*found); cache.erase(found); cache.push_back(std::move(entry));
+                    }
+                    else
+                    {
+                        auto begin = monotonicMs(); auto command = message("text"); command.getDynamicObject()->setProperty("text",q);
+                        auto response = inference->call(command,true);
+                        result.timing.workerRoundTripMs = monotonicMs()-begin;
+                        if (response["error"].toString().isNotEmpty()) throw std::runtime_error(response["error"].toString().toStdString());
+                        if (response["model"].toString() != modelId() || response["preprocessing"].toString() != preprocessingId())
+                            throw std::runtime_error("Query/index embedding-space mismatch");
+                        if (auto *values = response["embedding"].getArray())
+                            for (auto &v : *values) vector.push_back((float)(double)v);
+                        if (vector.size() != 512) throw std::runtime_error("Invalid text embedding");
+                        result.timing.textEncodeMs = (double)response["inferenceMs"];
+                        result.timing.textPreprocessMs = (double)response["preprocessMs"];
+                        { std::lock_guard lock(mutex); current.semantic.helperPeakBytes=std::max<int64_t>(current.semantic.helperPeakBytes,(int64_t)response["peakResidentBytes"]); }
+                        cache.emplace_back(q,vector); if (cache.size() > 64) cache.pop_front();
+                    }
+                    if (workToken != token) { lastInput = input; continue; }
+                    read.cancelWhen(&workToken,token);
+                    RetrievalMetrics metrics;
+                    result.candidates = read.semanticSearch(vector,modelId(),preprocessingId(),root,100,&metrics);
+                    result.timing.fetchFilterMs = metrics.fetchFilterMs;
+                    result.timing.vectorScoreMs = metrics.vectorScoreMs;
+                    result.timing.rankGroupMs = metrics.rankGroupMs; result.timing.vectors = metrics.vectors;
+                    std::lock_guard lock(mutex);
+                    if (request == id && workToken == token)
+                    { semanticResult = std::move(result); ++semanticResultVersion; wake.notify_all(); }
+                }
+                catch (const QueryCancelled &) {}
+                catch (const std::exception &e)
+                {
+                    if (!stopping)
+                    { std::lock_guard lock(mutex); if (request == id) { current.semantic.error = e.what(); notifyLocked(); } }
+                }
+                lastInput = input; lastAnalysis = corpus; lastCompleted = monotonicMs();
+            }
+        }
+        catch (const std::exception &e) { if (!stopping) aiStatus("Semantic reader stopped",e.what()); }
+    }
     void updateState(Catalog &db)
     {
         auto rows = db.roots();
@@ -486,7 +793,7 @@ struct LibraryService::Impl
             std::lock_guard lock(mutex);
             progress.queuedBatches = (int)batches.size();
             progress.paused =
-                pauseRequested && batches.empty() && jobs.empty() && activeWorkers == parkedWorkers;
+                pauseRequested && batches.empty() && jobs.empty() && activeWorkers == parkedWorkers && !aiAnalyzing;
         }
         for (auto &r : rows)
             progress.metadataBacklog += r.online ? r.discovered - r.ready - r.failed : 0;
@@ -520,7 +827,7 @@ struct LibraryService::Impl
         else if (progress.pauseRequested)
             progress.stage = "Pausing at next I/O boundary";
         else if (!progress.activeWorkers)
-            progress.stage = "Up to date";
+            progress.stage = aiAnalyzing ? "Analyzing sounds" : "Up to date";
         std::lock_guard lock(mutex);
         current.roots = std::move(rows);
         current.progress = progress;
@@ -576,6 +883,7 @@ struct LibraryService::Impl
                 if (rescan)
                 {
                     db.exec("UPDATE assets SET state='pending',error='' WHERE state='failed'");
+                    db.retryAnalysis(modelId(),preprocessingId());
                     for (auto &r : roots)
                     {
                         r->full = true;
@@ -585,12 +893,31 @@ struct LibraryService::Impl
                 }
                 for (auto &b : ready)
                 {
+                    if (b.analysis || b.seedAnalysis || b.retryAnalysis)
+                    {
+                        db.begin();
+                        try
+                        {
+                            if (b.analysis && db.commitAnalysis(*b.analysis)) ++analysisGeneration;
+                            if (b.seedAnalysis) db.seedAnalysis(modelId(),preprocessingId());
+                            if (b.retryAnalysis) db.retryAnalysis(modelId(),preprocessingId());
+                            db.commit();
+                        }
+                        catch (const std::exception &e)
+                        {
+                            db.rollback();
+                            std::lock_guard lock(mutex); current.semantic.error = e.what(); notifyLocked();
+                        }
+                        if (b.barrier) b.barrier->set_value();
+                        wake.notify_all();
+                        continue;
+                    }
                     if (b.barrier)
                     {
                         b.barrier->set_value();
                         continue;
                     }
-                    if (b.runtime->cancelled)
+                    if (b.runtime && b.runtime->cancelled)
                         continue;
                     if (b.rootInfo)
                     {
@@ -617,7 +944,10 @@ struct LibraryService::Impl
                     {
                         auto a = db.existing(b.root.id, h.relative);
                         if (a.id.isNotEmpty() && same(stampOf(a), h.stamp))
-                            db.metadata(a, h.seconds, h.channels, h.rate, h.error);
+                        {
+                            db.metadata(a, h.seconds, h.channels, h.rate, h.error,h.samples);
+                            if (aiLoaded) db.seedAnalysis(modelId(),preprocessingId(),a.id);
+                        }
                     }
                     if (b.directory)
                         db.directoryDone(b.root, *b.directory, b.scan);
@@ -785,132 +1115,183 @@ struct LibraryService::Impl
     }
     void searchLoop()
     {
-        while (!initialized && !stopping)
-            std::this_thread::sleep_for(std::chrono::milliseconds(2));
-        if (stopping)
-            return;
+        while (!initialized && !stopping) std::this_thread::sleep_for(std::chrono::milliseconds(2));
+        if (stopping) return;
         try
         {
-            Catalog db(database, true);
-            uint64_t lastRequest = 0, lastVersion = 0, session = 0, lastMembership = 0;
+            Catalog db(database,true);
+            uint64_t lastRequest = 0, lastVersion = 0, session = 0, lastMembership = 0, lastSemantic = 0;
             double lastBackground = 0;
             bool transaction = false;
+            std::map<juce::String,Asset> annotations;
+            auto annotate = [&](std::vector<Asset> &rows, const juce::String &q) {
+                for (auto &a : rows)
+                {
+                    a.matchReason = q.isEmpty() ? juce::String() : a.id.equalsIgnoreCase(q) ? "Asset ID" :
+                        a.name.equalsIgnoreCase(q) ? "Exact filename" : "Filename";
+                    auto found = annotations.find(a.id);
+                    if (found != annotations.end() && found->second.revision == a.revision)
+                    {
+                        a.matches = found->second.matches;
+                        a.matchReason = found->second.matchReason;
+                    }
+                }
+            };
+            auto fuse = [&](const SemanticResult &semantic, const juce::String &q, const juce::String &root) {
+                struct Candidate { Asset asset; double rank = 0; bool lexical = false; };
+                std::map<juce::String,Candidate> candidates;
+                auto lexical = db.search(q,root,128);
+                for (size_t i = 0; i < lexical.size(); ++i)
+                    candidates[lexical[i].id] = {lexical[i],1.0/(60+i+1),true};
+                annotations.clear();
+                for (size_t i = 0; i < semantic.candidates.size(); ++i)
+                {
+                    const auto &hit = semantic.candidates[i];
+                    auto now = db.asset(hit.id);
+                    if (now.id.isEmpty() || now.revision != hit.revision ||
+                        (root.isNotEmpty() && now.rootId != root)) continue;
+                    auto &candidate = candidates[hit.id];
+                    now.matches = hit.matches;
+                    now.matchReason = candidate.lexical ? "Filename + sound similarity" : "Sound similarity";
+                    candidate.asset = now; candidate.rank += 1.0/(60+i+1);
+                    annotations[now.id] = now;
+                }
+                std::vector<Candidate> ranked;
+                for (auto &[id,candidate] : candidates)
+                {
+                    if (candidate.asset.id.equalsIgnoreCase(q) || candidate.asset.name.equalsIgnoreCase(q))
+                        candidate.rank += 1000;
+                    ranked.push_back(std::move(candidate));
+                }
+                std::sort(ranked.begin(),ranked.end(),[](const auto &a, const auto &b) {
+                    return a.rank != b.rank ? a.rank > b.rank : a.asset.id < b.asset.id;
+                });
+                std::vector<Asset> prefix;
+                for (auto &candidate : ranked) prefix.push_back(std::move(candidate.asset));
+                return db.promote(prefix);
+            };
             while (!stopping)
             {
                 juce::String q, root;
-                uint64_t id, token, v = version.load(), membership = membershipVersion.load();
+                uint64_t id, token, v = version.load(), membership = membershipVersion.load(), semanticVersion;
                 int offset = 0, limit = 20;
                 bool page = false, isPinned = false;
+                SemanticResult semantic;
                 {
                     std::unique_lock lock(mutex);
-                    if (request == lastRequest && v == lastVersion && !pagePending)
-                    {
-                        wake.wait_for(lock, std::chrono::milliseconds(50));
-                        continue;
-                    }
+                    semanticVersion = semanticResultVersion;
+                    if (request == lastRequest && v == lastVersion && !pagePending && semanticVersion == lastSemantic)
+                    { wake.wait_for(lock,std::chrono::milliseconds(50)); continue; }
                     if (request == lastRequest && !pagePending && !pinned && membership != lastMembership &&
-                        monotonicMs() - lastBackground < 100)
-                    {
-                        wake.wait_for(lock, std::chrono::milliseconds(5));
-                        continue;
-                    }
-                    id = request;
-                    token = workToken.load();
-                    q = text;
-                    root = filter;
-                    page = pagePending;
-                    offset = desiredOffset;
-                    limit = desiredLimit;
-                    isPinned = pinned;
+                        monotonicMs()-lastBackground < 100 && semanticVersion == lastSemantic)
+                    { wake.wait_for(lock,std::chrono::milliseconds(5)); continue; }
+                    id = request; token = workToken; q = text; root = filter;
+                    page = pagePending; offset = desiredOffset; limit = desiredLimit; isPinned = pinned;
                     pagePending = false;
+                    if (semanticResult.request == id) semantic = semanticResult;
+                    else lastSemantic = semanticVersion;
                 }
                 try
                 {
-                    db.cancelWhen(&workToken, token);
-                    if (id == lastRequest && v != lastVersion && (isPinned || membership == lastMembership) &&
-                        !page)
+                    db.cancelWhen(&workToken,token);
+                    // A pinned result sequence never silently moves under a user's selected row.
+                    if (id == session && semantic.request == id && semanticVersion != lastSemantic)
                     {
-                        int at = 0, size = 20;
+                        if (isPinned)
                         {
                             std::lock_guard lock(mutex);
-                            at = current.offset;
-                            size = (int)current.results.size();
+                            if (id == request) { current.newResultsAvailable = true; ++current.pageSerial; notifyLocked(); }
                         }
-                        auto rows = db.page(at, size);
-                        std::lock_guard lock(mutex);
-                        if (id != request)
-                            continue;
-                        current.results = std::move(rows);
-                        ++current.pageSerial;
-                        current.newResultsAvailable = isPinned && membership != lastMembership;
-                        current.version = v;
-                        lastVersion = v;
-                        notifyLocked();
+                        else
+                        {
+                            auto began = monotonicMs(); db.exec("BEGIN"); transaction = true;
+                            int total = fuse(semantic,q,root);
+                            auto rows = db.page(0,20); annotate(rows,q);
+                            db.exec("COMMIT"); transaction = false;
+                            std::lock_guard lock(mutex);
+                            if (id == request && token == workToken)
+                            {
+                                current.results = std::move(rows); current.offset = 0; current.total = total;
+                                current.semanticTiming = semantic.timing;
+                                current.semanticTiming.fusionMs = monotonicMs()-began;
+                                current.semanticCompletedRequest = id; ++current.semanticSerial;
+                                current.version = v; ++current.pageSerial; notifyLocked();
+                            }
+                        }
+                        lastSemantic = semanticVersion; lastVersion = v;
                         continue;
                     }
                     if (page && id == session)
                     {
-                        auto rows = db.page(offset, limit);
+                        auto rows = db.page(offset,limit); annotate(rows,q);
                         std::lock_guard lock(mutex);
                         if (id == request && token == workToken)
-                        {
-                            current.results = std::move(rows);
-                            current.offset = offset;
-                            ++current.pageSerial;
-                            notifyLocked();
-                        }
-                        lastVersion = v;
-                        continue;
+                        { current.results = std::move(rows); current.offset = offset; ++current.pageSerial; notifyLocked(); }
+                        lastVersion = v; continue;
                     }
-                    db.exec("BEGIN");
-                    transaction = true;
-                    auto rows = db.search(q, root, 20);
-                    int count = db.countMatches(q, root);
+                    if (id == lastRequest && v != lastVersion && (isPinned || membership == lastMembership))
                     {
+                        int at = 0, size = 20;
+                        { std::lock_guard lock(mutex); at = current.offset; size = (int)current.results.size(); }
+                        auto rows = db.page(at,size); annotate(rows,q);
+                        std::lock_guard lock(mutex);
+                        if (id != request) continue;
+                        current.results = std::move(rows); ++current.pageSerial;
+                        current.newResultsAvailable = isPinned && membership != lastMembership;
+                        current.version = v; lastVersion = v; notifyLocked(); continue;
+                    }
+                    bool newQuery = id != lastRequest;
+                    if (newQuery) annotations.clear();
+                    db.exec("BEGIN"); transaction = true;
+                    auto rows = db.search(q,root,20); int count = db.countMatches(q,root);
+                    // Publish the fast lexical path before building the disk-backed browse sequence.
+                    if (newQuery)
+                    {
+                        annotate(rows,q);
                         std::lock_guard lock(mutex);
                         if (id == request && token == workToken)
                         {
-                            current.results = std::move(rows);
-                            current.total = count;
-                            current.offset = 0;
-                            current.newResultsAvailable = false;
-                            current.request = id;
-                            current.version = v;
-                            ++current.pageSerial;
-                            notifyLocked();
+                            current.results = rows; current.total = count; current.offset = 0;
+                            current.newResultsAvailable = false; current.request = id; current.version = v;
+                            current.semanticCompletedRequest = 0; current.semanticTiming = {};
+                            ++current.pageSerial; notifyLocked();
                         }
                     }
-                    db.materialize(q, root);
-                    db.exec("COMMIT");
-                    transaction = false;
-                    session = id;
-                    lastRequest = id;
-                    lastVersion = v;
-                    lastMembership = membership;
+                    db.materialize(q,root);
+                    if (!newQuery && semantic.request == id)
+                    { count = fuse(semantic,q,root); rows = db.page(0,20); }
+                    db.exec("COMMIT"); transaction = false;
+                    if (!newQuery)
+                    {
+                        annotate(rows,q);
+                        std::lock_guard lock(mutex);
+                        if (id == request && token == workToken)
+                        {
+                            current.results = std::move(rows); current.total = count; current.offset = 0;
+                            current.newResultsAvailable = false; current.request = id; current.version = v;
+                            if (semantic.request == id) current.semanticCompletedRequest = id;
+                            ++current.pageSerial; notifyLocked();
+                        }
+                    }
+                    session = id; lastRequest = id; lastVersion = v; lastMembership = membership;
                     lastBackground = monotonicMs();
                 }
                 catch (const QueryCancelled &)
                 {
-                    if (transaction)
-                    {
-                        db.cancelWhen(nullptr, 0);
-                        db.rollback();
-                        transaction = false;
-                    }
+                    if (transaction) { db.cancelWhen(nullptr,0); db.rollback(); transaction = false; }
                     ++performance.cancelled;
                 }
             }
         }
-        catch (const std::exception &error)
+        catch (const std::exception &e)
         {
-            std::fprintf(stderr, "Library reader failure: %s\n", error.what());
-            std::lock_guard lock(mutex);
-            current.error = juce::String::fromUTF8(error.what());
-            notifyLocked();
+            std::fprintf(stderr,"Library reader failure: %s\n",e.what());
+            std::lock_guard lock(mutex); current.error = e.what(); notifyLocked();
         }
     }
 };
-LibraryService::LibraryService(juce::File file) : impl(std::make_unique<Impl>(std::move(file))) {}
+LibraryService::LibraryService(juce::File file, juce::File executable, juce::File model)
+    : impl(std::make_unique<Impl>(std::move(file),std::move(executable),std::move(model))) {}
 LibraryService::~LibraryService() = default;
 void LibraryService::addFolder(const juce::File &f)
 {
@@ -930,7 +1311,7 @@ void LibraryService::rescan()
 }
 void LibraryService::pause(bool value)
 {
-    impl->pauseRequested = value;
+    { std::lock_guard lock(impl->mutex); impl->pauseRequested = value; }
     impl->wake.notify_all();
 }
 uint64_t LibraryService::search(const juce::String &q, const juce::String &root)
@@ -942,6 +1323,8 @@ uint64_t LibraryService::search(const juce::String &q, const juce::String &root)
     impl->desiredLimit = 20;
     impl->pagePending = false;
     impl->pinned = false;
+    impl->semanticDue = monotonicMs()+200;
+    ++impl->semanticInputVersion;
     ++impl->workToken;
     auto id = ++impl->request;
     impl->wake.notify_all();
@@ -970,4 +1353,26 @@ bool LibraryService::ready() const
 {
     return impl->initialized;
 }
+void LibraryService::installModel(const juce::File &source)
+{
+    std::lock_guard lock(impl->mutex);
+    if (!impl->inference || impl->current.semantic.installing) return;
+    impl->importModelDirectory = source; impl->installRequested = true; impl->installCancelled = false;
+    impl->wake.notify_all();
+}
+void LibraryService::cancelModelInstall() { impl->installCancelled = true; }
+void LibraryService::retryAnalysis()
+{
+    std::lock_guard lock(impl->mutex); impl->aiRetryRequested = true; impl->wake.notify_all();
+}
+void LibraryService::semanticNow()
+{
+    std::lock_guard lock(impl->mutex); impl->semanticDue = monotonicMs(); ++impl->semanticInputVersion;
+    impl->wake.notify_all();
+}
+void LibraryService::prioritizeAnalysis(const juce::String &id)
+{
+    std::lock_guard lock(impl->mutex); impl->preferredAnalysis = id; impl->wake.notify_all();
+}
+void LibraryService::setAuditionActive(bool value) { impl->auditionActive=value; }
 } // namespace sp

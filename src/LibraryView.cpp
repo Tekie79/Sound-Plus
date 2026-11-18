@@ -1,6 +1,8 @@
 #include "LibraryView.h"
 #include "Benchmark.h"
 #include "Performance.h"
+#include <cmath>
+#include "ClapRuntime.h"
 namespace sp
 {
 namespace
@@ -9,14 +11,17 @@ const juce::Colour bg{0xff101419}, panel{0xff171d25}, line{0xff29323e}, text{0xf
     accent{0xff77bfff}, amber{0xffffc384};
 juce::String duration(double seconds)
 {
-    if (seconds <= 0)
+    if (seconds < 0)
         return juce::String::fromUTF8("—");
     int whole = (int)seconds;
     return juce::String(whole / 60) + ":" + juce::String(whole % 60).paddedLeft('0', 2) + "." +
            juce::String((int)(seconds * 10) % 10);
 }
 } // namespace
-LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : library(db), audio(executable)
+LibraryView::LibraryView(const juce::File &db, const juce::File &executable, bool enableAI,
+                         const juce::File &modelDirectory)
+    : library(db,enableAI ? executable : juce::File(),modelDirectory), audio(executable),
+      waveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
     look.setColour(juce::ResizableWindow::backgroundColourId, bg);
     look.setColour(juce::TextButton::buttonColourId, line);
@@ -37,7 +42,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     setLookAndFeel(&look);
     for (auto *c : std::initializer_list<juce::Component *>{
              &table, &sources, &search, &add, &rescan, &play, &restart, &output, &gain, &summary, &detail,
-             &assetId, &transport, &status, &volumeLabel, &pauseIndex, &refresh})
+             &assetId, &transport, &status, &volumeLabel, &pauseIndex, &refresh, &waveform, &installAI,
+             &retryAI, &cancelInstall, &playMatch, &playWhole, &moments, &context, &rangeIn, &rangeOut,
+             &aiStatusLabel, &semanticCoverage, &inLabel, &outLabel})
         addAndMakeVisible(c);
     for (auto *l : {&summary, &detail, &assetId, &transport, &status, &volumeLabel})
     {
@@ -52,9 +59,11 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     search.setFont(juce::FontOptions(17.0f));
     search.setIndents(12, 10);
     search.onTextChange = [this] { requestSearch(); };
+    search.onReturnKey = [this] { library.semanticNow(); };
     search.addKeyListener(this);
     table.addKeyListener(this);
     sources.addKeyListener(this);
+    waveform.addKeyListener(this);
     addKeyListener(this);
     add.setTitle("Add existing sound folders");
     add.onClick = [this] { chooseFolder(); };
@@ -86,6 +95,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     h.addColumn("CHANNELS", 3, 85, 70, 140, juce::TableHeaderComponent::visible);
     h.addColumn("RATE", 4, 90, 70, 140, juce::TableHeaderComponent::visible);
     h.addColumn("STATUS", 5, 120, 90, 180, juce::TableHeaderComponent::visible);
+    h.addColumn("MATCH", 6, 170, 120, 240, juce::TableHeaderComponent::visible);
     table.setRowHeight(58);
     table.setHeaderHeight(34);
     table.setMultipleSelectionEnabled(false);
@@ -96,7 +106,41 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable) : l
     status.setText(juce::String::fromUTF8("Opening local catalog…"), juce::dontSendNotification);
     detail.setText("Choose a recording to listen", juce::dontSendNotification);
     summary.setText("Your sounds, in place. No project needed.", juce::dontSendNotification);
-    setSize(1200, 780);
+    for (auto *label : {&aiStatusLabel,&semanticCoverage,&inLabel,&outLabel})
+    { label->setColour(juce::Label::textColourId,muted); label->setFont(juce::FontOptions(12.0f)); }
+    aiStatusLabel.setMinimumHorizontalScale(1); aiStatusLabel.setJustificationType(juce::Justification::topLeft);
+    rangeIn.setTitle("Range start in seconds"); rangeOut.setTitle("Range end in seconds, exclusive");
+    inLabel.setText("IN (seconds)",juce::dontSendNotification);
+    outLabel.setText("OUT (seconds)",juce::dontSendNotification);
+    for (auto *editor : {&rangeIn,&rangeOut})
+    {
+        editor->setInputRestrictions(16,"0123456789.");
+        editor->onReturnKey = [this] {
+            if (!selectedAsset || updatingRange) return;
+            setRegion((int64_t)std::llround(rangeIn.getText().getDoubleValue()*selectedAsset->sampleRate),
+                (int64_t)std::llround(rangeOut.getText().getDoubleValue()*selectedAsset->sampleRate));
+            matchMode = true; rangeEdited = true;
+        };
+    }
+    moments.setTitle("Other matching moments"); moments.setTextWhenNothingSelected("Matching moments");
+    moments.onChange = [this] {
+        if (updatingRange || !selectedAsset) return;
+        int index=moments.getSelectedId()-1;
+        if (juce::isPositiveAndBelow(index,(int)selectedAsset->matches.size()))
+        { auto match=selectedAsset->matches[(size_t)index]; setRegion(match.startSample,match.endSample,true); matchMode=true; rangeEdited=false; }
+    };
+    context.setTooltip("Adds 250 ms before and after the range, clamped to the recording. Stored match boundaries stay unchanged.");
+    waveform.onRange = [this](int64_t first,int64_t last) { setRegion(first,last); matchMode=true; rangeEdited=true; };
+    waveform.onSeek = [this](int64_t position) {
+        bool inside=matchMode && position>=regionStart && position<regionEnd;
+        playSelected(inside,position);
+    };
+    playMatch.onClick = [this] { matchMode=true; playSelected(true); };
+    playWhole.onClick = [this] { matchMode=false; waveform.showWhole(); playSelected(false); };
+    installAI.onClick = [this] { installModelMenu(); };
+    cancelInstall.onClick = [this] { library.cancelModelInstall(); };
+    retryAI.onClick = [this] { library.retryAnalysis(); if (selectedAsset) waveformRequest=waveformCache.request(*selectedAsset); };
+    setSize(1200, 900);
     pauseIndex.onClick = [this] { library.pause(!library.snapshot().progress.pauseRequested); };
     refresh.onClick = [this] { requestSearch(); };
     library.setChangeCallback([this] { triggerAsyncUpdate(); });
@@ -119,7 +163,7 @@ void LibraryView::paint(juce::Graphics &g)
     g.setColour(line);
     g.drawHorizontalLine(83, 0, (float)getWidth());
     g.drawVerticalLine(238, 84, (float)getHeight());
-    g.drawHorizontalLine(getHeight() - 176, 238, (float)getWidth());
+    g.drawHorizontalLine(getHeight() - 336, 238, (float)getWidth());
     g.setColour(text);
     g.setFont(juce::FontOptions(23.0f, juce::Font::bold));
     g.drawText("SOUND+", 24, 19, 175, 30, juce::Justification::centredLeft);
@@ -143,14 +187,18 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
 {
     if (snapshot.total == 0)
     {
+        bool semanticPending=snapshot.semantic.ready && search.getText().isNotEmpty() && snapshot.semanticCompletedRequest!=requested;
         g.setColour(text);
         g.setFont(juce::FontOptions(22.0f));
-        g.drawText(search.isEmpty() ? "A home for your sound library" : "No matching recordings", 270, 260,
+        g.drawText(search.isEmpty() ? "A home for your sound library" : semanticPending ? "Searching sounds..." :
+                   snapshot.semantic.enabled && !snapshot.semantic.ready ? "No filename matches" : "No matching recordings", 270, 260,
                    getWidth() - 310, 36, juce::Justification::centred);
         g.setColour(muted);
         g.setFont(juce::FontOptions(15.0f));
-        g.drawText(search.isEmpty() ? "Add a folder to discover and audition its recordings."
-                                    : "Try a shorter filename or choose All recordings.",
+        g.drawText(search.isEmpty() ? "Add a folder to discover and audition its recordings." : semanticPending ?
+                       "Searching the recordings analyzed so far." : snapshot.semantic.ready && snapshot.semantic.coverage.pending>0 ?
+                       "Sound analysis is incomplete. More recordings will become available." :
+                       "Try a shorter filename or choose All recordings.",
                    270, 305, getWidth() - 310, 30, juce::Justification::centred);
     }
     if (benchmark && snapshot.request == requested)
@@ -158,26 +206,39 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
 }
 void LibraryView::resized()
 {
-    add.setBounds(getWidth() - 162, 24, 136, 35);
-    rescan.setBounds(142, 101, 76, 28);
-    summary.setBounds(264, 50, getWidth() - 450, 24);
-    search.setBounds(264, 103, getWidth() - 464, 44);
-    refresh.setBounds(getWidth() - 186, 103, 158, 44);
-    pauseIndex.setBounds(16, 140, 204, 28);
-    sources.setBounds(12, 180, 216, getHeight() - 302);
-    table.setBounds(253, 165, getWidth() - 277, getHeight() - 353);
-    int fixed = 90 + 85 + 90 + 120;
-    table.getHeader().setColumnWidth(1, std::max(200, table.getWidth() - fixed - 18));
-    int y = getHeight() - 162;
-    detail.setBounds(266, y, getWidth() - 460, 26);
-    play.setBounds(getWidth() - 168, y, 140, 37);
-    assetId.setBounds(266, y + 28, getWidth() - 300, 25);
-    transport.setBounds(266, y + 57, getWidth() - 300, 24);
-    volumeLabel.setBounds(266, y + 91, 48, 25);
-    gain.setBounds(312, y + 91, 175, 25);
-    output.setBounds(510, y + 91, 230, 28);
-    restart.setBounds(755, y + 91, 150, 28);
-    status.setBounds(264, getHeight() - 30, getWidth() - 290, 25);
+    add.setBounds(getWidth()-162,24,136,35);
+    rescan.setBounds(142,101,76,28);
+    summary.setBounds(264,50,getWidth()-450,24);
+    search.setBounds(264,103,getWidth()-464,44);
+    refresh.setBounds(getWidth()-186,103,158,44);
+    semanticCoverage.setBounds(264,149,getWidth()-292,27);
+    pauseIndex.setBounds(16,140,204,28);
+    aiStatusLabel.setBounds(16,182,204,62);
+    installAI.setBounds(16,246,204,28); cancelInstall.setBounds(16,246,204,28);
+    retryAI.setBounds(16,281,204,28);
+    sources.setBounds(12,322,216,std::max(70,getHeight()-448));
+    table.setBounds(253,181,getWidth()-277,std::max(100,getHeight()-531));
+    int fixed=90+85+90+120+170;
+    table.getHeader().setColumnWidth(1,std::max(200,table.getWidth()-fixed-18));
+    int y=getHeight()-320;
+    detail.setBounds(266,y,getWidth()-460,26);
+    play.setBounds(getWidth()-168,y,140,32);
+    assetId.setBounds(266,y+28,195,22);
+    moments.setBounds(266,getHeight()-270,195,28);
+    inLabel.setBounds(473,getHeight()-289,70,18);
+    outLabel.setBounds(552,getHeight()-289,70,18);
+    rangeIn.setBounds(475,getHeight()-270,70,28);
+    rangeOut.setBounds(554,getHeight()-270,70,28);
+    context.setBounds(635,getHeight()-270,150,28);
+    playMatch.setBounds(getWidth()-286,getHeight()-270,126,28);
+    playWhole.setBounds(getWidth()-150,getHeight()-270,122,28);
+    waveform.setBounds(264,getHeight()-232,getWidth()-292,99);
+    transport.setBounds(266,getHeight()-128,getWidth()-300,24);
+    volumeLabel.setBounds(266,getHeight()-82,48,25);
+    gain.setBounds(312,getHeight()-82,175,25);
+    output.setBounds(510,getHeight()-82,230,28);
+    restart.setBounds(755,getHeight()-82,150,28);
+    status.setBounds(264,getHeight()-30,getWidth()-290,25);
 }
 const Asset *LibraryView::rowAsset(int row) const
 {
@@ -252,7 +313,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         return;
     }
     if (column == 2)
-        value = duration(a.duration);
+        value = a.duration>0 ? duration(a.duration) : juce::String::fromUTF8("—");
     if (column == 3)
         value =
             a.channels > 0
@@ -269,6 +330,19 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
                                       : "Reading header";
         g.setColour(a.online ? (a.state == "failed" ? amber : accent) : amber);
     }
+    if (column == 6)
+    {
+        g.setFont(juce::FontOptions(11.5f)); g.setColour(muted);
+        g.drawText(a.matchReason,8,5,w-12,22,juce::Justification::centredLeft,true);
+        if (!a.matches.empty() && a.sampleRate>0)
+        {
+            const auto &match=a.matches.front();
+            g.setColour(accent);
+            g.drawText(duration(match.startSample/a.sampleRate)+" - "+duration(match.endSample/a.sampleRate)+
+                (a.matches.size()>1 ? "  +"+juce::String((int)a.matches.size()-1) : ""),8,28,w-12,22,juce::Justification::centredLeft,true);
+        }
+        return;
+    }
     g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }
 void LibraryView::selectedRowsChanged(int)
@@ -277,12 +351,42 @@ void LibraryView::selectedRowsChanged(int)
         return;
     if (auto *a = selected())
     {
+        bool newFile=rangeAssetId!=a->id || rangeRevision!=a->revision || rangeSamples!=a->samples;
+        bool newRange=newFile || rangeRequest!=requested ||
+            (!rangeEdited && !a->matches.empty() && (!selectedAsset || selectedAsset->matches.empty()));
         // Freeze the matching ID sequence as soon as the user selects a row.
         // A new alphabetically earlier recording must not retarget that selection.
         requestPageForRow(table.getSelectedRow());
         selectedId = a->id;
         selectedAsset = *a;
         selectedAssetRow = table.getSelectedRow();
+        library.prioritizeAnalysis(a->id);
+        if (newFile)
+        {
+            rangeAssetId=a->id; rangeRevision=a->revision; rangeSamples=a->samples;
+            waveformRequest=waveformCache.request(*a); waveformApplied=0;
+        }
+        if (newRange)
+        {
+            rangeRequest=requested; rangeEdited=false; matchMode=!a->matches.empty();
+            regionStart=matchMode ? a->matches.front().startSample : 0;
+            regionEnd=matchMode ? a->matches.front().endSample : a->samples;
+            waveformNeedsZoom=matchMode;
+            setRegion(regionStart,regionEnd,matchMode);
+        }
+        updatingRange=true; moments.clear(juce::dontSendNotification);
+        for (size_t i=0; i<a->matches.size(); ++i)
+        {
+            auto &m=a->matches[i];
+            moments.addItem(duration(m.startSample/a->sampleRate)+" - "+duration(m.endSample/a->sampleRate)+
+                "  ·  similarity "+juce::String(m.similarity,3),(int)i+1);
+        }
+        int moment=0;
+        for (size_t i=0;i<a->matches.size();++i)
+            if (a->matches[i].startSample==regionStart && a->matches[i].endSample==regionEnd) moment=(int)i+1;
+        moments.setTextWhenNothingSelected(a->matches.empty() ? "Whole recording" : "Custom range");
+        moments.setSelectedId(moment,juce::dontSendNotification);
+        updatingRange=false;
         detail.setText(a->name, juce::dontSendNotification);
         assetId.setText("Asset " + a->id + juce::String::fromUTF8("  •  Revision ") +
                             juce::String(a->revision) +
@@ -351,6 +455,10 @@ uint64_t LibraryView::benchmarkSearch(const juce::String &q, const juce::String 
     requestSearch();
     return requested;
 }
+uint64_t LibraryView::benchmarkSemanticSearch(const juce::String &q, const juce::String &root)
+{
+    auto id=benchmarkSearch(q,root); library.semanticNow(); return id;
+}
 bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
 {
     if (key.getModifiers().isCommandDown() && (key.isKeyCode('F') || key.isKeyCode('f')))
@@ -367,7 +475,8 @@ bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
             table.selectRow(0);
         return true;
     }
-    if (key.isKeyCode(juce::KeyPress::spaceKey) && !search.hasKeyboardFocus(true))
+    if (key.isKeyCode(juce::KeyPress::spaceKey) && !search.hasKeyboardFocus(true) &&
+        !rangeIn.hasKeyboardFocus(true) && !rangeOut.hasKeyboardFocus(true))
     {
         toggle();
         return true;
@@ -389,40 +498,99 @@ void LibraryView::chooseFolder()
                                      safe->library.addFolder(f);
                          });
 }
+void LibraryView::setRegion(int64_t start, int64_t end, bool zoom)
+{
+    if (!selectedAsset || selectedAsset->samples<=0) return;
+    regionStart=std::clamp<int64_t>(start,0,selectedAsset->samples-1);
+    regionEnd=std::clamp<int64_t>(end,regionStart+1,selectedAsset->samples);
+    waveform.setRange(regionStart,regionEnd,zoom);
+    updatingRange=true;
+    rangeIn.setText(juce::String(regionStart/selectedAsset->sampleRate,6),juce::dontSendNotification);
+    rangeOut.setText(juce::String(regionEnd/selectedAsset->sampleRate,6),juce::dontSendNotification);
+    int moment=0;
+    for (size_t i=0;i<selectedAsset->matches.size();++i)
+        if (selectedAsset->matches[i].startSample==regionStart && selectedAsset->matches[i].endSample==regionEnd) moment=(int)i+1;
+    moments.setTextWhenNothingSelected(selectedAsset->matches.empty() ? "Whole recording" : "Custom range");
+    moments.setSelectedId(moment,juce::dontSendNotification);
+    updatingRange=false;
+}
+void LibraryView::installModelMenu()
+{
+    juce::PopupMenu menu;
+    menu.addItem(1,"Download verified CLAP model (163 MB)");
+    menu.addItem(2,"Import an offline model pack...");
+    juce::Component::SafePointer<LibraryView> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(installAI),[safe](int choice) {
+        if (!safe) return;
+        if (choice==1) safe->library.installModel();
+        if (choice==2)
+        {
+            safe->modelChooser=std::make_unique<juce::FileChooser>("Import verified SoundPlus model pack",juce::File{},"",true);
+            safe->modelChooser->launchAsync(juce::FileBrowserComponent::openMode|juce::FileBrowserComponent::canSelectDirectories,
+                [safe](const juce::FileChooser &picker) { if (safe && picker.getResult()!=juce::File()) safe->library.installModel(picker.getResult()); });
+        }
+    });
+}
+void LibraryView::playSelected(bool useMatch, int64_t seek)
+{
+    const auto *a=selected(); if (!a && selectedAsset) a=&*selectedAsset;
+    if (!a) return;
+    bool online=a->online; juce::String path=a->path;
+    for (auto &root : snapshot.roots) if (root.id==a->rootId)
+    { online &= root.online; path=juce::File(root.path).getChildFile(a->relative).getFullPathName(); }
+    if (!online)
+    { transport.setText("Offline recording - reconnect its source folder to audition.",juce::dontSendNotification); return; }
+    PlaybackRegion region;
+    region.size=a->size; region.modified=a->modified; region.inode=a->inode; region.revision=a->revision;
+    if (useMatch && a->samples>0 && rangeAssetId==a->id && rangeRevision==a->revision && regionEnd>regionStart)
+    {
+        auto roll=context.getToggleState() ? (int64_t)std::llround(a->sampleRate*0.25) : 0;
+        region.startSample=std::max<int64_t>(0,regionStart-roll);
+        region.endSample=std::min(a->samples,regionEnd+roll);
+        playingRange=duration(region.startSample/a->sampleRate)+" - "+duration(region.endSample/a->sampleRate);
+    }
+    else { region.startSample=0; region.endSample=-1; playingRange="Whole file"; }
+    if (seek>=0)
+    {
+        region.positionSample=std::max(region.startSample,seek);
+        if (region.endSample>0) region.positionSample=std::min(region.endSample-1,region.positionSample);
+    }
+    playingName=a->name; playingId=a->id;
+    audio.playRegion(a->id,juce::File(path),region);
+}
 void LibraryView::toggle()
 {
-    auto state = audio.status();
-    const bool isPlaying = (bool)state["playing"];
-    const auto *a = selected();
-    if (isPlaying && (!a || state["id"].toString() == a->id))
-    {
-        audio.stop();
-        return;
-    }
-    if (!a)
-        return;
-    bool online = a->online;
-    juce::String path = a->path;
-    for (auto &root : snapshot.roots)
-        if (root.id == a->rootId)
-        {
-            online &= root.online;
-            path = juce::File(root.path).getChildFile(a->relative).getFullPathName();
-        }
-    if (!online)
-    {
-        transport.setText(
-            juce::String::fromUTF8("Offline recording — reconnect its source folder to audition."),
-            juce::dontSendNotification);
-        return;
-    }
-    playingName = a->name;
-    playingId = a->id;
-    audio.play(a->id, juce::File(path));
+    auto state=audio.status(); bool running=(bool)state["playing"] || (bool)state["pendingPlayback"];
+    const auto *a=selected();
+    if (running && (!a || state["id"].toString()==a->id)) { audio.stop(); return; }
+    playSelected(matchMode);
 }
 void LibraryView::timerCallback()
 {
     auto next = library.snapshot();
+    snapshot.semantic=next.semantic;
+    // Progress changes independently of the stable result page (including a fully drained pause).
+    snapshot.progress=next.progress;
+    snapshot.headersRead=next.headersRead;
+    const auto &ai=next.semantic;
+    aiStatusLabel.setText(ai.enabled ? ai.status : "Local AI disabled for this session",juce::dontSendNotification);
+    aiStatusLabel.setTooltip(ai.error+"\nModel: "+ai.model+"\nPreprocessing: "+ai.preprocessing+
+        "\nPaired CLAP · 512 dimensions · cosine ranking · native CPU inference");
+    installAI.setVisible(!ai.installing); cancelInstall.setVisible(ai.installing);
+    installAI.setButtonText(ai.ready ? "AI Model Installed" : "Install AI Model");
+    installAI.setEnabled(ai.enabled && localAiSupported() && !ai.ready && !ai.installing);
+    retryAI.setEnabled(ai.enabled && localAiSupported() && (ai.ready || ai.error.isNotEmpty()));
+    if (ai.installing)
+        semanticCoverage.setText("Installing local AI model: "+juce::String(ai.downloadedBytes/1000000.0,1)+
+            " / "+juce::String(ai.downloadTotalBytes/1000000.0,1)+" MB",juce::dontSendNotification);
+    else if (ai.ready)
+        semanticCoverage.setText("Sound search: "+juce::String(ai.coverage.complete)+" / "+juce::String(ai.coverage.total)+
+            " analyzed · "+juce::String(ai.coverage.regions)+" regions · "+juce::String(ai.coverage.pending)+
+            " pending · "+juce::String(ai.coverage.failed)+" failed"+
+            (ai.coverage.pending>0 ? " — partial coverage" : ""),juce::dontSendNotification);
+    else
+        semanticCoverage.setText(ai.enabled ? "Filename search is ready while local AI is unavailable or loading." :
+            "Filename search",juce::dontSendNotification);
     const auto progress = next.progress;
     pauseIndex.setButtonText(progress.pauseRequested ? "Resume Indexing" : "Pause Indexing");
     refresh.setEnabled(next.newResultsAvailable);
@@ -505,17 +673,33 @@ void LibraryView::timerCallback()
         status.setText(next.error, juce::dontSendNotification);
     if (next.error.isEmpty())
         status.setText(progressText + (snapshot.newResultsAvailable
-                                           ? " | New recordings available - Refresh Results"
+                                           ? " | Updated results available - Refresh Results"
                                            : ""),
                        juce::dontSendNotification);
     auto state = audio.status();
     bool isPlaying = (bool)state["playing"];
-    play.setButtonText(isPlaying ? "Stop  [Space]" : "Play  [Space]");
+    bool pending=(bool)state["pendingPlayback"];
+    library.setAuditionActive(isPlaying || pending);
+    play.setButtonText(isPlaying || pending ? "Stop  [Space]" : "Play  [Space]");
+    bool canPlay=selectedAsset.has_value();
+    if (selectedAsset)
+        for (auto &root : snapshot.roots) if (root.id==selectedAsset->rootId) canPlay &= root.online && selectedAsset->online;
+    playMatch.setEnabled(canPlay && regionEnd>regionStart && selectedAsset->samples>0);
+    playWhole.setEnabled(canPlay);
+    if (auto data=waveformCache.snapshot(); data && data->generation==waveformRequest && waveformApplied!=waveformRequest)
+    {
+        waveformApplied=waveformRequest; waveform.setData(data);
+        waveform.setRange(regionStart,regionEnd,waveformNeedsZoom); waveformNeedsZoom=false;
+    }
+    waveform.setCursor(isPlaying && selectedAsset && state["id"].toString()==selectedAsset->id ?
+        (int64_t)state["sourceSample"] : -1);
     auto err = state["error"].toString();
-    if (err.isNotEmpty())
+    if (pending)
+        transport.setText("Preparing "+playingName+" · "+playingRange,juce::dontSendNotification);
+    else if (err.isNotEmpty())
         transport.setText(err, juce::dontSendNotification);
     else if (isPlaying)
-        transport.setText("Playing  " + playingName + "   " + duration((double)state["seconds"]) +
+        transport.setText("Playing  " + playingName + " · "+playingRange+"   " + duration((double)state["seconds"]) +
                               juce::String::fromUTF8("   •   ") + state["device"].toString(),
                           juce::dontSendNotification);
     else if (playingId.isNotEmpty())

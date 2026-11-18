@@ -1,6 +1,7 @@
 #pragma once
 #include "LibraryService.h"
 #include "AudioIPC.h"
+#include "Waveform.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 namespace sp
 {
@@ -13,7 +14,8 @@ class LibraryView final : public juce::Component,
                           private juce::AsyncUpdater
 {
   public:
-    LibraryView(const juce::File &database, const juce::File &executable);
+    LibraryView(const juce::File &database, const juce::File &executable, bool enableAI = true,
+                 const juce::File &modelDirectory = {});
     ~LibraryView() override;
     void paint(juce::Graphics &) override;
     void paintOverChildren(juce::Graphics &) override;
@@ -24,6 +26,7 @@ class LibraryView final : public juce::Component,
     }
     uint64_t benchmarkSearch(const juce::String &q, const juce::String &root = {});
     void benchmarkScroll(int row);
+    uint64_t benchmarkSemanticSearch(const juce::String &q, const juce::String &root = {});
     Benchmark *benchmark = nullptr;
 
   private:
@@ -50,6 +53,9 @@ class LibraryView final : public juce::Component,
     void timerCallback() override;
     void chooseFolder();
     void toggle();
+    void playSelected(bool useMatch, int64_t seekSample = -1);
+    void setRegion(int64_t start, int64_t end, bool zoom = false);
+    void installModelMenu();
     void requestSearch();
     const Asset *selected() const;
     struct SourceModel : juce::ListBoxModel
@@ -87,6 +93,8 @@ class LibraryView final : public juce::Component,
     juce::LookAndFeel_V4 look;
     LibraryService library;
     AudioClient audio;
+    WaveformCache waveformCache;
+    WaveformView waveform;
     LibrarySnapshot snapshot;
     struct NamedTable : juce::TableListBox
     {
@@ -100,13 +108,21 @@ class LibraryView final : public juce::Component,
             const auto &a = *asset;
             return a.name + ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
                    " channels, " + juce::String(a.sampleRate, 0) + " Hz, " +
-                   (a.online ? a.state : "Offline") + ", " + a.path;
+                   (a.online ? a.state : "Offline") + ", " + a.matchReason +
+                   (!a.matches.empty() && a.sampleRate>0 ? ", match "+juce::String(a.matches.front().startSample/a.sampleRate,3)+
+                       " to "+juce::String(a.matches.front().endSample/a.sampleRate,3)+" seconds" : "")+", " + a.path;
         }
     } table{*this};
     juce::ListBox sources{"Library folders", &sourceModel};
     juce::TextEditor search;
     juce::TextButton add{"Add Folder"}, rescan{"Rescan"}, play{"Play"}, restart{"Reconnect Audio"};
     juce::TextButton pauseIndex{"Pause Indexing"}, refresh{"Refresh Results"};
+    juce::TextButton installAI{"Install AI Model"}, retryAI{"Retry Analysis"}, cancelInstall{"Cancel Download"};
+    juce::TextButton playMatch{"Play Match"}, playWhole{"Play Whole"};
+    juce::ToggleButton context{"+/-0.25 s context"};
+    juce::ComboBox moments;
+    juce::TextEditor rangeIn, rangeOut;
+    juce::Label aiStatusLabel, semanticCoverage, inLabel, outLabel;
     void chooseSource(int);
     juce::ComboBox output;
     juce::Slider gain;
@@ -115,5 +131,11 @@ class LibraryView final : public juce::Component,
     juce::String selectedId, rootFilter, playingName, playingId;
     uint64_t requested = 1, appliedVersion = 0, appliedRequest = 0;
     bool updating = false;
+    bool updatingRange = false, matchMode = false, rangeEdited = false, waveformNeedsZoom = false;
+    int64_t regionStart = 0, regionEnd = 0, rangeRevision = -1, rangeSamples = 0;
+    uint64_t waveformRequest = 0, waveformApplied = 0;
+    uint64_t rangeRequest = 0;
+    juce::String rangeAssetId, playingRange;
+    std::unique_ptr<juce::FileChooser> modelChooser;
 };
 } // namespace sp

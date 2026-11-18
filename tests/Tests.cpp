@@ -4,6 +4,7 @@
 #include "AudioIPC.h"
 #include "Performance.h"
 #include "PerformanceTests.h"
+#include "SemanticTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -61,6 +62,10 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc>=4 && juce::String(argv[1])=="--semantic-integrity")
+        { runSemanticIntegrity(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc>=6 && juce::String(argv[1])=="--semantic-workflow")
+        { runSemanticWorkflow(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
         if (argc >= 4 && juce::String(argv[1]) == "--long-decode")
         {
             juce::Array<juce::var> rows;
@@ -320,7 +325,15 @@ int main(int argc, char **argv)
             }
             {
                 sp::LibraryService service(bulkDb);
+                service.pause(true);
                 service.addFolder(bulk);
+                until([&] { return service.ready() && service.snapshot().progress.paused; },
+                      "Import starts at a controlled pause boundary");
+                sp::Catalog committed(bulkDb, true);
+                service.pause(false);
+                until([&] { return committed.count() > 0; }, "First durable import batch");
+                service.pause(true);
+                until([&] { return service.snapshot().progress.paused; }, "Interrupt at a safe boundary");
                 auto request = service.search("bulk click");
                 until(
                     [&]
@@ -332,7 +345,7 @@ int main(int argc, char **argv)
                     "Search during active enumeration");
                 std::cout << "Progressive import visible at " << service.snapshot().roots[0].discovered
                           << " / 2400 files\n";
-                // Tear down during enumeration, preserving only committed batches.
+                // Tear down a parked partial enumeration, preserving only committed batches.
             }
             {
                 sp::Catalog read(bulkDb, true);

@@ -44,7 +44,13 @@ class SoundPlusApplication final : public juce::JUCEApplication
             quit();
             return;
         }
-        window = std::make_unique<Window>(dir.getChildFile("library.sqlite"));
+        bool enableAI=!args.contains("--disable-ai");
+        if (planAt>=0 && planAt+1<args.size())
+            enableAI=juce::JSON::parse(juce::File(args[planAt+1]))["mode"].toString().startsWith("semantic");
+        juce::File modelDirectory;
+        auto modelAt=args.indexOf("--model-dir");
+        if (modelAt>=0 && modelAt+1<args.size()) modelDirectory=juce::File(args[modelAt+1]);
+        window = std::make_unique<Window>(dir.getChildFile("library.sqlite"),enableAI,modelDirectory);
         sp::activateDesktopApplication();
         window->toFront(true);
         for (int i = 0; i + 1 < args.size(); ++i)
@@ -73,15 +79,15 @@ class SoundPlusApplication final : public juce::JUCEApplication
     struct Window : juce::DocumentWindow
     {
         sp::LibraryView *view = nullptr;
-        explicit Window(const juce::File &db)
+        explicit Window(const juce::File &db, bool enableAI, const juce::File &modelDirectory)
             : DocumentWindow("SoundPlus", juce::Colour(0xff101419), DocumentWindow::allButtons)
         {
             setUsingNativeTitleBar(true);
-            view = new sp::LibraryView(db, juce::File::getSpecialLocation(juce::File::currentExecutableFile));
+            view = new sp::LibraryView(db, juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory);
             setContentOwned(view, true);
             setResizable(true, true);
-            setResizeLimits(1080, 650, 2600, 1800);
-            centreWithSize(1200, 780);
+            setResizeLimits(1080, 820, 2600, 1800);
+            centreWithSize(1200, 900);
             setVisible(true);
             toFront(true);
         }

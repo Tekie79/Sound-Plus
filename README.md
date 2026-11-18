@@ -1,12 +1,12 @@
 # SoundPlus
 
-A standalone macOS sound library built with C++20, JUCE 8.0.6, CMake and SQLite FTS5. Add existing folders, search their filenames while indexing continues, and audition original files with Space. No project, account, DAW or network connection is needed at runtime.
+A standalone macOS sound library built with C++20, JUCE 8.0.6, CMake and SQLite FTS5. Add existing folders, search filenames or describe a sound, and audition original files or matching regions. No project, account or DAW is needed. Sound-description search runs locally and works offline after installing its optional model.
 
-The product reference is [the architecture and requirements specification](docs/Sound_Design_Workstation_Architecture_and_Requirements.docx). The current milestone adds large-library paging, cancellable search, incremental indexing and Pause/Resume to the standalone Library and audition workflow. See [performance measurements and verification](docs/LIBRARY_PERFORMANCE.md). The specification's complete M1 also requires semantic search and region audition, which remain future work.
+The product reference is [the architecture and requirements specification](docs/Sound_Design_Workstation_Architecture_and_Requirements.docx). The current milestone adds real paired CLAP embeddings, progressive sound analysis, fused search, cached waveforms and editable region audition. See [local AI search, measurements and limits](docs/LOCAL_AI_SEARCH.md) and the preceding [library performance report](docs/LIBRARY_PERFORMANCE.md). Designer, plugin hosting, search by example and Resolve placement remain future work.
 
 ## Build and launch
 
-Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for the initial dependency download. CMake 3.31.6, Ninja 1.11.1.3 and the checksum-verified JUCE source are installed inside this checkout. No Homebrew packages or administrator install are required.
+Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for initial dependency downloads. Local AI requires macOS 13.3+. The Library/audition application retains its macOS 12.0 compilation minimum. Only macOS 26.3.2 was hardware tested. CMake, Ninja, JUCE and the native ONNX Runtime are installed inside this checkout. No Homebrew packages or administrator install are required.
 
 ```sh
 cd /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus
@@ -20,7 +20,21 @@ cd /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus
 open "$PWD/build/SoundPlus_artefacts/Release/SoundPlus.app"
 ```
 
-The app is already built at `build/SoundPlus_artefacts/Release/SoundPlus.app`. macOS 12.0 is the compilation minimum; the hardware/OS actually tested is recorded in [current verification](docs/LIBRARY_PERFORMANCE.md). This is a local development build; distribution signing and notarization are deferred.
+The app is already built at `build/SoundPlus_artefacts/Release/SoundPlus.app`. Its audio and AI helpers and native runtime library are bundled inside the application. Python is used for build/test tooling, never app inference. This is a local development build; distribution signing and notarization are deferred.
+
+Click **Install AI Model → Download verified CLAP model** in the app (about 163 MB). Alternatively install the identical pinned pack from the checkout:
+
+```sh
+python3 scripts/install_model.py
+```
+
+The pack is verified by SHA-256 and reused at `~/Library/Application Support/SoundPlus/Models/clap-htsat-unfused-q8-c28f2883575e`. For an offline installation choose **Import offline model folder**, or run:
+
+```sh
+python3 scripts/install_model.py --from-pack /absolute/path/to/verified-model-pack
+```
+
+The offline folder must contain the eight files listed in `resources/clap-model.json`; importing a custom manifest cannot replace the app's pinned checksums. An optional `--model-dir /absolute/path/to/pack` selects a separate pack for isolated tests. `--disable-ai` runs just the Library and audition workflow.
 
 The normal catalog is `~/Library/Application Support/SoundPlus/library.sqlite`. Keep it on local storage. For an isolated test catalog or scripted folder import:
 
@@ -35,11 +49,13 @@ Only one app window may write a given catalog. Different test catalogs can run i
 
 ## Five-minute test with your library
 
-1. **Minute 1:** Launch, click **Add Folder**, and select a sound-effects folder with nested folders. Watch the source's count increase. Search for a known filename prefix before scanning finishes. Names appear before duration/channels/rate finish loading.
-2. **Minute 2:** Click **Pause Indexing**. Wait for **Paused**, then search and audition with **Down**, **Space** and **Command-F**. Resume and confirm counts continue. With more than 1,000 matches, scroll beyond them. Selecting or paging holds the result order; **Refresh Results** includes newly discovered files while retaining an eligible selected asset ID.
-3. **Minute 3:** Play a longer recording. Press **Command-F** and search for another filename. The bottom transport must continue naming and playing the original recording even if it leaves the result list. Use Down to focus results. Space stops the pinned audition when no result is selected, or starts the newly selected result. Spaces typed in the search field remain search text.
-4. **Minute 4:** Copy one spare audio file into an indexed subfolder, give it a distinctive name, then search for it. Use **Refresh Results** if the current result order is held. Quit with Command-Q and reopen the same catalog. Search immediately. Completed unchanged sources use directory fingerprints without enumerating every recording; unfinished header work resumes.
-5. **Minute 5:** Stop playback. If using a removable drive, eject it normally in Finder and confirm its results remain searchable as **Offline**; reconnect and audition the same asset again. Otherwise, rename the spare file from minute 4 and search its new name. **Rescan** performs explicit recovery and retries failed headers.
+Start this timed test after installing the model. Use a small representative subfolder first; a whole library may need longer than five minutes to analyze.
+
+1. **Minute 1:** Launch, click **Add Folder**, and select your sound-effects folder. Search a known filename while names and headers appear. Confirm semantic coverage begins increasing. Originals remain in place.
+2. **Minute 2:** Enter an everyday description of a sound you know is present, then press Return. For example, describe a door creaking or water pouring. Look for **Sound similarity** and a time range. Coverage is partial until analysis finishes; similarity is a ranking signal, not a confidence percentage. Select a result and press **Play Match**.
+3. **Minute 3:** Choose a longer recording with an event away from its start. Inspect **Matching moments**, click the waveform to seek, drag to adjust the range or edit **IN/OUT (seconds)**. **+/-0.25 s context** adds 250 ms on both sides; **Play Whole** starts the complete recording. While playing, use Command-F to change the query; the pinned audition must continue.
+4. **Minute 4:** Click **Pause Indexing**, wait for **Paused**, and search/play again. Resume, then quit with Command-Q. Reopen the same catalog: filename search is immediate; sound search becomes ready after local model loading and reuses completed embeddings. Unfinished work resumes. Use **Refresh Results** when a selected/paged result order is held.
+5. **Minute 5:** Disconnect networking and repeat a sound-description query. If using an external drive, stop playback, eject normally, and confirm its results stay visible as **Offline**; reconnect and audition again. Space types spaces in text fields; with results focused it plays/stops. Down leaves the search field for results.
 
 **Rescan** reconciles all roots and retries failed headers. Output device and listening volume are in the bottom transport. There is no delete-original action.
 
@@ -49,7 +65,7 @@ Only one app window may write a given catalog. Different test catalogs can run i
 .tools/cmake/data/bin/ctest --test-dir build --output-on-failure
 ```
 
-CTest generates audio under `build/test-output` and `build/performance-test-output`, exercises the real catalog services, interrupts a 2,400-file import, checks paging across 4,096 matches during concurrent import, rapid query cancellation, pause/resume, changed-directory work and unchanged reopen. It launches the audio helper against the current Core Audio output, so it requires an available output device and a logged-in macOS session. It recreates only its own test-output directories on each run.
+CTest generates small audio fixtures under its three test-output directories, checks identity, interrupted indexing, 4,096-result paging, cancellation, pause/resume, reuse, source ranges at 44.1/48/96 kHz, waveform caching, revision invalidation and embedding-space separation. It launches the real audio helper, requiring an available Core Audio output and a logged-in macOS session. It recreates only its own output directories. See the AI report for the additional real-model workflow and native benchmark commands.
 
 ## 100,000-file native benchmark
 

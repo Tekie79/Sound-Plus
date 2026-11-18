@@ -30,5 +30,16 @@ class Benchmark final : private juce::Timer
     juce::int64 pausedFrames = 0;
     juce::String controlSelectedId;
     void controlTick(int total, int done, double now);
+    void semanticTick(double now);
+    double firstSemanticPaint = 0;
+    juce::String semanticDemoId;
+    int64_t pausedAiWindows = 0, semanticAudioFrames = 0;
+    double semanticDemoRate = 0;
+    int64_t semanticRangeStart = 0, semanticRangeEnd = 0;
+    juce::Array<juce::var> thermalSamples;
+    double lastThermalSample = 0;
+    uint64_t semanticPageBefore = 0;
+    int64_t semanticOtherMoment = 0;
+    int semanticJobsBefore = 0;
 };
 } // namespace sp

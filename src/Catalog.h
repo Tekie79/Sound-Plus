@@ -2,6 +2,7 @@
 #include <juce_core/juce_core.h>
 #include <sqlite3.h>
 #include <vector>
+#include <optional>
 
 namespace sp
 {
@@ -11,6 +12,12 @@ struct Root
     bool online = false, scanning = false;
     int discovered = 0, ready = 0, failed = 0;
 };
+struct MatchRegion
+{
+    int64_t startSample = 0, endSample = 0;
+    float similarity = 0;
+    int groupedWindows = 1;
+};
 struct Asset
 {
     juce::String id, rootId, relative, name, path, state, error;
@@ -18,7 +25,26 @@ struct Asset
     double duration = 0, sampleRate = 0;
     int channels = 0;
     bool online = false;
+    int64_t samples = 0;
+    juce::String matchReason;
+    std::vector<MatchRegion> matches;
 };
+struct AnalysisTask { Asset asset; int64_t nextStart = 0; };
+struct AnalysisUpdate
+{
+    Asset asset;
+    juce::String model, preprocessing, error;
+    int64_t start = 0, end = 0, nextStart = 0;
+    bool done = false;
+    std::vector<float> embedding;
+};
+struct AnalysisCounts
+{
+    int total = 0, complete = 0, pending = 0, failed = 0, regions = 0;
+    int64_t vectorBytes = 0;
+    double analyzedSeconds = 0;
+};
+struct RetrievalMetrics { double fetchFilterMs = 0, vectorScoreMs = 0, rankGroupMs = 0; int vectors = 0; };
 struct FileStamp
 {
     int64_t size = 0, modified = 0, inode = 0;
@@ -60,12 +86,25 @@ class Catalog
                   bool legacyRelink = true, const juce::String &confirmedRename = {});
     void finishScan(const Root &, int64_t scan);
     std::vector<Asset> pending(int limit = 24);
-    void metadata(const Asset &, double duration, int channels, double rate, const juce::String &error);
+    void metadata(const Asset &, double duration, int channels, double rate, const juce::String &error,
+                  int64_t sourceSamples = 0);
     std::vector<Asset> search(const juce::String &, const juce::String &root = {}, int limit = 1000,
                               int offset = 0);
     int countMatches(const juce::String &, const juce::String &root = {});
     void materialize(const juce::String &, const juce::String &root = {});
     std::vector<Asset> page(int offset, int limit);
+    Asset asset(const juce::String &id);
+    int promote(const std::vector<Asset> &prefix);
+    void seedAnalysis(const juce::String &model, const juce::String &preprocessing,
+                       const juce::String &assetId = {});
+    std::optional<AnalysisTask> nextAnalysis(const juce::String &model, const juce::String &preprocessing,
+                                            const juce::String &preferred = {});
+    bool commitAnalysis(const AnalysisUpdate &);
+    AnalysisCounts analysisCounts(const juce::String &model, const juce::String &preprocessing);
+    void retryAnalysis(const juce::String &model, const juce::String &preprocessing);
+    std::vector<Asset> semanticSearch(const std::vector<float> &, const juce::String &model,
+                                      const juce::String &preprocessing, const juce::String &root = {},
+                                      int limit = 100, RetrievalMetrics *metrics = nullptr);
     Asset existing(const juce::String &root, const juce::String &relative);
     std::vector<Asset> inodeCandidates(const juce::String &root, int64_t inode);
     std::vector<Asset> pendingRoot(const juce::String &, int limit);
@@ -80,5 +119,6 @@ class Catalog
     sqlite3 *db = nullptr;
     const std::atomic<uint64_t> *cancellation = nullptr;
     uint64_t expectedGeneration = 0;
+    int analysisRootCursor = 0;
 };
 } // namespace sp
