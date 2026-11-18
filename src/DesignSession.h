@@ -80,6 +80,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void selectLayer(const juce::String &, bool additive = false);
     void selectVariation(const juce::String &);
     void generate(uint64_t);
+    void saveSnapshot(const juce::String &name);
     void recoverAutosave(const juce::File & = {});
     void poll();
     bool canUndo() const

@@ -1,5 +1,6 @@
 #include "ViewCommandTests.h"
 #include "DesignerView.h"
+#include "PerformanceState.h"
 #include <iostream>
 namespace
 {
@@ -91,6 +92,26 @@ struct DesignerViewTestAccess
               "Removing the cached candidate while Original is active invalidates comparison");
         view.session.document = d;
         view.session.selectedIds = {d.selectedLayer};
+        view.refresh();
+        auto layerId = view.session.document.selectedLayer;
+        addMacroMapping(view.session.document.activeMix(), 0,
+                        {{layerId, {}, "gain"}, -20, 0, "linear", false});
+        view.session.document.activeMix().performance.macros[0].enabled = true;
+        view.refresh();
+        juce::Slider *gain = nullptr;
+        for (auto *c : view.controls)
+            if (auto *v = dynamic_cast<juce::Slider *>(c); v && v->getTitle() == "Layer gain (dB)")
+                gain = v;
+        check(gain && std::abs(gain->getValue() + 10) < 1e-8,
+              "Inspector shows the effective macro-controlled value");
+        auto base = view.session.selectedLayer()->gainDb;
+        gain->setValue(base, juce::sendNotificationSync);
+        check(!performanceOwns(view.session.document.activeMix(), {layerId, {}, "gain"}),
+              "Editing back to the unchanged base value explicitly unlinks the macro target");
+        view.session.undo();
+        check(performanceOwns(view.session.document.activeMix(), {layerId, {}, "gain"}),
+              "Undo restores inspector mapping ownership");
+        view.session.document = d;
         view.refresh();
         view.inspectorOpen = true;
         for (int width : {688, 774})

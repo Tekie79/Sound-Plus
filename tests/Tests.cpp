@@ -13,6 +13,7 @@
 #include "FadeTests.h"
 #include "IconTests.h"
 #include "ViewCommandTests.h"
+#include "PerformanceStateTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -70,6 +71,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--performance-state")
+        {
+            runPerformanceStateTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--view-commands")
         {
             runViewCommandTests(juce::File(argv[2]), juce::File(argv[3]));
@@ -151,16 +157,34 @@ int main(int argc, char **argv)
             runSimilarIntegrity(juce::File(argv[2]), juce::File(argv[3]));
             return 0;
         }
-        if(argc>=6 && juce::String(argv[1])=="--similar-workflow")
-        {runSimilarWorkflow(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5]));return 0;}
-        if(argc>=6 && juce::String(argv[1])=="--capacity-accuracy")
-        {runCapacityAccuracy(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5]));return 0;}
-        if(argc>=4 && juce::String(argv[1])=="--capacity-recovery")
-        {runCapacityRecovery(juce::File(argv[2]),juce::File(argv[3]));return 0;}
-        if (argc>=4 && juce::String(argv[1])=="--semantic-integrity")
-        { runSemanticIntegrity(juce::File(argv[2]),juce::File(argv[3])); return 0; }
-        if (argc>=6 && juce::String(argv[1])=="--semantic-workflow")
-        { runSemanticWorkflow(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
+        if (argc >= 6 && juce::String(argv[1]) == "--similar-workflow")
+        {
+            runSimilarWorkflow(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                               juce::File(argv[5]));
+            return 0;
+        }
+        if (argc >= 6 && juce::String(argv[1]) == "--capacity-accuracy")
+        {
+            runCapacityAccuracy(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                juce::File(argv[5]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--capacity-recovery")
+        {
+            runCapacityRecovery(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--semantic-integrity")
+        {
+            runSemanticIntegrity(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 6 && juce::String(argv[1]) == "--semantic-workflow")
+        {
+            runSemanticWorkflow(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                juce::File(argv[5]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--long-decode")
         {
             juce::Array<juce::var> rows;

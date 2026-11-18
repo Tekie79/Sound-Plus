@@ -19,7 +19,8 @@ def main():
     p.add_argument('--tests',type=Path,default=Path('build/SoundPlusTests_artefacts/Release/SoundPlusTests'))
     p.add_argument('--interactions',action='store_true',help='Measure continuous real canvas-handler edits during search/indexing')
     p.add_argument('--stock-effects',action='store_true',help='Measure actual inspector stock-effect sliders and selection commands')
-    a=p.parse_args();a.interactions = a.interactions or a.stock_effects;out=a.output.resolve()
+    p.add_argument('--performance-controls',action='store_true',help='Exercise the shared blend pad and four macro controls')
+    a=p.parse_args();a.interactions = a.interactions or a.stock_effects or a.performance_controls;out=a.output.resolve()
     if out.exists():raise RuntimeError('Choose a fresh evidence directory')
     out.mkdir(parents=True);catalog=Path(tempfile.mkdtemp(prefix='soundplus-designer-performance-',dir='/private/tmp'))
     source=sqlite3.connect(a.catalog.resolve().as_uri()+'?mode=ro',uri=True)
@@ -28,7 +29,7 @@ def main():
     sounds=['heavy rain','glass breaking','crickets in the night','a chainsaw running','a metal impact','a door closing','birds singing','water splashing','a quiet room','wind blowing','footsteps on gravel','an engine idling','a small dog barking','fire crackling','waves on a beach','thunder rumbling','a wooden creak','traffic passing','a saw cutting','a crowd talking']
     templates=['{}','The sound of {}','Find {}','A recording of {}','I hear {}','Listen for {}','A close recording of {}','Background: {}','An audio clip of {}','Please find {}']
     queries=[{'text':t.format(s)} for t in templates for s in sounds]
-    plan=dict(mode='semantic-designer-stock' if a.stock_effects else 'semantic-designer-edit' if a.interactions else 'semantic-designer',designFile=str(out/'fixture/workload.soundplus'),queryCount=len(queries),queries=queries)
+    plan=dict(mode='semantic-designer-perform' if a.performance_controls else 'semantic-designer-stock' if a.stock_effects else 'semantic-designer-edit' if a.interactions else 'semantic-designer',designFile=str(out/'fixture/workload.soundplus'),queryCount=len(queries),queries=queries)
     if a.interactions:
         incoming=out/'incoming';incoming.mkdir()
         for n in range(30):
@@ -57,6 +58,12 @@ def main():
             summary['selectionCommands']=report['controls']['selectionCommands']
             summary['stockPhaseEditToCallbackMs']={str(phase):distribution([float(x['inputToCallbackMs']) for x in interaction['heardEdits'] if x['stockPhase']==phase]) for phase in range(5)}
         summary['measurementBoundary']=('Actual inspector slider notification -> last coalesced UI edit -> first tagged device callback PCM. No OS pointer or slider-to-paint timing was measured.' if a.stock_effects else 'Visible native canvas mouse-handler driver -> painted frame; last coalesced UI edit -> first tagged device callback PCM.')+' Excludes OS input dispatch and physical DAC/acoustic delay.'
+    if a.performance_controls:
+        summary['editingProtocol']='Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.'
+        summary['measurementBoundary']='View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.'
+        summary['interface']='Visible Perform workspace and compact Library browser, shared transport and output controls'
+        summary['continuity']={k:report['controls'].get(k) for k in ['samePlaybackGeneration','sameHelper','sameGraphEpoch','noUnderruns','editingOverlappedIndexing','workspaceSwitchPreservesRecipeAndPlayhead']}
+        if not all(summary['continuity'].values()):raise RuntimeError('Performance workload continuity assertion failed: '+str(summary['continuity']))
     write(out/'summary.json',summary);print(json.dumps(summary,indent=2))
 
 if __name__=='__main__':main()

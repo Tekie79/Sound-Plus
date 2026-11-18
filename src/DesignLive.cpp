@@ -1,4 +1,5 @@
 #include "DesignLive.h"
+#include "PerformanceState.h"
 #include <juce_cryptography/juce_cryptography.h>
 namespace sp
 {
@@ -55,20 +56,22 @@ juce::String designStructure(const DesignDocument &document)
     mix = mix.clone();
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
+    object->removeProperty("performance");
     stripRack(mix["masterEffects"]);
     for (auto &layer : *mix["layers"].getArray())
     {
         stripRack(layer["effects"]);
-        for (const char *key : {"name", "first", "last", "placement", "sync", "fadeIn", "fadeOut", "gainDb",
-                                "pan", "rate", "reverse", "locked", "locks", "colour", "fadeInShape",
-                                "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
+        for (const char *key : {"controlGain", "name", "first", "last", "placement", "sync", "fadeIn",
+                                "fadeOut", "gainDb", "pan", "rate", "reverse", "locked", "locks", "colour",
+                                "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
             layer.getDynamicObject()->removeProperty(key);
     }
     auto text = juce::JSON::toString(mix, true);
     return juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
 }
-juce::var designParameters(const DesignDocument &document)
+juce::var designParameters(const DesignDocument &base)
 {
+    auto document = resolvePerformance(base);
     auto *object = new juce::DynamicObject();
     object->setProperty("masterDb", document.activeMix().masterDb);
     object->setProperty("masterEffects", rackParameters(document.activeMix().masterEffects));
@@ -78,6 +81,7 @@ juce::var designParameters(const DesignDocument &document)
         auto *value = new juce::DynamicObject();
         value->setProperty("id", layer.id);
         value->setProperty("gainDb", layer.gainDb);
+        value->setProperty("controlGain", layer.controlGain);
         value->setProperty("pan", layer.pan);
         value->setProperty("rate", layer.rate);
         value->setProperty("reverse", layer.reverse);
@@ -100,6 +104,7 @@ juce::var designParameters(const DesignDocument &document)
 void applyDesignParameters(DesignDocument &document, const juce::var &parameters)
 {
     auto changed = document;
+    changed.activeMix().performance = {};
     changed.activeMix().masterDb = (double)parameters["masterDb"];
     applyRack(changed.activeMix().masterEffects, parameters["masterEffects"]);
     auto *layers = parameters["layers"].getArray();
@@ -112,6 +117,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         if (layer.id != value["id"].toString())
             throw std::runtime_error("Live layer identity mismatch");
         layer.gainDb = (double)value["gainDb"];
+        layer.controlGain = value.hasProperty("controlGain") ? (double)value["controlGain"] : 1;
         layer.pan = (double)value["pan"];
         layer.rate = (double)value["rate"];
         layer.reverse = (bool)value["reverse"];

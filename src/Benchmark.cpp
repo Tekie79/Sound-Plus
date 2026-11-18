@@ -544,7 +544,8 @@ void Benchmark::semanticTick(double now)
             complete();
         return;
     }
-    if (mode == "semantic-designer-edit" || mode == "semantic-designer-stock")
+    if (mode == "semantic-designer-edit" || mode == "semantic-designer-stock" ||
+        mode == "semantic-designer-perform")
     {
         if (!ai.ready)
             return;
@@ -554,6 +555,8 @@ void Benchmark::semanticTick(double now)
                 designer->session.document.activeMix().layers.size() != 8)
                 return;
             semanticDemoId = "design:" + designer->session.document.id;
+            if (mode == "semantic-designer-perform")
+                designer->preparePerformanceBenchmark();
             if (mode == "semantic-designer-stock")
             {
                 auto commands = designer->benchmarkSelectionCommands();
@@ -594,10 +597,15 @@ void Benchmark::semanticTick(double now)
                 return;
             }
             lastDesignerFrame = (int64_t)state["sourceSample"];
-            auto editingDuration = mode == "semantic-designer-stock" ? 10000 : 8000;
+            auto editingDuration = mode == "semantic-designer-perform" ? 10000
+                                   : mode == "semantic-designer-stock" ? 10000
+                                                                       : 8000;
             if (elapsed < editingDuration && now - lastDesignerInput >= 25)
             {
-                if (mode == "semantic-designer-stock")
+                if (mode == "semantic-designer-perform")
+                    designer->benchmarkPerformance(lastDesignerInput == 0 ? 0 : 1,
+                                                   .5 + .45 * std::sin(elapsed * .003));
+                else if (mode == "semantic-designer-stock")
                     designer->benchmarkStockControls(std::min(4, (int)(elapsed / 2000)),
                                                      std::sin(elapsed * .006));
                 else
@@ -611,8 +619,13 @@ void Benchmark::semanticTick(double now)
             }
             else if (elapsed >= editingDuration && !designerGestureEnded)
             {
-                designer->benchmarkEndGesture();
+                if (mode == "semantic-designer-perform")
+                    designer->benchmarkPerformance(2, .5);
+                else
+                    designer->benchmarkEndGesture();
                 designerGestureEnded = true;
+                if (mode == "semantic-designer-perform")
+                    record("workspaceSwitchPreservesRecipeAndPlayhead", designer->benchmarkWorkspaceSwitch());
             }
             if (!waiting && index < count)
                 dispatch();
@@ -626,6 +639,8 @@ void Benchmark::semanticTick(double now)
                 record("eightLayers", (int)state["designLayers"] == 8);
                 record("samePlaybackGeneration",
                        state["playGeneration"] == controls["audioAtStart"]["playGeneration"]);
+                record("sameHelper", state["helperPid"] == controls["audioAtStart"]["helperPid"]);
+                record("sameGraphEpoch", state["graphEpoch"] == controls["audioAtStart"]["graphEpoch"]);
                 record("noUnderruns",
                        (int64_t)state["underruns"] == (int64_t)controls["audioAtStart"]["underruns"]);
                 record("editingOverlappedIndexing", editingIndexOverlap > 0);

@@ -2,6 +2,7 @@
 #include "Performance.h"
 #include "UIComponents.h"
 #include "DesignControls.h"
+#include "PerformanceState.h"
 #include <cmath>
 namespace sp
 {
@@ -327,10 +328,11 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         }
     }
     auto &layers = d.activeMix().layers;
+    auto effectiveMix = resolvePerformance(d.activeMix());
     for (size_t row = 0; row < layers.size(); ++row)
     {
         auto &layer = layers[row];
-        auto shape = clipGeometry(layer, (int)row, viewport, rate);
+        auto shape = clipGeometry(effectiveMix.layers[row], (int)row, viewport, rate);
         bool selected = session.selectedIds.contains(layer.id);
         bool selectedClip = selected && clipSelection, selectedTrack = selected && !clipSelection;
         auto colour = layer.colour ? juce::Colour(layer.colour) : ui::accent;
@@ -426,8 +428,8 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                                              radius * 2);
                     }
                 }
-                auto markerInk =
-                    hover.target == target && hover.row == (int)row ? juce::Colours::white : accent;
+                auto markerInk = hover.target == target && hover.row == (int)row ? juce::Colours::white
+                                                                                 : accent.withAlpha(.6f);
                 auto handle = fadeHandleBounds(shape, in);
                 // Two accent tones show the fade direction without a diagonal stroke.
                 auto edge = [&](float u, float v)
@@ -677,7 +679,15 @@ void DesignerCanvas::applyDrag()
                      else if (hit.target == CanvasTarget::fadeIn || hit.target == CanvasTarget::fadeOut)
                          fadeLayer(*layer, before, hit.target == CanvasTarget::fadeIn, delta, rate);
                      else if (hit.target == CanvasTarget::gain)
-                         gainLayer(*layer, before, pointer.y - anchor.y, modifiers.isCtrlDown());
+                     {
+                         auto effective = resolvePerformance(original.activeMix());
+                         auto adjusted = before;
+                         for (auto &value : effective.layers)
+                             if (value.id == before.id)
+                                 adjusted.gainDb = value.gainDb;
+                         unlinkPerformanceTarget(document.activeMix(), {before.id, {}, "gain"});
+                         gainLayer(*layer, adjusted, pointer.y - anchor.y, modifiers.isCtrlDown());
+                     }
                      else if (hit.target == CanvasTarget::sync)
                          syncLayer(*layer, before,
                                    snapFrame(frameAt(pointer.x), original, selection, viewport, snap), rate);
@@ -858,6 +868,7 @@ void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
         session.edit("Reset layer gain",
                      [&](auto &d)
                      {
+                         unlinkPerformanceTarget(d.activeMix(), {id, {}, "gain"});
                          if (auto *layer = findLayer(d, id))
                              layer->gainDb = 0;
                      });

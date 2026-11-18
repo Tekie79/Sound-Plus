@@ -2,6 +2,7 @@
 #include "AudioIPC.h"
 #include "DesignLive.h"
 #include "Performance.h"
+#include <unistd.h>
 
 namespace sp
 {
@@ -244,6 +245,9 @@ void AudioPlaybackService::produce()
         auto *object = state.getDynamicObject();
         object->setProperty("id", id);
         object->setProperty("playGeneration", (juce::int64)generation);
+        object->setProperty("graphEpoch", (juce::int64)activeEpoch);
+        object->setProperty("preparationsRequested", (juce::int64)epoch.load());
+        object->setProperty("helperPid", (juce::int64)::getpid());
         object->setProperty("outputRate", core.outputRate());
         object->setProperty("sourceSample", (juce::int64)core.sourceSample());
         object->setProperty("sourceRate", core.sourceRate());

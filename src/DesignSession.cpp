@@ -1,4 +1,5 @@
 #include "DesignSession.h"
+#include "PerformanceState.h"
 #include "DesignLive.h"
 #include "Performance.h"
 #include <cmath>
@@ -260,6 +261,8 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
     try
     {
         edit(document);
+        if (before.id == document.id && before.activeVariation == document.activeVariation)
+            unlinkManuallyEditedTargets(before.activeMix(), document.activeMix());
         reconcileSelection(&before);
         validateDesign(document);
         if (juce::JSON::toString(designToJson(before), true) ==
@@ -650,6 +653,7 @@ void DesignSession::selectLayer(const juce::String &id, bool additive)
 }
 void DesignSession::selectVariation(const juce::String &id)
 {
+    endGesture();
     edit("Select variation",
          [&](auto &d)
          {
@@ -676,6 +680,25 @@ void DesignSession::generate(uint64_t seed)
 bool DesignSession::ownsPlayback() const
 {
     return active || previewWaiting;
+}
+void DesignSession::saveSnapshot(const juce::String &name)
+{
+    endGesture();
+    edit("Save Snapshot",
+         [&](auto &d)
+         {
+             if (d.variations.size() >= 32)
+                 throw std::runtime_error("Discard a candidate before saving another snapshot (32 maximum)");
+             DesignVariation snapshot;
+             snapshot.name =
+                 name.trim().isEmpty() ? "Snapshot " + juce::String(d.variations.size() + 1) : name.trim();
+             snapshot.snapshot = true;
+             snapshot.kept = true;
+             snapshot.mix = d.activeMix();
+             auto id = snapshot.id;
+             d.variations.push_back(std::move(snapshot));
+             d.activeVariation = id;
+         });
 }
 void DesignSession::schedulePreview(const juce::String &mode)
 {
@@ -941,10 +964,10 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
 }
 void DesignSession::render(bool selection)
 {
-    auto snapshot = document;
+    auto snapshot = resolvePerformance(document);
     if (selection)
     {
-        auto *layer = selectedLayer();
+        auto *layer = layerById(snapshot, document.selectedLayer);
         if (!layer)
             return;
         auto chosen = *layer;

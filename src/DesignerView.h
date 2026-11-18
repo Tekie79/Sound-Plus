@@ -3,6 +3,7 @@
 #include "Waveform.h"
 #include "UIComponents.h"
 #include "DesignControls.h"
+#include "PerformView.h"
 #include <map>
 namespace sp
 {
@@ -33,6 +34,13 @@ class DesignerView final : public juce::Component,
     juce::var interactionMetrics() const;
     void benchmarkGesture(int phase, double displacement);
     void benchmarkEndGesture();
+    void benchmarkPerformance(int phase, double value)
+    {
+        if (perform)
+            perform->benchmarkControls(phase, value);
+    }
+    void preparePerformanceBenchmark();
+    bool benchmarkWorkspaceSwitch();
     void benchmarkStockControls(int phase, double value);
     juce::var benchmarkSelectionCommands();
     void commitNames();
@@ -63,6 +71,11 @@ class DesignerView final : public juce::Component,
     uint64_t lastHeardEdit = 0;
     struct Canvas;
     std::unique_ptr<Canvas> canvas;
+    std::unique_ptr<PerformView> perform;
+    ui::TextActionButton editWorkspace{"Edit", true}, performWorkspace{"Perform", true},
+        snapshotButton{"Save Snapshot"};
+    bool performMode = false;
+    void setPerformMode(bool);
     ui::FileDragButton dragOutput{"Drag WAV"}, dragOriginal{"Drag Original"};
     AudioClient &audio;
     ui::LookAndFeel look;
@@ -96,6 +109,7 @@ class DesignerView final : public juce::Component,
     std::vector<std::function<void()>> refreshers;
     int inspectorY = 0;
     bool updating = false;
+    DesignMix effectiveDisplay;
     IconButton add{"Add source", ActionIcon::addLayer}, newButton{"New design", ActionIcon::newDocument},
         openButton{"Open design", ActionIcon::open}, saveButton{"Save design", ActionIcon::save};
     IconButton undoButton{"Undo", ActionIcon::undo}, redoButton{"Redo", ActionIcon::redo},

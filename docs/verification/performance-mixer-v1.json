@@ -1,0 +1,332 @@
+{
+  "recordedAt": "2026-11-18T21:28:14.280749+00:00",
+  "startingHead": "43f5776",
+  "candidate": "Working tree committed with this record; source references in PERFORMANCE_MIXER_V1.md",
+  "appSha256": "cf6fabd735b91f2ed0e658fd1f6d89b7d8b0e36d8766d81029c3cabe64488a4e",
+  "environment": {
+    "os": "macOS 26.3.2 (25D2150)",
+    "machine": "MacBook Pro Mac17,8, Apple M5 Pro, 18 cores, 48 GB",
+    "device": "MacBook Pro Speakers",
+    "sampleRate": 48000,
+    "bufferFrames": 512
+  },
+  "build": {
+    "command": ".tools/cmake/data/bin/cmake --build build --parallel 6",
+    "exitCode": 0,
+    "log": "build/performance-mixer/build-delivery.log"
+  },
+  "tests": {
+    "command": ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "exitCode": 0,
+    "suitesPassed": 13,
+    "seconds": 50.67,
+    "log": "performance-ctest.log",
+    "performanceChecks": 4831,
+    "canvasChecks": 1449,
+    "viewCommandChecks": 79,
+    "nativePcm": {
+      "version": 5,
+      "command": "performance-test",
+      "checks": 4831,
+      "nativePreMonitorError": 0.0,
+      "monitorGain": 0.13,
+      "nativeStatus": {
+        "version": 5,
+        "command": "status",
+        "id": "design:ea41bc31176f4b7a82b3600bbf54574b",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 67838,
+        "outputRate": 48000.0,
+        "sourceSample": 52800,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 52800,
+        "playing": false,
+        "seconds": 1.1,
+        "firstCallbackMs": 96793054.384125,
+        "peak": 0.014879510737956,
+        "preMonitorPeak": 0.114454515278339,
+        "design": true,
+        "designLayers": 5,
+        "producerMaxMs": 0.998791664838791,
+        "error": "",
+        "callbacks": 106,
+        "frames": 54272,
+        "underruns": 0,
+        "designRevision": 1,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 47054848,
+        "cpuSeconds": 0.092149,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:ea41bc31176f4b7a82b3600bbf54574b",
+        "pendingPlayback": false
+      },
+      "directory": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-state-test-output/afdec8460c16453282baaca8339f5fc5"
+    }
+  },
+  "workload": {
+    "command": "python3 scripts/benchmark_designer.py --catalog build/gain-hover-native/library.sqlite --output build/performance-mixer/live-blend-delivery --performance-controls",
+    "exitCode": 0,
+    "summary": {
+      "timestamp": {
+        "thermalState": "nominal",
+        "lowPowerMode": false,
+        "elapsedMs": 14113.575958326459
+      },
+      "appSha256": "cf6fabd735b91f2ed0e658fd1f6d89b7d8b0e36d8766d81029c3cabe64488a4e",
+      "catalogCopy": "/private/tmp/soundplus-designer-performance-n30z2jl9",
+      "queries": 600,
+      "paintMs": {
+        "p50": 7.71187499165535,
+        "p95": 17.10416667163372,
+        "p99": 48.52395834028721
+      },
+      "allQueriesDuringEightLayerPlayback": true,
+      "nativePlaybackWallSeconds": 12.001906666666269,
+      "audioProcessCpuPercentOfOneCore": 8.070759312687253,
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:84078c351efa4738946f74ade1a52088",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 67988,
+        "outputRate": 48000.0,
+        "sourceSample": 576000,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": true,
+        "seconds": 12.0,
+        "firstCallbackMs": 96905830.63858333,
+        "peak": 0.001177923521027,
+        "preMonitorPeak": 0.029447404667735,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 2.058208331465721,
+        "error": "",
+        "callbacks": 1323,
+        "frames": 677376,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 307,
+        "editLatencyMs": 74.08462499082088,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52396032,
+        "cpuSeconds": 1.031939,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:84078c351efa4738946f74ade1a52088",
+        "pendingPlayback": false
+      },
+      "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+      "monitorGain": 0.04,
+      "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+      "pointerHandlerToPaintMs": {
+        "n": 0
+      },
+      "editToCallbackMs": {
+        "n": 252,
+        "p50": 53.74312500655651,
+        "p95": 68.26741667091846,
+        "p99": 73.94366666674614
+      },
+      "editingSamplesWithIndexing": 193,
+      "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+      "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+      "continuity": {
+        "samePlaybackGeneration": true,
+        "sameHelper": true,
+        "sameGraphEpoch": true,
+        "noUnderruns": true,
+        "editingOverlappedIndexing": true,
+        "workspaceSwitchPreservesRecipeAndPlayhead": true
+      }
+    },
+    "raw": "build/performance-mixer/live-blend-delivery/native.json",
+    "excludedRun": "live-blend ran alongside regression tests and is excluded from measurements"
+  },
+  "baseline": {
+    "source": "designer-v111.json / stockInspectorBenchmark.summary",
+    "paintMs": {
+      "p50": 13.247333332896233,
+      "p95": 23.167291671037674,
+      "p99": 41.08591666817665
+    },
+    "editToCallbackMs": {
+      "n": 249,
+      "p50": 58.405666664242744,
+      "p95": 72.7347916662693,
+      "p99": 76.31433333456516
+    },
+    "audioProcessCpuPercentOfOneCore": 8.128429169202299,
+    "caveat": "Same generated eight-layer / 26-insert source protocol, different control protocol; short descriptive comparison only."
+  },
+  "nativeUi": {
+    "qaCatalog": "/private/tmp/soundplus-designer-performance-n30z2jl9",
+    "normalLogicalContent": [
+      1360,
+      860
+    ],
+    "minimumLogicalContent": [
+      1040,
+      648
+    ],
+    "checks": {
+      "fineShiftArrow": "PASS, click establishes current X then Shift+Right adds .005",
+      "numericPad": "PASS",
+      "mappingRangeFeedback": "PASS, 500..18000 Hz log at .5 =3000; 500..12000 =2449.49; session Undo restores 3000",
+      "existingLayerNativeInternalDrop": "PASS, eighth layer assigned to slot0, Undo restored prior assignment",
+      "libraryNativeInternalDrop": "PASS, 8 to 9 ordinary layers, new source clip-001.wav, one Undo restored 8",
+      "snapshotDialogAndAB": "PASS, Balanced then Focused via native dialogs; Original .5/.5/.5 and Focused Weight .8/X .7/Y .3",
+      "savedReopen": "PASS, real quit/relaunch; revision1897, Focused .8/.7/.3 restored",
+      "fullAndPrimaryLayerRender": "PASS, finalized durable PCM24 48k stereo WAVs and matching receipt hashes",
+      "printBack": "PASS, adds ordinary ninth external layer referencing durable WAV; Undo restores eight",
+      "fadeAppearance": "PASS, 10pt subdued fixed corner controls visually inspected on restored working r6351",
+      "workingDesignPreservation": "Restored r6351 with unchanged SHA; newer user edits appeared afterward and were left untouched"
+    },
+    "savedDocument": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-mixer/live-blend-delivery/fixture/workload.soundplus",
+      "version": 2,
+      "dsp": "stock-perform-v1",
+      "revision": 1897,
+      "snapshots": [
+        {
+          "name": "Balanced",
+          "kept": true,
+          "snapshot": true,
+          "macro0": 0.5,
+          "x": 0.5,
+          "y": 0.5
+        },
+        {
+          "name": "Focused",
+          "kept": true,
+          "snapshot": true,
+          "macro0": 0.8,
+          "x": 0.7,
+          "y": 0.3
+        }
+      ]
+    },
+    "screenshots": [
+      "performance-normal.jpg",
+      "performance-minimum-mapping.jpg"
+    ],
+    "captureLimitation": "Some native captures omitted idle toolbar glyphs during partial repaints; resizing restored them. AX commands and geometry tests passed. Tool capture artifact versus a macOS repaint defect was not resolved; no icon renderer change was made."
+  },
+  "nativeOutputs": [
+    {
+      "receipt": {
+        "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1929-307e4ef0.wav",
+        "sha256": "aa21267d61d418f3eaa420157fa7212c028c43e9334ff38aace24d0ee93a0afb",
+        "variation": "f922f628f15d41ea9f694c5a606ef4e9",
+        "kind": "design-render",
+        "created": "2026-11-18T16:19:59.728-05:00",
+        "samples": 2242286,
+        "revision": 1929,
+        "peak": 0.049619700759649,
+        "clipped": 0,
+        "settings": {
+          "rate": 48000.0,
+          "tailSeconds": 1.0,
+          "channels": 2,
+          "bits": 24,
+          "first": 0,
+          "last": -1,
+          "normalize": false,
+          "dither": false
+        }
+      },
+      "exists": true,
+      "sha256Matches": true,
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 2242286,
+      "bits": 24
+    },
+    {
+      "receipt": {
+        "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1930-1423357c.wav",
+        "sha256": "5cb6a05d984d00a10ee9bf19a0ad66260baa7f74bc9815d9fa55339bb14896f6",
+        "variation": "f922f628f15d41ea9f694c5a606ef4e9",
+        "kind": "layer-render",
+        "created": "2026-11-18T16:20:12.195-05:00",
+        "samples": 1968000,
+        "revision": 1930,
+        "peak": 0.004263937007636,
+        "clipped": 0,
+        "settings": {
+          "rate": 48000.0,
+          "tailSeconds": 1.0,
+          "channels": 2,
+          "bits": 24,
+          "first": 0,
+          "last": -1,
+          "normalize": false,
+          "dither": false
+        }
+      },
+      "exists": true,
+      "sha256Matches": true,
+      "channels": 2,
+      "sampleRate": 48000,
+      "frames": 1968000,
+      "bits": 24
+    }
+  ],
+  "workingDesign": {
+    "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+    "restoredRevision": 6351,
+    "restoredSha256": "1d3cf892f2b3c18cc650f8c6d09cb73a0041074568793e2f11df23720c985649",
+    "newerUserEditsRetained": true
+  },
+  "humanListening": "NOT_PERFORMED; PCM equality is separate evidence",
+  "resolveDelivery": {
+    "status": "OPEN_MANUAL_QUALIFICATION",
+    "receiver": "DaVinci Resolve Studio 21.1.2.10",
+    "report": "../BUTTON_SEMANTICS_AND_RESOLVE_DELIVERY.md",
+    "implementationChanged": false,
+    "acceptance": "Actual import, track placement, receiving-project save, SoundPlus quit, receiver close/reopen, media online and reference/copy verification required"
+  },
+  "notQualified": [
+    "30-minute soak",
+    "256-frame buffer",
+    "Apple M2 hardware",
+    "external audio interface",
+    "human UAT",
+    "Resolve receiving-app persistence"
+  ]
+}

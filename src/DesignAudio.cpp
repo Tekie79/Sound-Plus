@@ -1,5 +1,6 @@
 #include "DesignAudio.h"
 #include "DesignLive.h"
+#include "PerformanceState.h"
 #include <random>
 #include <juce_dsp/juce_dsp.h>
 #include <juce_cryptography/juce_cryptography.h>
@@ -36,12 +37,17 @@ class StockProcessor final : public EffectProcessor
     int write = 0;
     double sampleRate;
     juce::SmoothedValue<float> gain, feedback, wet, delayFrames;
+    juce::SmoothedValue<double> highFrequency, lowFrequency;
 
   public:
     StockProcessor(const StockEffect &e, double rate) : effect(e), sampleRate(rate)
     {
         for (auto *value : {&gain, &feedback, &wet, &delayFrames})
             value->reset(rate, .01);
+        highFrequency.reset(rate, .02);
+        lowFrequency.reset(rate, .02);
+        highFrequency.setCurrentAndTargetValue(e.parameters[0]);
+        lowFrequency.setCurrentAndTargetValue(e.parameters[1]);
         if (e.type == "filter")
             for (int c = 0; c < 2; ++c)
             {
@@ -83,13 +89,10 @@ class StockProcessor final : public EffectProcessor
         wet.setTargetValue((float)e.parameters[2]);
         delayFrames.setTargetValue((float)std::llround(sampleRate * e.parameters[0] / 1000));
         if (e.type == "filter")
-            for (int c = 0; c < 2; ++c)
-            {
-                *high[c].coefficients = *juce::dsp::IIR::Coefficients<float>::makeHighPass(
-                    sampleRate, std::clamp(e.parameters[0], 10., sampleRate * .45));
-                *low[c].coefficients = *juce::dsp::IIR::Coefficients<float>::makeLowPass(
-                    sampleRate, std::clamp(e.parameters[1], 20., sampleRate * .45));
-            }
+        {
+            highFrequency.setTargetValue(std::clamp(e.parameters[0], 10., sampleRate * .45));
+            lowFrequency.setTargetValue(std::clamp(e.parameters[1], 20., sampleRate * .45));
+        }
         if (e.type == "reverb")
         {
             juce::Reverb::Parameters p;
@@ -117,9 +120,28 @@ class StockProcessor final : public EffectProcessor
         }
         if (effect.type == "filter")
         {
-            for (int c = 0; c < 2; ++c)
-                for (int n = 0; n < count; ++n)
-                    b.setSample(c, n, low[c].processSample(high[c].processSample(b.getSample(c, n))));
+            // Producer-worker DSP only: bounded sub-block coefficient updates smooth
+            // continuous cutoff motion while preserving filter history and graph identity.
+            for (int offset = 0; offset < count; offset += 32)
+            {
+                int frames = std::min(32, count - offset);
+                if (highFrequency.isSmoothing() || lowFrequency.isSmoothing())
+                {
+                    auto hp = highFrequency.skip(frames), lp = lowFrequency.skip(frames);
+                    auto hc = juce::dsp::IIR::Coefficients<float>::makeHighPass(
+                        sampleRate, std::clamp(hp, 10., sampleRate * .45));
+                    auto lc = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                        sampleRate, std::clamp(lp, 20., sampleRate * .45));
+                    for (int c = 0; c < 2; ++c)
+                    {
+                        *high[c].coefficients = *hc;
+                        *low[c].coefficients = *lc;
+                    }
+                }
+                for (int c = 0; c < 2; ++c)
+                    for (int n = offset; n < offset + frames; ++n)
+                        b.setSample(c, n, low[c].processSample(high[c].processSample(b.getSample(c, n))));
+            }
             return;
         }
         if (effect.type == "reverb")
@@ -190,7 +212,7 @@ class Voice
     PreparedFade previousIn, previousOut, currentIn, currentOut;
     void gainTargets(bool initial)
     {
-        float gain = juce::Decibels::decibelsToGain((float)layer.gainDb);
+        float gain = juce::Decibels::decibelsToGain((float)layer.gainDb) * (float)layer.controlGain;
         float left = mono            ? (float)std::cos((layer.pan + 1) * pi / 4)
                      : layer.pan > 0 ? (float)std::cos(layer.pan * pi / 2)
                                      : 1;
@@ -452,7 +474,7 @@ struct DesignGraph::Impl
     }
 };
 DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled)
-    : impl(std::make_unique<Impl>(d, cancelled))
+    : impl(std::make_unique<Impl>(resolvePerformance(d), cancelled))
 {
 }
 void DesignGraph::updateParameters(const juce::var &parameters)

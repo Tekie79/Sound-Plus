@@ -1,0 +1,487 @@
+#include "PerformanceStateTests.h"
+#include "PerformanceState.h"
+#include "DesignLive.h"
+#include "DesignSession.h"
+#include "PerformView.h"
+#include "Performance.h"
+#include <iostream>
+#include <cmath>
+#include <deque>
+#include <thread>
+namespace
+{
+int checks = 0;
+void check(bool v, const char *why)
+{
+    ++checks;
+    if (!v)
+        throw std::runtime_error(why);
+}
+template <class F> void rejects(F f, const char *why)
+{
+    bool rejected = false;
+    try
+    {
+        f();
+    }
+    catch (...)
+    {
+        rejected = true;
+    }
+    check(rejected, why);
+}
+juce::String mixText(const sp::DesignMix &mix)
+{
+    sp::DesignDocument d;
+    d.original = mix;
+    return juce::JSON::toString(sp::designToJson(d)["original"], true);
+}
+double pcmDifference(const sp::DesignDocument &a, const sp::DesignDocument &b)
+{
+    sp::DesignReader ar(a, 48000, 0, -1, .1), br(b, 48000, 0, -1, .1);
+    juce::AudioBuffer<float> x(2, 512), y(2, 512);
+    double error = 0;
+    for (;;)
+    {
+        int n = ar.read(x, 512);
+        check(n == br.read(y, 512), "Effective-state PCM lengths match");
+        if (!n)
+            break;
+        for (int c = 0; c < 2; ++c)
+            for (int i = 0; i < n; ++i)
+                error = std::max(error, (double)std::abs(x.getSample(c, i) - y.getSample(c, i)));
+    }
+    return error;
+}
+} // namespace
+namespace sp
+{
+struct PerformanceViewTestAccess
+{
+    static juce::MouseEvent pointer(juce::Component &c, juce::Point<float> p, juce::Point<float> start)
+    {
+        return {juce::Desktop::getInstance().getMainMouseSource(),
+                p,
+                {},
+                1,
+                0,
+                0,
+                0,
+                0,
+                &c,
+                &c,
+                juce::Time::getCurrentTime(),
+                start,
+                juce::Time::getCurrentTime(),
+                1,
+                p != start};
+    }
+    static void run(DesignSession &session)
+    {
+        PerformView view(session);
+        view.setSize(752, 360);
+        session.onChange = [&] { view.refresh(); };
+        auto initial = session.document.activeMix().performance.x;
+        auto &pad = view.pad;
+        juce::Point<float> start{20, 20}, end{90, 90};
+        pad.mouseDown(pointer(pad, start, start));
+        pad.mouseDrag(pointer(pad, end, start));
+        pad.mouseUp(pointer(pad, end, start));
+        check(session.canUndo() && session.document.activeMix().performance.x != initial,
+              "Actual pad drag edits the control state");
+        session.undo();
+        check(session.document.activeMix().performance.x == initial && !session.canUndo(),
+              "One pad drag has one complete undo step");
+        pad.mouseDown(pointer(pad, start, start));
+        pad.mouseDrag(pointer(pad, end, start));
+        pad.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
+        pad.mouseUp(pointer(pad, end, start));
+        check(session.document.activeMix().performance.x == initial && !session.canUndo(),
+              "Escape restores the full pad gesture without an undo entry");
+        auto macroInitial = session.document.activeMix().performance.macros[0].value;
+        view.macros[0].onDragStart();
+        view.macros[0].setValue(.1, juce::sendNotificationSync);
+        view.macros[0].setValue(.9, juce::sendNotificationSync);
+        view.macros[0].onDragEnd();
+        session.undo();
+        check(session.document.activeMix().performance.macros[0].value == macroInitial && !session.canUndo(),
+              "Actual macro slider callbacks form one undo step");
+        pad.keyPressed(juce::KeyPress(juce::KeyPress::rightKey));
+        check(session.document.activeMix().performance.x > initial,
+              "Keyboard alternative reaches the pad model");
+        session.undo();
+        pad.keyPressed(juce::KeyPress(juce::KeyPress::rightKey, juce::ModifierKeys::shiftModifier, 0));
+        check(std::abs(session.document.activeMix().performance.x - initial - .005) < 1e-10,
+              "Shift-arrow performs the advertised fine pad movement");
+        session.undo();
+        pad.mouseDown(pointer(pad, start, start));
+        auto another = session.document;
+        another.id = juce::Uuid().toString();
+        session.cancelGesture();
+        session.document = another;
+        view.refresh();
+        auto x = session.document.activeMix().performance.x;
+        pad.mouseDrag(pointer(pad, end, start));
+        pad.mouseUp(pointer(pad, end, start));
+        check(session.document.activeMix().performance.x == x,
+              "Late pad events cannot edit a replacement document");
+        auto oldName = session.document.activeMix().performance.macros[0].name;
+        view.macroNames[0].onEditorShow();
+        session.document.id = juce::Uuid().toString();
+        view.refresh();
+        view.macroNames[0].setText("Stale rename", juce::sendNotificationSync);
+        check(session.document.activeMix().performance.macros[0].name == oldName,
+              "A stale macro-name edit cannot rename a different document");
+        session.edit("Delete mapped layer",
+                     [](auto &d) { d.activeMix().layers.erase(d.activeMix().layers.begin() + 1); });
+        check(view.macroFeedback[0].getText().contains("unresolved"),
+              "Deleted targets are visibly unresolved in the actual macro view");
+        session.undo();
+        for (auto size : {juce::Point<int>(664, 308), juce::Point<int>(752, 360)})
+        {
+            view.setSize(size.x, size.y);
+            auto bounds = view.getLocalBounds();
+            check(bounds.contains(view.pad.getBounds()) && bounds.contains(view.macros[3].getBounds()),
+                  "Minimum Perform layout contains pad and macro controls");
+            view.openMapping(0);
+            for (auto *c : std::initializer_list<juce::Component *>{&view.mappingChoice, &view.targetChoice,
+                                                                    &view.minimum, &view.maximum, &view.curve,
+                                                                    &view.addMapping})
+                check(bounds.contains(c->getBounds()),
+                      "Mapping targets and bounds remain accessible at minimum size");
+        }
+        auto effective = resolvePerformance(session.document);
+        session.saveSnapshot("Static QA snapshot");
+        check(session.document.activeVariation.isNotEmpty() && session.document.variations.back().snapshot &&
+                  session.document.variations.back().kept,
+              "Save Snapshot creates a named kept candidate through the actual session command");
+        check(pcmDifference(session.document, effective) == 0,
+              "Actual snapshot command recalls its effective sound once");
+        session.undo();
+        check(session.document.activeVariation.isEmpty(), "Snapshot creation is undoable");
+        session.redo();
+        check(session.document.variations.back().name == "Static QA snapshot",
+              "Snapshot redo retains its name and state");
+        session.onChange = {};
+    }
+};
+} // namespace sp
+void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
+{
+    juce::ScopedJuceInitialiser_GUI gui;
+    auto root = parent.getChildFile(juce::Uuid().toString());
+    root.createDirectory();
+    auto file = root.getChildFile("tone.wav");
+    {
+        juce::WavAudioFormat fmt;
+        auto stream = file.createOutputStream();
+        std::unique_ptr<juce::AudioFormatWriter> w(
+            fmt.createWriterFor(stream.release(), 48000, 2, 32, {}, 0));
+        juce::AudioBuffer<float> b(2, 48000);
+        for (int c = 0; c < 2; ++c)
+            for (int i = 0; i < 48000; ++i)
+                b.setSample(c, i, (float)(.1 * std::sin((c + 1) * i * .03)));
+        check(w && w->writeFromAudioSampleBuffer(b, 0, 48000), "Finalize generated performance fixture");
+    }
+    sp::DesignDocument d;
+    auto source = sp::inspectDesignSource(file);
+    for (int i = 0; i < 5; ++i)
+    {
+        auto l = sp::makeDesignLayer(source, 0, -1, true);
+        l.name = "Layer " + juce::String(i + 1);
+        l.effects = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
+                     sp::makeStockEffect("reverb")};
+        d.original.layers.push_back(l);
+    }
+    d.selectedLayer = d.original.layers[0].id;
+    auto legacy = sp::designToJson(d);
+    check((int)legacy["version"] == 1, "Neutral designs keep the old manifest version");
+    auto old = sp::designFromJson(legacy);
+    check(mixText(sp::resolvePerformance(old.original)) == mixText(d.original),
+          "Old documents resolve neutrally");
+    for (int count = 0; count <= 4; ++count)
+    {
+        auto mix = d.original;
+        for (int i = 0; i < count; ++i)
+            sp::assignBlendLayer(mix, i, mix.layers[(size_t)i].id);
+        mix.performance.blendEnabled = true;
+        for (int x = 0; x <= 10; ++x)
+            for (int y = 0; y <= 10; ++y)
+            {
+                mix.performance.x = x / 10.;
+                mix.performance.y = y / 10.;
+                auto weights = sp::blendWeights(mix.performance, mix);
+                double energy = 0;
+                for (auto w : weights)
+                {
+                    check(std::isfinite(w) && w >= 0 && w <= 1.000000001,
+                          "Blend weights are finite bounded amplitudes over the whole pad");
+                    energy += w * w;
+                }
+                check(std::abs(energy - (count ? 1 : 0)) < 1e-10,
+                      "Zero to four occupied slots retain normalized power, including missing corners");
+                auto resolved = sp::resolvePerformance(mix);
+                check(resolved.layers[4].controlGain == 1, "Unassigned layers are unchanged");
+                check(mixText(sp::resolvePerformance(resolved)) == mixText(resolved),
+                      "Repeated resolution is idempotent");
+            }
+        auto bypass = mix;
+        bypass.performance.blendEnabled = false;
+        check(sp::resolvePerformance(bypass).layers[0].controlGain == 1, "Blend bypass returns base levels");
+    }
+    auto &mix = d.original;
+    sp::assignBlendLayer(mix, 0, mix.layers[0].id);
+    rejects([&] { sp::assignBlendLayer(mix, 1, mix.layers[0].id); },
+            "Duplicate blend assignments are rejected");
+    sp::PerformanceMapping gain{{mix.layers[1].id, {}, "gain"}, -30, 0, "linear", false};
+    sp::addMacroMapping(mix, 0, gain);
+    rejects([&] { sp::addMacroMapping(mix, 1, gain); }, "One macro writer per target");
+    rejects([&] { sp::assignBlendLayer(mix, 1, mix.layers[1].id); },
+            "Blend cannot take an owned gain target");
+    auto &macro = mix.performance.macros[0];
+    auto invalid = mix;
+    invalid.performance.macros[0].value = 1.01;
+    rejects([&] { sp::validatePerformance(invalid); }, "Macro values outside zero to one are rejected");
+    auto invalidMap = gain;
+    invalidMap.maximum = 25;
+    auto isolated = d.original;
+    isolated.performance.macros[0].mappings.clear();
+    rejects([&] { sp::addMacroMapping(isolated, 0, invalidMap); },
+            "Target ranges obey physical parameter bounds");
+    check(isolated.performance.macros[0].mappings.empty(), "Rejected mappings leave ownership unchanged");
+    check(sp::resolvePerformance(mix).layers[1].gainDb == 0, "Adding a bypassed mapping preserves sound");
+    macro.enabled = true;
+    macro.value = .25;
+    check(sp::resolvePerformance(mix).layers[1].gainDb == -22.5, "Absolute macro range");
+    macro.mappings[0].inverted = true;
+    check(sp::resolvePerformance(mix).layers[1].gainDb == -7.5, "Macro inversion");
+    macro.mappings[0].inverted = false;
+    auto cutoff = sp::PerformanceMapping{
+        {mix.layers[1].id, mix.layers[1].effects[0].id, "filterLow"}, 100, 10000, "log", false};
+    sp::addMacroMapping(mix, 0, cutoff);
+    macro.value = .5;
+    check(std::abs(sp::resolvePerformance(mix).layers[1].effects[0].parameters[1] - 1000) < 1e-8,
+          "Frequency interpolation is logarithmic");
+    auto structure = sp::designStructure(d);
+    mix.performance.x = .8;
+    mix.performance.blendEnabled = true;
+    macro.value = .8;
+    check(sp::designStructure(d) == structure, "Pad/macro values and activation keep the graph signature");
+    auto before = d;
+    auto effective = sp::resolvePerformance(d);
+    check(pcmDifference(d, effective) == 0,
+          "Playback initialization uses the exact same effective static state");
+    auto live = d;
+    sp::applyDesignParameters(live, sp::designParameters(d));
+    check(pcmDifference(d, live) == 0, "Live parameter packet resolves exactly once");
+    std::reverse(mix.layers.begin(), mix.layers.end());
+    auto reordered = sp::resolvePerformance(mix);
+    check(std::abs(*sp::performanceTargetValue(reordered, gain.target) + 6) < 1e-10,
+          "Reordered layers keep stable target identity");
+    std::reverse(mix.layers.begin(), mix.layers.end());
+    auto removed = mix;
+    removed.layers.erase(removed.layers.begin() + 1);
+    check(sp::performanceTargetValue(removed, gain.target) == nullptr,
+          "Deleted layer stays unresolved instead of retargeting");
+    removed = mix;
+    removed.layers[1].effects.clear();
+    check(sp::performanceTargetValue(removed, cutoff.target) == nullptr, "Removed effect stays unresolved");
+    removed = mix;
+    removed.layers[1].effects[0].type = "gain";
+    check(sp::performanceTargetValue(removed, cutoff.target) == nullptr,
+          "An incompatible effect with the same ID cannot acquire a cutoff mapping");
+    auto manual = mix;
+    manual.layers[1].gainDb = -9;
+    sp::unlinkManuallyEditedTargets(mix, manual);
+    check(!sp::performanceOwns(manual, gain.target) && sp::performanceOwns(manual, cutoff.target),
+          "Manual parameter edit unlinks only its own mapping");
+    auto saved = root.getChildFile("performance.soundplus");
+    sp::saveDesignAtomic(saved, d);
+    auto recall = sp::loadDesign(saved);
+    check((int)sp::designToJson(recall)["version"] == 2,
+          "Performance documents use the explicit new compatibility gate");
+    check(pcmDifference(d, recall) == 0, "Save/reopen retains effective sound");
+    auto forged = sp::designToJson(d);
+    forged.getDynamicObject()->setProperty("version", 1);
+    rejects([&] { sp::designFromJson(forged); }, "Older version cannot silently accept performance state");
+    sp::DesignVariation snapshot;
+    snapshot.name = "Snapshot";
+    snapshot.snapshot = true;
+    snapshot.kept = true;
+    snapshot.mix = d.activeMix();
+    d.variations.push_back(snapshot);
+    d.activeVariation = snapshot.id;
+    check(pcmDifference(d, before) == 0, "Snapshot base-plus-controls recall does not double-apply");
+    auto smooth = d;
+    smooth.activeMix().performance.macros[0].enabled = false;
+    sp::DesignGraph graph(smooth);
+    juce::AudioBuffer<float> block(2, 512);
+    graph.render(block, 0, 512);
+    auto packet = sp::designParameters(d);
+    graph.updateParameters(packet);
+    graph.render(block, 0, 512);
+    check(block.getMagnitude(0, 512) < 1 && std::isfinite(block.getMagnitude(0, 512)),
+          "Continuous smoothed gain/filter updates remain finite and bounded");
+    sp::DesignSessionServices services;
+    services.automaticRecovery = false;
+    services.timers = false;
+    services.submit = [](auto) { return true; };
+    std::mutex completedMutex;
+    std::deque<std::function<void()>> completed;
+    services.post = [&](auto callback)
+    {
+        std::lock_guard lock(completedMutex);
+        completed.push_back(std::move(callback));
+    };
+    services.resolve = [](auto &) {};
+    services.status = [] { return sp::message("status"); };
+    services.stop = [] {};
+    {
+        sp::DesignSession session(root.getChildFile("gesture.sqlite"), services);
+        session.document = before;
+        session.selectedIds = {before.selectedLayer};
+        sp::PerformanceViewTestAccess::run(session);
+        session.document = before;
+        session.edit("Inspector gain", [](auto &d) { d.activeMix().layers[1].gainDb = -9; });
+        check(!sp::performanceOwns(session.document.activeMix(), gain.target),
+              "Actual inspector-style session edits unlink the owning macro target");
+        session.undo();
+        check(sp::performanceOwns(session.document.activeMix(), gain.target),
+              "Undo restores the linked target and its prior base value");
+        auto selectedFixture = before;
+        for (int i = 1; i < 4; ++i)
+            sp::assignBlendLayer(selectedFixture.original, i, selectedFixture.original.layers[i + 1].id);
+        session.document = selectedFixture;
+        session.document.outputFolder = root.getChildFile("Selected renders").getFullPathName();
+        session.document.renderSettings.bits = 32;
+        session.document.renderSettings.tailSeconds = .1;
+        session.render(true);
+        auto deadline = sp::monotonicMs() + 10000;
+        while (session.rendering && sp::monotonicMs() < deadline)
+        {
+            std::function<void()> callback;
+            {
+                std::lock_guard lock(completedMutex);
+                if (!completed.empty())
+                {
+                    callback = std::move(completed.front());
+                    completed.pop_front();
+                }
+            }
+            if (callback)
+                callback();
+            else
+                std::this_thread::sleep_for(std::chrono::milliseconds(5));
+        }
+        check(!session.rendering && session.lastOutput.existsAsFile(),
+              "Actual Render selected layer command finalizes a performance output");
+        auto reference = selectedFixture;
+        reference.variations.clear();
+        reference.activeVariation.clear();
+        reference.original.performance = {};
+        auto primary = selectedFixture.original.layers.front();
+        primary.placement = 0;
+        primary.mute = primary.solo = false;
+        auto x = selectedFixture.original.performance.x, y = selectedFixture.original.performance.y;
+        auto a = (1 - x) * (1 - y), b = x * (1 - y), c = (1 - x) * y, e = x * y;
+        primary.controlGain = a / std::sqrt(a * a + b * b + c * c + e * e);
+        reference.original.layers = {primary};
+        sp::DesignReader expected(reference, 48000, 0, -1, .1);
+        juce::AudioFormatManager formats;
+        formats.registerBasicFormats();
+        std::unique_ptr<juce::AudioFormatReader> rendered(formats.createReaderFor(session.lastOutput));
+        check(rendered && rendered->lengthInSamples == expected.length(),
+              "Selection contains only the primary layer and its explicit tail");
+        juce::AudioBuffer<float> actual(2, (int)rendered->lengthInSamples), block(2, 512);
+        rendered->read(&actual, 0, actual.getNumSamples(), 0, true, true);
+        double error = 0;
+        int offset = 0;
+        while (int n = expected.read(block, 512))
+        {
+            for (int ch = 0; ch < 2; ++ch)
+                for (int i = 0; i < n; ++i)
+                    error = std::max(
+                        error, (double)std::abs(actual.getSample(ch, offset + i) - block.getSample(ch, i)));
+            offset += n;
+        }
+        check(error < 1e-7, "Primary-layer printing keeps its full-design blend weight instead of "
+                            "renormalizing a single slot");
+    }
+    // Actual permanent export and supervised native producer, from the same initial history.
+    d.renderSettings.tailSeconds = .1;
+    d.renderSettings.bits = 32;
+    d.renderSettings.normalize = false;
+    d.renderSettings.dither = false;
+    auto output = sp::renderDesign(
+        d, root.getChildFile("Renders"), d.renderSettings, [] { return false; }, [](double) {});
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> wav(formats.createReaderFor(juce::File(output.path)));
+    check(wav != nullptr, "Finalized performance render exists");
+    juce::AudioBuffer<float> offline(2, (int)wav->lengthInSamples);
+    wav->read(&offline, 0, offline.getNumSamples(), 0, true, true);
+    auto snapshotFile = root.getChildFile("native-performance.soundplus");
+    sp::saveDesignAtomic(snapshotFile, d);
+    auto capture = root.getChildFile("native-pre-monitor.f32");
+    sp::AudioClient audio(app);
+    auto wait = [&](auto condition, const char *why)
+    {
+        double deadline = sp::monotonicMs() + 15000;
+        while (!condition())
+        {
+            if (sp::monotonicMs() > deadline)
+                throw std::runtime_error(why);
+            std::this_thread::sleep_for(std::chrono::milliseconds(10));
+        }
+        ++checks;
+    };
+    wait([&] { return (double)audio.status()["sampleRate"] > 0; }, "Native performance helper device ready");
+    audio.deviceRate(48000);
+    wait([&] { return (double)audio.status()["sampleRate"] == 48000; }, "Native performance device at 48k");
+    audio.gain(.13f);
+    audio.playDesign("design:" + d.id, snapshotFile, 0, capture);
+    wait([&]
+         { return audio.status()["id"].toString() == "design:" + d.id && (bool)audio.status()["playing"]; },
+         "Version-2 performance design plays through the real helper");
+    wait([&] { return !(bool)audio.status()["playing"] && !(bool)audio.status()["pendingPlayback"]; },
+         "Native performance reaches its finalized tail");
+    juce::MemoryBlock bytes;
+    check(capture.loadFileAsData(bytes) && bytes.getSize() == (size_t)offline.getNumSamples() * 8,
+          "Native performance capture has the exact render length");
+    double nativeError = 0;
+    auto *samples = (const float *)bytes.getData();
+    for (int i = 0; i < offline.getNumSamples(); ++i)
+        for (int c = 0; c < 2; ++c)
+            nativeError =
+                std::max(nativeError, (double)std::abs(samples[i * 2 + c] - offline.getSample(c, i)));
+    check(nativeError < 1e-7, "Performance live/offline PCM agrees before monitor gain");
+    auto rampDoc = before;
+    rampDoc.activeVariation.clear();
+    rampDoc.variations.clear();
+    rampDoc.original.performance = {};
+    rampDoc.original.layers.resize(1);
+    rampDoc.original.layers[0].effects.clear();
+    rampDoc.original.masterDb = 0;
+    sp::DesignGraph ramp(rampDoc), unchanged(rampDoc);
+    juce::AudioBuffer<float> moving(2, 512), steady(2, 512);
+    ramp.render(moving, 0, 128);
+    unchanged.render(steady, 0, 128);
+    rampDoc.original.layers[0].gainDb = -18;
+    ramp.updateParameters(sp::designParameters(rampDoc));
+    ramp.render(moving, 0, 512);
+    unchanged.render(steady, 0, 512);
+    check(moving.getSample(0, 0) / steady.getSample(0, 0) > .9 &&
+              std::abs(moving.getSample(0, 511) / steady.getSample(0, 511) - std::pow(10., -18. / 20)) < 1e-6,
+          "Continuous gain motion ramps from the old value and settles instead of stepping");
+    auto report = sp::message("performance-test");
+    report.getDynamicObject()->setProperty("checks", checks);
+    report.getDynamicObject()->setProperty("nativePreMonitorError", nativeError);
+    report.getDynamicObject()->setProperty("monitorGain", .13);
+    report.getDynamicObject()->setProperty("nativeStatus", audio.status());
+    report.getDynamicObject()->setProperty("directory", root.getFullPathName());
+    parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(report, true));
+    audio.stop();
+    std::cout
+        << "PASS performance neutral compatibility, 0-4 blend, stable mappings, idempotence and PCM recall: "
+        << checks << " checks\n";
+}

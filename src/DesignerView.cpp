@@ -46,6 +46,34 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
+    perform = std::make_unique<PerformView>(session);
+    addAndMakeVisible(*perform);
+    for (auto *button : {&editWorkspace, &performWorkspace, &snapshotButton})
+        addAndMakeVisible(button);
+    performMode = preferences.getBoolValue("performWorkspace", false);
+    editWorkspace.onClick = [this] { setPerformMode(false); };
+    performWorkspace.onClick = [this] { setPerformMode(true); };
+    snapshotButton.setTooltip("Save the current static sound and its control settings as a named snapshot. "
+                              "No control motion is recorded.");
+    snapshotButton.onClick = [this]
+    {
+        auto token = session.beginDialog();
+        auto *dialog = new juce::AlertWindow("Save Snapshot", "Name this static sound configuration",
+                                             juce::MessageBoxIconType::NoIcon);
+        dialog->addTextEditor("name", "Snapshot " + juce::String(session.document.variations.size() + 1),
+                              "Name");
+        dialog->addButton("Save", 1);
+        dialog->addButton("Cancel", 0);
+        juce::Component::SafePointer<DesignerView> safe(this);
+        dialog->enterModalState(true,
+                                juce::ModalCallbackFunction::create(
+                                    [safe, dialog, token](int result)
+                                    {
+                                        if (result && safe && safe->session.accepts(token))
+                                            safe->session.saveSnapshot(dialog->getTextEditorContents("name"));
+                                    }),
+                                true);
+    };
     for (auto *button : {&snap, &scrub, &inspect, &keep})
         button->setToggleable(true);
     for (auto *control : {&zoomIn, &zoomOut, &fitAll, &fitSelected, &snap, &snapOptions, &scrub, &verticalIn,
@@ -563,11 +591,25 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
             if (updating)
                 return;
             int index = effectChoice.getSelectedId() - 1;
-            changeEffect("Adjust insert",
-                         [&](auto &fx)
+            auto layerId = rackTarget.getSelectedId() == 2 ? juce::String() : session.document.selectedLayer;
+            session.edit("Adjust insert",
+                         [&](auto &d)
                          {
-                             if (juce::isPositiveAndBelow(index, (int)fx.size()))
-                                 fx[(size_t)index].parameters[(size_t)i] = effectValues[(size_t)i].getValue();
+                             std::vector<StockEffect> *rack = &d.activeMix().masterEffects;
+                             if (layerId.isNotEmpty())
+                             {
+                                 rack = nullptr;
+                                 for (auto &layer : d.activeMix().layers)
+                                     if (layer.id == layerId)
+                                         rack = &layer.effects;
+                             }
+                             if (rack && juce::isPositiveAndBelow(index, (int)rack->size()))
+                             {
+                                 auto &effect = (*rack)[(size_t)index];
+                                 unlinkPerformanceTarget(d.activeMix(),
+                                                         performanceEffectTarget(layerId, effect, i));
+                                 effect.parameters[(size_t)i] = effectValues[(size_t)i].getValue();
+                             }
                          });
         };
         lock.onClick = [this, i]
@@ -599,13 +641,18 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     master->onValueChange = [this, master]
     {
         if (!updating)
-            session.edit("Master gain", [&](auto &d) { d.activeMix().masterDb = master->getValue(); });
+            session.edit("Master gain",
+                         [&](auto &d)
+                         {
+                             unlinkPerformanceTarget(d.activeMix(), {{}, {}, "masterGain"});
+                             d.activeMix().masterDb = master->getValue();
+                         });
     };
     refreshers.push_back(
         [this, master]
         {
             if (!master->isMouseButtonDown())
-                master->setValue(session.document.activeMix().masterDb, juce::dontSendNotification);
+                master->setValue(effectiveDisplay.masterDb, juce::dontSendNotification);
         });
     finishGroups();
     session.onChange = [this] { refresh(); };
@@ -706,6 +753,8 @@ void DesignerView::editLayer(const juce::String &name, std::function<void(Design
     session.edit(name,
                  [&](auto &d)
                  {
+                     if (name == "Gain" || name == "Pan / balance")
+                         unlinkPerformanceTarget(d.activeMix(), {id, {}, name == "Gain" ? "gain" : "pan"});
                      for (auto &l : d.activeMix().layers)
                          if (l.id == id)
                          {
@@ -809,6 +858,14 @@ void DesignerView::slider(const juce::String &name, const juce::String &titleTex
             if (l && !value->isMouseButtonDown())
             {
                 double v = get(*l);
+                if (name == "Gain" || name == "Pan / balance")
+                    for (auto &effective : effectiveDisplay.layers)
+                        if (effective.id == l->id)
+                            v = get(effective);
+                if (name == "Gain" || name == "Pan / balance")
+                    value->setTooltip(
+                        "Effective parameter value. Editing unlinks this target from its macro; "
+                        "blend weighting remains separate.");
                 if (name.startsWith("Fade"))
                     v /= session.document.sampleRate;
                 value->setValue(v, juce::dontSendNotification);
@@ -993,7 +1050,15 @@ void DesignerView::updateEffects()
             v.setTitle(names[i]);
             v.setRange(lo[(size_t)i], hi[(size_t)i], i == 0 && effect->type == "delay" ? 1 : .001);
             if (!v.isMouseButtonDown())
-                v.setValue(effect->parameters[(size_t)i], juce::dontSendNotification);
+            {
+                auto target = performanceEffectTarget(
+                    rackTarget.getSelectedId() == 2 ? juce::String() : session.document.selectedLayer,
+                    *effect, i);
+                auto *effective = performanceTargetValue(effectiveDisplay, target);
+                v.setValue(effective ? *effective : effect->parameters[(size_t)i],
+                           juce::dontSendNotification);
+                v.setTooltip("Effective insert value. Editing unlinks this target from its macro.");
+            }
             effectParameterLocks[(size_t)i].setToggleState(effect->parameterLocks & (1u << i),
                                                            juce::dontSendNotification);
         }
@@ -1008,6 +1073,7 @@ void DesignerView::refresh()
 {
     updating = true;
     auto &d = session.document;
+    effectiveDisplay = resolvePerformance(d.activeMix());
     title.setText(d.name, juce::dontSendNotification);
     info.setText(session.dirty ? "Unsaved changes" : juce::String(), juce::dontSendNotification);
     title.setTooltip("Referenced design | " + juce::String(d.sampleRate, 0) + " Hz timeline | revision " +
@@ -1118,6 +1184,7 @@ void DesignerView::refresh()
     canvas->syncSelectors();
     canvas->onRowsChanged();
     canvas->repaint();
+    perform->refresh();
     updating = false;
     repaint();
 }
@@ -1147,7 +1214,7 @@ void DesignerView::timerCallback()
     meter.setTooltip("Master output: " +
                      juce::String(juce::Decibels::gainToDecibels(std::max(.00001f, peak)), 1) + " dBFS");
     meter.setColour(juce::Label::textColourId, clipHeld ? juce::Colour(0xffff8866) : muted);
-    position.setVisible(position.getWidth() > 0);
+    position.setVisible(!performMode && position.getWidth() > 0);
     position.setText(juce::String(session.document.playhead / session.document.sampleRate, 4) + " s",
                      juce::dontSendNotification);
     updating = true;
@@ -1185,13 +1252,13 @@ void DesignerView::timerCallback()
 void DesignerView::paint(juce::Graphics &g)
 {
     g.fillAll(bg);
-    int side = inspectorOpen ? 350 : 0;
+    int side = inspectorOpen && !performMode ? 350 : 0;
     g.setColour(panel);
     if (side)
         g.fillRect(getWidth() - side, 94, side, getHeight() - 94);
     g.setColour(juce::Colour(0xff29323e));
     g.drawHorizontalLine(92, 12, getWidth() - 12.f);
-    g.drawHorizontalLine(getHeight() - 190, 12, getWidth() - side - 12.f);
+    g.drawHorizontalLine(getHeight() - (performMode ? 158 : 190), 12, getWidth() - side - 12.f);
     g.setColour(juce::Colour(0xff293440));
     g.fillRoundedRectangle(getWidth() - 230.f, getHeight() - 49.f, 180, 3, 1.5f);
     g.setColour(clipHeld ? juce::Colour(0xffff8866) : accent);
@@ -1202,7 +1269,20 @@ void DesignerView::paint(juce::Graphics &g)
 }
 void DesignerView::resized()
 {
-    int side = inspectorOpen ? 350 : 0, creative = getWidth() - side;
+    int side = inspectorOpen && !performMode ? 350 : 0, creative = getWidth() - side;
+    editWorkspace.setBounds(getWidth() - 174, 55, 58, 30);
+    performWorkspace.setBounds(getWidth() - 114, 55, 68, 30);
+    editWorkspace.setToggleState(!performMode, juce::dontSendNotification);
+    performWorkspace.setToggleState(performMode, juce::dontSendNotification);
+    perform->setVisible(performMode);
+    perform->setBounds(12, 136, getWidth() - 24, getHeight() - 296);
+    snapshotButton.setVisible(performMode);
+    snapshotButton.setBounds(16, 96, 144, 32);
+    canvasViewport.setVisible(!performMode);
+    inspect.setVisible(!performMode);
+    for (auto *button :
+         {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
+        button->setVisible(!performMode);
     library.setBounds(16, 17, 64, 30);
     browse.setBounds(86, 17, 72, 30);
     title.setBounds(170, 10, std::max(80, getWidth() - 358), 30);
@@ -1236,12 +1316,12 @@ void DesignerView::resized()
             toolX += creative < 420 ? 4 : 8;
     }
     position.setBounds(toolX + 8, 98, creative - toolX - 20 >= 70 ? creative - toolX - 20 : 0, 28);
-    inspectorViewport.setVisible(inspectorOpen);
+    inspectorViewport.setVisible(inspectorOpen && !performMode);
     inspect.setToggleState(inspectorOpen, juce::dontSendNotification);
     inspect.setButtonText(inspectorOpen ? "Hide layer inspector" : "Show layer inspector");
     inspector.setEnabled(!session.transitionPending());
     inspectorViewport.setBounds(getWidth() - 342, 100, 334, getHeight() - 175);
-    int y = getHeight() - 180;
+    int y = getHeight() - (performMode ? 148 : 180);
     generate.setBounds(16, y, 32, 32);
     variationSettings.setBounds(52, y, 32, 32);
     int comboWidth = std::clamp(creative - 280, 100, 224);
@@ -1256,14 +1336,64 @@ void DesignerView::resized()
     copyOriginal.setBounds(52, y + 42, 32, 32);
     dragOutput.setBounds(100, y + 42, 32, 32);
     addPrint.setBounds(136, y + 42, 32, 32);
-    outputInfo.setBounds(180, y + 42, std::max(60, creative - 198), 30);
-    play.setBounds(creative / 2 - 20, getHeight() - 92, 40, 40);
-    accurate.setBounds(creative / 2 + 30, getHeight() - 86, 28, 28);
+    outputInfo.setBounds(180, y + 42, std::max(60, creative - (performMode ? 400 : 198)), 30);
+    play.setBounds(performMode ? creative - 170 : creative / 2 - 20, getHeight() - (performMode ? 112 : 92),
+                   40, 40);
+    accurate.setBounds(performMode ? creative - 120 : creative / 2 + 30,
+                       getHeight() - (performMode ? 106 : 86), 28, 28);
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);
     monitor.setBounds(getWidth() - 230, getHeight() - 35, 180, 24);
-    meter.setBounds(getWidth() - 230, getHeight() - 77, 180, 22);
+    meter.setBounds(getWidth() - (performMode ? 54 : 230), getHeight() - (performMode ? 73 : 77),
+                    performMode ? 42 : 180, 22);
     deviceRate.setVisible(false);
     refresh();
+}
+void DesignerView::setPerformMode(bool enabled)
+{
+    performMode = enabled;
+    preferences.setValue("performWorkspace", enabled);
+    resized();
+}
+bool DesignerView::benchmarkWorkspaceSwitch()
+{
+    auto before = juce::JSON::toString(designToJson(session.document), true);
+    setPerformMode(false);
+    setPerformMode(true);
+    return before == juce::JSON::toString(designToJson(session.document), true);
+}
+void DesignerView::preparePerformanceBenchmark()
+{
+    setPerformMode(true);
+    session.edit(
+        "Prepare owned performance fixture",
+        [](auto &d)
+        {
+            auto &mix = d.activeMix();
+            if (mix.layers.size() != 8)
+                return;
+            mix.performance = {};
+            const char *layerNames[] = {"Body", "Motion", "Air", "Tail", "Core", "Detail", "Texture", "Room"};
+            for (int i = 0; i < 8; ++i)
+                mix.layers[(size_t)i].name = layerNames[i];
+            for (int i = 0; i < 4; ++i)
+                assignBlendLayer(mix, i, mix.layers[(size_t)i].id);
+            mix.performance.blendEnabled = true;
+            addMacroMapping(mix, 0, {{mix.layers[4].id, {}, "gain"}, -36, -12, "linear", false});
+            addMacroMapping(mix, 1, {{mix.layers[5].id, {}, "pan"}, -.8, .8, "linear", false});
+            addMacroMapping(
+                mix, 2,
+                {{mix.layers[6].id, mix.layers[6].effects[0].id, "filterLow"}, 500, 18000, "log", false});
+            addMacroMapping(
+                mix, 2,
+                {{mix.layers[6].id, mix.layers[6].effects[0].id, "filterHigh"}, 20, 1000, "log", false});
+            addMacroMapping(mix, 3, {{{}, mix.masterEffects[1].id, "reverbWet"}, .05, .45, "linear", false});
+            const char *names[]{"Weight", "Spread", "Tone", "Space"};
+            for (int i = 0; i < 4; ++i)
+            {
+                mix.performance.macros[(size_t)i].enabled = true;
+                mix.performance.macros[(size_t)i].name = names[i];
+            }
+        });
 }
 void DesignerView::addSource(const Asset &a, int64_t first, int64_t last, bool external, int pair)
 {

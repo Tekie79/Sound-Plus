@@ -6,6 +6,37 @@
 #include <atomic>
 namespace sp
 {
+struct PerformanceTarget
+{
+    juce::String layer, effect, parameter;
+    bool operator==(const PerformanceTarget &) const = default;
+};
+struct PerformanceMapping
+{
+    PerformanceTarget target;
+    double minimum = 0, maximum = 1;
+    juce::String curve = "linear";
+    bool inverted = false;
+};
+struct PerformanceMacro
+{
+    juce::String name;
+    double value = .5, reset = .5;
+    bool enabled = false;
+    std::vector<PerformanceMapping> mappings;
+};
+struct BlendAssignment { juce::String layer, name; };
+struct PerformanceState
+{
+    bool blendEnabled = false;
+    double x = .5, y = .5;
+    std::array<BlendAssignment, 4> assignments;
+    std::array<PerformanceMacro, 4> macros;
+    PerformanceState()
+    {
+        for (int i = 0; i < 4; ++i) macros[(size_t)i].name = "Macro " + juce::String(i + 1);
+    }
+};
 enum VariationParameter : uint32_t { varyGain=1,varyPan=2,varyPlacement=4,varyRate=8,varyReverse=16,varyFades=32,varyTrim=64,varyEffects=128, lockFadeIn=256,lockFadeOut=512,lockTrimIn=1024,lockTrimOut=2048 };
 struct StockEffect
 {
@@ -24,12 +55,14 @@ struct DesignLayer
     FadeShape fadeInShape=FadeShape::linear,fadeOutShape=FadeShape::linear;
     std::vector<FadePoint> fadeInPoints,fadeOutPoints;
     double gainDb=0,pan=0,rate=1;
+    double controlGain=1; // Resolved amplitude factor; ordinary base layers remain at one.
     uint32_t locks=0;
     uint32_t colour=0; // Optional ARGB track colour. Zero uses the application palette.
     std::vector<StockEffect> effects;
 };
 struct DesignMix
 {
+    PerformanceState performance;
     std::vector<DesignLayer> layers;
     std::vector<StockEffect> masterEffects;
     double masterDb=-6;
@@ -39,7 +72,7 @@ struct DesignVariation
 {
     juce::String id=juce::Uuid().toString(),name;
     uint64_t seed=0;
-    bool kept=false;
+    bool kept=false,snapshot=false;
     DesignMix mix;
 };
 struct VariationSettings

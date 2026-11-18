@@ -1,0 +1,32 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: performance_state
+ 1/13 Test  #1: performance_state ................   Passed    2.06 sec
+      Start  2: designer_view_commands
+ 2/13 Test  #2: designer_view_commands ...........   Passed    0.22 sec
+      Start  3: icon_system
+ 3/13 Test  #3: icon_system ......................   Passed    0.10 sec
+      Start  4: library_and_audio
+ 4/13 Test  #4: library_and_audio ................   Passed    8.63 sec
+      Start  5: library_selection_audition
+ 5/13 Test  #5: library_selection_audition .......   Passed    3.83 sec
+      Start  6: library_performance_regression
+ 6/13 Test  #6: library_performance_regression ...   Passed    6.20 sec
+      Start  7: library_semantic_integrity
+ 7/13 Test  #7: library_semantic_integrity .......   Passed    0.38 sec
+      Start  8: library_similar_integrity
+ 8/13 Test  #8: library_similar_integrity ........   Passed    1.18 sec
+      Start  9: designer_transport
+ 9/13 Test  #9: designer_transport ...............   Passed   15.86 sec
+      Start 10: designer_canvas
+10/13 Test #10: designer_canvas ..................   Passed    0.20 sec
+      Start 11: designer_session
+11/13 Test #11: designer_session .................   Passed    0.10 sec
+      Start 12: designer_workflow
+12/13 Test #12: designer_workflow ................   Passed    9.54 sec
+      Start 13: designer_fades
+13/13 Test #13: designer_fades ...................   Passed    2.38 sec
+
+100% tests passed, 0 tests failed out of 13
+
+Total Test time (real) =  50.67 sec

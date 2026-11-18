@@ -1,5 +1,6 @@
 #include "CanvasGestureTests.h"
 #include "DesignerCanvas.h"
+#include "PerformanceState.h"
 #include "UIComponents.h"
 #include "LibraryLayout.h"
 #include "DesignLive.h"
@@ -310,6 +311,31 @@ void runCanvasGestureTests(const juce::File &parent)
                       "Thin gain line leaves waveform pixels two points away untouched");
             }
     }
+    {
+        sp::DesignSession mapped(directory.getChildFile("mapped-gain.sqlite"), services);
+        mapped.document = original;
+        mapped.selectedIds = {a.id};
+        sp::addMacroMapping(mapped.document.original, 0, {{a.id, {}, "gain"}, -20, 0, "linear", false});
+        mapped.document.original.performance.macros[0].enabled = true;
+        sp::DesignerCanvas controlled(
+            mapped, [](const auto &) -> std::shared_ptr<const sp::WaveformData> { return {}; }, preferences);
+        controlled.setBounds(0, 0, 1000, 400);
+        controlled.viewport.pixelsPerSecond = 50;
+        auto effective = sp::resolvePerformance(mapped.document.original);
+        auto geometry = sp::clipGeometry(effective.layers[0], 0, controlled.viewport, 48000);
+        juce::Point<float> from{geometry.left + 30, geometry.gain}, to = from + juce::Point<float>(0, -10);
+        controlled.mouseDown(pointer(controlled, from, from));
+        controlled.mouseDrag(pointer(controlled, to, from));
+        controlled.mouseUp(pointer(controlled, to, from));
+        check(std::abs(mapped.document.original.layers[0].gainDb + 7.5) < 1e-9 &&
+                  !sp::performanceOwns(mapped.document.original, {a.id, {}, "gain"}),
+              "Canvas gain edits start from the audible macro value and unlink only that target");
+        mapped.undo();
+        controlled.mouseDoubleClick(pointer(controlled, from, from));
+        check(mapped.document.original.layers[0].gainDb == 0 &&
+                  !sp::performanceOwns(mapped.document.original, {a.id, {}, "gain"}),
+              "Double-click gain reset unlinks even when the stored base was already zero");
+    }
     // Actual track-header commands edit their own layer without changing selection.
     for (auto title : {"Mute ", "Solo ", "Lock "})
     {
@@ -402,6 +428,21 @@ void runCanvasGestureTests(const juce::File &parent)
                   from,
               "Dragging a corner control moves the fade curve without moving its icon");
         session.undo();
+        auto across = from + juce::Point<float>(in ? 200.f : -200.f, 0);
+        canvas.mouseDown(pointer(canvas, from, from, chooseFade));
+        canvas.mouseDrag(pointer(canvas, across, from, chooseFade));
+        auto &dragged = session.document.original.layers[0];
+        check(
+            (in ? dragged.fadeOut == 48000 : dragged.fadeIn == 48000) &&
+                dragged.fadeInShape == sp::FadeShape::linear &&
+                dragged.fadeOutShape == sp::FadeShape::linear &&
+                sp::fadeHandleBounds(sp::clipGeometry(dragged, 0, canvas.viewport, 48000), in).getCentre() ==
+                    from,
+            "Crossing the opposite corner keeps IN/OUT direction and the other fade unchanged");
+        canvas.cancelDrag();
+        check(session.document.original.layers[0].fadeIn == 48000 &&
+                  session.document.original.layers[0].fadeOut == 48000,
+              "Cancelling a cross-corner fade drag restores both curves");
     }
     session.undo();
     shape = sp::clipGeometry(a, 0, canvas.viewport, 48000);

@@ -1,4 +1,5 @@
 #include "CanvasEditing.h"
+#include "PerformanceState.h"
 #include <cmath>
 #include <limits>
 namespace sp
@@ -79,7 +80,7 @@ CanvasClipGeometry clipGeometry(const DesignLayer &layer, int row, const Timelin
 }
 juce::Rectangle<float> fadeHandleBounds(const CanvasClipGeometry &clip, bool in)
 {
-    constexpr float markerWidth = 13.f, markerHeight = 13.f;
+    constexpr float markerWidth = 10.f, markerHeight = 10.f;
     float clipWidth = std::max(2.f, clip.right - clip.left);
     float inset = std::min(.75f, clipWidth * .2f);
     float width = std::min(markerWidth, clipWidth - 2 * inset);
@@ -103,7 +104,8 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
         return {CanvasTarget::header, row};
     if (x < view.header)
         return {CanvasTarget::none, row};
-    auto clip = clipGeometry(layers[(size_t)row], row, view, document.sampleRate);
+    auto effective = resolvePerformance(document.activeMix());
+    auto clip = clipGeometry(effective.layers[(size_t)row], row, view, document.sampleRate);
     auto &layer = layers[(size_t)row];
     CanvasHit pointHit;
     float nearestPoint = 6;
