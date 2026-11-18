@@ -67,17 +67,72 @@ int main(int argc, char **argv)
 {
     try
     {
-        if(argc>=4 && juce::String(argv[1])=="--designer-transport"){runTransportInteractionTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
-        if(argc>=3 && juce::String(argv[1])=="--canvas-gestures"){runCanvasGestureTests(juce::File(argv[2]));return 0;}
-        if(argc>=3 && juce::String(argv[1])=="--designer-session"){runDesignSessionTests(juce::File(argv[2]));return 0;}
-        if(argc>=4 && juce::String(argv[1])=="--designer")
-        {runDesignTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
-        if(argc>=3 && juce::String(argv[1])=="--prepare-designer-workload")
-        {prepareDesignWorkload(juce::File(argv[2]));return 0;}
-        if(argc>=5 && (juce::String(argv[1])=="--interrupt-designer-save" || juce::String(argv[1])=="--interrupt-designer-render"))
-        {interruptDesignOperation(juce::String(argv[1]).endsWith("render"),juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]));return 0;}
-        if(argc>=4 && juce::String(argv[1])=="--similar-integrity")
-        {runSimilarIntegrity(juce::File(argv[2]),juce::File(argv[3]));return 0;}
+        if (argc >= 4 && juce::String(argv[1]) == "--selection-audition")
+        {
+            auto parent = juce::File(argv[2]);
+            auto root = parent.getChildFile(juce::Uuid().toString());
+            root.createDirectory();
+            for (const auto *folder : {"A", "B", "C"})
+                fixture(root.getChildFile("sounds/" + juce::String(folder) + "/clip.wav"), 1, 48000, 4);
+            auto plan = sp::message("test");
+            plan.getDynamicObject()->setProperty("mode", "selection-audition");
+            auto planFile = root.getChildFile("plan.json"), resultFile = root.getChildFile("result.json");
+            require(planFile.replaceWithText(juce::JSON::toString(plan)), "Selection plan written");
+            juce::ChildProcess app;
+            require(app.start(juce::StringArray{
+                        argv[3], "--data-dir", root.getChildFile("catalog").getFullPathName(), "--add-folder",
+                        root.getChildFile("sounds").getFullPathName(), "--benchmark-plan",
+                        planFile.getFullPathName(), "--benchmark-output", resultFile.getFullPathName()}),
+                    "Native selection application launched");
+            if (!app.waitForProcessToFinish(30000))
+            {
+                app.kill();
+                throw std::runtime_error("Native selection application timed out");
+            }
+            auto result = juce::JSON::parse(resultFile);
+            require(resultFile.copyFileTo(parent.getChildFile("latest.json")), "Selection evidence retained");
+            require((bool)result["success"], result["error"].toString().toRawUTF8());
+            require(app.getExitCode() == 0, "Native selection application exited normally");
+            std::cout << "Native selection audition passed in full Library and Designer browser\n";
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--designer-transport")
+        {
+            runTransportInteractionTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--canvas-gestures")
+        {
+            runCanvasGestureTests(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--designer-session")
+        {
+            runDesignSessionTests(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--designer")
+        {
+            runDesignTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-designer-workload")
+        {
+            prepareDesignWorkload(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 5 && (juce::String(argv[1]) == "--interrupt-designer-save" ||
+                          juce::String(argv[1]) == "--interrupt-designer-render"))
+        {
+            interruptDesignOperation(juce::String(argv[1]).endsWith("render"), juce::File(argv[2]),
+                                     juce::File(argv[3]), juce::File(argv[4]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--similar-integrity")
+        {
+            runSimilarIntegrity(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if(argc>=6 && juce::String(argv[1])=="--similar-workflow")
         {runSimilarWorkflow(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5]));return 0;}
         if(argc>=6 && juce::String(argv[1])=="--capacity-accuracy")

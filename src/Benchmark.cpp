@@ -232,6 +232,11 @@ void Benchmark::timerCallback()
         save(false, view.snapshot.error);
         return;
     }
+    if (plan["mode"].toString() == "selection-audition")
+    {
+        selectionAuditionTick(now);
+        return;
+    }
     if (plan["mode"].toString() == "slow")
     {
         for (auto &a : view.snapshot.results)
@@ -371,6 +376,117 @@ void Benchmark::timerCallback()
                 audioDispatch = 0;
                 break;
             }
+    }
+}
+void Benchmark::selectionAuditionTick(double now)
+{
+    if (now - startMs > 20000)
+    {
+        save(false, "Selection audition timed out at phase " + juce::String(phase));
+        return;
+    }
+    auto state = view.audio.status();
+    auto running = [](const juce::var &s) { return (bool)s["playing"] || (bool)s["pendingPlayback"]; };
+    auto record = [&](const juce::String &name, bool passed) {
+        controls.getDynamicObject()->setProperty((run == 0 ? "library." : "designerBrowser.") + name, passed);
+    };
+    if (view.snapshot.results.size() != 3 || !designer || !state.isObject())
+        return;
+    const auto first = view.snapshot.results[0];
+    const auto second = view.snapshot.results[1];
+    if (phase == 0)
+    {
+        if (std::any_of(view.snapshot.results.begin(), view.snapshot.results.end(),
+                        [](const auto &a) { return a.state != "ready"; }))
+            return;
+        if (run == 0)
+            designer->onLibrary();
+        else
+            view.onShowDesigner();
+        view.audio.gain(.02f);
+        view.audio.stop();
+        view.table.selectRow(0);
+        view.table.selectRow(1);
+        record("stoppedSelectionStaysSilent", !running(view.audio.status()));
+        record("correctWorkspace", view.compact == (run == 1));
+        view.playSelected(false);
+        // Rapid selection in the same UI turn must follow pending play intent too.
+        view.table.selectRow(2);
+        view.table.selectRow(0);
+        record("pendingSelectionNewestWins", view.audio.status()["intentId"].toString() == first.id);
+        phase = 1;
+    }
+    else if (phase == 1 && (bool)state["playing"] && state["id"].toString() == first.id)
+    {
+        auto generation = view.audio.status()["playGeneration"];
+        view.selectedRowsChanged(0);
+        record("sameSelectionDoesNotRestart", view.audio.status()["playGeneration"] == generation &&
+                                                  !(bool)view.audio.status()["pendingPlayback"]);
+        // Supply the same matched-range contract as semantic results, without a model dependency.
+        MatchRegion match;
+        match.startSample = 24000;
+        match.endSample = 72000;
+        view.snapshot.results[1].matches = {match};
+        view.table.selectRow(1);
+        record("playingSelectionSwitches", view.audio.status()["intentId"].toString() == second.id);
+        phase = 2;
+    }
+    else if (phase == 2 && (bool)state["playing"] && state["id"].toString() == second.id)
+    {
+        record("newMatchRangeUsed",
+               (int64_t)state["startSample"] == 24000 && (int64_t)state["endSample"] == 72000);
+        phase = 3;
+    }
+    else if (phase == 3 && !running(state))
+    {
+        view.table.selectRow(2);
+        record("selectionAfterEofStaysSilent", !running(view.audio.status()));
+        view.playSelected(false);
+        view.audio.stop();
+        view.table.selectRow(0);
+        record("stopThenSelectionStaysSilent", !running(view.audio.status()));
+        view.audio.play("reference-" + first.id, juce::File(first.path));
+        phase = 4;
+    }
+    else if (phase == 4 && (bool)state["playing"] && state["id"].toString() == "reference-" + first.id)
+    {
+        view.table.selectRow(2);
+        record("referencePlaybackRetainsOwnership",
+               view.audio.status()["intentId"].toString() == "reference-" + first.id);
+        view.audio.stop();
+        if (designer->session.document.original.layers.empty())
+            designer->session.add(first, 0, first.samples);
+        designer->session.seek(0);
+        designer->session.play();
+        phase = 5;
+    }
+    else if (phase == 5 && (bool)state["playing"] && state["id"].toString().startsWith("design:"))
+    {
+        transportGeneration = (uint64_t)(int64_t)state["playGeneration"];
+        transportPosition = (int64_t)state["sourceSample"];
+        view.table.selectRow(1);
+        phaseStart = now;
+        phase = 6;
+    }
+    else if (phase == 6 && now - phaseStart >= 100)
+    {
+        record("designerPlaybackRetainsOwnership",
+               (bool)state["playing"] && state["id"].toString().startsWith("design:") &&
+                   (uint64_t)(int64_t)state["playGeneration"] == transportGeneration &&
+                   (int64_t)state["sourceSample"] > transportPosition);
+        designer->session.stop();
+        if (++run < 2)
+            phase = 0;
+        else
+        {
+            for (auto &property : controls.getDynamicObject()->getProperties())
+                if (!(bool)property.value)
+                {
+                    save(false, "Selection assertion failed: " + property.name.toString());
+                    return;
+                }
+            save(true);
+        }
     }
 }
 } // namespace sp

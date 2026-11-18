@@ -34,6 +34,7 @@ class Benchmark final : private juce::Timer
     juce::int64 pausedFrames = 0;
     juce::String controlSelectedId;
     void controlTick(int total, int done, double now);
+    void selectionAuditionTick(double now);
     void semanticTick(double now);
     void referenceTick(double now);
     Asset exampleSource;

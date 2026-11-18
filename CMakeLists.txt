@@ -69,6 +69,9 @@ if(BUILD_TESTING)
   add_test(NAME library_and_audio COMMAND SoundPlusTests
     "$<TARGET_FILE:SoundPlus>" "${CMAKE_BINARY_DIR}/test-output")
   set_tests_properties(library_and_audio PROPERTIES TIMEOUT 90)
+  add_test(NAME library_selection_audition COMMAND SoundPlusTests --selection-audition
+    "${CMAKE_BINARY_DIR}/library-selection-test-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(library_selection_audition PROPERTIES TIMEOUT 40 RUN_SERIAL TRUE)
   add_test(NAME library_performance_regression COMMAND SoundPlusTests --performance
     "${CMAKE_BINARY_DIR}/performance-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_performance_regression PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)

@@ -803,6 +803,10 @@ void LibraryView::selectedRowsChanged(int)
         return;
     if (auto *a = selected())
     {
+        const auto playback = audio.status();
+        const bool continueAudition = selectedAsset && selectedAsset->id != a->id && navigationToPlay < 0 &&
+                                      playback["id"].toString() == selectedAsset->id &&
+                                      ((bool)playback["playing"] || (bool)playback["pendingPlayback"]);
         bool newFile = rangeAssetId != a->id || rangeRevision != a->revision || rangeSamples != a->samples;
         bool newRange =
             newFile || rangeRequest != requested ||
@@ -855,6 +859,8 @@ void LibraryView::selectedRowsChanged(int)
         assetId.setText(a->error, juce::dontSendNotification);
         detail.setTooltip(a->path + "\nAsset " + a->id + " | Revision " + juce::String(a->revision));
         assetId.setTooltip(a->path + "\n" + a->error);
+        if (continueAudition)
+            playSelected(matchMode);
     }
 }
 void LibraryView::cellDoubleClicked(int, int, const juce::MouseEvent &)
