@@ -1,0 +1,19 @@
+Start testing: Nov 18 14:57 EST
+----------------------------------------------------------
+9/12 Testing: designer_canvas
+9/12 Test: designer_canvas
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--canvas-gestures" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-gesture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_canvas" start time: Nov 18 14:57 EST
+Output:
+----------------------------------------------------------
+PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1443 checks
+<end of output>
+Test time =   0.54 sec
+----------------------------------------------------------
+Test Passed.
+"designer_canvas" end time: Nov 18 14:57 EST
+"designer_canvas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+End testing: Nov 18 14:57 EST

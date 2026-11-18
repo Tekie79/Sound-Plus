@@ -193,17 +193,22 @@ void runCanvasGestureTests(const juce::File &parent)
         {
             auto marker = sp::fadeHandleBounds(g, in);
             auto centre = marker.getCentre();
-            auto tip = in ? g.fadeIn : g.fadeOut;
-            check(clipBounds.contains(marker) && marker.getY() == g.fadeInY &&
-                      (std::abs(marker.getX() - tip) < .01f || std::abs(marker.getRight() - tip) < .01f) &&
+            auto lowerEdge = centre.withY(marker.getBottom() - 1);
+            auto reference = sp::fadeHandleBounds(sp::clipGeometry(a, 0, viewport, 48000), in);
+            check(clipBounds.contains(marker) && marker.getY() == g.fadeInY && marker == reference &&
                       sp::canvasHitTest(overlap, viewport, centre.x, centre.y, !in).target ==
+                          (in ? sp::CanvasTarget::fadeIn : sp::CanvasTarget::fadeOut) &&
+                      sp::canvasHitTest(overlap, viewport, lowerEdge.x, lowerEdge.y, !in).target ==
                           (in ? sp::CanvasTarget::fadeIn : sp::CanvasTarget::fadeOut),
-                  "Fade marker tips align with curve endpoints at the border and remain reachable");
+                  "Square corner controls stay fixed as fades change and their full area remains reachable");
         }
-        check(sp::canvasHitTest(overlap, viewport, g.fadeIn, g.fadeInY).target == sp::CanvasTarget::fadeIn &&
-                  sp::canvasHitTest(overlap, viewport, g.fadeOut, g.fadeOutY, true).target ==
+        auto inCentre = sp::fadeHandleBounds(g, true).getCentre();
+        auto outCentre = sp::fadeHandleBounds(g, false).getCentre();
+        check(sp::canvasHitTest(overlap, viewport, inCentre.x, inCentre.y).target ==
+                      sp::CanvasTarget::fadeIn &&
+                  sp::canvasHitTest(overlap, viewport, outCentre.x, outCentre.y).target ==
                       sp::CanvasTarget::fadeOut,
-              "Coincident endpoints retain IN and Shift-OUT hit targets without a vertical gap");
+              "Coincident curve endpoints retain distinct fixed IN and OUT corner controls");
     }
     for (float width : {280.f, 700.f, 2200.f})
     {
@@ -393,6 +398,9 @@ void runCanvasGestureTests(const juce::File &parent)
                   : layer.fadeOut == 38400 && layer.fadeIn == 48000) &&
                   session.selectedIds.contains(a.id),
               "Real pointer handlers independently edit both coincident fade handles");
+        check(sp::fadeHandleBounds(sp::clipGeometry(layer, 0, canvas.viewport, 48000), in).getCentre() ==
+                  from,
+              "Dragging a corner control moves the fade curve without moving its icon");
         session.undo();
     }
     session.undo();
@@ -435,7 +443,7 @@ void runCanvasGestureTests(const juce::File &parent)
     canvas.mouseMove(pointer(canvas, gainPosition, gainPosition));
     check(canvas.getMouseCursor() == juce::MouseCursor::UpDownResizeCursor,
           "Gain retains its vertical-adjustment cursor at a fade intersection");
-    auto gripPosition = juce::Point<float>(curveShape.fadeIn, curveShape.fadeInY);
+    auto gripPosition = sp::fadeHandleBounds(curveShape, true).getCentre();
     canvas.mouseMove(pointer(canvas, gripPosition, gripPosition));
     check(canvas.getMouseCursor() == juce::MouseCursor::LeftRightResizeCursor,
           "Fade duration grip retains horizontal resizing");

@@ -429,20 +429,15 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 graphics.setColour(hover.target == target && hover.row == (int)row ? juce::Colours::white
                                                                                    : accent);
                 auto handle = fadeHandleBounds(shape, in);
-                auto tip = in ? shape.fadeIn : shape.fadeOut;
-                bool tipOnRight = std::abs(handle.getRight() - tip) < .01f;
-                // Mirrored ramp markers distinguish duration grips from interior curve points.
+                // A square with a mirrored diagonal distinguishes duration grips from curve points.
                 auto edge = [&](float u, float v)
                 {
-                    return juce::Point<float>(handle.getX() + (tipOnRight ? u : 1 - u) * handle.getWidth(),
+                    return juce::Point<float>(handle.getX() + (in ? u : 1 - u) * handle.getWidth(),
                                               handle.getY() + v * handle.getHeight());
                 };
-                juce::Path marker;
-                marker.startNewSubPath(edge(0, 1));
-                marker.quadraticTo(edge(.65f, .85f), edge(1, 0));
-                marker.lineTo(edge(1, 1));
-                marker.closeSubPath();
-                graphics.fillPath(marker);
+                graphics.fillRect(handle);
+                graphics.setColour(ui::background.withAlpha(.85f));
+                graphics.drawLine({edge(.18f, .82f), edge(.82f, .18f)}, 1.2f);
             }
             juce::Path sync;
             sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,

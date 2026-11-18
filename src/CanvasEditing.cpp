@@ -79,11 +79,12 @@ CanvasClipGeometry clipGeometry(const DesignLayer &layer, int row, const Timelin
 }
 juce::Rectangle<float> fadeHandleBounds(const CanvasClipGeometry &clip, bool in)
 {
-    auto tip = in ? clip.fadeIn : clip.fadeOut;
-    float leftRoom = std::max(0.f, tip - clip.left), rightRoom = std::max(0.f, clip.right - tip);
-    bool extendsLeft = in ? leftRoom >= std::min(9.f, rightRoom) : rightRoom < std::min(9.f, leftRoom);
-    float width = std::min(9.f, extendsLeft ? leftRoom : rightRoom);
-    return {extendsLeft ? tip - width : tip, clip.fadeInY, width, 7.f};
+    constexpr float markerWidth = 13.f, markerHeight = 13.f;
+    float clipWidth = std::max(2.f, clip.right - clip.left);
+    float inset = std::min(.75f, clipWidth * .2f);
+    float width = std::min(markerWidth, clipWidth - 2 * inset);
+    return {in ? clip.left + inset : clip.left + clipWidth - inset - width, clip.fadeInY, width,
+            markerHeight};
 }
 CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &view, float x, float y,
                         bool preferOut)
@@ -131,21 +132,14 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
     if (pointHit.point >= 0 && nearestPoint < gripDistance)
         return pointHit;
     bool inside = x >= clip.left && x <= clip.right;
-    // Fade corners have precedence over trim edges. Sync lives below the waveform
-    // so a zero fade and a source sync at IN remain individually reachable.
-    if (std::abs(y - clip.fadeInY) <= 7 || std::abs(y - clip.fadeOutY) <= 7)
-    {
-        bool in = inHandle.expanded(3).contains(x, y) ||
-                  (std::abs(x - clip.fadeIn) <= 7 && std::abs(y - clip.fadeInY) <= 7);
-        bool out = outHandle.expanded(3).contains(x, y) ||
-                   (std::abs(x - clip.fadeOut) <= 7 && std::abs(y - clip.fadeOutY) <= 7);
-        if (in || out)
-            return {in && (!out || (!preferOut && inHandle.getCentre().getDistanceFrom({x, y}) <=
-                                                      outHandle.getCentre().getDistanceFrom({x, y})))
-                        ? CanvasTarget::fadeIn
-                        : CanvasTarget::fadeOut,
-                    row};
-    }
+    // Only the fixed corner controls adjust fade duration; curve endpoints can move independently.
+    bool in = inHandle.expanded(3).contains(x, y), out = outHandle.expanded(3).contains(x, y);
+    if (in || out)
+        return {in && (!out || (!preferOut && inHandle.getCentre().getDistanceFrom({x, y}) <=
+                                                  outHandle.getCentre().getDistanceFrom({x, y})))
+                    ? CanvasTarget::fadeIn
+                    : CanvasTarget::fadeOut,
+                row};
     if (y >= clip.clipTop + 13 && y <= clip.clipBottom - 6)
     {
         bool left = std::abs(x - clip.left) <= 6, right = std::abs(x - clip.right) <= 6;

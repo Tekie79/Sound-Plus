@@ -1,5 +1,15 @@
 # Fade marker alignment follow-up
 
+## Current behavior: fixed square corner controls
+
+Following the later UI clarification, the larger **13 × 13 logical point square controls** with mirrored diagonal lines are pinned inside the clip's top-left and top-right corners. Their position depends only on the clip bounds. Dragging a control changes the corresponding fade duration and moves the curve, while the control stays fixed. Curve endpoints continue to meet the top border. Interior curve-point editing and presets remain available. This replaces the moving endpoint-marker positioning described in the earlier pass below.
+
+The native Release app was rebuilt and visually inspected on the supported Mac. The canvas suite passed **1,443 checks in 0.55 seconds**, including fixed bounds across zero/full/overlapping fades, the larger controls' lower hit area, and actual pointer drags that change fades without moving the icons or deselecting the clip. See [test log](verification/fade-square-corners-ctest.log) and [detailed results](verification/fade-square-corners-test-details.log). Rain glass design **r5697** was retained before rebuilding and reopened; subsequent user edits remain in the running session.
+
+![Square diagonal fade controls pinned to the clip corners](verification/fade-square-corners-native.jpg)
+
+## Earlier endpoint-alignment pass
+
 Correction from `527c44d`, verified on the Apple M5 Pro / macOS 26.3.2 native Release app on 2026-11-18.
 
 The upper fade icon's tip and curve endpoint now share the exact horizontal position and the clip's top-border centre. The previous five-point vertical inset and offset marker centre caused the visible gap. Both fade curves now join the top border, with the marker extending inward below it. Edge markers reverse their placement as needed to remain inside the clip. The former vertical OUT offset and connector are removed.
