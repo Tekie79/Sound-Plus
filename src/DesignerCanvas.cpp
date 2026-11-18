@@ -60,9 +60,9 @@ struct DesignerCanvas::Header : juce::Button
     void resized() override
     {
         colour.setBounds(getWidth() - 26, 5, 24, 24);
-        mute.setBounds(7, 31, 22, 22);
-        solo.setBounds(33, 31, 22, 22);
-        lock.setBounds(59, 31, 22, 22);
+        mute.setBounds(4, 31, 28, 28);
+        solo.setBounds(34, 31, 28, 28);
+        lock.setBounds(64, 31, 28, 28);
     }
     void paintButton(juce::Graphics &, bool, bool) override {}
     void mouseDown(const juce::MouseEvent &event) override
@@ -427,7 +427,7 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         juce::Graphics::ScopedSaveState saved(graphics);
         graphics.reduceClipRegion(timeline);
         float head = viewport.x(d.playhead, rate);
-        graphics.setColour(juce::Colour(0xffffc384));
+        graphics.setColour(ui::playhead);
         graphics.drawVerticalLine((int)head, 25, (float)getHeight());
         juce::Path handle;
         handle.addTriangle(head - 6, 23, head + 6, 23, head, 31);

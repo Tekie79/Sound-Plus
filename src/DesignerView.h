@@ -86,8 +86,8 @@ class DesignerView final : public juce::Component,
     void finishGroups();
     void layoutInspector();
     bool inspectorOpen = true;
-    ui::TextActionButton browse{"Browser"}, library{"Library"};
-    IconButton inspect{"Show layer inspector", ActionIcon::settings};
+    ui::TextActionButton browse{"Browser", true}, library{"Library"};
+    IconButton inspect{"Show layer inspector", ActionIcon::inspector};
     ui::FadeShapeButton fadeInShape{"Fade-in shape", true}, fadeOutShape{"Fade-out shape", false};
     juce::Viewport canvasViewport, inspectorViewport;
     juce::Component inspector;
@@ -108,15 +108,15 @@ class DesignerView final : public juce::Component,
         discard{"Discard variation", ActionIcon::trash},
         compare{"Compare with original", ActionIcon::compare};
     IconButton render{"Render Design", ActionIcon::render},
-        renderSelection{"Render selected layer", ActionIcon::render},
+        renderSelection{"Render selected layer", ActionIcon::renderSelection},
         renderSettings{"Render settings", ActionIcon::settings}, cancel{"Cancel render", ActionIcon::cancel},
         addPrint{"Add completed output as layer", ActionIcon::addLayer},
-        copyOriginal{"Copy Original to Project", ActionIcon::duplicate};
+        copyOriginal{"Copy Original to Project", ActionIcon::copyOriginal};
     IconButton recover{"Recover autosave", ActionIcon::history},
         chooseFolder{"Choose permanent output folder", ActionIcon::folder};
     juce::Label title, info, status, position, outputInfo, meter;
     juce::ComboBox candidates, rackTarget, effectChoice, channelMap, deviceRate;
-    IconButton addEffect{"Add stock insert", ActionIcon::addLayer},
+    IconButton addEffect{"Add stock insert", ActionIcon::processing},
         removeEffect{"Remove insert", ActionIcon::trash}, effectUp{"Move insert up", ActionIcon::up},
         effectDown{"Move insert down", ActionIcon::down};
     juce::ToggleButton effectBypass{"Bypass insert"}, effectLock{"Lock insert for variations"};

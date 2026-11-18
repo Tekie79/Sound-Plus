@@ -3,12 +3,13 @@
 #include "UIComponents.h"
 namespace sp::ui
 {
-inline const juce::Colour fadeInAccent{0xffedbf86}, fadeOutAccent{0xffedbf86};
+inline const auto fadeInAccent = fadeCurve, fadeOutAccent = fadeCurve;
 class TextActionButton final : public juce::TextButton
 {
   public:
-    explicit TextActionButton(const juce::String &name) : TextButton(name)
+    explicit TextActionButton(const juce::String &name, bool toggleable = false) : TextButton(name)
     {
+        setToggleable(toggleable);
         setTitle(name);
         setTooltip(name);
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -39,6 +40,7 @@ class ColourSwatchButton final : public juce::Button
     uint32_t value = 0;
     ColourSwatchButton(const juce::String &name, uint32_t colour = 0) : Button(name), value(colour)
     {
+        icons::preload();
         setTitle(name);
         setTooltip(name);
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
@@ -62,13 +64,7 @@ class ColourSwatchButton final : public juce::Button
         }
         if (getToggleState())
         {
-            auto c = circle.getCentre();
-            juce::Path tick;
-            tick.startNewSubPath(c.x - 4, c.y);
-            tick.lineTo(c.x - 1, c.y + 3);
-            tick.lineTo(c.x + 5, c.y - 4);
-            g.setColour(background);
-            g.strokePath(tick, juce::PathStrokeType(1.8f));
+            icons::draw(g, ActionIcon::check, circle.expanded(1), icons::Tone::primary);
         }
         if (hasKeyboardFocus(false))
         {
@@ -123,7 +119,8 @@ class FadeShapeButton final : public juce::Button
         g.setColour((hasKeyboardFocus(false) && !getToggleState() ? sp::ui::text : colour)
                         .withMultipliedAlpha(isEnabled() ? 1.f : .3f));
         g.strokePath(fadeCurvePath(shape, fadeIn, graph, 1, points),
-                     juce::PathStrokeType(getToggleState() ? 2.2f : 1.6f));
+                     juce::PathStrokeType(getToggleState() ? 2.f : 1.6f, juce::PathStrokeType::curved,
+                                          juce::PathStrokeType::rounded));
         if (shape == FadeShape::custom)
         {
             PreparedFade curve(shape, points);

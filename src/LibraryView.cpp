@@ -9,8 +9,9 @@ namespace sp
 {
 namespace
 {
-const juce::Colour bg{0xff101419}, panel{0xff171d25}, line{0xff29323e}, text{0xffe6ecf2}, muted{0xff9baabc},
-    accent{0xff77bfff}, amber{0xffffc384};
+const auto bg = ui::background, panel = ui::surface, line = ui::line, text = ui::text, muted = ui::muted,
+           accent = ui::accent;
+const juce::Colour amber{0xffffc384};
 juce::String duration(double seconds)
 {
     if (seconds < 0)
@@ -1165,6 +1166,7 @@ void LibraryView::timerCallback()
     installAI.setVisible(!ai.installing);
     cancelInstall.setVisible(ai.installing);
     installAI.setButtonText(ai.ready ? "AI Model Installed" : "Install AI Model");
+    installAI.setIcon(ai.ready ? ActionIcon::installed : ActionIcon::download);
     installAI.setEnabled(ai.enabled && localAiSupported() && !ai.ready && !ai.installing);
     retryAI.setEnabled(ai.enabled && localAiSupported() && (ai.ready || ai.error.isNotEmpty()));
     if (ai.installing)
@@ -1189,6 +1191,8 @@ void LibraryView::timerCallback()
                                  juce::dontSendNotification);
     const auto progress = next.progress;
     pauseIndex.setButtonText(progress.pauseRequested ? "Resume Indexing" : "Pause Indexing");
+    pauseIndex.setIcon(progress.pauseRequested ? ActionIcon::play : ActionIcon::pause);
+    pauseIndex.setToggleState(progress.pauseRequested, juce::dontSendNotification);
     refresh.setEnabled(next.newResultsAvailable);
     auto progressText =
         progress.stage == "Up to date"
@@ -1277,6 +1281,7 @@ void LibraryView::timerCallback()
     library.setAuditionActive(isPlaying || pending);
     bool libraryOwned = !state["id"].toString().startsWith("design:");
     play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
+    play.setIcon(libraryOwned && (isPlaying || pending) ? ActionIcon::stop : ActionIcon::play);
     addDesigner.setEnabled(selectedAsset && selectedAsset->samples > 0);
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
     dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples > 0 &&
@@ -1304,6 +1309,8 @@ void LibraryView::timerCallback()
     referencePlay.setButtonText(state["id"].toString() == referenceId && (isPlaying || pending)
                                     ? "Stop reference"
                                     : "Play reference");
+    referencePlay.setIcon(state["id"].toString() == referenceId && (isPlaying || pending)
+                              ? ActionIcon::stop : ActionIcon::play);
     if (isPlaying && state["id"].toString() == referenceId)
         referenceWaveform.setCursor((int64_t)state["sourceSample"]);
     if (auto data = referenceWaveformCache.snapshot();

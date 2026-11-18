@@ -339,8 +339,8 @@ void WaveformView::resized()
         in.setBounds(4, 1, 28, 25);
         out.setBounds(36, 1, 28, 25);
     }
-    zoom.setBounds(getWidth() - 65, 2, 28, 23);
-    all.setBounds(getWidth() - 33, 2, 28, 23);
+    zoom.setBounds(getWidth() - 65, 0, 28, 28);
+    all.setBounds(getWidth() - 33, 0, 28, 28);
 }
 void WaveformView::paint(juce::Graphics &g)
 {
@@ -357,10 +357,10 @@ void WaveformView::paint(juce::Graphics &g)
                    area, juce::Justification::centred);
         return;
     }
-    g.setColour(juce::Colour(0x3377bfff));
+    g.setColour(ui::accent.withAlpha(.2f));
     g.fillRect(juce::Rectangle<float>(xAt(first), area.getY(), xAt(last) - xAt(first), area.getHeight())
                    .getIntersection(area));
-    g.setColour(juce::Colour(0xff8cbed6));
+    g.setColour(ui::accent.withAlpha(.9f));
     for (int x = 0; x < getWidth(); ++x)
     {
         auto start = sampleAt((float)x), end = std::min(waveform->samples, sampleAt((float)x + 1) + 1);
@@ -377,7 +377,7 @@ void WaveformView::paint(juce::Graphics &g)
         float y = area.getCentreY(), scale = area.getHeight() * 0.48f;
         g.drawVerticalLine(x, y - std::min(1.0f, maximum) * scale, y - std::max(-1.0f, minimum) * scale + 1);
     }
-    g.setColour(juce::Colour(0xff77bfff));
+    g.setColour(ui::accent);
     for (auto sample : {first, last})
         if (sample >= viewFirst && sample <= viewLast)
             g.fillRect(xAt(sample) - 1, area.getY(), 2.0f, area.getHeight());
@@ -395,7 +395,7 @@ void WaveformView::paint(juce::Graphics &g)
                    juce::Justification::centred);
     if (cursor >= viewFirst && cursor <= viewLast)
     {
-        g.setColour(juce::Colour(0xffffc384));
+        g.setColour(ui::playhead);
         auto x = xAt(cursor);
         g.fillRect(x, area.getY(), 1.5f, area.getHeight());
         g.fillPath(

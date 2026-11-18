@@ -1,0 +1,320 @@
+{
+  "recordedUtc": "2026-11-18T18:33:50.833060+00:00",
+  "baseHead": "006890e8251460991d956c64a9980849c8bf41eb",
+  "sourceManifestSha256": "ad41fef2c9432041b3456b0020c51929f6645888a2b8adbf685ee8cd984d4db7",
+  "sourceManifest": {
+    "CMakeLists.txt": "d85230a6f5eb0552ad4fd8d4ce47dc295a3707c45e945fa4f4b3dafc3a6db670",
+    "resources/icons/custom/audio_file_drag.svg": "39db4a64ec4803b60e54021d96657dd6d80ada9b19eb85e2a8e7421bb3f6c415",
+    "resources/icons/custom/audio_play_range.svg": "7778338bd5b97f4f2a03c2c05402412c8303f925a1efab7e1aa580e7bad0dffb",
+    "resources/icons/custom/audio_play_whole.svg": "732b46f93a613de9b0c58028b1bbd84fd0ade04eae5b432431d7da87c392bd71",
+    "resources/icons/custom/audio_retry.svg": "06a78115a8c3e45267a19e79a3664656b088ab6380ba9a7a98b9e6cac136d3d7",
+    "resources/icons/custom/mark_in.svg": "5be79139c5126fa0a50b259ef5b42d2afbc8aa7168d1a179690141d7ab6f3ba1",
+    "resources/icons/custom/mark_out.svg": "470f27aa8c244f38d30830fdb85b9c61e32e6ff46f561da747d6be80647cdea3",
+    "resources/icons/custom/render_selection.svg": "43c267ff1ef11b7b3c19291e7784928356d2e287a43e02c41b60ad5de56f6978",
+    "resources/icons/lucide/lucide_arrow_down.svg": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2",
+    "resources/icons/lucide/lucide_arrow_up.svg": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518",
+    "resources/icons/lucide/lucide_arrows_from_axis_horizontal.svg": "b39693edbc960fe05aa2abf96aaddc245f74c486cd00fca63e9710fa39621ba5",
+    "resources/icons/lucide/lucide_arrows_to_axis_horizontal.svg": "c2aef6725268c9bfe20c3ae64dfdcae6d0a66c7fe0c3b90f604d64fff28d4011",
+    "resources/icons/lucide/lucide_audio_waveform.svg": "d4b6f62b0d72b7ad223f9abeb51e64875e4533123d7898d07acfa74154eb14b3",
+    "resources/icons/lucide/lucide_check.svg": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0",
+    "resources/icons/lucide/lucide_chevron_down.svg": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87",
+    "resources/icons/lucide/lucide_chevron_right.svg": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b",
+    "resources/icons/lucide/lucide_circle_check.svg": "9711e045a5999f8a3b0782eb88e09b04e0559bc7b379dcc0a4ae645223e10345",
+    "resources/icons/lucide/lucide_columns_2.svg": "bddf3348a9c82d111a060d118299c90755b1ae8411bd16ea1d5ddb83c5f98a27",
+    "resources/icons/lucide/lucide_copy_plus.svg": "c00df1c952c3c8ec74468845cecca365ac659e6de6d7410a786f45017eb24458",
+    "resources/icons/lucide/lucide_dices.svg": "7f171acfe9219b4c8365107ed35f26cf5c83b293f96892f524d38a838358e531",
+    "resources/icons/lucide/lucide_download.svg": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d",
+    "resources/icons/lucide/lucide_file_output.svg": "94a0abe002d76ae0047b9a7e9ec2e2045381c4f4a81372da1d961d6bc14c5868",
+    "resources/icons/lucide/lucide_file_plus.svg": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e",
+    "resources/icons/lucide/lucide_file_volume.svg": "d253d61a29727e67e19be75c0754a97bed3a6e2fa3ab8cbeb05c10f70f4ffa2f",
+    "resources/icons/lucide/lucide_focus.svg": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10",
+    "resources/icons/lucide/lucide_folder_input.svg": "422afd22efd4b7474ee50fcdc42c37cdee1c170a81a2eb339df7ecd0d0dc3578",
+    "resources/icons/lucide/lucide_folder_open.svg": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b",
+    "resources/icons/lucide/lucide_folder_plus.svg": "76d62eb7796ce6c7e303c437464923de2d1ae19a5c8d010f8b36dfc1d6180890",
+    "resources/icons/lucide/lucide_folder_search.svg": "ddcdf0c312320d13a9e327793e73c3a056309e91da1ca630fe1531db81aed247",
+    "resources/icons/lucide/lucide_headphones.svg": "7719585dafa921805aefc21fc3262bbcc621507610a653b84e1632236650b35a",
+    "resources/icons/lucide/lucide_layers.svg": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb",
+    "resources/icons/lucide/lucide_list_plus.svg": "416b579ca6f60752c31769fced8b30d6271940775dacf980ab85ec8c15268b0c",
+    "resources/icons/lucide/lucide_lock.svg": "d2cfe60cac8deaef36442b5c8218c1e61abe18222784b2a370ea090d13fca840",
+    "resources/icons/lucide/lucide_lock_open.svg": "f167153e8fec4008d6946f28035607636ed0b04dcfecdf58d7204db0b3d030f2",
+    "resources/icons/lucide/lucide_magnet.svg": "0e3b38700bd57da6fc5bd4df9f7c96a2bf51785da0600a1da4e6eb4b1dd3b4df",
+    "resources/icons/lucide/lucide_palette.svg": "8e7d3fde990cffd10469ba351f27c50202b057a9bb9af5626322e53fd3abc78c",
+    "resources/icons/lucide/lucide_panel_left.svg": "029f67b9e3eeb7ddf7c7c499b174c50388725e8ea50d4ea59ed7dbaf8d61cb82",
+    "resources/icons/lucide/lucide_panel_right.svg": "327d197328f9feb1f88c36c9db04e9b00fe717d877459f92fcd892f5e4c349fa",
+    "resources/icons/lucide/lucide_pause.svg": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c",
+    "resources/icons/lucide/lucide_pencil.svg": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c",
+    "resources/icons/lucide/lucide_play.svg": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833",
+    "resources/icons/lucide/lucide_plug_zap.svg": "5f1ba0585c27d8c8ba573d134a1566cd41a044b282769ccb8dd8486d04eda8ef",
+    "resources/icons/lucide/lucide_redo_2.svg": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc",
+    "resources/icons/lucide/lucide_refresh_cw.svg": "2e10dd403c85a24f163d59fc6151aa21147fe9402e1305dfc8979208caee8944",
+    "resources/icons/lucide/lucide_rotate_ccw_clock.svg": "a98ff758157910b9fc9d42d5d5dc80c2f4e037afa5f8ea4dee5f5649f03d438d",
+    "resources/icons/lucide/lucide_save.svg": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53",
+    "resources/icons/lucide/lucide_scan.svg": "c77f0e634b2451a14a262a59b61d75bbcea3994b16eeba1f5753e86b33282a4d",
+    "resources/icons/lucide/lucide_search.svg": "283d371c2e433817bb9c0c8310caa6c77fa4177c0f4f1168d9c83b97af7389dc",
+    "resources/icons/lucide/lucide_settings_2.svg": "06d06c191bd7eb28afaf9d40acb5c49ef69448fdeda91801d9823d7c440a4e10",
+    "resources/icons/lucide/lucide_skip_back.svg": "901579624a7d28036a39b3b8bd9e6da0e8cf771a79c67836d8a52b3e2287c031",
+    "resources/icons/lucide/lucide_skip_forward.svg": "f6bdc4b8d453332bafcf1366a48d5ece4bd4f15eced97c85c3676bd22c5cadf9",
+    "resources/icons/lucide/lucide_sliders_horizontal.svg": "e43a00e5eb684e6cbb61083bed2528d7a3fa5f265693eb2b5f314cd432aa65f4",
+    "resources/icons/lucide/lucide_square.svg": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb",
+    "resources/icons/lucide/lucide_star.svg": "c59da86b889569387db28e69ad00a89f96af22863ad9eea9aa12c4876a14338c",
+    "resources/icons/lucide/lucide_trash.svg": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e",
+    "resources/icons/lucide/lucide_undo_2.svg": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f",
+    "resources/icons/lucide/lucide_volume_2.svg": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071",
+    "resources/icons/lucide/lucide_volume_x.svg": "f382e421b7aae01172989f2b749ee87e44c0c82c16970b13a9ad5a323b613be0",
+    "resources/icons/lucide/lucide_x.svg": "4a9cdab38fbb96162e7dace28e33f4ca0e49d8963a6162abc3d4691b7d675117",
+    "resources/icons/lucide/lucide_zoom_in.svg": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1",
+    "resources/icons/lucide/lucide_zoom_out.svg": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921",
+    "resources/icons/manifest.json": "e02e7e18ad29d8ab279a5474600ec78c4657d3820524a3f1fc8def9d8f076522",
+    "resources/licenses/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+    "resources/licenses/CLAP-upstream-CC0.txt": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+    "resources/licenses/Lucide-Attribution.txt": "eb35484798a21aacfb5f6fd4cca5bf79b74c440ef3d41ca753df76cdf2352979",
+    "resources/licenses/Lucide-ISC-and-Feather-MIT.txt": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+    "src/AIHelperMain.cpp": "8ff675b6ae694bc70763e883771ec8b2e4cd0de94cfff9d72a781a9d3642c8ab",
+    "src/AIProcess.cpp": "d903681f491dd5d9aba85240733cfee905dfdd43d942ec6c4f4ca174e8fbd066",
+    "src/AIProcess.h": "575d3080e580be325ca1b8390f0e2e8920c960912dde75440f7639f3a212268d",
+    "src/AudioEngine.cpp": "fd773987927671a314f2b18eb73947e01041409e49763f11ec32511475f9deba",
+    "src/AudioEngine.h": "a5479e9170911b06fb4eb7402b4132a10762a2339ab8d7ac14142bdb3029f454",
+    "src/AudioIPC.cpp": "194292675403eb89e90f1ecba883a659ea3f79df9d68a7277fab986ea32a1167",
+    "src/AudioIPC.h": "c83ff04852760af0b8a99bed1adf9e4d133b4c4e85e325e95561dfa684c1a862",
+    "src/AudioMain.cpp": "ddf5e19f0579db64d1e26f9e82f32ac6d72aab3f9069b71c016bcdc2071f59c4",
+    "src/AudioPlaybackService.cpp": "3a7c57e4e919e81df0a1f7e93dc7c461cc552a846032867fe34977a035701ddb",
+    "src/AudioPlaybackService.h": "f60f84cf8e99f38cd7ced6d89592b124af889e01b89605e3a0cb6ad6102939aa",
+    "src/AudioRegion.h": "1a12cf07be56984c45a0e8408f9c3434eae7363ca1abcf4ada643128a68e883c",
+    "src/AudioStream.cpp": "96ee869d7946f867af8e32871d7b4e817c578ac0b4f2c563e76de7cd3ebfc7c4",
+    "src/AudioStream.h": "22a29a107885e5009920e06ecb467e9a29c5ecded0c3fc14c447707417c27c7a",
+    "src/Benchmark.cpp": "6b266f543ed24cf54afe1e9ebbb923c02d09cf85b5c9bdc47c4343524af1e63e",
+    "src/Benchmark.h": "ceea1f4c4f5e7be331cdc3d3ab4836de2fa063107aac5d8949a4e55e16d66dba",
+    "src/CanvasEditing.cpp": "5da2832bbc08c4701058c72078bb7da7982d5c896162c519d1701db39a464506",
+    "src/CanvasEditing.h": "18d8057de298e437f3cd089c0a623277018aff431e3ee4128a2eb4c6dc1747ce",
+    "src/Catalog.cpp": "2b56346989599de1e7b4b1a93aaf4f4f784963a44c62d120a95b4410aaf92e4e",
+    "src/Catalog.h": "8bfc75edb2e844067e63af29e60845a69dc59fc5e802a444cc7769d3d7f130bf",
+    "src/ClapRuntime.cpp": "dd709c233b619189af155e6964c5e64e897e8a17e5bbfe690a87859e7dd43ef4",
+    "src/ClapRuntime.h": "fdf289fa109113afd935c9b709585742dda208668f89d67c84c3289ce5458890",
+    "src/DesignAudio.cpp": "b6e14d4901aec8e0dc456b3fa898602725da8d98c8bf155780d2a3e4279c7ce3",
+    "src/DesignAudio.h": "ef5bf370de905017efdaff43bf637d1b6c596cd41ec548007dd63989dc7c89e8",
+    "src/DesignControls.h": "8a91c61a04e914bcab1ea935fbd0a7d9c9c363000219ad88b77fa80ff04d0c3c",
+    "src/DesignLive.cpp": "6085d788dd5b32e0314648137f6692d408f5a7021ab83c0c5fbb76ed88cf2daa",
+    "src/DesignLive.h": "dd904447f22f01038ee2c1a9e4a783d8af8b35a505a79b3a65ff2dc0bb11eb13",
+    "src/DesignModel.cpp": "788c49027b1a348a93f927fece6a38a88609425ab29020deb306b9b7233ba217",
+    "src/DesignModel.h": "a536e8f70bf685b8b8d4b2b7c13df40681fb162b4929d2e5fc4820cbb30d4f89",
+    "src/DesignRecovery.cpp": "6bdf7c41c38f671d577c27e9bad3ed04b73f05068822764f4083548bb163a197",
+    "src/DesignRecovery.h": "6676cd1777c380b0267bfb829bbaf66026d2759668453dc34857d2c03f94b89e",
+    "src/DesignSession.cpp": "a631dac9095c1c1789606b8fdf793616277e3e794880bace6752a2561833294f",
+    "src/DesignSession.h": "de2733205c1ac28f4fc48ea59b50727ef70bb9fde33df7f6d631b8ea8dc90ba5",
+    "src/DesignerCanvas.cpp": "b393a47c54c1b10ce25e2697ed912fbc9cf9f6cd3a420d9f2ea39290e0469ec7",
+    "src/DesignerCanvas.h": "6709c06d52cb3ace79585eacbae8704978c2917ce494e6b1ec62b4e8bc498e9c",
+    "src/DesignerView.cpp": "099cfd26593487a608d274218454c17681713c7146a900dd6d6e2cef4f9eda5b",
+    "src/DesignerView.h": "6c058bf4fedc7fbdd674772475bd34feb3699595344973ab894a9e220caeb33c",
+    "src/FadeCurve.h": "cb5c795e791bc02aa6ea3c6a46e2e35bde4cdeb65b528a121749e8f19f477296",
+    "src/IconButton.h": "97cc328ac19ad16bf483de8d4c526257875106c6171eefd829c7724dafd68593",
+    "src/IconRegistry.cpp": "f476e88937b4a91430491274f9672e35fec613a4aca20a70298195235ab97f7f",
+    "src/IconRegistry.h": "b4d5249d0b262e3b64b251869c9fe7423f3db09220a1aae7e8387b284af911b2",
+    "src/LibraryLayout.h": "4c5a0eecf8f7cb21a7a4ed6ede5787dd013e93b148bdf1a1e785621a14ea3628",
+    "src/LibraryService.cpp": "d197cdc8a982f5bc95fa0531ae14b012feba3ee15386f8ea698befb426bdfee3",
+    "src/LibraryService.h": "3d19371d18da10290e7c44c8ec1c2abe1f18029f280b4e8a78d1737e213433ca",
+    "src/LibraryView.cpp": "02486eca7c83f80220852d44efed1d514c1a2ef5cf8e19cd7b0b46bcdc38adf2",
+    "src/LibraryView.h": "756289df43c6c168fe5b7ba95f70a06b8a703f2337dcc441a894235a802886dd",
+    "src/MacSources.h": "1bb1214c13aa12ee6be2e0f80a371ded1cd8418fccc74c5205688f717fd1b85c",
+    "src/MacSources.mm": "0d60eeb8050c9022d0c93ea569e297ee2a520e4f99b64f79fd8200a5a45aed09",
+    "src/Main.cpp": "e55f186f21432851a9f5514cc9e2098c3b4c60401e9dc3aa73fec15b44fe59c9",
+    "src/ModelPack.cpp": "11a7b79d4ffe6b13d317c6bc97025cf2f0ea4b082b220f54a374f8ec02ab6c9f",
+    "src/ModelPack.h": "d52efd9274b1d75947f0951337dd44772d504ac8753b22c470545e9ce6f9297c",
+    "src/Performance.h": "ea77811d53d5338b3dcc4763a05dcb36cca6e152efd0d80438073ed0620a7917",
+    "src/Reference.cpp": "76f433af7fbaf4af1465c4f3661ec45653c085107b53cae83fb514ac2dc2bc82",
+    "src/Reference.h": "9796ce21512066ee445882ef4e76a1b1290097531bc1dfd87094310a0fa61283",
+    "src/RegionRanking.h": "9424bf9f63859137b72516709a56c9cdff0b1cc2d3ca97bf73cb8ddefedc763f",
+    "src/RetrievalIndex.cpp": "8e7e4edaa3e4a7e67756b151a5f3391a94c544d6a01ed132efcab3ffd826d3b7",
+    "src/RetrievalIndex.h": "94d6c323c630080518d2d78b2b14f88750f7be1c46a85b0792cbf264b3646355",
+    "src/SerialWorker.h": "cf9c92575b453eea78f19062332de3efd640aeea00253265f7baf27789da78a7",
+    "src/Theme.h": "a3b67ef1219d795903d6bcd363d51567aa5de134390be0923f4896408de0f396",
+    "src/UIComponents.h": "40bd63b486443acf79e33b9ddceb7709cfcbba383c93eb47271c2bdb0c084366",
+    "src/Waveform.cpp": "608e92f9698dc7eac66e82fbed793df072e875805ab140bd51bf9c4b6cb3c58d",
+    "src/Waveform.h": "e8a021bc1e40724104eb00d3b73c95fe0c52e7d525a9868af62cda6a7a8e72fa",
+    "src/Workstation.h": "c74cc888c286de52d557f23511e811af54ffadd04aca3e52a63631d58a2678d2",
+    "tests/CanvasGestureTests.cpp": "caae1cc8cc03fbffaa2cc41700b4fd6483bea5c4019e427a191179f4b4bf2cde",
+    "tests/CanvasGestureTests.h": "c594ec414fa5d8db7e64dac6a4724eed6cd5323bbdd406d69e169bab50bb6c19",
+    "tests/DesignSessionTests.cpp": "c3c11a0e557c55d2daf254749c00a8f68e7c0d3e4fdc50f10d6e76d6f6d17ed3",
+    "tests/DesignSessionTests.h": "265e0687499f05cd9f2867499ed690127c586c3a73f537b0bfb32b61fca00189",
+    "tests/DesignTests.cpp": "44e7aa7e434d86ed321ef055452af367b21e2c48426edce557a8bfd2bfca679f",
+    "tests/DesignTests.h": "e2aea12e7df2e4573f9c9b34c725e6b0a85aa6576ad888ef5947d6f5fdebac80",
+    "tests/FadeTests.cpp": "26d3b66a0a80c6b2637b31fcdaa98cfbedfc748de786047a62d8d235f1283b7f",
+    "tests/FadeTests.h": "badcc87aae6f49129ff1f01d4048ccb090dc54956e5cfbb2621c403ded7a4286",
+    "tests/IconTests.cpp": "62e112719ce182f5bd5d7854573c55875e2552c29d2e7a94a6277785cd1a0007",
+    "tests/IconTests.h": "8ee80880d3fc01e165a467d4f9abaa2dae30083ed1e7248fa8d0516967814e27",
+    "tests/PerformanceTests.cpp": "e6a0920d2ab0bbcdbb8d04759194a59d4ce741702e020c15667fd84244b77e5c",
+    "tests/PerformanceTests.h": "d3a13649bb6706ab9f09f77ce3e4eab1856d2f569db7ad9f33304dbc6e76a6b4",
+    "tests/SemanticTests.cpp": "2c5642ace99279f560a14ce3d40ff7b817d33518e9c0204d85f4d76aa1968d14",
+    "tests/SemanticTests.h": "82227ccc549b360b2e94c6a61e997377b3136416be0f4dd3006e6e427641b808",
+    "tests/SimilarTests.cpp": "044447bfd67b4ad2eaa6e67634f887764a92f2a96e84dfcf705c20e3858ffb96",
+    "tests/SimilarTests.h": "150897327d9b75439ecd21cf0875c98cf713522960fed8650f50b5c99181b510",
+    "tests/Tests.cpp": "91c2ba3cc115e3eb65713bb0cc28a60db11314760fdcd98eecb54ccdcc15a3ee",
+    "tests/TransportInteractionTests.cpp": "499eb13c9f363852a3803efc241d231fa06a93322978bf552eb494193c2bfed6",
+    "tests/TransportInteractionTests.h": "8c4b3236bb7dd2a4446e059e511702ee0e6a58dc6b0b1063ac9bd420db1f782b"
+  },
+  "build": {
+    "configuration": "Release",
+    "architecture": "arm64",
+    "result": "PASS",
+    "log": "build/icon-refresh/build-final.log",
+    "warnings": "Existing upstream HarfBuzz warnings in full build; no remaining application-source build error"
+  },
+  "binarySha256": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "e108b2e2a57900fac6f741549b37b519f99a63cbbc8c9f439b22f046b2794893",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "6830c2dc794991c03d46d1562f1107bfe7d169f3a9b874ee203351323a639b21",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "1a323ae9bc9bc0e09482930cd2290614a41021579daf1fb21991f255a282026e",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "91f2380cf94392584c7097e953a580f5b9f8462685195d9dad238acd8600a174"
+  },
+  "icons": {
+    "upstream": "https://github.com/lucide-icons/lucide",
+    "revision": "de8d11aac831d519d2377ff516868244475fac06",
+    "upstreamCount": 53,
+    "customCount": 7,
+    "semanticEntries": 61,
+    "uniqueParsedAssets": 60,
+    "cacheTones": 6,
+    "viewBox": [
+      0,
+      0,
+      24,
+      24
+    ],
+    "sourceStroke": 2,
+    "loadPhase": "control construction on message thread; paint uses existing drawables",
+    "runtimeNetworkOrFileLoading": false,
+    "bundledLicenseSha256": {
+      "Lucide-Attribution.txt": "eb35484798a21aacfb5f6fd4cca5bf79b74c440ef3d41ca753df76cdf2352979",
+      "Lucide-ISC-and-Feather-MIT.txt": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57"
+    },
+    "normalizeToTightBounds": false
+  },
+  "theme": {
+    "accent": "#91cbe8",
+    "playhead": "accent in Designer and Library",
+    "bothFadeDirections": "accent interpolated 35 percent toward text",
+    "idleIcons": "#a5afb9",
+    "hoverIcons": "#eef2f6",
+    "disabledIcons": "#65717e",
+    "selectedCue": "accent, tinted surface and short marker",
+    "focus": "neutral outline during keyboard traversal"
+  },
+  "platform": {
+    "hardware": "Apple M5 Pro MacBook Pro Mac17,8, 48 GiB",
+    "os": "macOS 26.3.2 (25D2150)",
+    "display": "built-in Retina",
+    "audio": "Core Audio MacBook Pro Speakers, 48000 Hz / 512 frames"
+  },
+  "tests": {
+    "command": ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "passed": 11,
+    "failed": 0,
+    "durationSeconds": 48.32,
+    "iconAssertions": 139,
+    "selectedBecause": "Shared registry, theme, waveform and header changes reach all current UI consumers; CMake dependency reaches app/helper/test artifacts. Existing suites protect editing, audio, persistence and original files.",
+    "log": "icon-system-ctest.log",
+    "componentRenderScaleFactors": [
+      1,
+      2
+    ]
+  },
+  "native": {
+    "catalog": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/icon-refresh/native",
+    "qaDocument": {
+      "revision": 3735,
+      "name": "QA - Icon system",
+      "sha256": "efe0284ddf9e41fa863334fcac1085af9ac783dd744fb8d48fc286380ba5f886"
+    },
+    "verified": [
+      "Designer Play -> Stop -> Play action and glyph",
+      "Library Space Play/Stop",
+      "Library active selection changes to clip-002 while Stop remains shown",
+      "Library indexing Pause/Resume and explicit glyph/state",
+      "header mute/solo/lock On/Off with distinct symbols/markers",
+      "keyboard Undo/Redo changes actual lock state",
+      "Snap and audible-preview On/Off",
+      "Browser and Inspector hide/show with accurate state",
+      "On/Off values exposed to accessibility",
+      "Tab focus outline visible on Render Design",
+      "same-size desktop Library/Designer before/after",
+      "OS-zoomed Designer layout inspected",
+      "working r3726 reopened"
+    ],
+    "methods": "CUA accessibility actions and keyboard; separate coordinate drag attempt had no observed receiving drop",
+    "pairedCaptures": {
+      "size": [
+        1171,
+        768
+      ],
+      "sameDisplayAndWindowState": true,
+      "captureEncoding": "JPEG, CUA downsampled",
+      "nativeMinimumSizeRecheck": "not repeated this pass; OS zoom and restored desktop checked"
+    },
+    "pressedStateEvidence": "JUCE offscreen state atlas, not OS mouse-down capture",
+    "outputDrag": {
+      "status": "UNVERIFIED",
+      "attempt": "Ready output dragged toward canvas; no observed receiving drop/document change",
+      "receivingSaveExitReopenPassed": false
+    },
+    "humanListening": "not verified",
+    "secondPhysicalDisplayOrScalingSetting": "not verified"
+  },
+  "workingSession": {
+    "before": {
+      "revision": 3726,
+      "name": "Rain glass design",
+      "sha256": "2b23a0b705cad1ac8e09a97ca25a397001afc14fce012eedf4f6ffe6934a655d"
+    },
+    "after": {
+      "revision": 3726,
+      "name": "Rain glass design",
+      "sha256": "2b23a0b705cad1ac8e09a97ca25a397001afc14fce012eedf4f6ffe6934a655d"
+    },
+    "byteIdentical": true,
+    "reopenedCatalog": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/fade-ui/native-ui"
+  },
+  "screenshots": {
+    "icons-designer-after.jpg": {
+      "sha256": "f00a7ab6eeef49e2eafd5e0e79286980d2d3c2616a71c87f754ee9a6b8ee8697",
+      "encoding": "JPEG"
+    },
+    "icons-designer-before.jpg": {
+      "sha256": "8b2b79b4d7fc1fdbee964bc5ff4dea4f72f2356e0c6b7ae992c6852a9b2c4f4b",
+      "encoding": "JPEG"
+    },
+    "icons-designer-resized.jpg": {
+      "sha256": "fd7c225281ca1e8b5fb29a253e79405485dc83c1b418bc21d3a188a540031f43",
+      "encoding": "JPEG"
+    },
+    "icons-keyboard-focus.jpg": {
+      "sha256": "5c08fb5a8e27c04fbe4530d24dc30497b2a27da651f12f86e95df2f0ca21ba01",
+      "encoding": "JPEG"
+    },
+    "icons-library-after.jpg": {
+      "sha256": "5a4a85faf02f33a2cb606df4def0203fbbdf9a4c6e36635d23bfd782a4a361de",
+      "encoding": "JPEG"
+    },
+    "icons-library-before.jpg": {
+      "sha256": "a4c0ca15dc3bedbf3c08ee0371663609b234673fef4cec9d07b65b7aee60b0e8",
+      "encoding": "JPEG"
+    },
+    "icons-library-playing.jpg": {
+      "sha256": "2a74a4efd193035233ce03cd3e43261fd293d5950d3e11e5ccde20aa04a048db",
+      "encoding": "JPEG"
+    },
+    "icons-modes-on.jpg": {
+      "sha256": "5fb8dd931827732b8eef90efae6e9ca6909ef97f679059fd4786bbe08c7b44ea",
+      "encoding": "JPEG"
+    },
+    "icon-system-button-states.png": {
+      "sha256": "03eed4a5c4b2d053482fcfeef0a00a416ef343e8d1905320d64ab5fa5062ddd4",
+      "encoding": "PNG"
+    },
+    "icon-system-icons-1x.png": {
+      "sha256": "f482f1cf5ec15a3f259e3f2321a23a954efcacf62d003c84dcbfc96fd6b51c4f",
+      "encoding": "PNG"
+    },
+    "icon-system-icons-2x.png": {
+      "sha256": "a4006d51f361151daaf214fcfde47ea4c7471ff44b73ddcd3f75ccff81a33d4a",
+      "encoding": "PNG"
+    }
+  }
+}

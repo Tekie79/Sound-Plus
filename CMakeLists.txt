@@ -15,16 +15,18 @@ if(NOT EXISTS "${ORT_DIR}/build/native/include/onnxruntime_cxx_api.h")
   message(FATAL_ERROR "Run python3 scripts/fetch_runtime.py to install the pinned native AI runtime")
 endif()
 juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resources/clap-model.json)
+file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
+juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
   src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/DesignModel.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp)
+  src/DesignModel.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
   JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="0.1.0")
 target_link_libraries(soundplus_core PUBLIC SQLite::SQLite3
-  juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest
+  juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons
   "-framework CoreServices" "-framework Foundation")
 target_compile_options(soundplus_core PRIVATE -Wall -Wextra -Wpedantic)
 juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
@@ -66,6 +68,9 @@ if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
+  target_sources(SoundPlusTests PRIVATE tests/IconTests.cpp)
+  add_test(NAME icon_system COMMAND SoundPlusTests --icon-system "${CMAKE_BINARY_DIR}/icon-test-output")
+  set_tests_properties(icon_system PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)
   add_test(NAME library_and_audio COMMAND SoundPlusTests
     "$<TARGET_FILE:SoundPlus>" "${CMAKE_BINARY_DIR}/test-output")
   set_tests_properties(library_and_audio PROPERTIES TIMEOUT 90)

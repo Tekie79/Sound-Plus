@@ -5,7 +5,7 @@ namespace sp
 {
 namespace
 {
-const juce::Colour bg{0xff101419}, panel{0xff171d25}, text{0xffe6ecf2}, muted{0xff9baabc}, accent{0xff77bfff};
+const auto bg = ui::background, panel = ui::surface, text = ui::text, muted = ui::muted, accent = ui::accent;
 juce::String timeText(int64_t frame, double rate)
 {
     return juce::String(frame / rate, 3) + " s";
@@ -74,6 +74,14 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     };
     scrub.setTooltip("Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms "
                      "stock-state warmup, 5 ms ramps. This is not reverse-speed audio.");
+    newButton.setTooltip("New design (Command-N)");
+    openButton.setTooltip("Open design (Command-O)");
+    saveButton.setTooltip("Save design (Command-S)");
+    undoButton.setTooltip("Undo (Command-Z)");
+    redoButton.setTooltip("Redo (Shift-Command-Z)");
+    duplicate.setTooltip("Duplicate layer (Command-D)");
+    remove.setTooltip("Remove layer (Delete / Backspace)");
+    render.setTooltip("Render Design (Command-R)");
 
     canvasViewport.setViewedComponent(canvas.get(), false);
     inspectorViewport.setViewedComponent(&inspector, false);
@@ -1104,6 +1112,7 @@ void DesignerView::timerCallback()
     }
     bool owned = state["id"].toString() == "design:" + session.document.id;
     bool playing = session.ownsPlayback();
+    play.setIcon(playing ? ActionIcon::stop : ActionIcon::play);
     play.setButtonText(playing ? "Stop design" : "Play design");
     play.setEnabled(!session.document.activeMix().layers.empty());
     peak = std::max(owned && playing ? (float)state["preMonitorPeak"] : 0.f, peak * .88f);
@@ -1112,7 +1121,7 @@ void DesignerView::timerCallback()
     meter.setTooltip("Master output: " +
                      juce::String(juce::Decibels::gainToDecibels(std::max(.00001f, peak)), 1) + " dBFS");
     meter.setColour(juce::Label::textColourId, clipHeld ? juce::Colour(0xffff8866) : muted);
-    position.setVisible(true);
+    position.setVisible(position.getWidth() > 0);
     position.setText(juce::String(session.document.playhead / session.document.sampleRate, 4) + " s",
                      juce::dontSendNotification);
     updating = true;
@@ -1177,13 +1186,15 @@ void DesignerView::resized()
     for (auto *b : {&newButton, &openButton, &saveButton, &recover, &undoButton, &redoButton, &add,
                     &duplicate, &remove, &up, &down})
     {
-        b->setBounds(x, 57, 28, 28);
-        x += 32;
+        b->setBounds(x, 55, 32, 32);
+        x += 36;
+        if (b == &recover || b == &redoButton || b == &remove)
+            x += 8;
     }
     x = getWidth() - 174;
     for (auto *b : {&render, &renderSettings, &renderSelection, &chooseFolder, &cancel})
     {
-        b->setBounds(x, 16, 28, 32);
+        b->setBounds(x, 16, 30, 32);
         x += 32;
     }
     canvasViewport.setBounds(12, 136, std::max(280, creative - 24), getHeight() - 340);
@@ -1191,30 +1202,35 @@ void DesignerView::resized()
     for (auto *button :
          {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
     {
-        int step = creative < 420 ? 25 : 29;
-        button->setBounds(toolX, 98, step - 3, 28);
+        int target = creative < 520 ? 28 : 32;
+        int step = target + (creative < 420 ? 2 : 4);
+        button->setBounds(toolX, 96, target, 32);
         toolX += step;
+        if (button == &verticalIn || button == &fitSelected)
+            toolX += creative < 420 ? 4 : 8;
     }
-    position.setBounds(toolX + 8, 98, std::max(70, creative - toolX - 20), 28);
+    position.setBounds(toolX + 8, 98, creative - toolX - 20 >= 70 ? creative - toolX - 20 : 0, 28);
     inspectorViewport.setVisible(inspectorOpen);
+    inspect.setToggleState(inspectorOpen, juce::dontSendNotification);
+    inspect.setButtonText(inspectorOpen ? "Hide layer inspector" : "Show layer inspector");
     inspector.setEnabled(!session.transitionPending());
     inspectorViewport.setBounds(getWidth() - 342, 100, 334, getHeight() - 175);
     int y = getHeight() - 180;
-    generate.setBounds(16, y, 28, 30);
-    variationSettings.setBounds(48, y, 28, 30);
-    int comboWidth = std::clamp(creative - 254, 100, 224);
-    candidates.setBounds(84, y, comboWidth, 30);
-    x = 90 + comboWidth;
+    generate.setBounds(16, y, 32, 32);
+    variationSettings.setBounds(52, y, 32, 32);
+    int comboWidth = std::clamp(creative - 280, 100, 224);
+    candidates.setBounds(92, y, comboWidth, 30);
+    x = 100 + comboWidth;
     for (auto *b : {&compare, &keep, &rename, &discard})
     {
-        b->setBounds(x, y, 26, 30);
-        x += 30;
+        b->setBounds(x, y, 28, 30);
+        x += 32;
     }
-    dragOriginal.setBounds(16, y + 42, 28, 30);
-    copyOriginal.setBounds(50, y + 42, 28, 30);
-    dragOutput.setBounds(94, y + 42, 28, 30);
-    addPrint.setBounds(128, y + 42, 28, 30);
-    outputInfo.setBounds(168, y + 42, std::max(60, creative - 186), 30);
+    dragOriginal.setBounds(16, y + 42, 32, 32);
+    copyOriginal.setBounds(52, y + 42, 32, 32);
+    dragOutput.setBounds(100, y + 42, 32, 32);
+    addPrint.setBounds(136, y + 42, 32, 32);
+    outputInfo.setBounds(180, y + 42, std::max(60, creative - 198), 30);
     play.setBounds(creative / 2 - 20, getHeight() - 92, 40, 40);
     accurate.setBounds(creative / 2 + 30, getHeight() - 86, 28, 28);
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);

@@ -11,6 +11,7 @@
 #include "CanvasGestureTests.h"
 #include "TransportInteractionTests.h"
 #include "FadeTests.h"
+#include "IconTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -68,6 +69,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 3 && juce::String(argv[1]) == "--icon-system")
+        {
+            runIconTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--designer-fades")
         {
             runFadeTests(juce::File(argv[2]), juce::File(argv[3]));

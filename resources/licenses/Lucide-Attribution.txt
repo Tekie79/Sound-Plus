@@ -1,0 +1,8 @@
+SoundPlus action icons use Lucide SVGs.
+Source: https://github.com/lucide-icons/lucide
+Pinned revision: de8d11aac831d519d2377ff516868244475fac06
+Full ISC and applicable Feather MIT notices: Lucide-ISC-and-Feather-MIT.txt
+
+Seven original SoundPlus audio-specific SVGs use the same 24 x 24 grid,
+2-unit stroke, and rounded caps/joins. See resources/icons/manifest.json
+in the source distribution for semantic mapping, provenance and hashes.

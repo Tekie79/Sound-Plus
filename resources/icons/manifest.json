@@ -1,0 +1,312 @@
+{
+  "source": "https://github.com/lucide-icons/lucide",
+  "revision": "de8d11aac831d519d2377ff516868244475fac06",
+  "license": "../licenses/Lucide-ISC-and-Feather-MIT.txt",
+  "sourceDate": "2026-11-18",
+  "customNotice": "Original SoundPlus audio-specific symbols on the same 24x24 grid, 2-unit round strokes. Not upstream Lucide assets.",
+  "actions": {
+    "play": "play",
+    "match": "custom:audio_play_range",
+    "whole": "custom:audio_play_whole",
+    "previous": "skip-back",
+    "next": "skip-forward",
+    "pause": "pause",
+    "refresh": "refresh-cw",
+    "folder": "folder-plus",
+    "download": "download",
+    "cancel": "x",
+    "similar": "search",
+    "file": "file-volume",
+    "zoom": "zoom-in",
+    "fit": "scan",
+    "reconnect": "plug-zap",
+    "markIn": "custom:mark_in",
+    "markOut": "custom:mark_out",
+    "scanFolder": "folder-search",
+    "retryAnalysis": "custom:audio_retry",
+    "addLayer": "list-plus",
+    "duplicate": "copy-plus",
+    "up": "arrow-up",
+    "down": "arrow-down",
+    "trash": "trash",
+    "save": "save",
+    "open": "folder-open",
+    "undo": "undo-2",
+    "redo": "redo-2",
+    "variations": "dices",
+    "lock": "lock",
+    "render": "file-output",
+    "drag": "custom:audio_file_drag",
+    "keep": "star",
+    "settings": "settings-2",
+    "layers": "layers",
+    "browser": "panel-left",
+    "chevron": "chevron-right",
+    "mute": "volume-x",
+    "solo": "headphones",
+    "newDocument": "file-plus",
+    "rename": "pencil",
+    "history": "rotate-ccw-clock",
+    "compare": "columns-2",
+    "zoomOut": "zoom-out",
+    "fitSelection": "focus",
+    "snap": "magnet",
+    "scrub": "audio-waveform",
+    "verticalIn": "arrows-from-axis-horizontal",
+    "verticalOut": "arrows-to-axis-horizontal",
+    "accurate": "circle-check",
+    "colour": "palette",
+    "stop": "square",
+    "installed": "circle-check",
+    "unlocked": "lock-open",
+    "unmuted": "volume-2",
+    "chevronDown": "chevron-down",
+    "renderSelection": "custom:render_selection",
+    "copyOriginal": "folder-input",
+    "inspector": "panel-right",
+    "processing": "sliders-horizontal",
+    "check": "check"
+  },
+  "assets": {
+    "arrow-down": {
+      "path": "resources/icons/lucide/lucide_arrow_down.svg",
+      "sha256": "2b641c7a59d39450edfed72067fcc9940a1a316a737346af23b4b9103c0689f2"
+    },
+    "arrow-up": {
+      "path": "resources/icons/lucide/lucide_arrow_up.svg",
+      "sha256": "8c22c25874c80bb062bef985d207d8f1d4a4d7847237d0a8cf720a3235968518"
+    },
+    "audio-waveform": {
+      "path": "resources/icons/lucide/lucide_audio_waveform.svg",
+      "sha256": "d4b6f62b0d72b7ad223f9abeb51e64875e4533123d7898d07acfa74154eb14b3"
+    },
+    "check": {
+      "path": "resources/icons/lucide/lucide_check.svg",
+      "sha256": "7f33acc9a77a61659531044525fc008edebe215bf4dcf1c789c8674ad3277db0"
+    },
+    "chevron-down": {
+      "path": "resources/icons/lucide/lucide_chevron_down.svg",
+      "sha256": "66ea878e72ed3488bb3b464c39dfdccee8d1f78e560dccea40e5e12da0e87e87"
+    },
+    "chevron-right": {
+      "path": "resources/icons/lucide/lucide_chevron_right.svg",
+      "sha256": "2758143d7b2434e4aa7307dfd34405c87909ff4052f21b5f3f40d45224b4f19b"
+    },
+    "circle-check": {
+      "path": "resources/icons/lucide/lucide_circle_check.svg",
+      "sha256": "9711e045a5999f8a3b0782eb88e09b04e0559bc7b379dcc0a4ae645223e10345"
+    },
+    "columns-2": {
+      "path": "resources/icons/lucide/lucide_columns_2.svg",
+      "sha256": "bddf3348a9c82d111a060d118299c90755b1ae8411bd16ea1d5ddb83c5f98a27"
+    },
+    "copy-plus": {
+      "path": "resources/icons/lucide/lucide_copy_plus.svg",
+      "sha256": "c00df1c952c3c8ec74468845cecca365ac659e6de6d7410a786f45017eb24458"
+    },
+    "dices": {
+      "path": "resources/icons/lucide/lucide_dices.svg",
+      "sha256": "7f171acfe9219b4c8365107ed35f26cf5c83b293f96892f524d38a838358e531"
+    },
+    "download": {
+      "path": "resources/icons/lucide/lucide_download.svg",
+      "sha256": "3daeee13ded5a3afa2198b1bb4e2262d163922f97d96ac6ff9953e8ed4fe039d"
+    },
+    "file-output": {
+      "path": "resources/icons/lucide/lucide_file_output.svg",
+      "sha256": "94a0abe002d76ae0047b9a7e9ec2e2045381c4f4a81372da1d961d6bc14c5868"
+    },
+    "file-plus": {
+      "path": "resources/icons/lucide/lucide_file_plus.svg",
+      "sha256": "bbcf862a2a4425baa8a5bda39c7f16ec1d283816a3db77baf84f2e8766dd223e"
+    },
+    "file-volume": {
+      "path": "resources/icons/lucide/lucide_file_volume.svg",
+      "sha256": "d253d61a29727e67e19be75c0754a97bed3a6e2fa3ab8cbeb05c10f70f4ffa2f"
+    },
+    "focus": {
+      "path": "resources/icons/lucide/lucide_focus.svg",
+      "sha256": "d52fde05ccbd7bf629e05daeb8eadf824c85333aeca78e674db01493bc8b1f10"
+    },
+    "folder-input": {
+      "path": "resources/icons/lucide/lucide_folder_input.svg",
+      "sha256": "422afd22efd4b7474ee50fcdc42c37cdee1c170a81a2eb339df7ecd0d0dc3578"
+    },
+    "folder-open": {
+      "path": "resources/icons/lucide/lucide_folder_open.svg",
+      "sha256": "ee57452b40e71df310214091dd9da1941a397c83197b8ff8d7ae66dd4242578b"
+    },
+    "folder-plus": {
+      "path": "resources/icons/lucide/lucide_folder_plus.svg",
+      "sha256": "76d62eb7796ce6c7e303c437464923de2d1ae19a5c8d010f8b36dfc1d6180890"
+    },
+    "folder-search": {
+      "path": "resources/icons/lucide/lucide_folder_search.svg",
+      "sha256": "ddcdf0c312320d13a9e327793e73c3a056309e91da1ca630fe1531db81aed247"
+    },
+    "headphones": {
+      "path": "resources/icons/lucide/lucide_headphones.svg",
+      "sha256": "7719585dafa921805aefc21fc3262bbcc621507610a653b84e1632236650b35a"
+    },
+    "layers": {
+      "path": "resources/icons/lucide/lucide_layers.svg",
+      "sha256": "ce16d0a955e3581cda17f6b2fd5c5bc2034b405f9cecc31c8ebb8495b4afc1bb"
+    },
+    "list-plus": {
+      "path": "resources/icons/lucide/lucide_list_plus.svg",
+      "sha256": "416b579ca6f60752c31769fced8b30d6271940775dacf980ab85ec8c15268b0c"
+    },
+    "lock": {
+      "path": "resources/icons/lucide/lucide_lock.svg",
+      "sha256": "d2cfe60cac8deaef36442b5c8218c1e61abe18222784b2a370ea090d13fca840"
+    },
+    "lock-open": {
+      "path": "resources/icons/lucide/lucide_lock_open.svg",
+      "sha256": "f167153e8fec4008d6946f28035607636ed0b04dcfecdf58d7204db0b3d030f2"
+    },
+    "magnet": {
+      "path": "resources/icons/lucide/lucide_magnet.svg",
+      "sha256": "0e3b38700bd57da6fc5bd4df9f7c96a2bf51785da0600a1da4e6eb4b1dd3b4df"
+    },
+    "palette": {
+      "path": "resources/icons/lucide/lucide_palette.svg",
+      "sha256": "8e7d3fde990cffd10469ba351f27c50202b057a9bb9af5626322e53fd3abc78c"
+    },
+    "panel-left": {
+      "path": "resources/icons/lucide/lucide_panel_left.svg",
+      "sha256": "029f67b9e3eeb7ddf7c7c499b174c50388725e8ea50d4ea59ed7dbaf8d61cb82"
+    },
+    "panel-right": {
+      "path": "resources/icons/lucide/lucide_panel_right.svg",
+      "sha256": "327d197328f9feb1f88c36c9db04e9b00fe717d877459f92fcd892f5e4c349fa"
+    },
+    "pause": {
+      "path": "resources/icons/lucide/lucide_pause.svg",
+      "sha256": "f122ec4ea7f5693a0b1baafa9c708b53980dc87b4aacb297c6e6f71c1a4c115c"
+    },
+    "pencil": {
+      "path": "resources/icons/lucide/lucide_pencil.svg",
+      "sha256": "7e1ca7a6f5c1eb949671df762f2baadd32f5bd841d43153c3a15279af7d78d0c"
+    },
+    "play": {
+      "path": "resources/icons/lucide/lucide_play.svg",
+      "sha256": "d7c34786135922a92b6896f6c2384ceeb0346afbf6041dc79982011411409833"
+    },
+    "plug-zap": {
+      "path": "resources/icons/lucide/lucide_plug_zap.svg",
+      "sha256": "5f1ba0585c27d8c8ba573d134a1566cd41a044b282769ccb8dd8486d04eda8ef"
+    },
+    "redo-2": {
+      "path": "resources/icons/lucide/lucide_redo_2.svg",
+      "sha256": "4cbd2cdebc70b6b7979c681ed3f313d9cbb102465dcf7d0d2d6a72c937b344bc"
+    },
+    "refresh-cw": {
+      "path": "resources/icons/lucide/lucide_refresh_cw.svg",
+      "sha256": "2e10dd403c85a24f163d59fc6151aa21147fe9402e1305dfc8979208caee8944"
+    },
+    "rotate-ccw-clock": {
+      "path": "resources/icons/lucide/lucide_rotate_ccw_clock.svg",
+      "sha256": "a98ff758157910b9fc9d42d5d5dc80c2f4e037afa5f8ea4dee5f5649f03d438d"
+    },
+    "save": {
+      "path": "resources/icons/lucide/lucide_save.svg",
+      "sha256": "ee9d56a7fec4b20dd6689546d41f68219ea8cbd67f99bd17a1bdaff5be6edb53"
+    },
+    "scan": {
+      "path": "resources/icons/lucide/lucide_scan.svg",
+      "sha256": "c77f0e634b2451a14a262a59b61d75bbcea3994b16eeba1f5753e86b33282a4d"
+    },
+    "search": {
+      "path": "resources/icons/lucide/lucide_search.svg",
+      "sha256": "283d371c2e433817bb9c0c8310caa6c77fa4177c0f4f1168d9c83b97af7389dc"
+    },
+    "settings-2": {
+      "path": "resources/icons/lucide/lucide_settings_2.svg",
+      "sha256": "06d06c191bd7eb28afaf9d40acb5c49ef69448fdeda91801d9823d7c440a4e10"
+    },
+    "skip-back": {
+      "path": "resources/icons/lucide/lucide_skip_back.svg",
+      "sha256": "901579624a7d28036a39b3b8bd9e6da0e8cf771a79c67836d8a52b3e2287c031"
+    },
+    "skip-forward": {
+      "path": "resources/icons/lucide/lucide_skip_forward.svg",
+      "sha256": "f6bdc4b8d453332bafcf1366a48d5ece4bd4f15eced97c85c3676bd22c5cadf9"
+    },
+    "sliders-horizontal": {
+      "path": "resources/icons/lucide/lucide_sliders_horizontal.svg",
+      "sha256": "e43a00e5eb684e6cbb61083bed2528d7a3fa5f265693eb2b5f314cd432aa65f4"
+    },
+    "square": {
+      "path": "resources/icons/lucide/lucide_square.svg",
+      "sha256": "bd979354f0ab184b95cecf03eedefe40c2dc65830ac6d7e60017b2b25a354acb"
+    },
+    "star": {
+      "path": "resources/icons/lucide/lucide_star.svg",
+      "sha256": "c59da86b889569387db28e69ad00a89f96af22863ad9eea9aa12c4876a14338c"
+    },
+    "trash": {
+      "path": "resources/icons/lucide/lucide_trash.svg",
+      "sha256": "27299f69ad7c6272be64b1b8e2d48cbd6dcf0ef0d4f92827a1affa945c91700e"
+    },
+    "undo-2": {
+      "path": "resources/icons/lucide/lucide_undo_2.svg",
+      "sha256": "efad2edbbd2be6038cc23fd64df2d012fad5cc6460dfbf227cfa3d990e9e897f"
+    },
+    "volume-2": {
+      "path": "resources/icons/lucide/lucide_volume_2.svg",
+      "sha256": "fb404f9c128a0579de67b399177631e5edb3502fdc247ceb30e8b15754b46071"
+    },
+    "volume-x": {
+      "path": "resources/icons/lucide/lucide_volume_x.svg",
+      "sha256": "f382e421b7aae01172989f2b749ee87e44c0c82c16970b13a9ad5a323b613be0"
+    },
+    "x": {
+      "path": "resources/icons/lucide/lucide_x.svg",
+      "sha256": "4a9cdab38fbb96162e7dace28e33f4ca0e49d8963a6162abc3d4691b7d675117"
+    },
+    "zoom-in": {
+      "path": "resources/icons/lucide/lucide_zoom_in.svg",
+      "sha256": "91206ae20013e2c84f2f5d09db5a7200f11698a84fc4e857b06fab2ce7c933f1"
+    },
+    "zoom-out": {
+      "path": "resources/icons/lucide/lucide_zoom_out.svg",
+      "sha256": "28e7849b55bb9b34cb24be83b4e8ef58f2ae164fc451fbd60e026bfb507d2921"
+    },
+    "custom:audio_play_range": {
+      "path": "resources/icons/custom/audio_play_range.svg",
+      "sha256": "7778338bd5b97f4f2a03c2c05402412c8303f925a1efab7e1aa580e7bad0dffb"
+    },
+    "custom:audio_play_whole": {
+      "path": "resources/icons/custom/audio_play_whole.svg",
+      "sha256": "732b46f93a613de9b0c58028b1bbd84fd0ade04eae5b432431d7da87c392bd71"
+    },
+    "custom:mark_in": {
+      "path": "resources/icons/custom/mark_in.svg",
+      "sha256": "5be79139c5126fa0a50b259ef5b42d2afbc8aa7168d1a179690141d7ab6f3ba1"
+    },
+    "custom:mark_out": {
+      "path": "resources/icons/custom/mark_out.svg",
+      "sha256": "470f27aa8c244f38d30830fdb85b9c61e32e6ff46f561da747d6be80647cdea3"
+    },
+    "custom:audio_retry": {
+      "path": "resources/icons/custom/audio_retry.svg",
+      "sha256": "06a78115a8c3e45267a19e79a3664656b088ab6380ba9a7a98b9e6cac136d3d7"
+    },
+    "custom:audio_file_drag": {
+      "path": "resources/icons/custom/audio_file_drag.svg",
+      "sha256": "39db4a64ec4803b60e54021d96657dd6d80ada9b19eb85e2a8e7421bb3f6c415"
+    },
+    "custom:render_selection": {
+      "path": "resources/icons/custom/render_selection.svg",
+      "sha256": "43c267ff1ef11b7b3c19291e7784928356d2e287a43e02c41b60ad5de56f6978"
+    },
+    "arrows-from-axis-horizontal": {
+      "path": "resources/icons/lucide/lucide_arrows_from_axis_horizontal.svg",
+      "sha256": "b39693edbc960fe05aa2abf96aaddc245f74c486cd00fca63e9710fa39621ba5"
+    },
+    "arrows-to-axis-horizontal": {
+      "path": "resources/icons/lucide/lucide_arrows_to_axis_horizontal.svg",
+      "sha256": "c2aef6725268c9bfe20c3ae64dfdcae6d0a66c7fe0c3b90f604d64fff28d4011"
+    }
+  }
+}
