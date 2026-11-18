@@ -252,6 +252,44 @@ void runCanvasGestureTests(const juce::File &parent)
           "Translucent lanes retain grid lines and distinct track/clip selection");
     check(clipImage.getPixelAt(445, (int)shape.top + 50) == clipImage.getPixelAt(450, (int)shape.top + 50),
           "Clip fill remains opaque over the timeline grid");
+    // A high-energy waveform must not hide the gain line, even under overlapping fade tint.
+    {
+        sp::DesignSession contrastSession(directory.getChildFile("contrast.sqlite"), services);
+        contrastSession.document = original;
+        auto &layer = contrastSession.document.original.layers[0];
+        layer.gainDb = 0;
+        layer.fadeIn = layer.fadeOut = 96000;
+        auto dense = std::make_shared<sp::WaveformData>();
+        dense->samples = layer.source.samples;
+        dense->peaks.assign(512, {-.85f, .85f});
+        sp::DesignerCanvas contrastCanvas(
+            contrastSession, [dense](const auto &) { return dense; }, preferences);
+        contrastCanvas.setBounds(0, 0, 1000, 400);
+        contrastCanvas.viewport.pixelsPerSecond = 50;
+        for (auto colour : {0u, 0xff72b8a2u, 0xffd38393u})
+            for (bool selected : {false, true})
+            {
+                layer.colour = colour;
+                contrastSession.selectedIds =
+                    selected ? std::set<juce::String>{layer.id} : std::set<juce::String>{};
+                juce::Image pixels(juce::Image::ARGB, 1000, 400, true);
+                juce::Graphics g(pixels);
+                contrastCanvas.paint(g);
+                auto geometry = sp::clipGeometry(layer, 0, contrastCanvas.viewport, 48000);
+                int x = (int)(geometry.left + (geometry.right - geometry.left) * .3f);
+                int y = (int)geometry.gain;
+                auto waveBrightness = pixels.getPixelAt(x, y + 6).getBrightness();
+                float darkest = 1;
+                for (int offset = -2; offset <= 2; ++offset)
+                    darkest = std::min(darkest, pixels.getPixelAt(x, y + offset).getBrightness());
+                check(waveBrightness - darkest > .15f &&
+                          pixels.getPixelAt(x, y).getBrightness() - darkest > .15f,
+                      "Gain line has a bright core and dark separation on dense colored waveforms");
+                check(pixels.getPixelAt(x, y - 2) == pixels.getPixelAt(x, y - 6) &&
+                          pixels.getPixelAt(x, y + 2) == pixels.getPixelAt(x, y + 6),
+                      "Thin gain line leaves waveform pixels two points away untouched");
+            }
+    }
     // Actual track-header commands edit their own layer without changing selection.
     for (auto title : {"Mute ", "Solo ", "Lock "})
     {
@@ -354,6 +392,41 @@ void runCanvasGestureTests(const juce::File &parent)
                                       (float)gain * (curveShape.clipBottom - 1 - curveShape.fadeInY));
     };
     auto pointPosition = curvePosition(true, .37, .37);
+    auto selectClip = curvePosition(true, .8, .1);
+    canvas.mouseDown(pointer(canvas, selectClip, selectClip));
+    canvas.mouseUp(pointer(canvas, selectClip, selectClip));
+    auto revisionBeforeHover = session.document.revision;
+    canvas.mouseMove(pointer(canvas, pointPosition, pointPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::CrosshairCursor &&
+              session.document.revision == revisionBeforeHover,
+          "Selected fade stroke advertises point insertion without editing audio/history");
+    canvas.mouseMove(
+        pointer(canvas, pointPosition, pointPosition, juce::ModifierKeys(juce::ModifierKeys::altModifier)));
+    check(canvas.getMouseCursor() == juce::MouseCursor::DraggingHandCursor,
+          "Option-slip keeps its body cursor over the fade stroke");
+    session.selectLayer(b.id);
+    canvas.mouseMove(pointer(canvas, pointPosition, pointPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::DraggingHandCursor,
+          "An unselected clip does not show the fade insertion cue");
+    canvas.mouseDown(pointer(canvas, headerClick, headerClick));
+    canvas.mouseUp(pointer(canvas, headerClick, headerClick));
+    canvas.mouseMove(pointer(canvas, pointPosition, pointPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::DraggingHandCursor,
+          "Selecting only the track does not advertise clip-point insertion");
+    canvas.mouseDown(pointer(canvas, selectClip, selectClip));
+    canvas.mouseUp(pointer(canvas, selectClip, selectClip));
+    auto gainPosition = juce::Point<float>((curveShape.left + curveShape.right) * .5f, curveShape.gain);
+    canvas.mouseMove(pointer(canvas, gainPosition, gainPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::UpDownResizeCursor,
+          "Gain retains its vertical-adjustment cursor at a fade intersection");
+    auto gripPosition = juce::Point<float>(curveShape.fadeIn, curveShape.fadeInY);
+    canvas.mouseMove(pointer(canvas, gripPosition, gripPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::LeftRightResizeCursor,
+          "Fade duration grip retains horizontal resizing");
+    canvas.mouseMove(pointer(canvas, pointPosition, pointPosition));
+    canvas.mouseExit(pointer(canvas, pointPosition, pointPosition));
+    check(canvas.getMouseCursor() == juce::MouseCursor::NormalCursor,
+          "Leaving the canvas clears the insertion cursor");
     canvas.mouseDoubleClick(pointer(canvas, pointPosition, pointPosition));
     check(session.document.original.layers[0].fadeInShape == sp::FadeShape::custom &&
               session.document.original.layers[0].fadeInPoints.size() == 1,
@@ -361,6 +434,10 @@ void runCanvasGestureTests(const juce::File &parent)
     auto pointBefore = session.document.original.layers[0].fadeInPoints[0];
     check(std::abs(pointBefore.x - .37) < .001 && std::abs(pointBefore.y - .37) < .001,
           "New point is placed at the double-click location");
+    auto customSegment = curvePosition(true, .75, .75);
+    canvas.mouseMove(pointer(canvas, customSegment, customSegment));
+    check(canvas.getMouseCursor() == juce::MouseCursor::CrosshairCursor,
+          "Custom fade segments also advertise insertion away from existing points");
     auto pointHit = sp::canvasHitTest(session.document, canvas.viewport, pointPosition.x, pointPosition.y);
     check(pointHit.target == sp::CanvasTarget::fadeInPoint && pointHit.point == 0,
           "Small visible point retains a generous distinct hit target");

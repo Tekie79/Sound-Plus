@@ -7,6 +7,7 @@ inline const juce::Colour background{0xff101419}, surface{0xff171d25}, raised{0x
 inline constexpr int gap = 8, control = 32, radius = 6;
 inline const auto playhead = accent;
 inline const auto fadeCurve = accent.interpolatedWith(text, .35f);
+inline const auto gainLine = text, gainLineOutline = background.withAlpha(.65f);
 namespace button
 {
 inline const juce::Colour normal{0xffa5afb9}, hover{0xffeef2f6}, disabled{0xff65717e}, focus{0xffcbd5df};

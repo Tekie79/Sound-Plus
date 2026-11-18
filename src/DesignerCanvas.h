@@ -66,6 +66,7 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     juce::Point<float> anchor, pointer;
     juce::ModifierKeys modifiers;
     std::optional<int64_t> dropGhost;
+    std::optional<bool> hoverFade;
     int insertion = -1;
     double lastTick = 0, inputTime = 0;
     std::vector<double> visualSamples;

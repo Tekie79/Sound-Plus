@@ -30,6 +30,27 @@ juce::Path layerFadePath(const DesignLayer &layer, const CanvasClipGeometry &cli
                              (double)std::min(length, layerDuration(layer, rate)) / length,
                              in ? layer.fadeInPoints : layer.fadeOutPoints);
 }
+std::optional<bool> fadeCurveAt(const DesignLayer &layer, const CanvasClipGeometry &clip,
+                                juce::Point<float> point, double rate, bool preferOut = false)
+{
+    std::optional<bool> fade;
+    float closest = 6;
+    for (bool in : {true, false})
+    {
+        auto path = layerFadePath(layer, clip, in, rate);
+        if (path.isEmpty())
+            continue;
+        juce::Point<float> nearest;
+        path.getNearestPoint(point, nearest);
+        auto distance = nearest.getDistanceFrom(point);
+        if (distance < closest || (preferOut && !in && distance < 6 && distance <= closest + .001f))
+        {
+            closest = distance;
+            fade = in;
+        }
+    }
+    return fade;
+}
 } // namespace
 struct DesignerCanvas::Header : juce::Button
 {
@@ -344,15 +365,11 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 }
             }
             graphics.setColour(colour.withAlpha(selected ? .9f : .55f));
-            graphics.drawLine(shape.left, shape.gain, shape.right, shape.gain,
-                              hover.target == CanvasTarget::gain && hover.row == (int)row ? 2.f : 1.f);
             graphics.drawVerticalLine((int)shape.left, shape.clipTop + 13, shape.clipBottom - 6);
             graphics.drawVerticalLine((int)shape.right, shape.clipTop + 13, shape.clipBottom - 6);
+            // Tint first so gain remains legible over both dense peaks and fade shading.
             for (bool in : {true, false})
             {
-                auto target = in ? CanvasTarget::fadeIn : CanvasTarget::fadeOut;
-                auto x = in ? shape.fadeIn : shape.fadeOut;
-                auto y = in ? shape.fadeInY : shape.fadeOutY;
                 auto accent = in ? ui::fadeInAccent : ui::fadeOutAccent;
                 auto curve = layerFadePath(layer, shape, in, rate);
                 if (!curve.isEmpty())
@@ -363,10 +380,31 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                     tint.closeSubPath();
                     graphics.setColour(accent.withAlpha(selectedClip ? .13f : .08f));
                     graphics.fillPath(tint);
-                    graphics.setColour(accent.withAlpha(selected ? .95f : .8f));
+                }
+            }
+            bool gainHover = hover.target == CanvasTarget::gain && hover.row == (int)row;
+            float gainWidth = gainHover ? 1.5f : 1.f;
+            float gainY = std::floor(shape.gain) + .5f;
+            graphics.setColour(ui::gainLineOutline);
+            graphics.drawLine(shape.left, gainY, shape.right, gainY, gainWidth + 1.f);
+            graphics.setColour(ui::gainLine.withAlpha(selected || gainHover ? 1.f : .85f));
+            graphics.drawLine(shape.left, gainY, shape.right, gainY, gainWidth);
+            // Curves and their handles stay above the gain line at intersections.
+            for (bool in : {true, false})
+            {
+                auto target = in ? CanvasTarget::fadeIn : CanvasTarget::fadeOut;
+                auto x = in ? shape.fadeIn : shape.fadeOut;
+                auto y = in ? shape.fadeInY : shape.fadeOutY;
+                auto accent = in ? ui::fadeInAccent : ui::fadeOutAccent;
+                auto curve = layerFadePath(layer, shape, in, rate);
+                bool curveHover = selectedClip && hover.row == (int)row && hoverFade && *hoverFade == in;
+                if (!curve.isEmpty())
+                {
+                    graphics.setColour(accent.withAlpha(curveHover ? 1.f : selected ? .95f : .8f));
                     graphics.strokePath(
                         curve,
-                        juce::PathStrokeType(hover.target == target && hover.row == (int)row ? 2.2f : 1.5f));
+                        juce::PathStrokeType(
+                            curveHover || (hover.target == target && hover.row == (int)row) ? 2.2f : 1.5f));
                 }
                 if ((in ? layer.fadeInShape : layer.fadeOutShape) == FadeShape::custom &&
                     (in ? layer.fadeIn : layer.fadeOut) > 0)
@@ -486,21 +524,7 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
                 in = hit.target == CanvasTarget::fadeIn || hit.target == CanvasTarget::fadeInPoint;
             else
             {
-                float nearestDistance = 6;
-                for (bool candidate : {true, false})
-                {
-                    auto path = layerFadePath(layer, geometry, candidate, session.document.sampleRate);
-                    if (path.isEmpty())
-                        continue;
-                    juce::Point<float> nearest;
-                    path.getNearestPoint(pointer, nearest);
-                    auto distance = nearest.getDistanceFrom(pointer);
-                    if (distance < nearestDistance)
-                    {
-                        nearestDistance = distance;
-                        in = candidate;
-                    }
-                }
+                in = fadeCurveAt(layer, geometry, pointer, session.document.sampleRate);
             }
             if (in)
                 chooseFadeShape(layer.id, *in, *this, {event.x - 4, event.y - 4, 8, 8});
@@ -720,6 +744,8 @@ void DesignerCanvas::mouseExit(const juce::MouseEvent &)
     if (!pointerDown)
     {
         hover = {};
+        hoverFade.reset();
+        setMouseCursor(juce::MouseCursor::NormalCursor);
         feedback.clear();
         repaint();
     }
@@ -727,6 +753,15 @@ void DesignerCanvas::mouseExit(const juce::MouseEvent &)
 void DesignerCanvas::updateHover(juce::Point<float> point)
 {
     hover = canvasHitTest(session.document, viewport, point.x, point.y, modifiers.isShiftDown());
+    hoverFade.reset();
+    if (clipSelection && hover.target == CanvasTarget::body && !modifiers.isAltDown())
+    {
+        auto &layer = session.document.activeMix().layers[(size_t)hover.row];
+        if (session.selectedIds.contains(layer.id))
+            hoverFade =
+                fadeCurveAt(layer, clipGeometry(layer, hover.row, viewport, session.document.sampleRate),
+                            point, session.document.sampleRate, modifiers.isShiftDown());
+    }
     auto cursor = juce::MouseCursor::NormalCursor;
     if (hover.target == CanvasTarget::trimIn || hover.target == CanvasTarget::trimOut ||
         hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut ||
@@ -736,7 +771,7 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
         cursor = juce::MouseCursor::UpDownResizeCursor;
     if (hover.target == CanvasTarget::body || hover.target == CanvasTarget::header)
         cursor = juce::MouseCursor::DraggingHandCursor;
-    if (hover.target == CanvasTarget::fadeInPoint || hover.target == CanvasTarget::fadeOutPoint)
+    if (hoverFade || hover.target == CanvasTarget::fadeInPoint || hover.target == CanvasTarget::fadeOutPoint)
         cursor = juce::MouseCursor::CrosshairCursor;
     setMouseCursor(cursor);
     if (!pointerDown)
@@ -745,7 +780,9 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
         if (hover.row >= 0)
         {
             auto &layer = session.document.activeMix().layers[(size_t)hover.row];
-            if (hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut)
+            if (hoverFade)
+                feedback = "Double-click to add a fade point";
+            else if (hover.target == CanvasTarget::fadeIn || hover.target == CanvasTarget::fadeOut)
                 feedback = juce::String(hover.target == CanvasTarget::fadeIn ? "IN: " : "OUT: ") +
                            fadeShapeName(hover.target == CanvasTarget::fadeIn ? layer.fadeInShape
                                                                               : layer.fadeOutShape) +
@@ -779,23 +816,8 @@ void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
     {
         auto layer = session.document.activeMix().layers[(size_t)target.row];
         auto geometry = clipGeometry(layer, target.row, viewport, session.document.sampleRate);
-        std::optional<bool> fade;
-        float closest = 6;
-        for (bool in : {true, false})
-        {
-            auto path = layerFadePath(layer, geometry, in, session.document.sampleRate);
-            if (path.isEmpty())
-                continue;
-            juce::Point<float> nearest;
-            path.getNearestPoint(event.position, nearest);
-            auto distance = nearest.getDistanceFrom(event.position);
-            if (distance < closest ||
-                (event.mods.isShiftDown() && !in && distance < 6 && distance <= closest + .001f))
-            {
-                closest = distance;
-                fade = in;
-            }
-        }
+        auto fade = fadeCurveAt(layer, geometry, event.position, session.document.sampleRate,
+                                event.mods.isShiftDown());
         if (fade)
         {
             cancelDrag();
