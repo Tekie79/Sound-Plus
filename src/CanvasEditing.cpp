@@ -73,21 +73,17 @@ CanvasClipGeometry clipGeometry(const DesignLayer &layer, int row, const Timelin
     shape.clipBottom = top + height - 11;
     shape.centre = (shape.clipTop + shape.clipBottom) * .5f;
     shape.amplitude = (shape.clipBottom - shape.clipTop) * .37f;
-    shape.fadeInY = top + 10;
-    // Stagger the OUT grip vertically when both fades meet, including tiny clips.
-    shape.fadeOutY = shape.fadeInY + (std::abs(shape.fadeIn - shape.fadeOut) < 15 ? 17.f : 0.f);
+    // Use the centre of the clip's top border for both curve endpoints and marker tips.
+    shape.fadeInY = shape.fadeOutY = shape.clipTop + .75f;
     return shape;
 }
 juce::Rectangle<float> fadeHandleBounds(const CanvasClipGeometry &clip, bool in)
 {
-    // Keep the marker inside the visible clip, including a zero/full-length fade.
-    // Envelope timing still uses the exact endpoint; this is only its visual grip.
-    float clipWidth = std::max(2.f, clip.right - clip.left);
-    float inset = std::min(2.f, clipWidth * .2f);
-    float width = std::min(9.f, clipWidth - 2 * inset);
-    float x = std::clamp((in ? clip.fadeIn : clip.fadeOut) - width * .5f, clip.left + inset,
-                         clip.left + clipWidth - inset - width);
-    return {x, std::max(clip.clipTop + 2, (in ? clip.fadeInY : clip.fadeOutY) - 3.5f), width, 7.f};
+    auto tip = in ? clip.fadeIn : clip.fadeOut;
+    float leftRoom = std::max(0.f, tip - clip.left), rightRoom = std::max(0.f, clip.right - tip);
+    bool extendsLeft = in ? leftRoom >= std::min(9.f, rightRoom) : rightRoom < std::min(9.f, leftRoom);
+    float width = std::min(9.f, extendsLeft ? leftRoom : rightRoom);
+    return {extendsLeft ? tip - width : tip, clip.fadeInY, width, 7.f};
 }
 CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &view, float x, float y,
                         bool preferOut)
@@ -144,7 +140,8 @@ CanvasHit canvasHitTest(const DesignDocument &document, const TimelineViewport &
         bool out = outHandle.expanded(3).contains(x, y) ||
                    (std::abs(x - clip.fadeOut) <= 7 && std::abs(y - clip.fadeOutY) <= 7);
         if (in || out)
-            return {in && (!out || std::abs(x - clip.fadeIn) <= std::abs(x - clip.fadeOut))
+            return {in && (!out || (!preferOut && inHandle.getCentre().getDistanceFrom({x, y}) <=
+                                                      outHandle.getCentre().getDistanceFrom({x, y})))
                         ? CanvasTarget::fadeIn
                         : CanvasTarget::fadeOut,
                     row};

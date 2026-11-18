@@ -1,0 +1,35 @@
+Start testing: Nov 18 14:51 EST
+----------------------------------------------------------
+9/12 Testing: designer_canvas
+9/12 Test: designer_canvas
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--canvas-gestures" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-gesture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_canvas" start time: Nov 18 14:51 EST
+Output:
+----------------------------------------------------------
+PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1441 checks
+<end of output>
+Test time =   0.47 sec
+----------------------------------------------------------
+Test Passed.
+"designer_canvas" end time: Nov 18 14:51 EST
+"designer_canvas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+12/12 Testing: designer_fades
+12/12 Test: designer_fades
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-fades" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-fade-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_fades" start time: Nov 18 14:51 EST
+Output:
+----------------------------------------------------------
+PASS independent fade shapes, legacy recall, overlap, Undo/Redo and native/render parity: 1137 checks
+<end of output>
+Test time =   2.37 sec
+----------------------------------------------------------
+Test Passed.
+"designer_fades" end time: Nov 18 14:51 EST
+"designer_fades" time elapsed: 00:00:02
+----------------------------------------------------------
+
+End testing: Nov 18 14:51 EST

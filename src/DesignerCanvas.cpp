@@ -115,7 +115,8 @@ DesignerCanvas::DesignerCanvas(DesignSession &owner, Peaks provider, juce::Prope
 {
     setWantsKeyboardFocus(true);
     setTitle("Layer canvas. Double-click a fade curve to add a point; drag to reshape; Option-click removes. "
-             "Shift addresses OUT when points overlap. Right-click for presets. Option-body slips source. "
+             "Shift addresses OUT when handles or points overlap. Right-click for presets. Option-body slips "
+             "source. "
              "Control is fine; Command bypasses snapping.");
     restoredViewport = preferences.containsKey("timelineScale");
     viewport.startSeconds = preferences.getDoubleValue("timelineStart", 0);
@@ -396,8 +397,6 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
             for (bool in : {true, false})
             {
                 auto target = in ? CanvasTarget::fadeIn : CanvasTarget::fadeOut;
-                auto x = in ? shape.fadeIn : shape.fadeOut;
-                auto y = in ? shape.fadeInY : shape.fadeOutY;
                 auto accent = in ? ui::fadeInAccent : ui::fadeOutAccent;
                 auto curve = layerFadePath(layer, shape, in, rate);
                 bool curveHover = selectedClip && hover.row == (int)row && hoverFade && *hoverFade == in;
@@ -429,13 +428,13 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 }
                 graphics.setColour(hover.target == target && hover.row == (int)row ? juce::Colours::white
                                                                                    : accent);
-                if (!in && shape.fadeOutY != shape.fadeInY)
-                    graphics.drawLine(x, shape.fadeInY, x, y, 1.f);
                 auto handle = fadeHandleBounds(shape, in);
+                auto tip = in ? shape.fadeIn : shape.fadeOut;
+                bool tipOnRight = std::abs(handle.getRight() - tip) < .01f;
                 // Mirrored ramp markers distinguish duration grips from interior curve points.
                 auto edge = [&](float u, float v)
                 {
-                    return juce::Point<float>(handle.getX() + (in ? u : 1 - u) * handle.getWidth(),
+                    return juce::Point<float>(handle.getX() + (tipOnRight ? u : 1 - u) * handle.getWidth(),
                                               handle.getY() + v * handle.getHeight());
                 };
                 juce::Path marker;
@@ -444,8 +443,6 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
                 marker.lineTo(edge(1, 1));
                 marker.closeSubPath();
                 graphics.fillPath(marker);
-                graphics.setColour(ui::background.withAlpha(.6f));
-                graphics.strokePath(marker, juce::PathStrokeType(.65f));
             }
             juce::Path sync;
             sync.addTriangle(shape.sync - 5, shape.top + shape.height - 5, shape.sync + 5,
@@ -583,7 +580,8 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
         clipSelection = hit.target != CanvasTarget::header;
         session.beginGesture();
         auto id = original.activeMix().layers[(size_t)hit.row].id;
-        bool point = hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint;
+        bool point = hit.target == CanvasTarget::fadeInPoint || hit.target == CanvasTarget::fadeOutPoint ||
+                     hit.target == CanvasTarget::fadeIn || hit.target == CanvasTarget::fadeOut;
         if ((!point && event.mods.isShiftDown()) || !session.selectedIds.contains(id))
             session.selectLayer(id, !point && event.mods.isShiftDown());
         selection = session.selectedIds;

@@ -2,6 +2,8 @@
 
 Implemented from `181f388`, preserving the Lucide family, cached vector renderer, theme, spacing and shared Designer/audio architecture. The thin gain-line and fade insertion cue were checkpointed in `47fc85d`. No applicable AGENTS.md was found. This report records the supported Mac checks on 2026-11-18; it does **not** qualify Resolve delivery.
 
+The later [fade marker alignment correction](FADE_MARKER_ALIGNMENT.md) brings the marker tips and curve endpoints together at the clip border. The screenshots and test counts below record the preceding implementation.
+
 ## Local corrections: passed
 
 - [IconButton](../src/IconButton.h) defaults to a momentary action. Its icon no longer decides its accessibility role. Real stateful controls explicitly opt into toggle semantics at their construction sites in [DesignerView](../src/DesignerView.cpp), [track headers](../src/DesignerCanvas.cpp) and [Library](../src/LibraryView.cpp). Existing model-owned callbacks and `dontSendNotification` refreshes still own state; clicking does not automatically toggle it twice. Browser retains its existing stateful text control.

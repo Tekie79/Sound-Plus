@@ -176,7 +176,7 @@ void runCanvasGestureTests(const juce::File &parent)
     narrow.original.layers[0].region.endSample = 1;
     narrow.original.layers[0].sync = 0;
     auto narrowShape = sp::clipGeometry(narrow.original.layers[0], 0, viewport, 48000);
-    check(sp::canvasHitTest(narrow, viewport, narrowShape.right, narrowShape.fadeOutY).target ==
+    check(sp::canvasHitTest(narrow, viewport, narrowShape.right, narrowShape.fadeOutY, true).target ==
               sp::CanvasTarget::fadeOut,
           "Narrow clips retain an independently reachable OUT grip");
     for (auto fades : {std::pair<int64_t, int64_t>{0, 0}, {48000, 48000}, {96000, 0}, {0, 96000}})
@@ -187,19 +187,23 @@ void runCanvasGestureTests(const juce::File &parent)
         auto g = sp::clipGeometry(overlap.original.layers[0], 0, viewport, 48000);
         auto clipBounds =
             juce::Rectangle<float>(g.left, g.clipTop, g.right - g.left, g.clipBottom - g.clipTop);
+        check(g.fadeInY >= g.clipTop && g.fadeInY <= g.clipTop + 1.5f && g.fadeOutY == g.fadeInY,
+              "Both upper curve endpoints meet the top border, including coincident fades");
         for (bool in : {true, false})
         {
             auto marker = sp::fadeHandleBounds(g, in);
             auto centre = marker.getCentre();
-            check(clipBounds.reduced(.5f).contains(marker) &&
-                      sp::canvasHitTest(overlap, viewport, centre.x, centre.y).target ==
+            auto tip = in ? g.fadeIn : g.fadeOut;
+            check(clipBounds.contains(marker) && marker.getY() == g.fadeInY &&
+                      (std::abs(marker.getX() - tip) < .01f || std::abs(marker.getRight() - tip) < .01f) &&
+                      sp::canvasHitTest(overlap, viewport, centre.x, centre.y, !in).target ==
                           (in ? sp::CanvasTarget::fadeIn : sp::CanvasTarget::fadeOut),
-                  "Zero, full and overlapping fade markers stay inside the border and hit their own grip");
+                  "Fade marker tips align with curve endpoints at the border and remain reachable");
         }
         check(sp::canvasHitTest(overlap, viewport, g.fadeIn, g.fadeInY).target == sp::CanvasTarget::fadeIn &&
-                  sp::canvasHitTest(overlap, viewport, g.fadeOut, g.fadeOutY).target ==
+                  sp::canvasHitTest(overlap, viewport, g.fadeOut, g.fadeOutY, true).target ==
                       sp::CanvasTarget::fadeOut,
-              "Both coincident fade handles have separate painted and hit-test positions");
+              "Coincident endpoints retain IN and Shift-OUT hit targets without a vertical gap");
     }
     for (float width : {280.f, 700.f, 2200.f})
     {
@@ -380,12 +384,14 @@ void runCanvasGestureTests(const juce::File &parent)
     {
         auto from = sp::fadeHandleBounds(coincident, in).getCentre();
         auto to = from + juce::Point<float>(10, 0);
-        canvas.mouseDown(pointer(canvas, from, from));
-        canvas.mouseDrag(pointer(canvas, to, from));
-        canvas.mouseUp(pointer(canvas, to, from));
+        juce::ModifierKeys chooseFade(in ? 0 : juce::ModifierKeys::shiftModifier);
+        canvas.mouseDown(pointer(canvas, from, from, chooseFade));
+        canvas.mouseDrag(pointer(canvas, to, from, chooseFade));
+        canvas.mouseUp(pointer(canvas, to, from, chooseFade));
         auto &layer = session.document.original.layers[0];
         check((in ? layer.fadeIn == 57600 && layer.fadeOut == 48000
-                  : layer.fadeOut == 38400 && layer.fadeIn == 48000),
+                  : layer.fadeOut == 38400 && layer.fadeIn == 48000) &&
+                  session.selectedIds.contains(a.id),
               "Real pointer handlers independently edit both coincident fade handles");
         session.undo();
     }
