@@ -62,9 +62,12 @@ class FileDragButton : public IconButton
     }
     juce::File file;
     std::function<juce::File()> resolveFile;
+    std::function<juce::StringArray()> resolveFiles;
+    juce::StringArray files;
     void mouseDown(const juce::MouseEvent &e) override
     {
         if (resolveFile) file = resolveFile();
+        files = resolveFiles ? resolveFiles() : juce::StringArray{file.getFullPathName()};
         started = false;
         tracedDrag = false;
         trace("mouse-down", e.getDistanceFromDragStart());
@@ -77,7 +80,9 @@ class FileDragButton : public IconButton
             trace("mouse-drag", e.getDistanceFromDragStart());
             tracedDrag = true;
         }
-        if (!started && isEnabled() && file != juce::File() && file.existsAsFile() && e.getDistanceFromDragStart() > 5)
+        if (!started && isEnabled() && !files.isEmpty() && file != juce::File() && file.existsAsFile() &&
+            std::all_of(files.begin(), files.end(), [](auto &p) { return juce::File(p).existsAsFile(); }) &&
+            e.getDistanceFromDragStart() > 5)
         {
             std::function<void()> ended;
             if (traceFile != juce::File())
@@ -89,8 +94,8 @@ class FileDragButton : public IconButton
                         safe->trace("native-ended", 0);
                 };
             }
-            started = juce::DragAndDropContainer::performExternalDragDropOfFiles(
-                {file.getFullPathName()}, false, this, std::move(ended));
+            started = juce::DragAndDropContainer::performExternalDragDropOfFiles(files, false, this,
+                                                                                 std::move(ended));
             trace(started ? "native-started" : "native-start-failed", e.getDistanceFromDragStart());
         }
     }

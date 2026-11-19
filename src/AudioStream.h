@@ -12,7 +12,7 @@ class PcmStream
 {
   public:
     PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1,
-              int auditionPair = 0);
+              int auditionPair = 0, ChannelLayout interpretation = {});
     PcmStream(
         const DesignDocument &, double outputRate, int64_t first, const juce::File &capture = {},
         const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1, int64_t last = -1,
@@ -45,7 +45,17 @@ class PcmStream
     void discardTo(int64_t sourceFrame);
     std::atomic<uint64_t> heardEdit{0};
     std::atomic<double> editLatencyMs{0};
-    int read(float *const *output, int channels, int frames, float &gain, float targetGain) noexcept;
+    int read(float *const *output, int channels, int frames, float &gain, float targetGain,
+             const std::array<std::atomic<int>, 16> *mapping = nullptr, int solo = -1) noexcept;
+    int channelCount() const
+    {
+        return pcmChannels;
+    }
+    ChannelLayout layout() const
+    {
+        return busLayout;
+    }
+    std::array<std::atomic<float>, 16> channelPeaks{};
     double seconds() const
     {
         return (double)sourceStart / sourceRate + (double)readIndex.load() / rate;
@@ -103,7 +113,10 @@ class PcmStream
 
   private:
     static constexpr uint64_t capacity = 131072;
-    std::array<std::array<float, capacity>, 2> pcm{};
+    std::vector<std::vector<float>> pcm;
+    int pcmChannels = 2;
+    ChannelLayout busLayout;
+    ChannelMatrix monitor{};
     std::atomic<uint64_t> readIndex{0}, writeIndex{0};
     std::array<uint64_t, capacity> editTags{};
     std::array<double, capacity> editEvents{};
@@ -122,12 +135,28 @@ class PcmStream
     std::unique_ptr<DesignReader> designReader;
     juce::AudioBuffer<float> designBlock{2, 4096};
     std::unique_ptr<juce::FileOutputStream> capture;
-    std::array<float, 8192> captureData{};
+    std::vector<float> captureData;
     double maxFillMs = 0;
 };
 class AuditionCore
 {
   public:
+    AuditionCore()
+    {
+        for (auto &m : monitorMapping)
+            m = -2;
+    }
+    std::array<std::atomic<int>, 16> monitorMapping;
+    std::atomic<int> monitorSolo{-1};
+    std::array<std::atomic<float>, 16> channelPeaks{};
+    int channelCount() const
+    {
+        return stream ? stream->channelCount() : 0;
+    }
+    ChannelLayout layout() const
+    {
+        return stream ? stream->layout() : ChannelLayout{};
+    }
     void open(const juce::File &, double sampleRate, int64_t startSample = 0, int64_t endSample = -1,
               int auditionPair = 0);
     void openDesign(const DesignDocument &, double sampleRate, int64_t first = 0,
@@ -225,7 +254,7 @@ class AuditionCore
     std::atomic<PcmStream *> active{nullptr}, hazard{nullptr};
     float gain = 0.7f; // Callback-owned, smoothed monitor gain.
     PcmStream *lastRendered = nullptr;
-    std::array<float, 2> lastOut{}, transitionTail{};
+    std::array<float, 16> lastOut{}, transitionTail{};
     int transitionFrame = 240;
 };
 } // namespace sp

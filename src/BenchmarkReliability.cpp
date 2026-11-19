@@ -4,6 +4,7 @@
 #include "DesignLive.h"
 #include "Performance.h"
 #include "LibraryLayout.h"
+#include "ChannelDetails.h"
 #include <cmath>
 namespace sp
 {
@@ -214,7 +215,47 @@ void Benchmark::reliabilityTick(double now)
             session.selectTake(id);
         }
         else
+        {
             designer->preparePerformanceBenchmark();
+            if (plan["designLayout"].toString().isNotEmpty())
+                designer->session.edit(
+                    "Prepare owned multichannel workload",
+                    [&](auto &d)
+                    {
+                        setMixLayout(d.activeMix(), channelLayout(plan["designLayout"].toString()));
+                        d.renderSettings.layout = "same";
+                        if (plan["detailSource"].toString().isNotEmpty() && !d.activeMix().layers.empty())
+                        {
+                            auto &l = d.activeMix().layers.front();
+                            l.source = inspectDesignSource(juce::File(plan["detailSource"].toString()));
+                            l.external = true;
+                            l.region.startSample = 0;
+                            l.region.endSample = l.source.samples;
+                            l.sync = 0;
+                            l.placement = 0;
+                            initialiseRouting(l, d.activeMix().layout);
+                        }
+                        auto &focus = d.activeMix().performance.macros[1];
+                        focus.mappings.clear();
+                        focus.name = "Focus";
+                        addMacroMapping(d.activeMix(), 1,
+                                        {{d.activeMix().layers[5].id, {}, "gain"}, -30, -6, "linear", false});
+                        for (auto &l : d.activeMix().layers)
+                            if (l.routing.inputs.size() <= 2)
+                                l.routing.spatial = true;
+                    });
+        }
+        if ((bool)plan["channelDetails"])
+        {
+            auto &m = designer->session.performanceMix();
+            if (!m.layers.empty())
+            {
+                auto &l = m.layers.front();
+                showChannelDetails(*designer, {20, 250, 1, 1}, view.peakPool, l.source,
+                                   l.routing.interpretation, l.routing.inputs, 5, l.region.startSample,
+                                   l.region.endSample, l.reverse);
+            }
+        }
         designer->session.seek(0);
         if ((bool)plan["recordTake"])
             designer->session.recordTake();
@@ -310,6 +351,7 @@ void Benchmark::reliabilityTick(double now)
                 [&](auto &d) { d.renderSettings.tailSeconds = r.replayMetadataEdits % 2 ? .5 : 1; });
         }
         else if ((bool)plan["recordTake"])
+        {
             designer->session.edit("Blend position",
                                    [&](auto &d)
                                    {
@@ -322,6 +364,23 @@ void Benchmark::reliabilityTick(double now)
                                            p.macros[(size_t)i].enabled = ((int)(elapsed / 500) + i) % 4 != 0;
                                        }
                                    });
+            if (plan["designLayout"].toString().isNotEmpty())
+                designer->session.edit("Spatial motion",
+                                       [&](auto &d)
+                                       {
+                                           for (size_t i = 0; i < d.activeMix().layers.size(); ++i)
+                                           {
+                                               auto &l = d.activeMix().layers[i];
+                                               if (l.routing.spatial)
+                                               {
+                                                   l.routing.azimuth = 170 * std::sin(elapsed * .0006 + i);
+                                                   if (l.routing.inputs.size() == 2)
+                                                       l.routing.width =
+                                                           90 + 80 * std::sin(elapsed * .0005 + i);
+                                               }
+                                           }
+                                       });
+        }
         else
             designer->benchmarkPerformance(1, .5 + .3 * std::sin(elapsed * .001));
         r.lastControl = now;

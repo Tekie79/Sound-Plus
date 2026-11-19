@@ -81,6 +81,21 @@ juce::var controlsToJson(const PerformControls &c)
     }
     put(o, "macros", m);
     put(o, "enabled", e);
+    if (c.spatialCount)
+    {
+        put(o, "eventContract", "source-blend-spatial-v1");
+        juce::Array<juce::var> a;
+        for (int i = 0; i < c.spatialCount; ++i)
+        {
+            auto v = obj();
+            auto *p = v.getDynamicObject();
+            p->setProperty("targetLayerIndex", c.spatial[(size_t)i].layer);
+            p->setProperty("azimuth", c.spatial[(size_t)i].azimuth);
+            p->setProperty("width", c.spatial[(size_t)i].width);
+            a.add(v);
+        }
+        put(o, "spatial", a);
+    }
     return o;
 }
 PerformControls controlsFromJson(const juce::var &o)
@@ -104,6 +119,22 @@ PerformControls controlsFromJson(const juce::var &o)
         c.macros[(size_t)i] = (double)(*m)[i];
         c.enabled[(size_t)i] = (bool)(*e)[i];
         bound(c.macros[(size_t)i]);
+    }
+    if (o.hasProperty("eventContract"))
+    {
+        auto *a = o["spatial"].getArray();
+        if (o["eventContract"].toString() != "source-blend-spatial-v1" || !a || a->size() > 16)
+            throw std::runtime_error("Unsupported spatial event contract");
+        int last = -1;
+        for (auto &v : *a)
+        {
+            auto x = SpatialValue{(int)v["targetLayerIndex"], (double)v["azimuth"], (double)v["width"]};
+            if (x.layer <= last || x.layer >= 64 || !std::isfinite(x.azimuth) || x.azimuth < -180 ||
+                x.azimuth > 180 || !std::isfinite(x.width) || x.width < 0 || x.width > 360)
+                throw std::runtime_error("Invalid spatial target/value");
+            last = x.layer;
+            c.spatial[(size_t)c.spatialCount++] = x;
+        }
     }
     return c;
 }
@@ -190,7 +221,8 @@ void hashTake(PerformTake &t)
 }
 void validateTake(const PerformTake &t)
 {
-    if (t.id.isEmpty() || t.session.isEmpty() || t.processing != "stock-takes-v1" ||
+    if (t.id.isEmpty() || t.session.isEmpty() ||
+        (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -199,6 +231,8 @@ void validateTake(const PerformTake &t)
     if (t.complete &&
         t.bodyEnd != (int64_t)std::ceil((long double)(t.outputFrames - 1) * t.sampleRate / t.captureRate) + 1)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
+    if ((t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
+        throw std::runtime_error("Take layout processing contract mismatch");
     DesignDocument d;
     d.sampleRate = t.sampleRate;
     d.original = t.recipe;
@@ -211,6 +245,8 @@ void validateTake(const PerformTake &t)
             e.sequence != sequence + 1 || e.generation != t.generation)
             throw std::runtime_error("Lost or invalid take event sequence");
         controlsFromJson(controlsToJson(e.controls));
+        auto controlMix = (const DesignMix &)t.recipe;
+        applyMixControls(controlMix, e.controls);
         frame = e.frame;
         sequence = e.sequence;
     }
@@ -232,6 +268,8 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     t.name = name;
     t.session = d.id;
     t.recipe = d.activeMix();
+    if (!d.activeMix().layout.id.isEmpty())
+        t.processing = "stock-layout-takes-v1";
     t.sampleRate = d.sampleRate;
     t.captureRate = d.sampleRate;
     t.reason = "Interrupted draft";
@@ -291,6 +329,9 @@ DesignDocument takeDocument(const DesignDocument &d)
                 auto a = inspectDesignSource(juce::File(s.overridePath));
                 a.id = l.source.id;
                 a.revision = l.source.revision;
+                a.detectedChannels = l.source.detectedChannels;
+                a.layoutConfidence = l.source.layoutConfidence;
+                a.layoutOverride = l.source.layoutOverride;
                 l.source = a;
             }
     result.takeProcessing = true;

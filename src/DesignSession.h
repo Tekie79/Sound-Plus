@@ -61,6 +61,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void edit(const juce::String &, const std::function<void(DesignDocument &)> &,
               ChangeImpact = ChangeImpact::audio);
     juce::File readyOutput();
+    juce::StringArray readyFiles();
+    void chooseOutput(const juce::String &path);
     void editMetadata(const juce::String &label, const std::function<void(DesignDocument &)> &change)
     {
         edit(label, change, ChangeImpact::metadata);
@@ -131,6 +133,7 @@ class DesignSession final : public juce::Component, private juce::Timer
 
   private:
     friend struct TakeIntegrityTestAccess;
+    friend struct LayoutViewTestAccess;
     enum class Operation
     {
         save,

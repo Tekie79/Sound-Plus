@@ -145,7 +145,8 @@ std::vector<PerformanceTargetInfo> performanceTargets(const DesignMix &mix)
     {
         auto name = performanceLayerName(mix, l);
         result.push_back({{l.id, {}, "gain"}, name + " · Gain", "dB", -90, 24, false});
-        result.push_back({{l.id, {}, "pan"}, name + " · Balance", "", -1, 1, false});
+        if (simplePanAvailable(mix, l))
+            result.push_back({{l.id, {}, "pan"}, name + " · Balance", "", -1, 1, false});
         rack(l.effects, l.id, name);
     }
     result.push_back({{{}, {}, "masterGain"}, "Master · Gain", "dB", -90, 24, false});
@@ -176,7 +177,7 @@ double *performanceTargetValue(DesignMix &mix, const PerformanceTarget &t)
         if (t.parameter == "gain")
             return &layer->gainDb;
         if (t.parameter == "pan")
-            return &layer->pan;
+            return simplePanAvailable(mix, *layer) ? &layer->pan : nullptr;
         return nullptr;
     }
     auto &rack = layer ? layer->effects : mix.masterEffects;

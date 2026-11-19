@@ -131,7 +131,12 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
             else
             {
             directory.createDirectory();
-            auto cache = directory.getChildFile(a.id + "-" + juce::String(a.revision) + "-peaks-v1.bin");
+            auto cache = directory.getChildFile(
+                a.id + "-" + juce::String(a.revision) +
+                (a.waveformChannel < 0 ? "-peaks-v1"
+                                       : "-detail-v2-" + juce::String(a.waveformChannel) + "-" +
+                                             juce::String::toHexString(a.waveformLayoutKey.hashCode64())) +
+                ".bin");
             if (cache.existsAsFile() && cache.getSize() <= 600000)
             {
                 auto in = cache.createInputStream();
@@ -172,8 +177,11 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                     throw std::runtime_error("Cannot decode waveform");
                 if (reader->lengthInSamples != a.samples || reader->sampleRate != a.sampleRate)
                     throw std::runtime_error("Recording changed; refresh before preparing its waveform");
-                auto count = (int)std::min<int64_t>(
-                    65536, std::max<int64_t>(1, a.samples / 256 + (a.samples % 256 != 0)));
+                if (a.waveformChannel >= (int)reader->numChannels)
+                    throw std::runtime_error("Waveform channel unavailable");
+                auto count =
+                    (int)std::min<int64_t>(a.waveformChannel >= 0 ? 2048 : 65536,
+                                           std::max<int64_t>(1, a.samples / 256 + (a.samples % 256 != 0)));
                 double binScale = (double)count / a.samples;
                 data->peaks.assign((size_t)count,
                                    {std::numeric_limits<float>::max(), -std::numeric_limits<float>::max()});
@@ -193,6 +201,8 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                         auto bin = (size_t)std::min<int64_t>(count - 1, (int64_t)((at + j) * binScale));
                         for (int c = 0; c < block.getNumChannels(); ++c)
                         {
+                            if (a.waveformChannel >= 0 && c != a.waveformChannel)
+                                continue;
                             float value = block.getSample(c, j);
                             if (!std::isfinite(value))
                                 value = 0;

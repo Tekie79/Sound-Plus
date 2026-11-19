@@ -68,6 +68,8 @@ struct LibraryService::Impl
         FileStamp stamp;
         double seconds = 0, rate = 0;
         int channels = 0;
+        ChannelLayout layout;
+        juce::String confidence;
         juce::String error;
         int64_t samples = 0;
     };
@@ -118,6 +120,13 @@ struct LibraryService::Impl
     std::mutex mutex;
     std::condition_variable wake;
     std::vector<juce::File> additions;
+    struct LayoutEdit
+    {
+        juce::String id;
+        int64_t revision;
+        ChannelLayout layout;
+    };
+    std::vector<LayoutEdit> layoutEdits;
     std::deque<Job> jobs;
     std::deque<Batch> batches;
     bool requestedRescan = false;
@@ -246,6 +255,8 @@ struct LibraryService::Impl
             h.rate = audio->sampleRate;
             h.channels = (int)audio->numChannels;
             h.samples = audio->lengthInSamples;
+            h.layout = detectedLayout(*audio);
+            h.confidence = detectedLayoutConfidence(*audio);
         }
         else
             h.error = "Unsupported codec, empty or unreadable audio. Rescan to retry.";
@@ -952,14 +963,21 @@ struct LibraryService::Impl
             while (!stopping)
             {
                 std::vector<juce::File> added;
+                std::vector<LayoutEdit> edits;
                 std::deque<Batch> ready;
                 bool rescan = false;
                 {
                     std::lock_guard lock(mutex);
                     added.swap(additions);
+                    edits.swap(layoutEdits);
                     ready.swap(batches);
                     rescan = std::exchange(requestedRescan, false);
                     wake.notify_all();
+                }
+                for (auto &edit : edits)
+                {
+                    db.setLayoutOverride(edit.id, edit.revision, edit.layout);
+                    publish();
                 }
                 for (auto &file : added)
                 {
@@ -1040,6 +1058,8 @@ struct LibraryService::Impl
                         auto a = db.existing(b.root.id, h.relative);
                         if (a.id.isNotEmpty() && same(stampOf(a), h.stamp))
                         {
+                            a.detectedChannels = h.layout;
+                            a.layoutConfidence = h.confidence;
                             db.metadata(a, h.seconds, h.channels, h.rate, h.error,h.samples);
                             if (aiLoaded) db.seedAnalysis(modelId(),preprocessingId(),a.id);
                         }
@@ -1189,9 +1209,11 @@ struct LibraryService::Impl
                     lastStatus = now;
                 }
                 std::unique_lock lock(mutex);
-                wake.wait_for(
-                    lock, std::chrono::milliseconds(10),
-                    [&] { return stopping || !batches.empty() || !additions.empty() || requestedRescan; });
+                wake.wait_for(lock, std::chrono::milliseconds(10),
+                              [&] {
+                                  return stopping || !batches.empty() || !additions.empty() ||
+                                         !layoutEdits.empty() || requestedRescan;
+                              });
             }
         }
         catch (const std::exception &error)
@@ -1429,6 +1451,13 @@ void LibraryService::addFolder(const juce::File &f)
         std::lock_guard lock(impl->mutex);
         impl->additions.push_back(f);
     }
+    impl->wake.notify_all();
+}
+void LibraryService::setLayoutOverride(const Asset &asset, const ChannelLayout &layout)
+{
+    std::lock_guard lock(impl->mutex);
+    if (impl->layoutEdits.size() < 64)
+        impl->layoutEdits.push_back({asset.id, asset.revision, layout});
     impl->wake.notify_all();
 }
 void LibraryService::rescan()

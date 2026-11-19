@@ -7,9 +7,13 @@ namespace sp
 static_assert(std::atomic<PcmStream *>::is_always_lock_free);
 static_assert(std::atomic<int64_t>::is_always_lock_free);
 static_assert(std::atomic<float>::is_always_lock_free);
-PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, int64_t last, int auditionPair)
+PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, int64_t last, int auditionPair,
+                     ChannelLayout interpretation)
     : rate(outputRate), pair(auditionPair)
 {
+    pcm.resize(2, std::vector<float>(capacity));
+    busLayout = channelLayout("stereo-v1");
+    monitor[0][0] = monitor[1][1] = 1;
     formats.registerBasicFormats();
     reader.reset(formats.createReaderFor(file));
     if (!reader || reader->sampleRate <= 0 || reader->lengthInSamples <= 0)
@@ -17,9 +21,32 @@ PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, i
     if (rate <= 0)
         throw std::runtime_error("No audio output device");
     sourceRate = reader->sampleRate;
-    if (reader->numChannels == 0 || reader->numChannels > 64 || pair < -1 || pair >= 32 ||
+    if (reader->numChannels == 0 || reader->numChannels > 64 || pair < -2 || pair >= 32 ||
         (pair >= 0 && pair * 2 >= (int)reader->numChannels))
         throw std::runtime_error("Audition channel pair is unavailable for this recording");
+    if (pair == -2)
+    {
+        if (reader->numChannels > 16)
+            throw std::runtime_error("Full source monitor supports1–16 channels; select an explicit pair");
+        busLayout = interpretation.id.isEmpty() ? detectedLayout(*reader) : interpretation;
+        validateLayout(busLayout);
+        if (busLayout.size() != (int)reader->numChannels)
+            throw std::runtime_error("Source interpretation count mismatch");
+        if (busLayout.id.startsWith("unknown-"))
+            throw std::runtime_error(
+                "Unknown layout: assign a source interpretation or choose an audition pair");
+        pcmChannels = (int)reader->numChannels;
+        pcm.assign((size_t)pcmChannels, std::vector<float>(capacity));
+        monitor = {};
+        if (busLayout.id.startsWith("discrete-"))
+        {
+            monitor[0][0] = 1;
+            if (pcmChannels > 1)
+                monitor[1][1] = 1;
+        }
+        else
+            monitor = conversionMatrix(busLayout, channelLayout("stereo-v1"));
+    }
     cache.setSize((int)reader->numChannels, 8192);
     sourceStart = first;
     sourceEnd = last < 0 ? reader->lengthInSamples : std::min(last, reader->lengthInSamples);
@@ -36,6 +63,19 @@ PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, 
         d, outputRate, first, last, grain ? 0 : d.renderSettings.tailSeconds, cancelled, warmup);
     if (auto *t = selectedTake(d))
         sourceRate = t->sampleRate;
+    pcmChannels = designChannels(d);
+    busLayout = designLayout(d);
+    pcm.resize((size_t)pcmChannels, std::vector<float>(capacity));
+    designBlock.setSize(pcmChannels, 4096);
+    captureData.resize((size_t)pcmChannels * 4096);
+    if (busLayout.id.startsWith("discrete-") || busLayout.id.startsWith("unknown-"))
+    {
+        monitor[0][0] = 1;
+        if (pcmChannels > 1)
+            monitor[1][1] = 1;
+    }
+    else
+        monitor = conversionMatrix(busLayout, channelLayout("stereo-v1"));
     previewGrain = grain;
     sourceEnd = designReader->endFrame();
     ratio = sourceRate / rate;
@@ -64,7 +104,7 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
             if (n <= 0)
                 break;
             for (int i = 0; i < n; ++i, ++write)
-                for (int c = 0; c < 2; ++c)
+                for (int c = 0; c < pcmChannels; ++c)
                 {
                     auto v = designBlock.getSample(c, i);
                     if (previewGrain)
@@ -77,9 +117,9 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
                     editTags[write % capacity] = editSequence;
                     editEvents[write % capacity] = editEvent;
                     if (capture)
-                        captureData[(size_t)i * 2 + c] = v;
+                        captureData[(size_t)i * pcmChannels + c] = v;
                 }
-            if (capture && !capture->write(captureData.data(), (size_t)n * 2 * sizeof(float)))
+            if (capture && !capture->write(captureData.data(), (size_t)n * pcmChannels * sizeof(float)))
                 throw std::runtime_error("Preview capture write failed");
             outputFrame += n;
             count -= n;
@@ -115,10 +155,12 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
         }
         const int local = (int)(i - cacheStart);
         const auto fraction = (float)(pos - (double)i);
-        for (int c = 0; c < 2; ++c)
+        for (int c = 0; c < pcmChannels; ++c)
         {
             auto valueAt = [&](int at)
             {
+                if (pair == -2)
+                    return cache.getSample(c, at);
                 if (pair >= 0)
                     return cache.getSample(std::min((int)reader->numChannels - 1, pair * 2 + c), at);
                 double sum = 0;
@@ -138,12 +180,14 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
         eof.store(true, std::memory_order_release);
     maxFillMs = std::max(maxFillMs, monotonicMs() - began);
 }
-int PcmStream::read(float *const *output, int channels, int frames, float &gain, float target) noexcept
+int PcmStream::read(float *const *output, int channels, int frames, float &gain, float target,
+                    const std::array<std::atomic<int>, 16> *mapping, int solo) noexcept
 {
     auto read = readIndex.load(std::memory_order_relaxed);
     const int count =
         (int)std::min<uint64_t>((uint64_t)frames, writeIndex.load(std::memory_order_acquire) - read);
     float rawPeak = 0;
+    std::array<float, 16> peaks{};
     for (int i = 0; i < count; ++i, ++read)
     {
         auto tag = editTags[read % capacity];
@@ -153,16 +197,30 @@ int PcmStream::read(float *const *output, int channels, int frames, float &gain,
             heardEdit.store(tag);
         }
         gain += (target - gain) * 0.002f;
+        for (int k = 0; k < pcmChannels; ++k)
+        {
+            auto v = std::abs(pcm[(size_t)k][read % capacity]);
+            peaks[k] = std::max(peaks[k], v);
+            rawPeak = std::max(rawPeak, v);
+        }
         for (int c = 0; c < channels; ++c)
             if (output[c])
             {
-                auto raw = pcm[(size_t)std::min(c, 1)][read % capacity];
-                rawPeak = std::max(rawPeak, std::abs(raw));
-                output[c][i] = raw * gain;
+                float value = 0;
+                int assignment = mapping && c < 16 ? (*mapping)[c].load(std::memory_order_relaxed) : -2;
+                if (assignment >= 0 && assignment < pcmChannels && (solo < 0 || solo == assignment))
+                    value = pcm[(size_t)assignment][read % capacity];
+                else if (assignment == -2 && c < 2)
+                    for (int k = 0; k < pcmChannels; ++k)
+                        if (solo < 0 || solo == k)
+                            value += pcm[(size_t)k][read % capacity] * monitor[c][k];
+                output[c][i] = value * gain;
             }
     }
     readIndex.store(read, std::memory_order_release);
     preMonitorPeak.store(rawPeak, std::memory_order_relaxed);
+    for (int c = 0; c < 16; ++c)
+        channelPeaks[c].store(peaks[c], std::memory_order_relaxed);
     return count;
 }
 void PcmStream::updateParameters(const juce::var &parameters, uint64_t sequence, double event)
@@ -252,12 +310,17 @@ void AuditionCore::render(float *const *out, int channels, int frames) noexcept
     hazard.store(p);
     if (p && active.load() == p)
     {
-        const int read = p->read(out, channels, frames, gain, volume.load(std::memory_order_relaxed));
+        const int read = p->read(out, channels, frames, gain, volume.load(std::memory_order_relaxed),
+                                 p->isDesign() ? &monitorMapping : nullptr,
+                                 p->isDesign() ? monitorSolo.load(std::memory_order_relaxed) : -1);
         if (read > 0 && p->firstCallbackMs.load(std::memory_order_relaxed) == 0)
             p->firstCallbackMs.store(monotonicMs(), std::memory_order_relaxed);
         if (read < frames && !p->ended())
             underruns.fetch_add(1, std::memory_order_relaxed);
         preMonitorPeak.store(p->preMonitorPeak.load(std::memory_order_relaxed), std::memory_order_relaxed);
+        for (int c = 0; c < 16; ++c)
+            channelPeaks[c].store(p->channelPeaks[c].load(std::memory_order_relaxed),
+                                  std::memory_order_relaxed);
     }
     else
         preMonitorPeak.store(0, std::memory_order_relaxed);
@@ -273,10 +336,10 @@ void AuditionCore::render(float *const *out, int channels, int frames) noexcept
         if (transitionFrame < 240)
             ++transitionFrame;
         float blend = (float)transitionFrame / 240;
-        for (int c = 0; c < channels; ++c)
+        for (int c = 0; c < std::min(channels, 16); ++c)
             if (out[c])
             {
-                auto channel = (size_t)std::min(c, 1);
+                auto channel = (size_t)std::min(c, 15);
                 out[c][i] = out[c][i] * blend + transitionTail[channel] * (1 - blend);
                 lastOut[channel] = out[c][i];
             }

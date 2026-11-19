@@ -80,10 +80,27 @@ Asset readAsset(Statement &s)
     a.online = s.integer(13) != 0;
     a.path = juce::File(s.str(14)).getChildFile(a.relative).getFullPathName();
     a.samples = s.integer(15);
+    auto layout = s.str(16);
+    if (layout.isNotEmpty())
+    {
+        auto v = juce::JSON::parse(layout);
+        a.detectedChannels = layoutFromJson(v["layout"]);
+        a.layoutConfidence = v["confidence"].toString();
+    }
+    else if (a.channels > 0)
+    {
+        a.detectedChannels = a.channels <= 2 ? channelLayout(a.channels == 1 ? "mono-v1" : "stereo-v1")
+                                             : discreteLayout(a.channels, true);
+        a.layoutConfidence = "unknown";
+    }
+    auto overrideText = s.str(17);
+    if (overrideText.isNotEmpty())
+        a.layoutOverride = layoutFromJson(juce::JSON::parse(overrideText));
     return a;
 }
 constexpr auto columns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.inode,a.revision,"
-                         "a.duration,a.channels,a.sample_rate,a.state,a.error,(a.online AND r.online),r.path,a.samples";
+                         "a.duration,a.channels,a.sample_rate,a.state,a.error,(a.online AND "
+                         "r.online),r.path,a.samples,a.channel_layout,a.layout_override";
 } // namespace
 
 bool fileStamp(const juce::File &f, FileStamp &out)
@@ -124,7 +141,7 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
             version.step();
             schemaVersion = version.integer(0);
         }
-        if (schemaVersion > 4)
+        if (schemaVersion > 6)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         exec(R"SQL(BEGIN IMMEDIATE;
           CREATE TABLE IF NOT EXISTS roots(id TEXT PRIMARY KEY,path TEXT UNIQUE NOT NULL,volume TEXT NOT NULL,
@@ -241,6 +258,13 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
               PRAGMA user_version=4;COMMIT;
             )SQL");
         }
+        if (schemaVersion < 5)
+            exec("BEGIN IMMEDIATE;ALTER TABLE assets ADD COLUMN channel_layout TEXT NOT NULL DEFAULT "
+                 "'';UPDATE assets SET state='pending' WHERE state='ready' AND channels>2;PRAGMA "
+                 "user_version=5;COMMIT;");
+        if (schemaVersion < 6)
+            exec("BEGIN IMMEDIATE;ALTER TABLE assets ADD COLUMN layout_override TEXT NOT NULL DEFAULT "
+                 "'';PRAGMA user_version=6;COMMIT;");
     }
     catch (...)
     {
@@ -474,20 +498,48 @@ std::vector<Asset> Catalog::pending(int limit)
         v.push_back(readAsset(s));
     return v;
 }
+bool Catalog::setLayoutOverride(const juce::String &id, int64_t revision, const ChannelLayout &layout)
+{
+    auto a = asset(id);
+    if (a.id.isEmpty() || a.revision != revision)
+        return false;
+    if (layout.id.isNotEmpty())
+    {
+        validateLayout(layout, 64);
+        if (layout.size() != a.channels)
+            return false;
+    }
+    Statement s(db, "UPDATE assets SET layout_override=? WHERE id=? AND revision=?");
+    s.bind(1, layout.id.isEmpty() ? juce::String() : juce::JSON::toString(layoutJson(layout), true));
+    s.bind(2, id);
+    s.bind(3, revision);
+    s.step();
+    return true;
+}
 void Catalog::metadata(const Asset &a, double duration, int channels, double rate, const juce::String &error,
                        int64_t sourceSamples)
 {
-    Statement s(db, "UPDATE assets SET duration=?,channels=?,sample_rate=?,state=?,error=?,samples=? WHERE id=? AND "
-                    "revision=? AND modified=?");
+    Statement s(
+        db, "UPDATE assets SET "
+            "duration=?,channels=?,sample_rate=?,state=?,error=?,samples=?,channel_layout=? WHERE id=? AND "
+            "revision=? AND modified=?");
     sqlite3_bind_double(s.s, 1, duration);
     s.bind(2, (int64_t)channels);
     sqlite3_bind_double(s.s, 3, rate);
     s.bind(4, error.isEmpty() ? "ready" : "failed");
     s.bind(5, error);
     s.bind(6, sourceSamples > 0 ? sourceSamples : (int64_t)std::llround(duration*rate));
-    s.bind(7, a.id);
-    s.bind(8, a.revision);
-    s.bind(9, a.modified);
+    juce::var info(new juce::DynamicObject());
+    auto layout = a.detectedChannels.id.isEmpty()
+                      ? (channels <= 2 ? channelLayout(channels == 1 ? "mono-v1" : "stereo-v1")
+                                       : discreteLayout(std::max(1, channels), true))
+                      : a.detectedChannels;
+    info.getDynamicObject()->setProperty("layout", layoutJson(layout));
+    info.getDynamicObject()->setProperty("confidence", a.layoutConfidence);
+    s.bind(7, juce::JSON::toString(info, true));
+    s.bind(8, a.id);
+    s.bind(9, a.revision);
+    s.bind(10, a.modified);
     s.step();
 }
 namespace
@@ -853,7 +905,8 @@ std::optional<AnalysisTask> Catalog::nextAnalysis(const juce::String &model,
     {
         Statement s(db,(select+"AND j.asset_id=? LIMIT 1").toRawUTF8());
         s.bind(1,model); s.bind(2,preprocessing); s.bind(3,preferred);
-        if (s.step()) return AnalysisTask{readAsset(s),s.integer(16)};
+        if (s.step())
+            return AnalysisTask{readAsset(s), s.integer(18)};
     }
     auto sources = roots();
     for (size_t n = 0; n < sources.size(); ++n)
@@ -862,7 +915,8 @@ std::optional<AnalysisTask> Catalog::nextAnalysis(const juce::String &model,
         if (!sources[i].online) continue;
         Statement s(db,(select+"AND j.root_id=? LIMIT 1").toRawUTF8());
         s.bind(1,model); s.bind(2,preprocessing); s.bind(3,sources[i].id);
-        if (s.step()) return AnalysisTask{readAsset(s),s.integer(16)};
+        if (s.step())
+            return AnalysisTask{readAsset(s), s.integer(18)};
     }
     return {};
 }

@@ -165,12 +165,17 @@ struct AudioEngineTestAccess
     }
 };
 } // namespace sp
-void runDeviceCaptureTests(const juce::File &parent)
+void runDeviceCaptureContract(const juce::File &parent, bool layoutAware)
 {
     juce::ScopedJuceInitialiser_GUI gui;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
     auto base = fixture(root);
+    if (layoutAware)
+    {
+        sp::setMixLayout(base.original, sp::channelLayout("5.1-side-v1"));
+        base.renderSettings.layout = "same";
+    }
     std::atomic<bool> holdPrepare{false}, prepareHeld{false}, holdCommit{false}, commitHeld{false};
     sp::AudioEngine engine(false);
     Device device;
@@ -401,6 +406,7 @@ void runDeviceCaptureTests(const juce::File &parent)
     auto result = sp::message("device-capture-results");
     o = result.getDynamicObject();
     o->setProperty("checks", checks);
+    o->setProperty("layoutAware", layoutAware);
     o->setProperty("handlerAndServiceTransitions", true);
     o->setProperty("physicalDeviceUnplug", false);
     o->setProperty("observations", observations);
@@ -408,4 +414,14 @@ void runDeviceCaptureTests(const juce::File &parent)
     o->setProperty("lateCheckpointRemainsIncomplete", true);
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(result, true));
     std::cout << "PASS actual device lifecycle handlers/service: " << checks << " checks\n";
+}
+
+void runDeviceCaptureTests(const juce::File &parent)
+{
+    auto legacy = parent.getChildFile("legacy");
+    legacy.createDirectory();
+    runDeviceCaptureContract(legacy, false);
+    auto layout = parent.getChildFile("layout");
+    layout.createDirectory();
+    runDeviceCaptureContract(layout, true);
 }

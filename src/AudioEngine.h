@@ -25,7 +25,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     void sendStatus();
     AudioPlaybackService playback;
     juce::AudioDeviceManager devices;
-    juce::String input, deviceError;
+    juce::String input, deviceError, monitorDevice;
     juce::var lastPlay;
     uint64_t requestedGeneration = 0;
     juce::Array<juce::var> outputs;

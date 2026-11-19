@@ -86,6 +86,20 @@ void AudioEngine::command(const juce::var &message)
         juce::JUCEApplicationBase::quit();
         return;
     }
+    if (name == "monitor_map")
+    {
+        int c = (int)message["deviceChannel"], v = (int)message["sourceChannel"];
+        if (c >= 0 && c < 16 && v >= -2 && v < 16)
+            playback.core.monitorMapping[c] = v;
+        return;
+    }
+    if (name == "monitor_solo")
+    {
+        int v = (int)message["sourceChannel"];
+        if (v >= -1 && v < 16)
+            playback.core.monitorSolo = v;
+        return;
+    }
     if (name == "gain")
     {
         playback.core.volume = juce::jlimit(0.f, 1.f, (float)message["value"]);
@@ -121,7 +135,7 @@ void AudioEngine::command(const juce::var &message)
         playback.request(message, deviceRate.load());
         return;
     }
-    if (name == "device" || name == "device_rate" || name == "device_buffer")
+    if (name == "device" || name == "device_rate" || name == "device_buffer" || name == "device_channels")
     {
         if (playback.captureBusy())
         {
@@ -146,6 +160,19 @@ void AudioEngine::command(const juce::var &message)
         playback.stop(requestedGeneration);
         if (name == "device")
             setup.outputDeviceName = message["name"].toString();
+        else if (name == "device_channels")
+        {
+            int channels = (int)message["channels"];
+            auto *device = devices.getCurrentAudioDevice();
+            if (!device || channels < 1 || channels > 16 || channels > device->getOutputChannelNames().size())
+            {
+                deviceError = "Requested hardware channels are unavailable; design retained";
+                return;
+            }
+            setup.useDefaultOutputChannels = false;
+            setup.outputChannels.clear();
+            setup.outputChannels.setRange(0, channels, true);
+        }
         else if (name == "device_buffer")
             setup.bufferSize = (int)message["frames"];
         else
@@ -162,6 +189,15 @@ void AudioEngine::handleDeviceChanges()
     if (deviceChanged.exchange(false))
     {
         outputs.clear();
+        // Assignment is device-specific. A newly discovered device never inherits
+        // an old device's index map. Rate/buffer changes on the same device keep it.
+        if (auto *device = devices.getCurrentAudioDevice(); device && monitorDevice != device->getName())
+        {
+            monitorDevice = device->getName();
+            for (auto &m : playback.core.monitorMapping)
+                m = -2;
+            playback.core.monitorSolo = -1;
+        }
         if (auto *type = devices.getCurrentDeviceTypeObject())
         {
             type->scanForDevices();
@@ -254,6 +290,16 @@ void AudioEngine::sendStatus()
     if (auto *device = devices.getCurrentAudioDevice())
     {
         object->setProperty("bufferFrames", device->getCurrentBufferSizeSamples());
+        juce::Array<juce::var> names, active;
+        auto n = device->getOutputChannelNames();
+        for (int i = 0; i < n.size(); ++i)
+        {
+            names.add(n[i]);
+            if (device->getActiveOutputChannels()[i])
+                active.add(i);
+        }
+        object->setProperty("deviceOutputChannels", names);
+        object->setProperty("activeDeviceOutputChannels", active);
         object->setProperty("device", device->getName());
         juce::Array<juce::var> rates;
         for (auto rate : device->getAvailableSampleRates())
@@ -264,6 +310,7 @@ void AudioEngine::sendStatus()
             buffers.add(size);
         object->setProperty("availableBufferFrames", buffers);
     }
-    sendMessage(STDIN_FILENO, state);
+    if (!sendMessage(STDIN_FILENO, state))
+        juce::JUCEApplicationBase::quit(); // Never continue after a partial status frame.
 }
 } // namespace sp

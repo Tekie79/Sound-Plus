@@ -1,3 +1,4 @@
+#include "MultichannelTests.h"
 #include "TakeTests.h"
 #include "TakeIntegrityTests.h"
 #include "DeviceCaptureTests.h"
@@ -188,6 +189,16 @@ int main(int argc, char **argv)
         }
         if (argc >= 4 && juce::String(argv[1]) == "--library-stability")
         { runLibraryStabilityTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc >= 4 && juce::String(argv[1]) == "--multichannel")
+        {
+            runMultichannelTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-multichannel-ui")
+        {
+            prepareMultichannelUI(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-take-ui") {prepareTakeUiFixture(juce::File(argv[2]));return 0;}
         if (argc >= 4 && juce::String(argv[1]) == "--takes") {runTakeTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
         if (argc >= 4 && juce::String(argv[1]) == "--take-integrity") {runTakeIntegrityTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}

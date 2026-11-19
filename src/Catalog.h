@@ -1,6 +1,7 @@
 #pragma once
 #include <juce_core/juce_core.h>
 #include <sqlite3.h>
+#include "ChannelLayout.h"
 #include <vector>
 #include <optional>
 #include <array>
@@ -26,6 +27,10 @@ struct Asset
     int64_t size = 0, modified = 0, inode = 0, revision = 1;
     double duration = 0, sampleRate = 0;
     int channels = 0;
+    ChannelLayout detectedChannels, layoutOverride;
+    juce::String layoutConfidence;
+    int waveformChannel = -1; // Derivative request only, never catalog/source identity.
+    juce::String waveformLayoutKey;
     bool online = false;
     int64_t samples = 0;
     juce::String matchReason;
@@ -90,6 +95,7 @@ class Catalog
                   bool legacyRelink = true, const juce::String &confirmedRename = {});
     void finishScan(const Root &, int64_t scan);
     std::vector<Asset> pending(int limit = 24);
+    bool setLayoutOverride(const juce::String &, int64_t, const ChannelLayout &);
     void metadata(const Asset &, double duration, int channels, double rate, const juce::String &error,
                   int64_t sourceSamples = 0);
     std::vector<Asset> search(const juce::String &, const juce::String &root = {}, int limit = 1000,

@@ -4,6 +4,7 @@
 #include "FadeCurve.h"
 #include <array>
 #include <atomic>
+#include <map>
 namespace sp
 {
 struct PerformanceTarget
@@ -50,6 +51,7 @@ struct DesignLayer
 {
     juce::String id=juce::Uuid().toString(),name;
     Asset source;
+    LayerRouting routing;
     bool external=false,mute=false,solo=false,reverse=false,locked=false;
     PlaybackRegion region;
     int64_t placement=0,sync=0,fadeIn=0,fadeOut=0;
@@ -63,6 +65,7 @@ struct DesignLayer
 };
 struct DesignMix
 {
+    ChannelLayout layout; // Empty retains the legacy stereo contract verbatim.
     PerformanceState performance;
     std::vector<DesignLayer> layers;
     std::vector<StockEffect> masterEffects;
@@ -88,9 +91,19 @@ struct DesignRenderSettings
     int channels=2,bits=24;
     int64_t first=0,last=-1;
     bool normalize=false,dither=false;
+    juce::String layout; // Empty = legacy channels; "same" = current design layout.
+    bool splitMono = false;
+};
+struct SpatialValue
+{
+    int layer = -1;
+    double azimuth = 0, width = 60;
+    bool operator==(const SpatialValue &) const = default;
 };
 struct PerformControls
 {
+    int spatialCount = 0;
+    std::array<SpatialValue, 16> spatial{};
     double x=.5,y=.5;
     std::array<double,4> macros{.5,.5,.5,.5};
     bool blend=false;
@@ -162,6 +175,7 @@ struct DesignOutput
     int64_t capturedFrames=0;
     juce::String tailPolicy;
     juce::var sourceProvenance;
+    juce::var channelProvenance, files;
 };
 struct DesignDocument
 {
@@ -174,10 +188,21 @@ struct DesignDocument
     DesignRenderSettings renderSettings;
     std::vector<DesignVariation> variations;
     std::vector<DesignOutput> outputs;
+    std::map<juce::String, juce::String> outputSelections;
     std::vector<PerformTake> takes;
     DesignMix &activeMix();
     const DesignMix &activeMix() const;
 };
+juce::StringArray outputFiles(const DesignOutput &);
+void setMixLayout(DesignMix &, const ChannelLayout &);
+bool simplePanAvailable(const DesignMix &, const DesignLayer &);
+void initialiseRouting(DesignLayer &, const ChannelLayout &, bool preserveLegacySelection = false);
+void validateLayoutMix(const DesignMix &, double);
+int designChannels(const DesignDocument &);
+ChannelLayout designLayout(const DesignDocument &);
+ChannelLayout exportLayout(const DesignDocument &, const DesignRenderSettings &);
+PerformControls mixControls(const DesignMix &);
+void applyMixControls(DesignMix &, const PerformControls &);
 int64_t layerDuration(const DesignLayer &,double designRate);
 int64_t mixDuration(const DesignMix &,double designRate);
 int64_t designPreviewEnd(const DesignDocument &);

@@ -88,6 +88,8 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
     : catalog(std::move(file)), directory(catalog.getParentDirectory()), services(std::move(supplied)),
       recovery(std::make_shared<DesignRecoveryStore>(directory.getChildFile("designer-autosave")))
 {
+    document.original.layout = channelLayout("stereo-v1");
+    document.renderSettings.layout = "same";
     if (!services.now)
         services.now = [] { return monotonicMs(); };
     if (!services.reserveTake)
@@ -336,7 +338,7 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         if (takeState != TakeState::recording)
             return;
         if (label != "Macro" && label != "Macro bypass" && label != "Reset macro" &&
-            label != "Blend position" && label != "Blend bypass")
+            label != "Blend position" && label != "Blend bypass" && label != "Spatial motion")
         {
             message = "Stop recording before editing the frozen design";
             notify();
@@ -345,7 +347,7 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         auto controls = document;
         controls.activeMix() = takeDisplay;
         edit(controls);
-        takeDisplay.performance = controls.activeMix().performance;
+        takeDisplay = controls.activeMix();
         // Capture controls do not modify the editable recipe or UI undo history.
         services.parameters(controls, expectedGeneration, services.now());
         notify();
@@ -408,7 +410,7 @@ void DesignSession::beginGesture()
 {
     if (takeBusy())
     {
-        takeGestureStart = performControls(takeDisplay.performance);
+        takeGestureStart = mixControls(takeDisplay);
         return;
     }
     protectStartupEdits();
@@ -442,7 +444,7 @@ void DesignSession::cancelGesture()
     {
         if (takeGestureStart)
         {
-            applyPerformControls(takeDisplay.performance, *takeGestureStart);
+            applyMixControls(takeDisplay, *takeGestureStart);
             auto d = document;
             d.activeMix() = takeDisplay;
             services.parameters(d, expectedGeneration, services.now());
@@ -559,6 +561,8 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
     notify();
     juce::Component::SafePointer<DesignSession> safe(this);
     auto next = DesignDocument();
+    next.original.layout = channelLayout("stereo-v1");
+    next.renderSettings.layout = "same";
     enqueue(token,
             [safe, snapshot, path, changed, file, recover, close, next, retain = services.retain,
              resolve = services.resolve, store = recovery, gate = lifetimeGate, epoch = lifetime]() mutable
@@ -714,8 +718,23 @@ void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool e
     edit("Add layer",
          [&](auto &d)
          {
+             if (!d.activeMix().layout.id.isEmpty() && d.activeMix().layers.empty() && source.channels > 2 &&
+                 source.channels <= 16)
+             {
+                 auto detected =
+                     source.layoutOverride.id.isNotEmpty() ? source.layoutOverride : source.detectedChannels;
+                 setMixLayout(d.activeMix(), detected.id.isEmpty() || detected.id.startsWith("unknown-")
+                                                 ? discreteLayout(source.channels)
+                                                 : detected);
+                 d.renderSettings.layout = "same";
+             }
              auto layer = makeDesignLayer(source, first, last, external);
-             layer.region.auditionPair = pair;
+             if (pair == -2 && d.activeMix().layout.id.isEmpty())
+                 throw std::runtime_error("Choose a Design layout before adding a complete multichannel bed; "
+                                          "legacy designs retain stereo-pair semantics");
+             layer.region.auditionPair = pair == -2 || pair == -3 ? 0 : pair;
+             if (!d.activeMix().layout.id.isEmpty())
+                 initialiseRouting(layer, d.activeMix().layout, pair >= 0);
              layer.placement = std::max<int64_t>(0, placement < 0 ? d.playhead : placement);
              d.selectedLayer = layer.id;
              d.activeMix().layers.push_back(std::move(layer));
@@ -749,7 +768,23 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
                                {
                                    for (auto &source : sources)
                                    {
+                                       if (!d.activeMix().layout.id.isEmpty() &&
+                                           d.activeMix().layers.empty() && source.channels > 2 &&
+                                           source.channels <= 16)
+                                       {
+                                           auto detected = source.layoutOverride.id.isNotEmpty()
+                                                               ? source.layoutOverride
+                                                               : source.detectedChannels;
+                                           setMixLayout(d.activeMix(),
+                                                        detected.id.isEmpty() ||
+                                                                detected.id.startsWith("unknown-")
+                                                            ? discreteLayout(source.channels)
+                                                            : detected);
+                                           d.renderSettings.layout = "same";
+                                       }
                                        auto layer = makeDesignLayer(source, 0, source.samples, true);
+                                       if (!d.activeMix().layout.id.isEmpty())
+                                           initialiseRouting(layer, d.activeMix().layout);
                                        layer.placement = placement;
                                        d.selectedLayer = layer.id;
                                        d.activeMix().layers.push_back(std::move(layer));

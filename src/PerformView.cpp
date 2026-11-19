@@ -20,7 +20,7 @@ void label(juce::Label &l, const juce::String &name)
 PerformView::Pad::Pad(PerformView &o) : owner(o)
 {
     setWantsKeyboardFocus(true);
-    setTitle("Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.");
+    setTitle("Source Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.");
     setMouseCursor(juce::MouseCursor::CrosshairCursor);
 }
 void PerformView::Pad::paint(juce::Graphics &g)

@@ -57,6 +57,7 @@ class LibraryService
     ~LibraryService();
     void addFolder(const juce::File &);
     void rescan();
+    void setLayoutOverride(const Asset &, const ChannelLayout &);
     void pause(bool);
     uint64_t search(const juce::String &, const juce::String &root = {});
     void page(int offset, int limit = 256);

@@ -8,8 +8,9 @@
 #include "DesignModel.h"
 namespace sp
 {
-constexpr int protocolVersion = 5;
+constexpr int protocolVersion = 6;
 juce::var message(const juce::String &command);
+// Single-writer, nonblocking socket; bounded250ms completion, never called by audio callbacks.
 bool sendMessage(int fd, const juce::var &);
 // Private inherited socketpair: no listening port or discoverable endpoint.
 class AudioClient
@@ -24,10 +25,13 @@ class AudioClient
     uint64_t updateDesign(const DesignDocument &, uint64_t generation, double eventMs);
     void stop();
     void gain(float);
+    void monitorChannel(int deviceChannel, int sourceChannel);
+    void monitorSolo(int sourceChannel);
     void restart();
     void device(const juce::String &);
     void deviceRate(double);
     void bufferSize(int);
+    void deviceChannels(int);
     void finishTake(bool cancel = false);
     void reserveTake(bool reserve);
     bool captureBusy() const

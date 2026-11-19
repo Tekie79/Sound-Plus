@@ -1,0 +1,692 @@
+{
+  "reviewedHead": "3609486e6b1313f2ad80181022c04e0db372657f",
+  "implementation": "d51cfdb7ba8811d6854838ce3566c1e2b8ab43d4",
+  "scope": "Independent Linux source and committed evidence audit; no native macOS test execution",
+  "allChecksPassed": true,
+  "checks": [
+    {
+      "check": "All 24 declared repository artifacts match their committed SHA-256",
+      "passed": true
+    },
+    {
+      "check": "capture: queryToPaintMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "capture: selectedWaveformMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "capture: wholeViewportMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "capture: every visible viewport row has painted ready/offline/error accounting",
+      "passed": true
+    },
+    {
+      "check": "capture: helperPid is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: playGeneration is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: graphEpoch is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: preparationsRequested is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: sampleRate is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: bufferFrames is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "capture: helper process generation is stable",
+      "passed": true
+    },
+    {
+      "check": "capture: no observed underruns in interval status records",
+      "passed": true
+    },
+    {
+      "check": "capture: no recorded helper health events",
+      "passed": true
+    },
+    {
+      "check": "capture: audio checks agree with main record",
+      "passed": true
+    },
+    {
+      "check": "replay: queryToPaintMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "replay: selectedWaveformMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "replay: wholeViewportMs nearest-rank percentiles match raw, summary and main record",
+      "passed": true
+    },
+    {
+      "check": "replay: every visible viewport row has painted ready/offline/error accounting",
+      "passed": true
+    },
+    {
+      "check": "replay: helperPid is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: playGeneration is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: graphEpoch is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: preparationsRequested is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: sampleRate is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: bufferFrames is present and stable throughout recorded interval",
+      "passed": true
+    },
+    {
+      "check": "replay: helper process generation is stable",
+      "passed": true
+    },
+    {
+      "check": "replay: no observed underruns in interval status records",
+      "passed": true
+    },
+    {
+      "check": "replay: no recorded helper health events",
+      "passed": true
+    },
+    {
+      "check": "replay: audio checks agree with main record",
+      "passed": true
+    },
+    {
+      "check": "capture: take c63eeae1b7704239b42ba9371ae75fe7 has bounded ordered event records",
+      "passed": true
+    },
+    {
+      "check": "capture: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "replay: take c63eeae1b7704239b42ba9371ae75fe7 has bounded ordered event records",
+      "passed": true
+    },
+    {
+      "check": "replay: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "replay: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "native: take 349c683a74f94bfeab02ec7ca946d61e has bounded ordered event records",
+      "passed": true
+    },
+    {
+      "check": "native: take 3d592a91fa3f4020ac3507cd5e9e610c has bounded ordered event records",
+      "passed": true
+    },
+    {
+      "check": "native: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "native: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "native: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "native: receipt identity, effective source provenance and body/tail frames agree",
+      "passed": true
+    },
+    {
+      "check": "Capture/replay saved takes have identical frozen fields despite metadata changes",
+      "passed": true
+    },
+    {
+      "check": "Capture has 2267 applied events and 60.032 seconds consumed audio",
+      "passed": true
+    },
+    {
+      "check": "Native document contains two complete takes and four Take A receipts",
+      "passed": true
+    },
+    {
+      "check": "Focused output audit records agree on the capture/replay WAV hash",
+      "passed": true
+    },
+    {
+      "check": "Native output audit records agree on four WAV hashes and headers",
+      "passed": true
+    },
+    {
+      "check": "Committed corpus manifest totals reproduce 10000 paths / 133 hashes / 1253073116 bytes",
+      "passed": true
+    },
+    {
+      "check": "Committed CTest log passes all 20 current registered suites in 77.11 seconds",
+      "passed": true
+    },
+    {
+      "check": "take-integrity: raw suite check count matches 157",
+      "passed": true
+    },
+    {
+      "check": "device-lifecycle: raw suite check count matches 36",
+      "passed": true
+    },
+    {
+      "check": "waveform-scheduling: raw suite check count matches 296",
+      "passed": true
+    },
+    {
+      "check": "recorded-takes: raw suite check count matches 2820",
+      "passed": true
+    },
+    {
+      "check": "Committed immutable replay PCM differences are zero",
+      "passed": true
+    },
+    {
+      "check": "Waveform pressure metrics respect 48 full sources / 160 summaries / 2048 pairs per summary",
+      "passed": true
+    }
+  ],
+  "artifactHashes": [
+    {
+      "path": "docs/verification/performance-v131-ctest.log",
+      "expectedSha256": "c94bdcb383c42f4dbf3dc32a8771cbc9a84b81758e52d568eddcc81551d6327c",
+      "actualSha256": "c94bdcb383c42f4dbf3dc32a8771cbc9a84b81758e52d568eddcc81551d6327c",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-build.log",
+      "expectedSha256": "f80adc0d47fc2e9891ab2c0e748673153d63d9cfab4fcd0d2eba02674317455b",
+      "actualSha256": "f80adc0d47fc2e9891ab2c0e748673153d63d9cfab4fcd0d2eba02674317455b",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-take-integrity.json.gz",
+      "expectedSha256": "5e6e193e1e63005e27051b888540d1766919f0d07fd143141dd0bba562637a89",
+      "actualSha256": "5e6e193e1e63005e27051b888540d1766919f0d07fd143141dd0bba562637a89",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-device-lifecycle.json.gz",
+      "expectedSha256": "08d564b557abf9bac3d2858af98ad2d53f40234c9068ca871314d235cbffb752",
+      "actualSha256": "08d564b557abf9bac3d2858af98ad2d53f40234c9068ca871314d235cbffb752",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-waveform-scheduling.json.gz",
+      "expectedSha256": "d7c0afa0c79d3ae7e07d5394042388021b6f7db938f5e77f8a0de44778f5db7d",
+      "actualSha256": "d7c0afa0c79d3ae7e07d5394042388021b6f7db938f5e77f8a0de44778f5db7d",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-recorded-takes.json.gz",
+      "expectedSha256": "4f76483d394a0a00889e122bc38b8faefed133ab40c4e1823240cab4944059f6",
+      "actualSha256": "4f76483d394a0a00889e122bc38b8faefed133ab40c4e1823240cab4944059f6",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-native-qa.soundplus.json.gz",
+      "expectedSha256": "c5c925120b809a8f58f3dab2d5f5a2e7b6710246805654441c36fa45cc2d0d03",
+      "actualSha256": "c5c925120b809a8f58f3dab2d5f5a2e7b6710246805654441c36fa45cc2d0d03",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-native-audit.json.gz",
+      "expectedSha256": "43b50a0951c14f1adc7dde000378552e7d9f4077f880a3b5b107d0fe7ff2dd00",
+      "actualSha256": "43b50a0951c14f1adc7dde000378552e7d9f4077f880a3b5b107d0fe7ff2dd00",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-file-audit.json.gz",
+      "expectedSha256": "8720858e47116d15ea6ff9cfa9267c5947125ca9085c1700d53be6f726552639",
+      "actualSha256": "8720858e47116d15ea6ff9cfa9267c5947125ca9085c1700d53be6f726552639",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-working-protection.json.gz",
+      "expectedSha256": "0fca21f700500c897cf8917da610548b7e9b199980c4f40c7d5e7c95f81663ed",
+      "actualSha256": "0fca21f700500c897cf8917da610548b7e9b199980c4f40c7d5e7c95f81663ed",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-capture-native.json.gz",
+      "expectedSha256": "b7191df12448a6dee2519ef5e1468220ac41ff0d1097b34be7f9a148cbd8f4b7",
+      "actualSha256": "b7191df12448a6dee2519ef5e1468220ac41ff0d1097b34be7f9a148cbd8f4b7",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-capture-summary.json.gz",
+      "expectedSha256": "2f3ee7706305d715cbd0f39b10f2709e496061c5970bd4c5c5f33e5c1f6eac63",
+      "actualSha256": "2f3ee7706305d715cbd0f39b10f2709e496061c5970bd4c5c5f33e5c1f6eac63",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-capture-plan.json.gz",
+      "expectedSha256": "9d8b89df6892eff1fc0895b14e0e92eb4acdbe9e0287eee480a644edbfd70dcd",
+      "actualSha256": "9d8b89df6892eff1fc0895b14e0e92eb4acdbe9e0287eee480a644edbfd70dcd",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-capture-qa.soundplus.json.gz",
+      "expectedSha256": "2344484b233af0b170a28b93f242ed9652745bfac614aa5ab4ce3cf67597e99e",
+      "actualSha256": "2344484b233af0b170a28b93f242ed9652745bfac614aa5ab4ce3cf67597e99e",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-replay-native.json.gz",
+      "expectedSha256": "d93ebe01bb39fee41293ca79b649a34693668b891f80d2b5a79a62871bf87fae",
+      "actualSha256": "d93ebe01bb39fee41293ca79b649a34693668b891f80d2b5a79a62871bf87fae",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-replay-summary.json.gz",
+      "expectedSha256": "f4a84713ae5b522bb4f442e5e9323088a23e6cb64b5df6cf5f8f427816330c30",
+      "actualSha256": "f4a84713ae5b522bb4f442e5e9323088a23e6cb64b5df6cf5f8f427816330c30",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-replay-plan.json.gz",
+      "expectedSha256": "491ff7b2d964c09a422995e7d5760e1ac4b278bfdadb7f8873750465520f548e",
+      "actualSha256": "491ff7b2d964c09a422995e7d5760e1ac4b278bfdadb7f8873750465520f548e",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-replay-qa.soundplus.json.gz",
+      "expectedSha256": "706202d191176825d2ce89cb27e39fd8103cda054d093d3cad4f7814b070590a",
+      "actualSha256": "706202d191176825d2ce89cb27e39fd8103cda054d093d3cad4f7814b070590a",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-earlier-development-runs.json.gz",
+      "expectedSha256": "390f4a27e1a20ff873931af4f4e9a437ef836c1976d8cf93dd9649031a55aae6",
+      "actualSha256": "390f4a27e1a20ff873931af4f4e9a437ef836c1976d8cf93dd9649031a55aae6",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-focused-output-audit.json.gz",
+      "expectedSha256": "0f9eee20fd30c3724bf4c2c593b5acb43e001ca386b9c68603f776df3050b950",
+      "actualSha256": "0f9eee20fd30c3724bf4c2c593b5acb43e001ca386b9c68603f776df3050b950",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-native-observations.json.gz",
+      "expectedSha256": "805127903c9e2925eab3afc7ec6a448f764db9260b58783a1fd4923b4a7dd36f",
+      "actualSha256": "805127903c9e2925eab3afc7ec6a448f764db9260b58783a1fd4923b4a7dd36f",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-normal.jpg",
+      "expectedSha256": "f3f5e827a4ad69774865b8c388fd84f81c2d01b2f598d9f823a84f00118c819e",
+      "actualSha256": "f3f5e827a4ad69774865b8c388fd84f81c2d01b2f598d9f823a84f00118c819e",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-minimum.jpg",
+      "expectedSha256": "27bb966857159bd7038aee0d9687ea015a0c584465b7728f7aede26e9182ff29",
+      "actualSha256": "27bb966857159bd7038aee0d9687ea015a0c584465b7728f7aede26e9182ff29",
+      "match": true
+    },
+    {
+      "path": "docs/verification/performance-v131-b-no-output.jpg",
+      "expectedSha256": "59d8a9986ea317843089a9d8066a8f48b8ef760a5056bc8805130202d00015f3",
+      "actualSha256": "59d8a9986ea317843089a9d8066a8f48b8ef760a5056bc8805130202d00015f3",
+      "match": true
+    }
+  ],
+  "focusedRuns": {
+    "capture": {
+      "success": true,
+      "activeMs": 60000.0074583441,
+      "distributions": {
+        "queryToPaintMs": {
+          "n": 40,
+          "p50": 5.166124999523163,
+          "p95": 10.421791657805443,
+          "p99": 13.667291671037674
+        },
+        "selectedWaveformMs": {
+          "n": 40,
+          "p50": 22.256583333015442,
+          "p95": 42.03620833158493,
+          "p99": 58.01945833861828
+        },
+        "wholeViewportMs": {
+          "n": 40,
+          "p50": 232.77104166150093,
+          "p95": 277.3373750001192,
+          "p99": 358.8812916725874
+        }
+      },
+      "progressRecords": 6,
+      "stableValues": {
+        "helperPid": [
+          85189,
+          85189,
+          85189,
+          85189,
+          85189,
+          85189,
+          85189,
+          85189
+        ],
+        "playGeneration": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "graphEpoch": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "preparationsRequested": [
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2,
+          2
+        ],
+        "sampleRate": [
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0
+        ],
+        "bufferFrames": [
+          512,
+          512,
+          512,
+          512,
+          512,
+          512,
+          512,
+          512
+        ],
+        "processGeneration": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "audioChecks": 24586,
+      "nonzeroAudioChecks": 24582,
+      "zeroPeakObservations": 4,
+      "zeroPeakCause": "Not diagnosed by this audit",
+      "replayMetadataEdits": 0,
+      "offlineObserved": true,
+      "reconnectObserved": true
+    },
+    "replay": {
+      "success": true,
+      "activeMs": 45000.36170832813,
+      "distributions": {
+        "queryToPaintMs": {
+          "n": 30,
+          "p50": 5.788874998688698,
+          "p95": 24.312583327293396,
+          "p99": 32.33691667020321
+        },
+        "selectedWaveformMs": {
+          "n": 30,
+          "p50": 19.20837500691414,
+          "p95": 40.27483333647251,
+          "p99": 49.730250000953674
+        },
+        "wholeViewportMs": {
+          "n": 30,
+          "p50": 200.36395832896233,
+          "p95": 250.53916665911674,
+          "p99": 251.60279166698456
+        }
+      },
+      "progressRecords": 5,
+      "stableValues": {
+        "helperPid": [
+          85238,
+          85238,
+          85238,
+          85238,
+          85238,
+          85238,
+          85238
+        ],
+        "playGeneration": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "graphEpoch": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "preparationsRequested": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ],
+        "sampleRate": [
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0,
+          48000.0
+        ],
+        "bufferFrames": [
+          512,
+          512,
+          512,
+          512,
+          512,
+          512,
+          512
+        ],
+        "processGeneration": [
+          1,
+          1,
+          1,
+          1,
+          1,
+          1,
+          1
+        ]
+      },
+      "audioChecks": 16113,
+      "nonzeroAudioChecks": 16113,
+      "zeroPeakObservations": 0,
+      "zeroPeakCause": "Not diagnosed by this audit",
+      "replayMetadataEdits": 179,
+      "offlineObserved": true,
+      "reconnectObserved": true
+    }
+  },
+  "viewportRecordsChecked": 70,
+  "savedTakes": [
+    {
+      "document": "capture",
+      "id": "c63eeae1b7704239b42ba9371ae75fe7",
+      "events": 2267,
+      "consumedFrames": 2881536,
+      "captureRate": 48000.0,
+      "durationSeconds": 60.032,
+      "complete": true,
+      "recipeHash": "2614768b13334389e8ec51b88f8a778d232bb46517a605f709febd5205238a01",
+      "eventHash": "3aa5b63e124c2341c1eb572a0a6eb5b0aef63dbfdfa38c90efba3e1d607f5bb5"
+    },
+    {
+      "document": "replay",
+      "id": "c63eeae1b7704239b42ba9371ae75fe7",
+      "events": 2267,
+      "consumedFrames": 2881536,
+      "captureRate": 48000.0,
+      "durationSeconds": 60.032,
+      "complete": true,
+      "recipeHash": "2614768b13334389e8ec51b88f8a778d232bb46517a605f709febd5205238a01",
+      "eventHash": "3aa5b63e124c2341c1eb572a0a6eb5b0aef63dbfdfa38c90efba3e1d607f5bb5"
+    },
+    {
+      "document": "native",
+      "id": "349c683a74f94bfeab02ec7ca946d61e",
+      "events": 6,
+      "consumedFrames": 3186176,
+      "captureRate": 48000.0,
+      "durationSeconds": 66.37866666666666,
+      "complete": true,
+      "recipeHash": "07cd97c39c0a549bb49a22ca5add7dec32049782fb4653b7e2876a73919b778f",
+      "eventHash": "f875c1ae4734aca0948c5c42d62713341634bd740f9a554a87f50156cd59d375"
+    },
+    {
+      "document": "native",
+      "id": "3d592a91fa3f4020ac3507cd5e9e610c",
+      "events": 5,
+      "consumedFrames": 124928,
+      "captureRate": 48000.0,
+      "durationSeconds": 2.6026666666666665,
+      "complete": true,
+      "recipeHash": "07cd97c39c0a549bb49a22ca5add7dec32049782fb4653b7e2876a73919b778f",
+      "eventHash": "0a534d304988e6e5efd9146f56212a09c3d396015c1b4789df4ad57a9971dfea"
+    }
+  ],
+  "savedDocuments": 3,
+  "uniqueTakes": 3,
+  "uniqueTakeEventCount": 2278,
+  "eventRecordsIncludingRepeatedCaptureReplay": 4545,
+  "receiptsCheckedIncludingDuplicates": 7,
+  "corpusManifest": {
+    "paths": 10000,
+    "uniquePaths": 10000,
+    "distinctContentHashes": 133,
+    "bytes": 1253073116
+  },
+  "ctestSuitesFromCommittedLog": [
+    "take_integrity",
+    "capture_device_lifecycle",
+    "recorded_takes",
+    "library_stability",
+    "waveform_scheduling",
+    "audio_health",
+    "waveform_previews",
+    "performance_state",
+    "designer_view_commands",
+    "icon_system",
+    "library_and_audio",
+    "library_selection_audition",
+    "library_performance_regression",
+    "library_semantic_integrity",
+    "library_similar_integrity",
+    "designer_transport",
+    "designer_canvas",
+    "designer_session",
+    "designer_workflow",
+    "designer_fades"
+  ],
+  "suiteCheckCounts": {
+    "take-integrity": 157,
+    "device-lifecycle": 36,
+    "waveform-scheduling": 296,
+    "recorded-takes": 2820
+  },
+  "screenshots": [
+    {
+      "path": "docs/verification/performance-v131-normal.jpg",
+      "pixels": [
+        1171,
+        768
+      ],
+      "decoded": true,
+      "visuallyInspectedByReviewer": true
+    },
+    {
+      "path": "docs/verification/performance-v131-minimum.jpg",
+      "pixels": [
+        1040,
+        712
+      ],
+      "decoded": true,
+      "visuallyInspectedByReviewer": true
+    },
+    {
+      "path": "docs/verification/performance-v131-b-no-output.jpg",
+      "pixels": [
+        1171,
+        768
+      ],
+      "decoded": true,
+      "visuallyInspectedByReviewer": true
+    }
+  ],
+  "limitations": [
+    "Original Mac source/output files and app binaries were unavailable for fresh rehashing; native output hashes are consistency checks against committed audit records.",
+    "JUCE canonical document/recipe/event hash encodings were not independently recomputed; frozen payload equality and cross-record identity were checked.",
+    "No native macOS build, UI interaction, physical interface, listening or receiving-application persistence was performed in this review.",
+    "Four zero-peak capture observations remain undiagnosed; measured zero underruns does not establish uninterrupted audible output.",
+    "Focused 60-second capture and 45-second replay do not newly qualify the 120-second limit, 30-minute sustained operation or another device/buffer configuration.",
+    "Existing evidence is mono/stereo; it does not qualify 5.1 or other multichannel processing."
+  ]
+}

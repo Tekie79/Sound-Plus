@@ -6,7 +6,10 @@ namespace sp
 juce::String waveformSourceKey(const Asset &a)
 {
     return a.id + ":" + juce::String(a.revision) + ":" + juce::String(a.size) + ":" +
-           juce::String(a.modified) + ":" + juce::String(a.inode) + ":" + a.path;
+           juce::String(a.modified) + ":" + juce::String(a.inode) + ":" + a.path +
+           (a.waveformChannel >= 0
+                ? ":detail-v2:" + juce::String(a.waveformChannel) + ":" + a.waveformLayoutKey
+                : juce::String());
 }
 PeakColumns compactWaveformColumns(const WaveformData &d, int64_t first, int64_t last, bool reverse,
                                    int width)
@@ -75,7 +78,7 @@ WaveformPool::WaveformPool(const juce::File &directory, std::function<void()> be
 }
 void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
 {
-    if (owner < 0 || owner > 3)
+    if (owner < 0 || owner > 5)
         return;
     auto &wanted = owners[owner];
     wanted.clear();
@@ -84,7 +87,7 @@ void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
         if (a.samples > 0 && a.id.isNotEmpty() && keys.insert(waveformSourceKey(a)).second)
         {
             wanted.push_back(a);
-            if (wanted.size() == maxDemand)
+            if (wanted.size() == (owner >= 4 ? 16 : maxDemand))
                 break;
         }
 }

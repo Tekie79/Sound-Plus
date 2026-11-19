@@ -141,7 +141,18 @@ class DesignerView final : public juce::Component,
     IconButton recover{"Recover autosave", ActionIcon::history},
         chooseFolder{"Choose permanent output folder", ActionIcon::folder};
     juce::Label title, info, status, position, outputInfo, meter;
-    juce::ComboBox candidates, rackTarget, effectChoice, channelMap, deviceRate;
+    juce::ComboBox candidates, rackTarget, effectChoice, channelMap, deviceRate, readyOutputs;
+    ui::TextActionButton layoutControl{"Design · Legacy stereo"}, routingButton{"Routing / Spatial Panner"},
+        monitorControl{"Monitor · Stereo"};
+    IconButton channelDetail{"Per-channel waveforms", ActionIcon::layers};
+    std::array<float, 16> channelLevels{};
+    juce::String outputSignature;
+    void layoutPopup();
+    void routingPopup();
+    friend struct LayoutViewTestAccess;
+    std::unique_ptr<juce::Component> makeRoutingPanel();
+    void channelPopup();
+    void monitorPopup();
     IconButton addEffect{"Add stock insert", ActionIcon::processing},
         removeEffect{"Remove insert", ActionIcon::trash}, effectUp{"Move insert up", ActionIcon::up},
         effectDown{"Move insert down", ActionIcon::down};

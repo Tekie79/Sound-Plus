@@ -4,6 +4,15 @@ namespace sp
 {
 namespace
 {
+ChannelLayout observedSource(const DesignLayer &l)
+{
+    if (l.source.layoutOverride.id.isNotEmpty())
+        return l.source.layoutOverride;
+    if (l.source.detectedChannels.id.isNotEmpty())
+        return l.source.detectedChannels;
+    return l.source.channels <= 2 ? channelLayout(l.source.channels == 1 ? "mono-v1" : "stereo-v1")
+                                  : discreteLayout(l.source.channels, true);
+}
 juce::String cardDuration(double seconds, bool accessible = false)
 {
     const bool milliseconds = seconds < .01;
@@ -52,10 +61,16 @@ void SourceCard::bind(const DesignLayer *value, const juce::String &id, const ju
                                             "assign another corner.")
               : "Drop a Library sound or design layer, or choose a layer with the arrow.";
     title.setTooltip(description + (readOnly ? "" : "\nDouble-click title to edit alias."));
-    setTooltip(description);
+    auto channels =
+        layer ? "\nSource: " + layoutBadge(observedSource(*layer)) +
+                    "; confidence: " + layer->source.layoutConfidence + "; input: " +
+                    (layer->routing.interpretation.id.isEmpty() ? juce::String("Legacy pair")
+                                                                : layoutBadge(layer->routing.interpretation))
+              : juce::String();
+    setTooltip(description + channels);
     chooser.setTooltip(readOnly ? "Frozen take source assignment"
                                 : "Choose, replace or clear this blend assignment");
-    setTitle(nameToShow +
+    setTitle(nameToShow + (layer ? ", " + layoutBadge(observedSource(*layer)) : juce::String()) +
              (layer ? ", " +
                           cardDuration((layer->region.endSample - layer->region.startSample) /
                                            (layer->source.sampleRate * layer->rate),
@@ -164,8 +179,9 @@ void SourceCard::paint(juce::Graphics &g)
         const auto seconds =
             (layer->region.endSample - layer->region.startSample) / (layer->source.sampleRate * layer->rate);
         g.drawText(cardDuration(seconds), 8, 54, 52, 14, juce::Justification::left);
-        g.drawText(silent ? "Silent source" : filename, 60, 54, std::max(0, getWidth() - 98), 14,
-                   juce::Justification::left, true);
+        auto sourceLayout = observedSource(*layer);
+        g.drawText(silent ? "Silent source" : layoutBadge(sourceLayout), 60, 54, std::max(0, getWidth() - 98),
+                   14, juce::Justification::left, true);
         g.setColour(ui::line);
         g.fillRoundedRectangle(getWidth() - 33.f, 60, 23, 2, 1);
         g.setColour(ui::accent);

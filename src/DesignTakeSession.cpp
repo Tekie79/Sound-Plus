@@ -14,6 +14,9 @@ bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
         o.capturedFrames != t.outputFrames || o.projectRate != t.sampleRate ||
         o.captureRate != t.captureRate || o.sha256.length() != 64)
         return false;
+    if (!t.recipe->layout.id.isEmpty() &&
+        (o.channelProvenance.isVoid() || layoutFromJson(o.channelProvenance["design"]) != t.recipe->layout))
+        return false;
     auto *sources = o.sourceProvenance.getArray();
     if (!sources || sources->size() != (int)t.sources.size())
         return false;
@@ -35,6 +38,13 @@ void DesignSession::recordTake()
     if (document.takes.size() >= maxDocumentTakes)
     {
         message = "Remove a take before recording another (16 maximum)";
+        notify();
+        return;
+    }
+    if (std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
+                    [](auto &l) { return l.routing.needsSelection; }))
+    {
+        message = "Choose supported source channels in Routing before recording";
         notify();
         return;
     }
@@ -67,6 +77,25 @@ void DesignSession::recordTake()
             {
                 resolve(d);
                 auto t = freezeTake(d, "Take " + juce::String(d.takes.size() + 1));
+                if (!t.recipe->layout.id.isEmpty())
+                {
+                    TakeEvent worst;
+                    worst.frame = (int64_t)(d.sampleRate * maxTakeSeconds);
+                    worst.generation = UINT64_MAX;
+                    worst.sequence = maxTakeEvents;
+                    worst.controls = mixControls(t.recipe);
+                    auto event = juce::var(new juce::DynamicObject());
+                    auto *p = event.getDynamicObject();
+                    p->setProperty("frame", (juce::int64)worst.frame);
+                    p->setProperty("sequence", (juce::int64)worst.sequence);
+                    p->setProperty("generation", (juce::int64)worst.generation);
+                    p->setProperty("controls", controlsToJson(worst.controls));
+                    auto existing = juce::JSON::toString(designToJson(d), true).getNumBytesAsUTF8();
+                    auto eventBytes = juce::JSON::toString(event, true).getNumBytesAsUTF8() + 256;
+                    if (existing + eventBytes * maxTakeEvents + 65536 > 60 * 1024 * 1024)
+                        throw std::runtime_error("Recording could exceed the64MiB document budget; "
+                                                 "archive/remove earlier takes first");
+                }
                 t.id = id;
                 t.checkpoint = file.getFullPathName();
                 d.takes.push_back(t);
@@ -144,18 +173,40 @@ void DesignSession::selectContextOutput()
 {
     lastOutput = juce::File();
     auto *take = selectedTake(document);
+    auto preference = document.outputSelections.find(document.activeTake.isEmpty() ? juce::String("live")
+                                                                                   : document.activeTake);
     for (auto it = document.outputs.rbegin(); it != document.outputs.rend(); ++it)
         if (it->takeId == document.activeTake && (!take || matchingTakeOutput(*take, *it)) &&
-            juce::File(it->path).existsAsFile())
+            !outputFiles(*it).isEmpty())
         {
-            lastOutput = juce::File(it->path);
-            break;
+            if (lastOutput == juce::File())
+                lastOutput = juce::File(it->path);
+            if (preference != document.outputSelections.end() && preference->second == it->path)
+            {
+                lastOutput = juce::File(it->path);
+                break;
+            }
         }
 }
 juce::File DesignSession::readyOutput()
 {
     selectContextOutput();
     return lastOutput;
+}
+juce::StringArray DesignSession::readyFiles()
+{
+    auto file = readyOutput();
+    for (auto &o : document.outputs)
+        if (o.path == file.getFullPathName())
+            return outputFiles(o);
+    return {};
+}
+void DesignSession::chooseOutput(const juce::String &path)
+{
+    editMetadata("Ready output selection",
+                 [&](auto &d) {
+                     d.outputSelections[d.activeTake.isEmpty() ? juce::String("live") : d.activeTake] = path;
+                 });
 }
 void DesignSession::selectTake(const juce::String &id)
 {
@@ -280,7 +331,7 @@ void DesignSession::pollTake(const juce::var &state)
             auto next = std::lower_bound(t->events.begin(), t->events.end(), heard,
                                          [](const auto &e, int64_t f) { return e.frame < f; });
             if (next != t->events.begin())
-                applyPerformControls(takeDisplay.performance, std::prev(next)->controls);
+                applyMixControls(takeDisplay, std::prev(next)->controls);
         }
     }
     if (!takeBusy() || takeReadPending)

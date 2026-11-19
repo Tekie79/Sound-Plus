@@ -180,9 +180,12 @@ void AudioPlaybackService::prepare()
                      position = (int64_t)request.command["positionSample"];
                 if (position >= 0)
                     first = std::max(first, position);
-                result.stream = std::make_unique<PcmStream>(file, request.rate, first,
-                                                            (int64_t)request.command["endSample"],
-                                                            (int)request.command["auditionPair"]);
+                result.stream = std::make_unique<PcmStream>(
+                    file, request.rate, first, (int64_t)request.command["endSample"],
+                    (int)request.command["auditionPair"],
+                    request.command["sourceLayoutOverride"].toString().isEmpty()
+                        ? ChannelLayout{}
+                        : channelLayout(request.command["sourceLayoutOverride"].toString()));
             }
             result.stream->fill(1536, cancelled);
             if (cancelled())
@@ -416,6 +419,18 @@ void AudioPlaybackService::produce()
         object->setProperty("firstCallbackMs", core.firstCallbackMs());
         object->setProperty("peak", core.peak.load());
         object->setProperty("preMonitorPeak", core.preMonitorPeak.load());
+        object->setProperty("busChannels", core.channelCount());
+        if (core.channelCount() > 0)
+            object->setProperty("busLayout", layoutJson(core.layout()));
+        juce::Array<juce::var> peaks, mapping;
+        for (int c = 0; c < 16; ++c)
+        {
+            peaks.add(core.channelPeaks[c].load());
+            mapping.add(core.monitorMapping[c].load());
+        }
+        object->setProperty("channelPeaks", peaks);
+        object->setProperty("monitorMap", mapping);
+        object->setProperty("monitorSolo", core.monitorSolo.load());
         object->setProperty("design", core.designPlaying());
         object->setProperty("designLayers", core.designLayers());
         object->setProperty("producerMaxMs", core.producerMaxMs());

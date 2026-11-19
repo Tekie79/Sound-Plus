@@ -54,6 +54,7 @@ class LibraryView final : public juce::Component,
 
   private:
     friend class Benchmark;
+    friend struct LayoutViewTestAccess;
     friend struct LibraryPreviewTestAccess;
     friend struct LibraryReliabilityTestAccess;
     double dispatchedMs = 0, appliedMs = 0;
@@ -73,6 +74,7 @@ class LibraryView final : public juce::Component,
     }
     void paintRowBackground(juce::Graphics &, int, int, int, bool) override;
     void paintCell(juce::Graphics &, int, int, int, int, bool) override;
+    juce::String getCellTooltip(int row, int column) override;
     void selectedRowsChanged(int) override;
     void updateSelection(bool explicitUserSelection);
     void cellDoubleClicked(int, int, const juce::MouseEvent &) override;
@@ -130,14 +132,15 @@ class LibraryView final : public juce::Component,
                 owner.chooseSource(n);
         }
     } sourceModel{*this};
+    IconButton channelDetails{"Per-channel source waveforms", ActionIcon::layers};
     ui::LookAndFeel look;
     LibraryService library;
     AudioClient audio;
     std::shared_ptr<WaveformPool> peakPool;
     uint64_t peakRevision = 0;
     int64_t rowPreviewPaints = 0;
-    std::map<juce::String,double> rowPreviewPaintTimes;
-    std::map<juce::String,double> rowUnavailablePaintTimes;
+    std::map<juce::String, double> rowPreviewPaintTimes;
+    std::map<juce::String, double> rowUnavailablePaintTimes;
     WaveformView waveform;
     WaveformCache referenceWaveformCache;
     WaveformView referenceWaveform;
@@ -153,8 +156,14 @@ class LibraryView final : public juce::Component,
                 return "Loading recording";
             const auto &a = *asset;
             return a.name + ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
-                   " channels, " + juce::String(a.sampleRate, 0) + " Hz, " +
-                   (a.online ? a.state : "Offline") + ", " + a.matchReason +
+                   " channels, " +
+                   (a.layoutOverride.id.isNotEmpty()
+                        ? layoutName(a.layoutOverride) + " explicit override; detected " +
+                              layoutName(a.detectedChannels)
+                    : a.detectedChannels.id.isEmpty() ? juce::String("Unknown layout")
+                                                      : layoutName(a.detectedChannels)) +
+                   ", " + juce::String(a.sampleRate, 0) + " Hz, " + (a.online ? a.state : "Offline") + ", " +
+                   a.matchReason +
                    (!a.matches.empty() && a.sampleRate > 0
                         ? ", match " + juce::String(a.matches.front().startSample / a.sampleRate, 3) +
                               " to " + juce::String(a.matches.front().endSample / a.sampleRate, 3) +

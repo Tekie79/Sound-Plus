@@ -1,4 +1,5 @@
 #include "DesignerView.h"
+#include "ChannelDetails.h"
 #include "DesignerCanvas.h"
 #include <cmath>
 namespace sp
@@ -71,6 +72,23 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     keepTake.onClick = [this] { nameTakeDialog(); };
     renderTake.onClick = [this] { session.render(); };
     takeOptions.onClick = [this] { takePopup(); };
+    addAndMakeVisible(layoutControl);
+    addAndMakeVisible(monitorControl);
+    addAndMakeVisible(readyOutputs);
+    layoutControl.setTitle("Design layout selector");
+    layoutControl.setTooltip(
+        "Convert the live mix deliberately; existing takes keep their frozen channel contract.");
+    layoutControl.onClick = [this] { layoutPopup(); };
+    monitorControl.onClick = [this] { monitorPopup(); };
+    readyOutputs.setTitle("Actual finalized Export output / set");
+    readyOutputs.onChange = [this]
+    {
+        if (updating)
+            return;
+        int i = readyOutputs.getSelectedId() - 1;
+        if (i >= 0 && i < (int)session.document.outputs.size())
+            session.chooseOutput(session.document.outputs[(size_t)i].path);
+    };
     recordTake.setTooltip("Record Live Design from frame zero with fresh effect history. Maximum 120 seconds "
                           "/ 8192 applied changes.");
     takeStatus.setColour(juce::Label::textColourId, ui::muted);
@@ -341,6 +359,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         }
     };
     dragOutput.resolveFile = [this] { return session.readyOutput(); };
+    dragOutput.resolveFiles = [this] { return session.readyFiles(); };
     dragOriginal.setTooltip("Drag the complete unprocessed original file. The receiving app may reference "
                             "its current location. Layer DSP is not applied.");
     dragOutput.setTooltip("Drag the actual finalized durable WAV to Finder or another application.");
@@ -383,8 +402,14 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     inspector.addAndMakeVisible(relink);
     relink->setBounds(282, layerHeaderY, 28, 28);
     relink->onClick = [this] { chooseFile(2); };
+    inspector.addAndMakeVisible(routingButton);
+    routingButton.onClick = [this] { routingPopup(); };
+    inspector.addAndMakeVisible(channelDetail);
+    channelDetail.onClick = [this] { channelPopup(); };
     inspector.addAndMakeVisible(channelMap);
-    channelMap.setBounds(8, inspectorY, 306, 28);
+    channelMap.setBounds(8, inspectorY, 270, 28);
+    routingButton.setBounds(8, inspectorY, 270, 28);
+    channelDetail.setBounds(282, inspectorY, 28, 28);
     inspectorY += 34;
     channelMap.setTitle("Layer source channel mapping");
     channelMap.onChange = [this]
@@ -749,7 +774,8 @@ void DesignerView::layoutInspector()
         y += 36;
         int height = g.height;
         bool noSourceError = g.name == "LAYER" &&
-                             (!session.selectedLayer() || session.selectedLayer()->source.error.isEmpty());
+                             (!session.selectedLayer() || session.selectedLayer()->source.error.isEmpty()) &&
+                             session.document.activeMix().layout.id.isEmpty();
         if (noSourceError)
             height -= 28;
         if (g.name == "STOCK INSERTS")
@@ -759,7 +785,10 @@ void DesignerView::layoutInspector()
             {
                 int i = std::clamp(effectChoice.getSelectedId() - 1, 0, (int)fx->size() - 1);
                 auto &type = (*fx)[(size_t)i].type;
-                n = type == "gain" ? 1 : type == "filter" ? 2 : type == "delay" ? 3 : 4;
+                n = type == "gain"                                                         ? 1
+                    : type == "filter"                                                     ? 2
+                    : type == "delay" || !session.document.activeMix().layout.id.isEmpty() ? 3
+                                                                                           : 4;
             }
             height -= (4 - n) * 50;
             if (n == 0)
@@ -771,7 +800,9 @@ void DesignerView::layoutInspector()
             if (noSourceError && bounds.getY() >= 56)
                 positioned.translate(0, -28);
             child->setBounds(positioned.translated(0, y));
-            child->setVisible(g.open && !(noSourceError && child == &sourceInfo));
+            child->setVisible(g.open && !(noSourceError && child == &sourceInfo) &&
+                              (child != &channelMap || session.document.activeMix().layout.id.isEmpty()) &&
+                              (child != &routingButton || !session.document.activeMix().layout.id.isEmpty()));
         }
         if (g.open)
             y += height + 8;
@@ -844,7 +875,8 @@ void DesignerView::number(const juce::String &name, const juce::String &titleTex
             [this, lock, lockBit]
             {
                 auto *l = session.selectedLayer();
-                lock->setEnabled(l != nullptr);
+                lock->setEnabled(l != nullptr && (lockBit != varyPan ||
+                                                  simplePanAvailable(session.document.activeMix(), *l)));
                 lock->setToggleState(l && (l->locks & lockBit), juce::dontSendNotification);
             });
     }
@@ -885,7 +917,11 @@ void DesignerView::slider(const juce::String &name, const juce::String &titleTex
         [this, value, get, name]
         {
             auto *l = session.selectedLayer();
-            value->setEnabled(l != nullptr);
+            value->setEnabled(l != nullptr && (name != "Pan / balance" ||
+                                               simplePanAvailable(session.document.activeMix(), *l)));
+            if (name == "Pan / balance" && l && !value->isEnabled())
+                value->setTooltip("Pan / balance does not apply to this routing. Use Routing / Spatial "
+                                  "Panner for position or channel trims.");
             if (l && !value->isMouseButtonDown())
             {
                 double v = get(*l);
@@ -893,7 +929,7 @@ void DesignerView::slider(const juce::String &name, const juce::String &titleTex
                     for (auto &effective : effectiveDisplay.layers)
                         if (effective.id == l->id)
                             v = get(effective);
-                if (name == "Gain" || name == "Pan / balance")
+                if ((name == "Gain" || name == "Pan / balance") && value->isEnabled())
                     value->setTooltip(
                         "Effective parameter value. Editing unlinks this target from its macro; "
                         "blend weighting remains separate.");
@@ -915,7 +951,8 @@ void DesignerView::slider(const juce::String &name, const juce::String &titleTex
             [this, lock, lockBit]
             {
                 auto *l = session.selectedLayer();
-                lock->setEnabled(l != nullptr);
+                lock->setEnabled(l != nullptr && (lockBit != varyPan ||
+                                                  simplePanAvailable(session.document.activeMix(), *l)));
                 lock->setToggleState(l && (l->locks & lockBit), juce::dontSendNotification);
             });
     }
@@ -1062,7 +1099,9 @@ void DesignerView::updateEffects()
             hi = {2000, .95, 1, 1};
         }
         else
-            names = {"Room size", "Damping", "Wet mix", "Stereo width"};
+            names = session.document.activeMix().layout.id.isEmpty()
+                        ? juce::StringArray{"Room size", "Damping", "Wet mix", "Stereo width"}
+                        : juce::StringArray{"Room size", "Damping", "Wet mix"};
     }
     bool expanded = true;
     for (auto &g : groups)
@@ -1130,6 +1169,31 @@ void DesignerView::refresh()
         channelMap.setSelectedId(layer->region.auditionPair + 2, juce::dontSendNotification);
     }
     channelMap.setEnabled(layer != nullptr);
+    bool aware = !session.document.activeMix().layout.id.isEmpty();
+    channelMap.setVisible(!aware);
+    routingButton.setVisible(aware);
+    routingButton.setEnabled(layer != nullptr);
+    channelDetail.setEnabled(layer != nullptr);
+    layoutControl.setButtonText(juce::String::fromUTF8("Design · ") + layoutName(designLayout(d)) +
+                                (aware ? "" : " (legacy)"));
+    bool denseMeterLayout = designChannels(d) > 8;
+    monitor.setBounds(getWidth() - 230, getHeight() - (denseMeterLayout ? 25 : 33), 180,
+                      denseMeterLayout ? 18 : 24);
+    layoutControl.setEnabled(true); // Preset items lock during capture; routing/detail remains accessible.
+    if (layer)
+    {
+        auto observed = layer->source.detectedChannels.id.isEmpty()
+                            ? (layer->source.channels <= 2
+                                   ? channelLayout(layer->source.channels == 1 ? "mono-v1" : "stereo-v1")
+                                   : discreteLayout(layer->source.channels, true))
+                            : layer->source.detectedChannels;
+        sourceInfo.setText(layer->source.error.isEmpty() ? layoutBadge(observed) : layer->source.error,
+                           juce::dontSendNotification);
+        routingButton.setTooltip("Interpretation: " + layoutBadge(layer->routing.interpretation) +
+                                 juce::String::fromUTF8(" · selected ") +
+                                 juce::String((int)layer->routing.inputs.size()) + " of " +
+                                 juce::String(layer->source.channels));
+    }
     pitchInfo.setText(
         layer && layer->rate != 1 ? juce::String(12 * std::log2(layer->rate), 2) + " semitones (linked)" : "",
         juce::dontSendNotification);
@@ -1212,6 +1276,40 @@ void DesignerView::refresh()
                        juce::dontSendNotification);
     outputInfo.setTooltip(session.lastOutput == juce::File() ? session.outputFolder().getFullPathName()
                                                              : session.lastOutput.getFullPathName());
+    juce::String outputKey = d.activeTake;
+    for (auto &o : d.outputs)
+        outputKey += o.path + (outputFiles(o).isEmpty() ? "missing" : "ready");
+    if (outputKey != outputSignature)
+    {
+        readyOutputs.clear(juce::dontSendNotification);
+        for (size_t i = 0; i < d.outputs.size(); ++i)
+        {
+            auto &o = d.outputs[i];
+            if (o.takeId != d.activeTake || outputFiles(o).isEmpty())
+                continue;
+            auto label =
+                o.channelProvenance.isVoid()
+                    ? (o.settings.channels <= 2
+                           ? juce::String(o.settings.channels == 1 ? "Mono" : "Stereo")
+                           : juce::String(o.settings.channels) + juce::String::fromUTF8(" ch · Original"))
+                    : layoutName(layoutFromJson(o.channelProvenance["export"]));
+            juce::String prefix = o.files.isArray()           ? "Split "
+                                  : o.kind == "layer-render"  ? "Selection "
+                                  : o.kind == "take-render"   ? "Take "
+                                  : o.kind == "original-copy" ? "Original "
+                                                              : "Mix ";
+            readyOutputs.addItem(prefix + label + juce::String::fromUTF8(" · ") +
+                                     juce::File(o.path).getFileName(),
+                                 (int)i + 1);
+        }
+        outputSignature = outputKey;
+    }
+    for (size_t i = 0; i < d.outputs.size(); ++i)
+        if (d.outputs[i].path == session.lastOutput.getFullPathName())
+            readyOutputs.setSelectedId((int)i + 1, juce::dontSendNotification);
+    readyOutputs.setVisible(readyOutputs.getNumItems() > 0);
+    outputInfo.setVisible(readyOutputs.getNumItems() == 0);
+    readyOutputs.setTooltip(outputInfo.getTooltip());
     canvas->syncSelectors();
     canvas->onRowsChanged();
     canvas->repaint();
@@ -1279,6 +1377,29 @@ void DesignerView::timerCallback()
     meter.setTooltip("Master output: " +
                      juce::String(juce::Decibels::gainToDecibels(std::max(.00001f, peak)), 1) + " dBFS");
     meter.setColour(juce::Label::textColourId, clipHeld ? juce::Colour(0xffff8866) : muted);
+    juce::String meterDescription = "Pre-monitor master channels: ";
+    auto layout = designLayout(session.document);
+    for (int c = 0; c < layout.size(); ++c)
+    {
+        auto value = state["channelPeaks"].isArray() ? (float)state["channelPeaks"][c] : 0.f;
+        channelLevels[c] = std::max(owned && playing ? value : 0.f, channelLevels[c] * .88f);
+        meterDescription +=
+            layout.roles[c] + " " +
+            juce::String(juce::Decibels::gainToDecibels(std::max(.00001f, channelLevels[c])), 1) + " dBFS; ";
+    }
+    bool custom = false;
+    if (auto *a = state["monitorMap"].getArray())
+        for (int i = 0; i < a->size(); ++i)
+            custom |= (int)(*a)[i] != -2;
+    auto monitorText = (int)state["monitorSolo"] >= 0 ? juce::String::fromUTF8("Monitor · SOLO")
+                       : custom                       ? juce::String::fromUTF8("Monitor · assigned")
+                       : layout.id.startsWith("discrete-")
+                           ? juce::String::fromUTF8("Monitor · pair 1/2")
+                           : juce::String::fromUTF8("Monitor · Stereo downmix");
+    monitorControl.setButtonText(monitorText);
+    monitorControl.setTooltip(
+        meterDescription +
+        "Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.");
     position.setVisible(!performMode && position.getWidth() > 0);
     position.setText(juce::String(session.document.playhead / session.document.sampleRate, 4) + " s",
                      juce::dontSendNotification);
@@ -1337,13 +1458,26 @@ void DesignerView::paint(juce::Graphics &g)
     g.setColour(juce::Colour(0xff29323e));
     g.drawHorizontalLine(92, 12, getWidth() - 12.f);
     g.drawHorizontalLine(getHeight() - (performMode ? 158 : 190), 12, getWidth() - side - 12.f);
-    g.setColour(juce::Colour(0xff293440));
-    g.fillRoundedRectangle(getWidth() - 230.f, getHeight() - 49.f, 180, 3, 1.5f);
-    g.setColour(clipHeld ? juce::Colour(0xffff8866) : accent);
-    g.fillRoundedRectangle(
-        getWidth() - 230.f, getHeight() - 49.f,
-        std::clamp((juce::Decibels::gainToDecibels(std::max(.00001f, peak)) + 60) / 60, 0.f, 1.f) * 180, 3,
-        1.5f);
+    auto layout = designLayout(session.document);
+    int columns = std::min(8, layout.size());
+    float cell = 180.f / columns;
+    int rows = (layout.size() + 7) / 8;
+    g.setFont(juce::FontOptions(8.f));
+    for (int c = 0; c < layout.size(); ++c)
+    {
+        float x = getWidth() - 230.f + (c % 8) * cell;
+        float y = getHeight() - (rows > 1 ? 54.f : 50.f) + (c / 8) * 14.f;
+        g.setColour(ui::line);
+        g.fillRect(x, y + 11, cell - 2, 2.f);
+        g.setColour(channelLevels[c] >= 1 ? juce::Colour(0xffff8866) : ui::accent);
+        g.fillRect(x, y + 11,
+                   std::clamp((juce::Decibels::gainToDecibels(std::max(.00001f, channelLevels[c])) + 60) / 60,
+                              0.f, 1.f) *
+                       (cell - 2),
+                   2.f);
+        g.setColour(ui::muted);
+        g.drawFittedText(layout.roles[c], (int)x, (int)y, (int)cell, 10, juce::Justification::centred, 1);
+    }
 }
 void DesignerView::resized()
 {
@@ -1382,7 +1516,8 @@ void DesignerView::resized()
     library.setBounds(16, 17, 64, 30);
     browse.setBounds(86, 17, 72, 30);
     title.setBounds(170, 10, std::max(80, getWidth() - 358), 30);
-    info.setBounds(170, 40, std::max(80, getWidth() - 358), 16);
+    layoutControl.setBounds(170, 38, 170, 20);
+    info.setBounds(348, 40, std::max(0, getWidth() - 536), 16);
     inspect.setBounds(getWidth() - 42, 57, 30, 28);
     int x = 16;
     for (auto *b : {&newButton, &openButton, &saveButton, &recover, &undoButton, &redoButton, &add,
@@ -1433,14 +1568,18 @@ void DesignerView::resized()
     dragOutput.setBounds(100, y + 42, 32, 32);
     addPrint.setBounds(136, y + 42, 32, 32);
     outputInfo.setBounds(180, y + 42, std::max(60, creative - (performMode ? 400 : 198)), 30);
-    play.setBounds(performMode ? creative - 170 : creative / 2 - 20, getHeight() - (performMode ? 112 : 92),
+    readyOutputs.setBounds(outputInfo.getBounds());
+    play.setBounds(performMode ? creative - 170 : creative / 2 - 20, getHeight() - (performMode ? 118 : 92),
                    40, 40);
     accurate.setBounds(performMode ? creative - 120 : creative / 2 + 30,
-                       getHeight() - (performMode ? 106 : 86), 28, 28);
+                       getHeight() - (performMode ? 112 : 86), 28, 28);
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);
-    monitor.setBounds(getWidth() - 230, getHeight() - 35, 180, 24);
+    bool denseMeters = designChannels(session.document) > 8;
+    monitor.setBounds(getWidth() - 230, getHeight() - (denseMeters ? 25 : 33), 180, denseMeters ? 18 : 24);
     meter.setBounds(getWidth() - (performMode ? 54 : 230), getHeight() - (performMode ? 73 : 77),
                     performMode ? 42 : 180, 22);
+    monitorControl.setBounds(getWidth() - 230, getHeight() - 76, 180, 18);
+    meter.setVisible(false);
     deviceRate.setVisible(false);
     refresh();
 }
@@ -1517,7 +1656,7 @@ void DesignerView::itemDropped(const SourceDetails &details)
         session.beginGesture();
         for (auto &layer : captured.original.layers)
             session.add(layer.source, layer.region.startSample, layer.region.endSample, layer.external,
-                        layer.region.auditionPair, frame);
+                        layer.routing.needsSelection ? -3 : layer.region.auditionPair, frame);
         session.endGesture();
         canvas->grabKeyboardFocus();
     }
@@ -1686,6 +1825,7 @@ void DesignerView::variationPopup()
         juce::OwnedArray<juce::Component> children;
     };
     auto panel = std::make_unique<Panel>();
+    panel->setOpaque(true);
     int y = 8;
     auto add = [&](const juce::String &name, uint32_t bit, double value, double hi,
                    const std::function<void(VariationSettings &, double)> &set)
@@ -1754,11 +1894,26 @@ void DesignerView::renderPopup()
 }
 std::unique_ptr<juce::Component> DesignerView::makeRenderPanel()
 {
-    struct Panel : juce::Component
+    struct Panel : juce::Component, private juce::Timer
     {
         juce::OwnedArray<juce::Component> children;
+        std::function<void()> update;
+        void timerCallback() override
+        {
+            if (update)
+                update();
+        }
+        void paint(juce::Graphics &g) override
+        {
+            g.fillAll(ui::surface);
+        }
+        void run()
+        {
+            startTimerHz(5);
+        }
     };
     auto panel = std::make_unique<Panel>();
+    panel->setOpaque(true);
     int y = 8;
     auto combo = [&](const juce::String &name, const juce::StringArray &items, int selected,
                      std::function<void(DesignRenderSettings &, int)> set)
@@ -1790,7 +1945,34 @@ std::unique_ptr<juce::Component> DesignerView::makeRenderPanel()
           [](auto &s, int n) { s.sampleRate = n == 1   ? 44100
                                               : n == 2 ? 48000
                                                        : 96000; });
-    combo("Channels", {"Mono (L+R)/2", "Stereo"}, s.channels, [](auto &s, int n) { s.channels = n; });
+    std::vector<ChannelLayout> layouts = namedLayouts();
+    for (int n = 1; n <= 16; ++n)
+        layouts.push_back(discreteLayout(n));
+    juce::StringArray names{"Legacy mono/stereo", "Same as design"};
+    int selected = s.layout == "same" ? 2 : 1;
+    for (size_t i = 0; i < layouts.size(); ++i)
+    {
+        names.add(layoutName(layouts[i]));
+        if (s.layout == layouts[i].id)
+            selected = (int)i + 3;
+    }
+    combo("Export layout", names, selected,
+          [layouts](auto &s, int n) {
+              s.layout = n == 1 ? juce::String() : n == 2 ? juce::String("same") : layouts[(size_t)n - 3].id;
+          });
+    if (session.performanceMix().layout.id.isEmpty() && s.layout.isEmpty())
+        combo("Channels", {"Mono (L+R)/2", "Stereo"}, s.channels, [](auto &s, int n) { s.channels = n; });
+    auto *split = new juce::ToggleButton("Split mono set + multichannel Print master");
+    panel->children.add(split);
+    panel->addAndMakeVisible(split);
+    split->setBounds(8, y, 340, 28);
+    split->setToggleState(s.splitMono, juce::dontSendNotification);
+    split->onClick = [this, split]
+    {
+        session.editMetadata("Export file set",
+                             [&](auto &d) { d.renderSettings.splitMono = split->getToggleState(); });
+    };
+    y += 32;
     combo("WAV depth", {"16-bit PCM", "24-bit PCM", "32-bit float"},
           s.bits == 16   ? 1
           : s.bits == 24 ? 2
@@ -1854,6 +2036,31 @@ std::unique_ptr<juce::Component> DesignerView::makeRenderPanel()
         };
         y += 32;
     }
+    auto *order = new juce::Label();
+    panel->children.add(order);
+    panel->addAndMakeVisible(order);
+    labelStyle(*order);
+    order->setFont(juce::FontOptions(11.f));
+    order->setBounds(8, y, 340, 48);
+    order->setMinimumHorizontalScale(1);
+    panel->update = [this, order]
+    {
+        try
+        {
+            auto l = exportLayout(session.document, session.document.renderSettings);
+            order->setText("Export order: " + l.roles.joinIntoString(juce::String::fromUTF8(" · ")) +
+                               juce::String::fromUTF8(
+                                   "\nShared gain normalization · explicit role conversion · RIFF <4GiB"),
+                           juce::dontSendNotification);
+        }
+        catch (const std::exception &e)
+        {
+            order->setText(e.what(), juce::dontSendNotification);
+        }
+    };
+    panel->update();
+    panel->run();
+    y += 50;
     panel->setSize(358, y + 8);
     return panel;
 }

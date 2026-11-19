@@ -62,6 +62,11 @@ juce::String designStructure(const DesignDocument &document)
     for (auto &layer : *mix["layers"].getArray())
     {
         stripRack(layer["effects"]);
+        if (auto *r = layer["routing"].getDynamicObject())
+        {
+            r->removeProperty("azimuth");
+            r->removeProperty("width");
+        }
         for (const char *key : {"controlGain", "name", "first", "last", "placement", "sync", "fadeIn",
                                 "fadeOut", "gainDb", "pan", "rate", "reverse", "locked", "locks", "colour",
                                 "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
@@ -85,6 +90,11 @@ juce::var designParameters(const DesignDocument &base)
         value->setProperty("gainDb", layer.gainDb);
         value->setProperty("controlGain", layer.controlGain);
         value->setProperty("pan", layer.pan);
+        if (!document.activeMix().layout.id.isEmpty())
+        {
+            value->setProperty("azimuth", layer.routing.azimuth);
+            value->setProperty("width", layer.routing.width);
+        }
         value->setProperty("rate", layer.rate);
         value->setProperty("reverse", layer.reverse);
         value->setProperty("first", (juce::int64)layer.region.startSample);
@@ -121,6 +131,11 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         layer.gainDb = (double)value["gainDb"];
         layer.controlGain = value.hasProperty("controlGain") ? (double)value["controlGain"] : 1;
         layer.pan = (double)value["pan"];
+        if (!changed.activeMix().layout.id.isEmpty())
+        {
+            layer.routing.azimuth = (double)value["azimuth"];
+            layer.routing.width = (double)value["width"];
+        }
         layer.rate = (double)value["rate"];
         layer.reverse = (bool)value["reverse"];
         layer.region.startSample = (int64_t)value["first"];

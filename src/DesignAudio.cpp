@@ -1,4 +1,5 @@
 #include "DesignAudio.h"
+#include "ProcessorBusContract.h"
 #include "DesignLive.h"
 #include "PerformanceState.h"
 #include <random>
@@ -32,7 +33,10 @@ class StockProcessor final : public EffectProcessor
 {
     StockEffect effect;
     juce::Reverb reverb;
-    juce::dsp::IIR::Filter<float> high[2], low[2];
+    juce::dsp::IIR::Filter<float> high[16], low[16];
+    std::vector<std::unique_ptr<juce::Reverb>> monoReverbs;
+    int channels = 2;
+    bool layoutAware = false;
     juce::AudioBuffer<float> delay;
     int write = 0;
     double sampleRate;
@@ -42,8 +46,9 @@ class StockProcessor final : public EffectProcessor
     int coefficientRemaining = 0;
 
   public:
-    StockProcessor(const StockEffect &e, double rate, bool invariant = false)
-        : effect(e), sampleRate(rate), partitionInvariant(invariant)
+    StockProcessor(const StockEffect &e, double rate, bool invariant = false, int width = 2,
+                   bool aware = false)
+        : effect(e), channels(width), layoutAware(aware), sampleRate(rate), partitionInvariant(invariant)
     {
         for (auto *value : {&gain, &feedback, &wet, &delayFrames})
             value->reset(rate, .01);
@@ -52,7 +57,7 @@ class StockProcessor final : public EffectProcessor
         highFrequency.setCurrentAndTargetValue(e.parameters[0]);
         lowFrequency.setCurrentAndTargetValue(e.parameters[1]);
         if (e.type == "filter")
-            for (int c = 0; c < 2; ++c)
+            for (int c = 0; c < channels; ++c)
             {
                 high[c].coefficients = juce::dsp::IIR::Coefficients<float>::makeHighPass(
                     rate, std::clamp(e.parameters[0], 10.0, rate * .45));
@@ -64,7 +69,7 @@ class StockProcessor final : public EffectProcessor
         if (e.type == "delay")
         {
             // Fixed capacity preserves the delay history when its tap moves.
-            delay.setSize(2, (int)std::ceil(rate * 2) + 2);
+            delay.setSize(channels, (int)std::ceil(rate * 2) + 2);
             delay.clear();
         }
         if (e.type == "reverb")
@@ -79,6 +84,15 @@ class StockProcessor final : public EffectProcessor
             p.freezeMode = 0;
             reverb.setParameters(p);
             reverb.reset();
+            if (layoutAware)
+                for (int c = 0; c < channels; ++c)
+                {
+                    auto r = std::make_unique<juce::Reverb>();
+                    r->setSampleRate(rate);
+                    r->setParameters(p);
+                    r->reset();
+                    monoReverbs.push_back(std::move(r));
+                }
         }
         update(e);
         for (auto *value : {&gain, &feedback, &wet, &delayFrames})
@@ -107,6 +121,8 @@ class StockProcessor final : public EffectProcessor
             p.dryLevel = 1 - p.wetLevel;
             p.width = (float)e.parameters[3];
             reverb.setParameters(p);
+            for (auto &r : monoReverbs)
+                r->setParameters(p);
         }
     }
     void process(juce::AudioBuffer<float> &b, int count) override
@@ -118,7 +134,7 @@ class StockProcessor final : public EffectProcessor
             for (int n = 0; n < count; ++n)
             {
                 auto value = gain.getNextValue();
-                for (int c = 0; c < 2; ++c)
+                for (int c = 0; c < channels; ++c)
                     b.setSample(c, n, b.getSample(c, n) * value);
             }
             return;
@@ -137,13 +153,13 @@ class StockProcessor final : public EffectProcessor
                             sampleRate, std::clamp(hp, 10., sampleRate * .45));
                         auto lc = juce::dsp::IIR::Coefficients<float>::makeLowPass(
                             sampleRate, std::clamp(lp, 20., sampleRate * .45));
-                        for (int c = 0; c < 2; ++c)
+                        for (int c = 0; c < channels; ++c)
                         {
                             *high[c].coefficients = *hc;
                             *low[c].coefficients = *lc;
                         }
                     }
-                    for (int c = 0; c < 2; ++c)
+                    for (int c = 0; c < channels; ++c)
                         b.setSample(c, n, low[c].processSample(high[c].processSample(b.getSample(c, n))));
                     --coefficientRemaining;
                 }
@@ -161,13 +177,13 @@ class StockProcessor final : public EffectProcessor
                         sampleRate, std::clamp(hp, 10., sampleRate * .45));
                     auto lc = juce::dsp::IIR::Coefficients<float>::makeLowPass(
                         sampleRate, std::clamp(lp, 20., sampleRate * .45));
-                    for (int c = 0; c < 2; ++c)
+                    for (int c = 0; c < channels; ++c)
                     {
                         *high[c].coefficients = *hc;
                         *low[c].coefficients = *lc;
                     }
                 }
-                for (int c = 0; c < 2; ++c)
+                for (int c = 0; c < channels; ++c)
                     for (int n = offset; n < offset + frames; ++n)
                         b.setSample(c, n, low[c].processSample(high[c].processSample(b.getSample(c, n))));
             }
@@ -175,7 +191,11 @@ class StockProcessor final : public EffectProcessor
         }
         if (effect.type == "reverb")
         {
-            reverb.processStereo(b.getWritePointer(0), b.getWritePointer(1), count);
+            if (layoutAware)
+                for (int c = 0; c < channels; ++c)
+                    monoReverbs[(size_t)c]->processMono(b.getWritePointer(c), count);
+            else
+                reverb.processStereo(b.getWritePointer(0), b.getWritePointer(1), count);
             return;
         }
         for (int n = 0; n < count; ++n)
@@ -185,7 +205,7 @@ class StockProcessor final : public EffectProcessor
                 tap += delay.getNumSamples();
             int first = (int)tap, second = (first + 1) % delay.getNumSamples();
             float fraction = tap - first, mix = wet.getNextValue(), repeat = feedback.getNextValue();
-            for (int c = 0; c < 2; ++c)
+            for (int c = 0; c < channels; ++c)
             {
                 float dry = b.getSample(c, n);
                 float echo = juce::jmap(fraction, delay.getSample(c, first), delay.getSample(c, second));
@@ -197,11 +217,13 @@ class StockProcessor final : public EffectProcessor
     }
 };
 using Rack = std::vector<std::unique_ptr<EffectProcessor>>;
-Rack prepareRack(const std::vector<StockEffect> &effects, double rate, bool invariant = false)
+Rack prepareRack(const std::vector<StockEffect> &effects, double rate, bool invariant = false,
+                 int channels = 2, bool aware = false)
 {
+    negotiateStockBus({discreteLayout(channels), discreteLayout(channels), false});
     Rack rack;
     for (auto &e : effects)
-        rack.push_back(std::make_unique<StockProcessor>(e, rate, invariant));
+        rack.push_back(std::make_unique<StockProcessor>(e, rate, invariant, channels, aware));
     return rack;
 }
 void processRack(Rack &rack, juce::AudioBuffer<float> &buffer, int n)
@@ -233,7 +255,14 @@ class Voice
     std::array<std::array<float, 32>, 1024> coefficients{};
     Rack rack;
     juce::AudioBuffer<float> block{2, 512};
-    bool mono = false, identity = false;
+    bool mono = false, identity = false, layoutAware = false;
+    int inputChannels = 2;
+    ChannelLayout bus;
+    ChannelMatrix matrix{};
+    std::array<std::array<juce::SmoothedValue<float>, 16>, 16> matrixGains;
+    juce::SmoothedValue<double> azimuth, width;
+    juce::dsp::IIR::Filter<float> lfeFilter;
+    int lfeIndex = -1;
     double designRate;
     juce::SmoothedValue<float> leftGain, rightGain;
     juce::SmoothedValue<double> inFrames, outFrames;
@@ -242,6 +271,13 @@ class Voice
     void gainTargets(bool initial)
     {
         float gain = juce::Decibels::decibelsToGain((float)layer.gainDb) * (float)layer.controlGain;
+        if (layoutAware)
+        {
+            if (initial)
+                leftGain.setCurrentAndTargetValue(gain);
+            else
+                leftGain.setTargetValue(gain);
+        }
         float left = mono            ? (float)std::cos((layer.pan + 1) * pi / 4)
                      : layer.pan > 0 ? (float)std::cos(layer.pan * pi / 2)
                                      : 1;
@@ -250,14 +286,16 @@ class Voice
                                       : 1;
         if (initial)
         {
-            leftGain.setCurrentAndTargetValue(gain * left);
+            if (!layoutAware)
+                leftGain.setCurrentAndTargetValue(gain * left);
             rightGain.setCurrentAndTargetValue(gain * right);
             inFrames.setCurrentAndTargetValue(layer.fadeIn);
             outFrames.setCurrentAndTargetValue(layer.fadeOut);
         }
         else
         {
-            leftGain.setTargetValue(gain * left);
+            if (!layoutAware)
+                leftGain.setTargetValue(gain * left);
             rightGain.setTargetValue(gain * right);
             inFrames.setTargetValue(layer.fadeIn);
             outFrames.setTargetValue(layer.fadeOut);
@@ -301,10 +339,12 @@ class Voice
             if (!reader->read(&scratch, 0, 8192, entry->start, true, true))
                 throw std::runtime_error("Cannot read source: " + layer.source.name.toStdString());
             for (int n = 0; n < 8192; ++n)
-                for (int c = 0; c < 2; ++c)
+                for (int c = 0; c < inputChannels; ++c)
                 {
                     float value = 0;
-                    if (layer.region.auditionPair < 0)
+                    if (layoutAware)
+                        value = scratch.getSample(layer.routing.inputs[(size_t)c], n);
+                    else if (layer.region.auditionPair < 0)
                     {
                         double sum = 0;
                         for (int k = 0; k < scratch.getNumChannels(); ++k)
@@ -335,11 +375,13 @@ class Voice
     }
 
   public:
-    Voice(const DesignLayer &l, double rate, bool invariant = false)
+    Voice(const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {})
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
-          rack(prepareRack(l.effects, rate, invariant)), designRate(rate),
-          previousIn(l.fadeInShape, l.fadeInPoints), previousOut(l.fadeOutShape, l.fadeOutPoints),
-          currentIn(previousIn), currentOut(previousOut)
+          rack(prepareRack(l.effects, rate, invariant, layout.id.isEmpty() ? 2 : (int)l.routing.inputs.size(),
+                           !layout.id.isEmpty())),
+          layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? (int)l.routing.inputs.size() : 2),
+          bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
+          previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
@@ -350,6 +392,27 @@ class Voice
             reader->lengthInSamples != l.source.samples || (int)reader->numChannels != l.source.channels)
             throw std::runtime_error("Source header changed: " + l.source.name.toStdString());
         scratch.setSize(l.source.channels, 8192);
+        block.setSize(inputChannels, 512);
+        for (auto &c : cache)
+            c.data.setSize(inputChannels, 8192);
+        if (layoutAware)
+        {
+            matrix = routingMatrix(l.routing, bus, l.pan);
+            for (int c = 0; c < bus.size(); ++c)
+                for (int k = 0; k < inputChannels; ++k)
+                {
+                    matrixGains[c][k].reset(rate, .005);
+                    matrixGains[c][k].setCurrentAndTargetValue(matrix[c][k]);
+                }
+            azimuth.reset(rate, .01);
+            width.reset(rate, .01);
+            azimuth.setCurrentAndTargetValue(l.routing.azimuth);
+            width.setCurrentAndTargetValue(l.routing.width);
+            lfeIndex = bus.roles.indexOf("LFE");
+            lfeFilter.coefficients =
+                juce::dsp::IIR::Coefficients<float>::makeLowPass(rate, l.routing.lfeCutoff);
+            lfeFilter.reset();
+        }
         mono = l.region.auditionPair < 0 || l.region.auditionPair * 2 + 1 >= l.source.channels;
         identity = std::abs(ratio - 1) < 1e-12;
         leftGain.reset(rate, .005);
@@ -389,12 +452,52 @@ class Voice
                 auto progress = (double)(duration - local - 1) / fadeOut;
                 envelope *= juce::jmap(outBlend, previousOut.value(progress), currentOut.value(progress));
             }
-            block.setSample(0, n, interpolated(0, position) * left * envelope);
-            block.setSample(1, n, interpolated(1, position) * right * envelope);
+            if (layoutAware)
+                for (int c = 0; c < inputChannels; ++c)
+                    block.setSample(c, n, interpolated(c, position) * left * envelope);
+            else
+            {
+                block.setSample(0, n, interpolated(0, position) * left * envelope);
+                block.setSample(1, n, interpolated(1, position) * right * envelope);
+            }
         }
         processRack(rack, block, frames);
-        for (int c = 0; c < 2; ++c)
-            output.addFrom(c, offset, block, c, 0, frames);
+        if (!layoutAware)
+        {
+            for (int c = 0; c < 2; ++c)
+                output.addFrom(c, offset, block, c, 0, frames);
+        }
+        else
+            for (int n = 0; n < frames; ++n)
+            {
+                if (layer.routing.spatial)
+                {
+                    auto angle = azimuth.getNextValue(), spread = width.getNextValue();
+                    for (int k = 0; k < inputChannels; ++k)
+                    {
+                        auto g = spatialGains(
+                            bus, angle + (inputChannels == 2 ? (k == 0 ? -spread : spread) * .5 : 0),
+                            layer.routing.divergence);
+                        float value = block.getSample(k, n) * (inputChannels == 2 ? .70710678f : 1.f);
+                        for (int c = 0; c < bus.size(); ++c)
+                            output.addSample(c, offset + n, value * g[c]);
+                    }
+                    if (lfeIndex >= 0 && layer.routing.lfeDb > -90)
+                    {
+                        float value = 0;
+                        for (int k = 0; k < inputChannels; ++k)
+                            value += block.getSample(k, n) / inputChannels;
+                        output.addSample(lfeIndex, offset + n,
+                                         lfeFilter.processSample(value) *
+                                             (float)juce::Decibels::decibelsToGain(layer.routing.lfeDb));
+                    }
+                }
+                else
+                    for (int c = 0; c < bus.size(); ++c)
+                        for (int k = 0; k < inputChannels; ++k)
+                            output.addSample(c, offset + n,
+                                             block.getSample(k, n) * matrixGains[c][k].getNextValue());
+            }
     }
     const juce::String &id() const
     {
@@ -418,6 +521,20 @@ class Voice
                     previousIn, currentIn, inShapeMix);
         changeShape(layer.fadeOutShape, updated.fadeOutShape, layer.fadeOutPoints, updated.fadeOutPoints,
                     previousOut, currentOut, outShapeMix);
+        if (layoutAware)
+        {
+            matrix = routingMatrix(updated.routing, bus, updated.pan);
+            for (int c = 0; c < bus.size(); ++c)
+                for (int k = 0; k < inputChannels; ++k)
+                    matrixGains[c][k].setTargetValue(matrix[c][k]);
+            double target = updated.routing.azimuth, current = azimuth.getCurrentValue();
+            while (target - current > 180)
+                target -= 360;
+            while (target - current < -180)
+                target += 360;
+            azimuth.setTargetValue(target);
+            width.setTargetValue(updated.routing.width);
+        }
         layer = updated;
         duration = layerDuration(layer, designRate);
         ratio = layer.source.sampleRate * layer.rate / designRate;
@@ -475,7 +592,11 @@ struct DesignGraph::Impl
         masterGain.reset(sampleRate, .005);
         masterGain.setCurrentAndTargetValue(juce::Decibels::decibelsToGain((float)master));
         bool invariant = d.takeProcessing || selectedTake(d);
-        masterRack = prepareRack(document.activeMix().masterEffects, sampleRate, invariant);
+        auto &mix = document.activeMix();
+        int channels = mix.layout.id.isEmpty() ? 2 : mix.layout.size();
+        block.setSize(channels, 512);
+        masterRack = prepareRack(mix.masterEffects, sampleRate, invariant || !mix.layout.id.isEmpty(),
+                                 channels, !mix.layout.id.isEmpty());
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -483,7 +604,12 @@ struct DesignGraph::Impl
             {
                 if (cancelled())
                     throw QueryCancelled();
-                voices.push_back(std::make_unique<Voice>(l, sampleRate, invariant));
+                if (!document.activeMix().layout.id.isEmpty() && l.routing.needsSelection)
+                    throw std::runtime_error("Choose supported source channels in Routing for: " +
+                                             l.name.toStdString());
+                voices.push_back(std::make_unique<Voice>(
+                    l, sampleRate, invariant || !document.activeMix().layout.id.isEmpty(),
+                    document.activeMix().layout));
             }
     }
     void render(juce::AudioBuffer<float> &out, int offset, int count)
@@ -492,7 +618,7 @@ struct DesignGraph::Impl
         {
             while (nextEvent < events.size() && events[nextEvent].frame == cursor)
             {
-                applyPerformControls(takeBase.activeMix().performance, events[nextEvent++].controls);
+                applyMixControls(takeBase.activeMix(), events[nextEvent++].controls);
                 auto p = designParameters(takeBase);
                 applyDesignParameters(document, p);
                 for (auto &l : document.activeMix().layers)
@@ -519,10 +645,10 @@ struct DesignGraph::Impl
             for (int i = 0; i < n; ++i)
             {
                 auto gain = masterGain.getNextValue();
-                for (int c = 0; c < 2; ++c)
+                for (int c = 0; c < block.getNumChannels(); ++c)
                     block.setSample(c, i, block.getSample(c, i) * gain);
             }
-            for (int c = 0; c < 2; ++c)
+            for (int c = 0; c < block.getNumChannels(); ++c)
             {
                 for (int i = 0; i < n; ++i)
                     if (!std::isfinite(block.getSample(c, i)))
@@ -567,7 +693,7 @@ void DesignGraph::seek(int64_t frame, const std::function<bool()> &cancelled, in
         impl->cursor = std::max<int64_t>(0, frame - warmup);
     if (frame < impl->cursor)
         throw std::runtime_error("A seek requires fresh processing state");
-    juce::AudioBuffer<float> discard(2, 512);
+    juce::AudioBuffer<float> discard(impl->block.getNumChannels(), 512);
     while (impl->cursor < frame)
     {
         if (cancelled())
@@ -621,7 +747,7 @@ struct DesignReader::Impl : juce::AudioSource
                 (int64_t)std::ceil((long double)first * rate / t->sampleRate);
         if (rate != document.sampleRate)
         {
-            resampler = std::make_unique<juce::ResamplingAudioSource>(this, false, 2);
+            resampler = std::make_unique<juce::ResamplingAudioSource>(this, false, designChannels(document));
             resampler->setResamplingRatio(document.sampleRate / rate);
             resampler->prepareToPlay(4096, rate);
         }
@@ -636,7 +762,7 @@ struct DesignReader::Impl : juce::AudioSource
             pendingPerformance.reset();
             if (!capture->append(graph.position(), controls))
                 throw std::runtime_error("Take event capacity exceeded");
-            applyPerformControls(document.activeMix().performance, controls);
+            applyMixControls(document.activeMix(), controls);
             graph.updateParameters(designParameters(document));
         }
         graph.render(*b.buffer, b.startSample, b.numSamples);
@@ -678,6 +804,8 @@ int DesignReader::read(juce::AudioBuffer<float> &buffer, int frames, const std::
     if (cancelled())
         throw QueryCancelled();
     int n = (int)std::min<int64_t>(frames, impl->total - impl->count);
+    if (buffer.getNumChannels() != designChannels(impl->document) || buffer.getNumSamples() < frames)
+        buffer.setSize(designChannels(impl->document), frames);
     buffer.clear();
     if (n > 0)
     {
@@ -720,6 +848,41 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     // Freeze the actual verified relocation once for metering, PCM and final
     // publication guards. Unrelated Live Design paths never enter this snapshot.
     const auto effectiveInput = selectedTake(d) ? takeDocument(d) : d;
+    const bool layoutAware = !effectiveInput.activeMix().layout.id.isEmpty() || settings.layout.isNotEmpty();
+    const auto bus = designLayout(d),
+               delivery = layoutAware ? exportLayout(d, settings)
+                                      : channelLayout(settings.channels == 1 ? "mono-v1" : "stereo-v1");
+    const int channels = delivery.size();
+    const auto conversion = layoutAware ? conversionMatrix(bus, delivery) : ChannelMatrix{};
+    const auto order = wavOrder(delivery);
+    juce::AudioBuffer<float> converted(channels, 4096);
+    auto convert = [&](const juce::AudioBuffer<float> &input, int n)
+    {
+        converted.clear();
+        if (layoutAware)
+        {
+            for (int c = 0; c < channels; ++c)
+                for (int k = 0; k < bus.size(); ++k)
+                    converted.addFrom(c, 0, input, k, 0, n, conversion[c][k]);
+        }
+        else if (channels == 1)
+        {
+            for (int i = 0; i < n; ++i)
+                converted.setSample(0, i, (input.getSample(0, i) + input.getSample(1, i)) * .5f);
+        }
+        else
+            for (int c = 0; c < 2; ++c)
+                converted.copyFrom(c, 0, input, c, 0, n);
+    };
+    const int64_t estimated = (int64_t)std::ceil(
+        (long double)((settings.last < 0 ? mixDuration(effectiveInput.activeMix(), effectiveInput.sampleRate)
+                                         : settings.last) -
+                      settings.first) *
+            settings.sampleRate / effectiveInput.sampleRate +
+        settings.tailSeconds * settings.sampleRate);
+    if (estimated < 0 || (long double)estimated * channels * (settings.bits / 8) >= 4293918720.L)
+        throw std::runtime_error("Output exceeds qualified RIFF WAV size (4GiB minus1MiB). Shorten the range "
+                                 "or lower rate/depth; RF64 is not qualified.");
     if (!folder.createDirectory())
         throw std::runtime_error("Cannot create output folder");
     auto name = juce::File::createLegalFileName(selectedTake(d) ? selectedTake(d)->name : d.name) +
@@ -729,8 +892,11 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                 "-r" + juce::String(d.revision) + "-" + juce::Uuid().toString().substring(0, 8) + ".wav";
     auto target = folder.getNonexistentChildFile(name, {}, false);
     juce::TemporaryFile staging(target, juce::TemporaryFile::useHiddenFile);
-    juce::AudioBuffer<float> block(2, 4096);
+    juce::AudioBuffer<float> block(designChannels(d), 4096);
     double normalize = 1;
+    std::array<double, 16> channelPeak{};
+    std::array<int64_t, 16> channelClips{};
+    juce::AudioBuffer<float> ordered(channels, 4096);
     if (settings.normalize)
     {
         DesignReader meter(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
@@ -738,11 +904,10 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         double peak = 0;
         while (auto n = meter.read(block, 4096, cancelled))
         {
-            for (int c = 0; c < 2; ++c)
+            convert(block, n);
+            for (int c = 0; c < channels; ++c)
                 for (int i = 0; i < n; ++i)
-                    peak = std::max(peak, std::abs(settings.channels == 1
-                                                       ? (block.getSample(0, i) + block.getSample(1, i)) * .5
-                                                       : block.getSample(c, i)));
+                    peak = std::max(peak, (double)std::abs(converted.getSample(c, i)));
             progress(.4 * (double)meter.consumed() / meter.length());
         }
         if (peak > 0)
@@ -754,8 +919,15 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     auto stream = staging.getFile().createOutputStream();
     if (!stream)
         throw std::runtime_error("Cannot stage output");
-    std::unique_ptr<juce::AudioFormatWriter> writer(format.createWriterFor(
-        stream.release(), settings.sampleRate, (unsigned)settings.channels, settings.bits, {}, 0));
+    juce::StringPairArray metadata;
+    if (layoutAware)
+        metadata.set(juce::WavAudioFormat::bwavDescription,
+                     "SoundPlus layout:" + delivery.id + "; order:" + delivery.roles.joinIntoString(","));
+    std::unique_ptr<juce::AudioFormatWriter> writer(
+        layoutAware ? format.createWriterFor(stream.release(), settings.sampleRate, juceChannelSet(delivery),
+                                             settings.bits, metadata, 0)
+                    : format.createWriterFor(stream.release(), settings.sampleRate,
+                                             (unsigned)settings.channels, settings.bits, {}, 0));
     if (!writer)
         throw std::runtime_error("Cannot create WAV writer");
     DesignOutput result;
@@ -764,6 +936,32 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     result.revision = d.revision;
     result.variation = selectedTake(d) ? juce::String() : d.activeVariation;
     result.settings = settings;
+    if (layoutAware)
+    {
+        result.settings.channels = channels;
+        result.settings.layout = delivery.id;
+        auto o = juce::var(new juce::DynamicObject());
+        auto *p = o.getDynamicObject();
+        p->setProperty("version", 1);
+        p->setProperty("design", layoutJson(bus));
+        p->setProperty("export", layoutJson(delivery));
+        p->setProperty("conversion", "role-matrix-v1; shared normalization; LFE excluded from fold-down");
+        juce::Array<juce::var> layers;
+        for (auto &l : effectiveInput.activeMix().layers)
+        {
+            auto v = juce::var(new juce::DynamicObject());
+            v.getDynamicObject()->setProperty("layer", l.id);
+            v.getDynamicObject()->setProperty("source", l.source.id);
+            v.getDynamicObject()->setProperty("detected", l.source.detectedChannels.id.isEmpty()
+                                                              ? juce::var()
+                                                              : layoutJson(l.source.detectedChannels));
+            if (!effectiveInput.activeMix().layout.id.isEmpty())
+                v.getDynamicObject()->setProperty("routing", routingJson(l.routing));
+            layers.add(v);
+        }
+        p->setProperty("sources", layers);
+        result.channelProvenance = o;
+    }
     result.created = juce::Time::getCurrentTime().toISO8601(true);
     if (auto *t = selectedTake(d))
     {
@@ -793,29 +991,74 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                             "tails once from full history";
     }
     std::mt19937 rng(170526);
+    std::array<std::mt19937, 16> channelRng;
+    for (int c = 0; c < 16; ++c)
+        channelRng[c].seed(170526u + 7919u * c);
     double lsb = std::ldexp(1.0, 1 - settings.bits);
     while (auto n = reader.read(block, 4096, cancelled))
     {
-        if (settings.channels == 1)
-            for (int i = 0; i < n; ++i)
-                block.setSample(0, i, (block.getSample(0, i) + block.getSample(1, i)) * .5f);
-        for (int c = 0; c < settings.channels; ++c)
+        convert(block, n);
+        for (int c = 0; c < channels; ++c)
             for (int i = 0; i < n; ++i)
             {
-                double value = block.getSample(c, i) * normalize;
+                double value = converted.getSample(c, i) * normalize;
+                if (!std::isfinite(value))
+                    throw std::runtime_error("Nonfinite export channel");
+                channelPeak[c] = std::max(channelPeak[c], std::abs(value));
+                if (std::abs(value) > 1)
+                    ++channelClips[c];
                 result.peak = std::max(result.peak, std::abs(value));
                 if (std::abs(value) > 1)
                     ++result.clipped;
                 if (settings.dither && settings.bits < 32)
-                    value += ((double)rng() / rng.max() - (double)rng() / rng.max()) * lsb;
-                block.setSample(c, i, (float)value);
+                    value += layoutAware ? ((double)channelRng[c]() / channelRng[c].max() -
+                                            (double)channelRng[c]() / channelRng[c].max()) *
+                                               lsb
+                                         : ((double)rng() / rng.max() - (double)rng() / rng.max()) * lsb;
+                // New integer contract uses symmetric nearest quantization before JUCE's
+                // integer writer. Its bit-depth reduction otherwise floors negative
+                // sub-LSB silence and creates a shared DC bias. Legacy bytes stay verbatim.
+                if (layoutAware && settings.bits < 32)
+                    value = std::round(value / lsb) * lsb;
+                if (layoutAware)
+                {
+                    if (!std::isfinite(value))
+                        throw std::runtime_error("Nonfinite quantized export channel");
+                    if (std::abs(value) > 1 && std::abs(converted.getSample(c, i) * normalize) <= 1)
+                    {
+                        ++channelClips[c];
+                        ++result.clipped;
+                    }
+                    channelPeak[c] = std::max(channelPeak[c], std::abs(value));
+                    result.peak = std::max(result.peak, std::abs(value));
+                }
+                converted.setSample(c, i, (float)value);
             }
-        if (!writer->writeFromAudioSampleBuffer(block, 0, n))
+        // Adapt by channel role indices, never a preset factory's prose order.
+        for (int c = 0; c < channels; ++c)
+            ordered.copyFrom(c, 0, converted, order[(size_t)c], 0, n);
+        if (!writer->writeFromAudioSampleBuffer(ordered, 0, n))
             throw std::runtime_error("Output write failed; no file was published");
         progress((settings.normalize ? .4 : 0) +
                  (settings.normalize ? .6 : 1) * (double)reader.consumed() / reader.length());
     }
     writer.reset();
+    if (layoutAware)
+    {
+        juce::Array<juce::var> peaks, clipped;
+        for (int c = 0; c < channels; ++c)
+        {
+            peaks.add(channelPeak[c]);
+            clipped.add((juce::int64)channelClips[c]);
+        }
+        auto *p = result.channelProvenance.getDynamicObject();
+        p->setProperty("channelPeaks", peaks);
+        p->setProperty("channelClips", clipped);
+        p->setProperty("sharedNormalizationGain", normalize);
+        p->setProperty(
+            "ditherPolicy",
+            "independent-channel-tpdf-v1; seed170526+7919*channel; symmetric-nearest-quantization");
+    }
     bool solo = std::any_of(effectiveInput.activeMix().layers.begin(),
                             effectiveInput.activeMix().layers.end(), [](auto &l) { return l.solo; });
     for (auto &l : effectiveInput.activeMix().layers)
@@ -828,7 +1071,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     fm.registerBasicFormats();
     std::unique_ptr<juce::AudioFormatReader> verify(fm.createReaderFor(staging.getFile()));
     if (!verify || verify->lengthInSamples != result.samples || verify->sampleRate != settings.sampleRate ||
-        (int)verify->numChannels != settings.channels)
+        (int)verify->numChannels != channels)
         throw std::runtime_error("Finalized WAV validation failed");
     verify.reset();
     auto bytes = staging.getFile().createInputStream();
@@ -838,6 +1081,92 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     bytes.reset();
     if (cancelled())
         throw QueryCancelled();
+    if (settings.splitMono)
+    {
+        struct OwnedStage
+        {
+            juce::File path;
+            bool published = false;
+            ~OwnedStage()
+            {
+                if (!published)
+                    path.deleteRecursively();
+            }
+        };
+        auto setTarget =
+            folder.getNonexistentChildFile(target.getFileNameWithoutExtension() + "-split", {}, false);
+        OwnedStage setStage{folder.getChildFile(".split-" + juce::Uuid().toString())};
+        if (!setStage.path.createDirectory() ||
+            !staging.getFile().copyFileTo(setStage.path.getChildFile("Mix.wav")))
+            throw std::runtime_error("Cannot stage split output set");
+        std::unique_ptr<juce::AudioFormatReader> input(fm.createReaderFor(staging.getFile()));
+        juce::Array<juce::var> files;
+        std::vector<std::unique_ptr<juce::AudioFormatWriter>> writers;
+        for (int c = 0; c < channels; ++c)
+        {
+            auto f = setStage.path.getChildFile(delivery.roles[c] + ".wav");
+            auto out = f.createOutputStream();
+            if (!out)
+                throw std::runtime_error("Cannot stage split channel");
+            auto *w =
+                format.createWriterFor(out.release(), settings.sampleRate, 1, settings.bits, metadata, 0);
+            if (!w)
+                throw std::runtime_error("Cannot create split channel");
+            writers.emplace_back(w);
+        }
+        juce::AudioBuffer<float> pcm(channels, 4096), mono(1, 4096);
+        for (int64_t at = 0; at < result.samples; at += 4096)
+        {
+            if (cancelled())
+                throw QueryCancelled();
+            int n = (int)std::min<int64_t>(4096, result.samples - at);
+            if (!input->read(&pcm, 0, n, at, true, true))
+                throw std::runtime_error("Cannot verify split source");
+            for (int c = 0; c < channels; ++c)
+            {
+                mono.copyFrom(0, 0, pcm, c, 0, n);
+                if (!writers[(size_t)c]->writeFromAudioSampleBuffer(mono, 0, n))
+                    throw std::runtime_error("Split write failed; set not published");
+            }
+        }
+        writers.clear();
+        input.reset();
+        for (int c = 0; c < channels; ++c)
+        {
+            auto f = setStage.path.getChildFile(delivery.roles[c] + ".wav");
+            syncFile(f);
+            auto bytes = f.createInputStream();
+            if (!bytes)
+                throw std::runtime_error("Cannot hash split channel");
+            auto v = juce::var(new juce::DynamicObject());
+            v.getDynamicObject()->setProperty("role", delivery.roles[c]);
+            v.getDynamicObject()->setProperty("path",
+                                              setTarget.getChildFile(f.getFileName()).getFullPathName());
+            v.getDynamicObject()->setProperty("sha256", juce::SHA256(*bytes).toHexString());
+            files.add(v);
+        }
+        result.files = files;
+        result.path = setTarget.getChildFile("Mix.wav").getFullPathName();
+        auto manifest = juce::var(new juce::DynamicObject());
+        manifest.getDynamicObject()->setProperty("files", files);
+        manifest.getDynamicObject()->setProperty("printMasterSha256", result.sha256);
+        manifest.getDynamicObject()->setProperty("layout", layoutJson(delivery));
+        auto manifestFile = setStage.path.getChildFile("output-set.json");
+        if (!manifestFile.replaceWithText(juce::JSON::toString(manifest, true)))
+            throw std::runtime_error("Cannot finalize output-set receipt");
+        syncFile(manifestFile);
+        syncFile(setStage.path.getChildFile("Mix.wav"));
+        for (auto &l : effectiveInput.activeMix().layers)
+            if (!l.mute && (!solo || l.solo))
+                sourceUnchanged(l.source);
+        if (cancelled())
+            throw QueryCancelled();
+        if (!setStage.path.moveFileTo(setTarget))
+            throw std::runtime_error("Cannot publish split set atomically");
+        setStage.published = true;
+        progress(1);
+        return result;
+    }
     if (!staging.overwriteTargetFileWithTemporary())
         throw std::runtime_error("Cannot publish durable WAV");
     progress(1);

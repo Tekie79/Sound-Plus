@@ -130,6 +130,7 @@ uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, co
     o->setProperty("endSample", (juce::int64)region.endSample);
     o->setProperty("positionSample", (juce::int64)region.positionSample);
     o->setProperty("auditionPair", region.auditionPair);
+    o->setProperty("sourceLayoutOverride", region.sourceLayoutOverride);
     o->setProperty("size", (juce::int64)region.size);
     o->setProperty("modified", (juce::int64)region.modified);
     o->setProperty("inode", (juce::int64)region.inode);
@@ -176,7 +177,7 @@ uint64_t AudioClient::updateDesign(const DesignDocument &document, uint64_t gene
     object->setProperty("sequence", (juce::int64)sequence);
     object->setProperty("eventMs", eventMs);
     object->setProperty("parameters", designParameters(document));
-    object->setProperty("performControls", controlsToJson(performControls(document.activeMix().performance)));
+    object->setProperty("performControls", controlsToJson(mixControls(document.activeMix())));
     object->setProperty("structure", designStructure(document));
     enqueue(command);
     return sequence;
@@ -231,6 +232,27 @@ void AudioClient::finishTake(bool cancel)
     cmd.getDynamicObject()->setProperty("cancel", cancel);
     cmd.getDynamicObject()->setProperty("playGeneration", (juce::int64)playbackGeneration.load());
     enqueue(cmd);
+}
+void AudioClient::deviceChannels(int channels)
+{
+    if (captureBusy())
+        return;
+    auto m = message("device_channels");
+    m.getDynamicObject()->setProperty("channels", channels);
+    enqueue(m);
+}
+void AudioClient::monitorChannel(int deviceChannel, int sourceChannel)
+{
+    auto m = message("monitor_map");
+    m.getDynamicObject()->setProperty("deviceChannel", deviceChannel);
+    m.getDynamicObject()->setProperty("sourceChannel", sourceChannel);
+    enqueue(m);
+}
+void AudioClient::monitorSolo(int sourceChannel)
+{
+    auto m = message("monitor_solo");
+    m.getDynamicObject()->setProperty("sourceChannel", sourceChannel);
+    enqueue(m);
 }
 void AudioClient::reserveTake(bool reserve)
 {

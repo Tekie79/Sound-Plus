@@ -191,7 +191,9 @@ struct TakeIntegrityTestAccess
                 else
                     check(!editor->isEnabled(), "Full take range controls are honestly unavailable");
             }
-            if (auto *toggle = dynamic_cast<juce::ToggleButton *>(child))
+            if (auto *toggle = dynamic_cast<juce::ToggleButton *>(child);
+                toggle && (toggle->getButtonText().startsWith("Explicit peak") ||
+                           toggle->getButtonText().startsWith("TPDF")))
             {
                 toggle->setToggleState(true, juce::dontSendNotification);
                 toggle->onClick();

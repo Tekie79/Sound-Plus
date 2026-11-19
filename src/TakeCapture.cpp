@@ -19,7 +19,7 @@ juce::String TakeCapture::deviceDiagnostic() const
 }
 TakeCapture::TakeCapture(PerformTake t, size_t n)
     : frozen(std::move(t)), slots(std::make_unique<std::array<TakeEvent, maxTakeEvents>>()),
-      limit(std::min(n, maxTakeEvents)), previous(performControls(frozen.recipe->performance))
+      limit(std::min(n, maxTakeEvents)), previous(mixControls(frozen.recipe))
 {
     if (frozen.complete || !frozen.events.empty())
         throw std::runtime_error("Capture requires a fresh frozen draft");
