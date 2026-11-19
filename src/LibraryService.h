@@ -22,6 +22,8 @@ struct LibrarySnapshot
     int64_t headersRead = 0;
     int total = 0, offset = 0;
     bool newResultsAvailable = false;
+    juce::String selectedAssetId;
+    bool selectedAssetRemoved = false;
     IndexProgress progress;
     struct Semantic
     {
@@ -58,6 +60,8 @@ class LibraryService
     void pause(bool);
     uint64_t search(const juce::String &, const juce::String &root = {});
     void page(int offset, int limit = 256);
+    bool pinSelection(uint64_t request, uint64_t pageSerial, const juce::String &assetId);
+    bool pageForRequest(uint64_t request, int offset, int limit = 256);
     void setChangeCallback(std::function<void()>);
     LibrarySnapshot snapshot();
     juce::var queryDiagnostics(); // Explicit benchmark diagnostics, not a user query path.

@@ -694,7 +694,7 @@ const Asset *LibraryView::selected() const
 {
     int row = table.getSelectedRow();
     if (row < 0)
-        return nullptr;
+        return selectedAsset && selectedAsset->id==selectedId && rangeRequest==requested ? &*selectedAsset : nullptr;
     if (auto *a = rowAsset(row))
         return a;
     return selectedAsset && selectedAssetRow == row && selectedAsset->id == selectedId ? &*selectedAsset
@@ -718,7 +718,7 @@ void LibraryView::requestPageForRow(int row)
         return;
     requestedPage = page;
     requestedPageSerial = snapshot.pageSerial;
-    library.page(page, 512);
+    library.pageForRequest(snapshot.request, page, 512);
 }
 bool LibraryView::benchmarkScroll(int row)
 {
@@ -768,6 +768,11 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         auto peaks = peakPool->get(a);
         if (!a.online || a.state == "failed" || (peaks && !peaks->error.isEmpty()))
         {
+            if(benchmark)
+            {
+                rowUnavailablePaintTimes[a.id]=monotonicMs();
+                while(rowUnavailablePaintTimes.size()>80)rowUnavailablePaintTimes.erase(std::min_element(rowUnavailablePaintTimes.begin(),rowUnavailablePaintTimes.end(),[](auto &a,auto &b){return a.second<b.second;}));
+            }
             g.setFont(juce::FontOptions(10.5f));
             g.setColour(muted);
             g.drawText(!a.online || (peaks && peaks->status == WaveformData::Status::offline) ? "Offline"
@@ -778,6 +783,11 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         else if (auto columns = peakPool->columns(a, 0, a.samples, false, previewWidth))
         {
             ++rowPreviewPaints;
+            if(benchmark)
+            {
+                rowPreviewPaintTimes[a.id]=monotonicMs();
+                while(rowPreviewPaintTimes.size()>80)rowPreviewPaintTimes.erase(std::min_element(rowPreviewPaintTimes.begin(),rowPreviewPaintTimes.end(),[](auto &a,auto &b){return a.second<b.second;}));
+            }
             paintCompactWaveform(g, area, *columns, accent.withAlpha(.65f));
         }
         else
@@ -838,8 +848,8 @@ void LibraryView::selectedRowsChanged(int)
     if (auto *a = selected())
     {
         const auto playback = audio.status();
-        const bool continueAudition = selectedAsset && selectedAsset->id != a->id && navigationToPlay < 0 &&
-                                      playback["id"].toString() == selectedAsset->id &&
+        const bool continueAudition = auditionOwner.isNotEmpty() && auditionOwner != a->id && navigationToPlay < 0 &&
+                                      playback["intentId"].toString() == auditionOwner &&
                                       ((bool)playback["playing"] || (bool)playback["pendingPlayback"]);
         bool newFile = rangeAssetId != a->id || rangeRevision != a->revision || rangeSamples != a->samples;
         bool newRange =
@@ -847,7 +857,8 @@ void LibraryView::selectedRowsChanged(int)
             (!rangeEdited && !a->matches.empty() && (!selectedAsset || selectedAsset->matches.empty()));
         // Freeze the matching ID sequence as soon as the user selects a row.
         // A new alphabetically earlier recording must not retarget that selection.
-        requestPageForRow(table.getSelectedRow());
+        if(snapshot.request!=requested || !library.pinSelection(snapshot.request,snapshot.pageSerial,a->id))
+            return;
         selectedId = a->id;
         selectedAsset = *a;
         selectedAssetRow = table.getSelectedRow();
@@ -894,6 +905,28 @@ void LibraryView::selectedRowsChanged(int)
         if (continueAudition)
             playSelected(matchMode);
     }
+}
+int LibraryView::restoreSelection(bool sameQuery)
+{
+    int row=-1;
+    for(size_t i=0;i<snapshot.results.size();++i)
+        if(snapshot.results[i].id==selectedId)row=(int)i+snapshot.offset;
+    const bool removed=snapshot.selectedAssetId==selectedId && snapshot.selectedAssetRemoved;
+    if(row>=0 && !removed){table.selectRow(row,true,false);return row;}
+    table.deselectAllRows();
+    if(removed || !sameQuery)
+    {
+        if(removed)
+        {
+            auto state=audio.status();
+            if(state["intentId"].toString()==selectedId)audio.stop();
+            detail.setText("Selected recording was removed",juce::dontSendNotification);
+        }
+        selectedId.clear();selectedAsset.reset();selectedAssetRow=-1;waveform.setData({});
+    }
+    else if(selectedAsset)
+        assetId.setText("Selected recording is outside the loaded results",juce::dontSendNotification);
+    return -1;
 }
 void LibraryView::cellDoubleClicked(int, int, const juce::MouseEvent &)
 {
@@ -1156,6 +1189,7 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     playingSpec = region;
     if (onBeforeAudition)
         onBeforeAudition();
+    auditionOwner=a->id;
     audio.playRegion(a->id, juce::File(path), region);
 }
 void LibraryView::playFromPlayhead()
@@ -1235,7 +1269,6 @@ void LibraryView::timerCallback()
     {
         const bool sameQuery = next.request == appliedRequest;
         auto scroll = sameQuery ? table.getViewport()->getViewPosition() : juce::Point<int>{};
-        const int previousSelection = table.getSelectedRow();
         snapshot = std::move(next);
         appliedMs = monotonicMs();
         appliedVersion = snapshot.version;
@@ -1250,16 +1283,7 @@ void LibraryView::timerCallback()
                 }
         updating = true;
         table.updateContent();
-        int row = -1;
-        for (size_t i = 0; i < snapshot.results.size(); ++i)
-            if (snapshot.results[i].id == selectedId)
-                row = (int)i + snapshot.offset;
-        if (row >= 0)
-            table.selectRow(row, true, false);
-        else if (sameQuery && previousSelection >= 0)
-            row = previousSelection;
-        else
-            table.deselectAllRows();
+        int row = restoreSelection(sameQuery);
         table.getViewport()->setViewPosition(scroll);
         sources.updateContent();
         int sourceRow = 0;
@@ -1268,7 +1292,7 @@ void LibraryView::timerCallback()
                 sourceRow = (int)i + 1;
         sources.selectRow(sourceRow, true, false);
         updating = false;
-        selectedRowsChanged(row);
+        if(row>=0)selectedRowsChanged(row);
         table.repaint();
         sources.repaint();
         repaint();
@@ -1355,8 +1379,8 @@ void LibraryView::timerCallback()
     std::vector<Asset> rows;
     if (isShowing())
     {
-        const auto first = table.getViewport()->getViewPositionY() / table.getRowHeight();
-        const auto count = table.getViewport()->getHeight() / table.getRowHeight() + 1;
+        auto interval=visibleLibraryRows(table.getViewport()->getViewArea(),table.getRowHeight(),snapshot.total);
+        const auto first=interval.getStart(),count=interval.getLength();
         auto append = [&](int row)
         {
             if (auto *a = rowAsset(row); a && a->samples > 0)

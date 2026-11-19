@@ -58,16 +58,18 @@ void paintCompactWaveform(juce::Graphics &g, juce::Rectangle<float> b, const Pea
     }
 }
 WaveformPool::WaveformPool(const juce::File &directory, std::function<void()> beforeRead,
-                           std::function<double()> clockSource)
+                           std::function<double()> clockSource, WaveformCache::Checkpoint checkpoint)
     : decodes(std::make_shared<std::atomic<uint64_t>>(0)),
       now(clockSource ? std::move(clockSource) : [] { return juce::Time::getMillisecondCounterHiRes(); }),
-      worker(directory,
-             [counter = decodes, beforeRead]
-             {
-                 ++*counter;
-                 if (beforeRead)
-                     beforeRead();
-             })
+      worker(
+          directory,
+          [counter = decodes, beforeRead]
+          {
+              ++*counter;
+              if (beforeRead)
+                  beforeRead();
+          },
+          std::move(checkpoint))
 {
     startedMs = now();
 }
@@ -86,68 +88,115 @@ void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
 }
 bool WaveformPool::tick()
 {
+    struct Wanted
+    {
+        Asset asset;
+        juce::String key;
+        int owner;
+    };
+    std::vector<Wanted> wanted;
+    std::set<juce::String> keys, hot;
+    for (auto &[owner, assets] : owners)
+        for (auto &a : assets)
+        {
+            auto key = waveformSourceKey(a);
+            if (keys.insert(key).second)
+                wanted.push_back({a, key, owner});
+            // One selected source and four cards normally occupy five reservations.
+            if (owner <= 1 && hot.size() < 8)
+                hot.insert(key);
+        }
+    std::erase_if(serviced, [&](auto &entry) { return !keys.contains(entry.first); });
     bool changed = false;
-    if (auto result = worker.snapshot(); !pending.isEmpty() && result && result->generation == token)
+    auto foreground = std::find_if(wanted.begin(), wanted.end(),
+                                   [&](auto &w) { return w.owner == 0 && !completed.contains(w.key); });
+    if (pending.isNotEmpty())
+    {
+        bool abandoned = !keys.contains(pending);
+        bool priority = foreground != wanted.end() && foreground->key != pending && pendingOwner > 0 &&
+                        !protectedBackground;
+        if (abandoned || priority)
+        {
+            worker.cancel();
+            pending.clear();
+            ++cancellations;
+            if (priority)
+                ++preemptions;
+        }
+    }
+    if (auto result = worker.snapshot(); pending.isNotEmpty() && result && result->generation == token)
     {
         completed[pending] = {result, ++clock, now()};
         diskHits += result->cacheHit;
         pending.clear();
         ++changedGeneration;
+        changed = true;
         if (firstReadyMs < 0)
             firstReadyMs = now() - startedMs;
         if (loadMs.size() < 512)
             loadMs.push_back(now() - submittedMs);
-        changed = true;
     }
-    // Only currently demanded sources are candidates. No growing job queue and
-    // no concurrent calls to the single-pending WaveformCache request API.
     if (pending.isEmpty())
     {
-        bool started = false;
-        const Asset *validate = nullptr;
-        size_t budget = 0;
-        std::set<juce::String> seen;
-        for (auto &[owner, assets] : owners)
+        std::vector<const Wanted *> missing;
+        const Wanted *validate = nullptr;
+        for (auto &w : wanted)
         {
-            juce::ignoreUnused(owner);
-            for (auto &a : assets)
-            {
-                auto key = waveformSourceKey(a);
-                if (!seen.insert(key).second)
-                    continue;
-                if (++budget > maxSources)
-                    break;
-                if (auto found = completed.find(key); found != completed.end())
-                {
-                    found->second.used = ++clock;
-                    if (!validate && now() - found->second.validated >= 5000)
-                        validate = &a;
-                }
-                else
-                {
-                    pending = key;
-                    token = worker.request(a);
-                    submittedMs = now();
-                    ++requests;
-                    started = true;
-                    break;
-                }
-            }
-            if (started || budget >= maxSources)
-                break;
+            auto found = completed.find(w.key);
+            if (found == completed.end())
+                missing.push_back(&w);
+            else if (!validate && now() - found->second.validated >= 5000)
+                validate = &w;
         }
-        if (!started && validate)
+        const Wanted *next = nullptr;
+        bool reserved = false;
+        auto older = [&](auto *a, auto *b) { return serviced[a->key] < serviced[b->key]; };
+        if (!missing.empty())
         {
-            pending = waveformSourceKey(*validate);
-            token = worker.request(*validate);
+            auto background = missing;
+            std::erase_if(background, [](auto *w) { return w->owner == 0; });
+            // After three foreground admissions reserve one useful background job.
+            // It cannot be priority-cancelled, but abandonment always cancels it.
+            reserved = foregroundStreak >= 3 && !background.empty();
+            // Every fourth ordinary admission crosses surface-priority boundaries.
+            if (reserved || (++admissions % 4 == 0 && !background.empty()))
+            {
+                next = *std::min_element(background.begin(), background.end(), older);
+                ++fairAdmissions;
+            }
+            else
+            {
+                int priority = missing.front()->owner;
+                std::erase_if(missing, [&](auto *w) { return w->owner != priority; });
+                next = *std::min_element(missing.begin(), missing.end(), older);
+            }
+        }
+        else
+            next = validate;
+        if (next)
+        {
+            pending = next->key;
+            pendingOwner = next->owner;
+            protectedBackground = reserved;
+            if (pendingOwner == 0)
+                ++foregroundStreak;
+            else
+                foregroundStreak = 0;
+            serviced[pending] = ++clock;
+            token = worker.request(next->asset);
             submittedMs = now();
             ++requests;
         }
     }
     while (completed.size() > maxSources)
     {
-        auto oldest = std::min_element(completed.begin(), completed.end(),
-                                       [](auto &a, auto &b) { return a.second.used < b.second.used; });
+        auto oldest = completed.end();
+        for (auto it = completed.begin(); it != completed.end(); ++it)
+            if (!hot.contains(it->first) &&
+                (oldest == completed.end() || it->second.used < oldest->second.used))
+                oldest = it;
+        if (oldest == completed.end())
+            oldest = completed.begin();
         completed.erase(oldest);
     }
     return changed;
@@ -203,6 +252,10 @@ juce::var WaveformPool::metrics() const
         bytes += entry.data->peaks.size() * sizeof(std::pair<float, float>);
     }
     o->setProperty("requests", (juce::int64)requests);
+    o->setProperty("cancellations", (juce::int64)cancellations);
+    o->setProperty("priorityPreemptions", (juce::int64)preemptions);
+    o->setProperty("fairAdmissions", (juce::int64)fairAdmissions);
+    o->setProperty("activeDemands", (int)serviced.size());
     o->setProperty("decodes", (juce::int64)decodes->load());
     o->setProperty("diskHits", (juce::int64)diskHits);
     o->setProperty("memoryHits", (juce::int64)memoryHits);

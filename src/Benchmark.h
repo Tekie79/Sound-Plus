@@ -62,5 +62,10 @@ class Benchmark final : private juce::Timer
     bool waveformScrollAwaitingPaint = false;
     int64_t waveformScrollStartPaints = 0;
     double lastWaveformScroll = 0;
+    struct ReliabilityRun;
+    std::shared_ptr<ReliabilityRun> reliability;
+    void reliabilityTick(double now);
+    void reliabilityPainted(uint64_t id,double now,double sent,double applied);
+    juce::var reliabilityReport() const;
 };
 } // namespace sp

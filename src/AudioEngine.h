@@ -29,5 +29,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     std::atomic<bool> deviceChanged{false};
     bool hello = false;
     int ticks = 0;
+    uint64_t statusSequence = 0, commandSequence = 0;
+    double commandMs = 0;
 };
 } // namespace sp

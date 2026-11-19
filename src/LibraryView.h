@@ -55,14 +55,17 @@ class LibraryView final : public juce::Component,
   private:
     friend class Benchmark;
     friend struct LibraryPreviewTestAccess;
+    friend struct LibraryReliabilityTestAccess;
     double dispatchedMs = 0, appliedMs = 0;
     uint64_t appliedPage = 0;
     int requestedPage = -1;
     uint64_t requestedPageSerial = 0;
     std::optional<Asset> selectedAsset;
+    juce::String auditionOwner;
     int selectedAssetRow = -1;
     const Asset *rowAsset(int row) const;
     void requestPageForRow(int row);
+    int restoreSelection(bool sameQuery);
     void handleAsyncUpdate() override;
     int getNumRows() override
     {
@@ -131,6 +134,8 @@ class LibraryView final : public juce::Component,
     std::shared_ptr<WaveformPool> peakPool;
     uint64_t peakRevision = 0;
     int64_t rowPreviewPaints = 0;
+    std::map<juce::String,double> rowPreviewPaintTimes;
+    std::map<juce::String,double> rowUnavailablePaintTimes;
     WaveformView waveform;
     WaveformCache referenceWaveformCache;
     WaveformView referenceWaveform;

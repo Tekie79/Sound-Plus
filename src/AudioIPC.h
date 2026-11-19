@@ -27,11 +27,13 @@ class AudioClient
     void restart();
     void device(const juce::String &);
     void deviceRate(double);
+    void bufferSize(int);
     float monitorGain() const
     {
         return targetGain.load();
     }
     juce::var status();
+    juce::var diagnostics();
 
   private:
     void enqueue(juce::var);
@@ -46,5 +48,8 @@ class AudioClient
     std::atomic<uint64_t> playbackGeneration{0}, parameterSequence{0};
     bool desiredPlaying = false;
     juce::String desiredId;
+    juce::String restartNotice;
+    juce::var health{new juce::DynamicObject()};
+    juce::Array<juce::var> healthEvents;
 };
 } // namespace sp

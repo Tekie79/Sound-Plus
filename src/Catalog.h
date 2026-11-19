@@ -97,6 +97,7 @@ class Catalog
     int countMatches(const juce::String &, const juce::String &root = {});
     void materialize(const juce::String &, const juce::String &root = {}, bool empty = false);
     std::vector<Asset> page(int offset, int limit);
+    int reconcileBrowse(); // Remove deleted identities while retaining remaining order.
     Asset asset(const juce::String &id);
     int promote(const std::vector<Asset> &prefix, bool keepLexicalTail = true);
     void seedAnalysis(const juce::String &model, const juce::String &preprocessing,

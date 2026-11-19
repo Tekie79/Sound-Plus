@@ -16,6 +16,8 @@ Benchmark::Benchmark(LibraryView &v, const juce::File &file, const juce::File &o
 void Benchmark::painted(uint64_t id, int rows, double sent, double applied)
 {
     const auto now = monotonicMs();
+    if(plan["mode"].toString()=="semantic-designer-reliability")
+    {reliabilityPainted(id,now,sent,applied);return;}
     lastPainted = id;
     lastPaintedOffset = view.snapshot.offset;
     if (waveformScrollAwaitingPaint && id == view.requested &&
@@ -173,6 +175,8 @@ void Benchmark::save(bool success, const juce::String &error)
     o->setProperty("peakDurableMetadataBacklog", peakPending);
     o->setProperty("maxPendingSearches", 1);
     o->setProperty("audio", view.audio.status());
+    o->setProperty("audioHealth",view.audio.diagnostics());
+    o->setProperty("reliability",reliabilityReport());
     o->setProperty("waveforms", view.peakPool->metrics());
     o->setProperty("rowPreviewPaints", (juce::int64)view.rowPreviewPaints);
     o->setProperty("waveformScrolls", waveformScrolls);
@@ -249,6 +253,8 @@ void Benchmark::save(bool success, const juce::String &error)
 void Benchmark::timerCallback()
 {
     const auto now = monotonicMs();
+    if(plan["mode"].toString()=="semantic-designer-reliability")
+    {reliabilityTick(now);return;}
     int total = 0, done = 0;
     bool scanning = false;
     for (auto &r : view.snapshot.roots)

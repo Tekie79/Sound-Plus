@@ -2,6 +2,14 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace sp
 {
+inline juce::Range<int> visibleLibraryRows(juce::Rectangle<int> area, int height, int total)
+{
+    if (area.isEmpty() || height <= 0)
+        return {};
+    int first = std::clamp(area.getY() / height, 0, total);
+    int last = std::clamp((area.getBottom() + height - 1) / height, first, total);
+    return {first, last};
+}
 struct LibraryLayout
 {
     juce::Rectangle<int> results, selection, waveform, referenceWave;

@@ -19,7 +19,7 @@ class WaveformPool
 {
   public:
     explicit WaveformPool(const juce::File &, std::function<void()> beforeRead = {},
-                          std::function<double()> now = {});
+                          std::function<double()> now = {}, WaveformCache::Checkpoint = {});
     void demand(int owner, const std::vector<Asset> &);
     bool tick();
     std::shared_ptr<const WaveformData> get(const Asset &);
@@ -51,9 +51,13 @@ class WaveformPool
     std::map<int, std::vector<Asset>> owners;
     std::map<juce::String, Entry> completed;
     std::map<juce::String, Geometry> geometries;
+    std::map<juce::String, uint64_t> serviced;
     juce::String pending;
+    int pendingOwner = 0, foregroundStreak = 0;
+    bool protectedBackground = false;
     double startedMs = 0, submittedMs = 0, firstReadyMs = -1;
     std::vector<double> loadMs;
     uint64_t token = 0, clock = 0, requests = 0, diskHits = 0, memoryHits = 0, changedGeneration = 0;
+    uint64_t cancellations = 0, preemptions = 0, fairAdmissions = 0, admissions = 0;
 };
 } // namespace sp

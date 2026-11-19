@@ -7,6 +7,7 @@ struct WaveformCache::State
 {
     juce::File directory;
     std::function<void()> beforeRead;
+    Checkpoint checkpoint;
     std::mutex mutex;
     std::condition_variable wake, completed;
     std::optional<Asset> pending;
@@ -15,11 +16,12 @@ struct WaveformCache::State
     std::atomic<bool> stopping{false};
     bool done = false;
 };
-WaveformCache::WaveformCache(juce::File folder, std::function<void()> beforeRead)
+WaveformCache::WaveformCache(juce::File folder, std::function<void()> beforeRead, Checkpoint checkpoint)
     : state(std::make_shared<State>())
 {
     state->directory = std::move(folder);
     state->beforeRead = std::move(beforeRead);
+    state->checkpoint = std::move(checkpoint);
     worker = std::thread(
         [shared = state]
         {
@@ -169,6 +171,10 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                 for (int64_t at = 0; at < a.samples && generation == token && !stopping;
                      at += block.getNumSamples())
                 {
+                    if (state->checkpoint)
+                        state->checkpoint(a, at, [&] { return stopping || generation != token; });
+                    if (stopping || generation != token)
+                        break;
                     int n = (int)std::min<int64_t>(block.getNumSamples(), a.samples - at);
                     if (!reader->read(&block, 0, n, at, true, true))
                         throw std::runtime_error("Waveform decoding failed");

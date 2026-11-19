@@ -683,6 +683,17 @@ std::vector<Asset> Catalog::page(int offset, int limit)
         rows.push_back(readAsset(s));
     return rows;
 }
+int Catalog::reconcileBrowse()
+{
+    bool compact=false;
+    {Statement missing(db,"SELECT count(*) FROM browse_ids b LEFT JOIN assets a ON a.id=b.id WHERE a.id IS NULL");
+    missing.step();compact=missing.integer(0)>0;}
+    if(compact)
+        exec("DROP TABLE IF EXISTS temp.remaining_ids; CREATE TEMP TABLE remaining_ids(position INTEGER PRIMARY KEY,id TEXT NOT NULL);"
+             "INSERT INTO remaining_ids(id) SELECT b.id FROM browse_ids b JOIN assets a ON a.id=b.id ORDER BY b.position;"
+             "DROP TABLE browse_ids; ALTER TABLE remaining_ids RENAME TO browse_ids;");
+    Statement count(db,"SELECT count(*) FROM browse_ids");count.step();return (int)count.integer(0);
+}
 Asset Catalog::existing(const juce::String &root, const juce::String &relative)
 {
     Statement s(db, ("SELECT " + juce::String(columns) +

@@ -918,8 +918,12 @@ struct LibraryService::Impl
             progress.stage = "Pausing at next I/O boundary";
         else if (!progress.activeWorkers)
             progress.stage = aiAnalyzing ? "Analyzing sounds" : "Up to date";
+        juce::String selected;
+        { std::lock_guard lock(mutex); selected=current.selectedAssetId; }
+        bool removed=selected.isNotEmpty() && db.asset(selected).id.isEmpty();
         std::lock_guard lock(mutex);
         current.roots = std::move(rows);
+        if(current.selectedAssetId==selected)current.selectedAssetRemoved=removed;
         current.progress = progress;
         current.headersRead = headerReads.load();
         notifyLocked();
@@ -1296,11 +1300,21 @@ struct LibraryService::Impl
                         }
                         else
                         {
+                            auto previousAnnotations=annotations;
                             auto began = monotonicMs(); db.exec("BEGIN"); transaction = true;
                             int total = fuse(semantic,q,root);
                             auto rows = db.page(0,20); annotate(rows,q);
-                            db.exec("COMMIT"); transaction = false;
                             std::lock_guard lock(mutex);
+                            // Serialize sequence adoption with explicit selection pinning.
+                            // A click arriving during retrieval must preserve the old browse table.
+                            if(id!=request || token!=workToken || pinned)
+                            {
+                                db.cancelWhen(nullptr,0);db.rollback();transaction=false;
+                                annotations=std::move(previousAnnotations);
+                                if(id==request && pinned){current.newResultsAvailable=true;++current.pageSerial;notifyLocked();}
+                                lastSemantic=semanticVersion;readerSemanticSeen=lastSemantic;continue;
+                            }
+                            db.exec("COMMIT"); transaction = false;
                             if (id == request && token == workToken)
                             {
                                 current.results = std::move(rows); current.offset = 0; current.total = total;
@@ -1325,14 +1339,19 @@ struct LibraryService::Impl
                     {
                         int at = 0, size = 20;
                         { std::lock_guard lock(mutex); at = current.offset; size = (int)current.results.size(); }
+                        db.exec("BEGIN");transaction=true;
+                        int remaining=db.reconcileBrowse();
                         auto rows = db.page(at,size); annotate(rows,q);
+                        db.exec("COMMIT");transaction=false;
                         std::lock_guard lock(mutex);
                         if (id != request) continue;
                         current.results = std::move(rows); ++current.pageSerial;
+                        current.total=remaining;
                         current.newResultsAvailable = isPinned && membership != lastMembership;
                         current.version = v; lastVersion = v; notifyLocked(); continue;
                     }
                     bool newQuery = id != lastRequest;
+                    auto previousAnnotations=annotations;
                     if (newQuery) annotations.clear();
                     db.exec("BEGIN"); transaction = true;
                     auto rows = usingExample ? std::vector<Asset>{} : db.search(q,root,20);
@@ -1353,7 +1372,16 @@ struct LibraryService::Impl
                     db.materialize(q,root,usingExample);
                     if (!newQuery && semantic.request == id)
                     { count = fuse(semantic,q,root); rows = db.page(0,20); }
+                    std::unique_lock publication(mutex);
+                    if(id!=request || token!=workToken || (!newQuery && pinned))
+                    {
+                        db.cancelWhen(nullptr,0);db.rollback();transaction=false;
+                        annotations=std::move(previousAnnotations);
+                        if(id==request && pinned){current.newResultsAvailable=true;++current.pageSerial;notifyLocked();}
+                        continue;
+                    }
                     db.exec("COMMIT"); transaction = false;
+                    publication.unlock();
                     if (!newQuery)
                     {
                         annotate(rows,q);
@@ -1418,6 +1446,8 @@ uint64_t LibraryService::search(const juce::String &q, const juce::String &root)
     impl->desiredLimit = 20;
     impl->pagePending = false;
     impl->pinned = false;
+    impl->current.selectedAssetId.clear();
+    impl->current.selectedAssetRemoved=false;
     impl->semanticDue = monotonicMs()+200;
     ++impl->semanticInputVersion;
     ++impl->workToken;
@@ -1433,6 +1463,22 @@ void LibraryService::page(int offset, int limit)
     impl->pagePending = true;
     impl->pinned = true;
     impl->wake.notify_all();
+}
+bool LibraryService::pinSelection(uint64_t id,uint64_t serial,const juce::String &assetId)
+{
+    std::lock_guard lock(impl->mutex);
+    // A displayed older page of this same query still names a stable identity.
+    // The view retains that identity even if it has left the current prefix.
+    if(id!=impl->request || id!=impl->current.request || serial>impl->current.pageSerial || assetId.isEmpty())return false;
+    impl->pinned=true;impl->current.selectedAssetId=assetId;impl->current.selectedAssetRemoved=false;
+    return true;
+}
+bool LibraryService::pageForRequest(uint64_t id,int offset,int limit)
+{
+    std::lock_guard lock(impl->mutex);
+    if(id!=impl->request || id!=impl->current.request)return false;
+    impl->desiredOffset=std::max(0,offset);impl->desiredLimit=juce::jlimit(1,512,limit);
+    impl->pagePending=true;impl->pinned=true;impl->wake.notify_all();return true;
 }
 void LibraryService::setChangeCallback(std::function<void()> callback)
 {

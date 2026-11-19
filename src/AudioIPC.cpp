@@ -1,5 +1,6 @@
 #include "AudioIPC.h"
 #include "DesignLive.h"
+#include "Performance.h"
 #include <sys/socket.h>
 #include <sys/wait.h>
 #include <poll.h>
@@ -45,6 +46,7 @@ void AudioClient::enqueue(juce::var v)
     if (command == "play" || command == "play_design")
     {
         desiredPlaying = true;
+        restartNotice.clear();
         desiredId = v["id"].toString();
     }
     if (command == "stop")
@@ -154,6 +156,12 @@ void AudioClient::device(const juce::String &name)
     m.getDynamicObject()->setProperty("name", name);
     enqueue(m);
 }
+void AudioClient::bufferSize(int frames)
+{
+    auto command = message("device_buffer");
+    command.getDynamicObject()->setProperty("frames", frames);
+    enqueue(command);
+}
 juce::var AudioClient::status()
 {
     std::lock_guard lock(mutex);
@@ -161,6 +169,10 @@ juce::var AudioClient::status()
     if (auto *object = copy.getDynamicObject())
     {
         object->setProperty("intentId", desiredId);
+        object->setProperty("intentGeneration", (juce::int64)playbackGeneration.load());
+        if (restartNotice.isNotEmpty() && copy["error"].toString().isEmpty())
+            object->setProperty("error", restartNotice);
+        object->setProperty("helperRestarts", healthEvents.size());
         bool awaitingCommand = (uint64_t)(juce::int64)latest["playGeneration"] < playbackGeneration;
         bool pending = desiredPlaying && awaitingCommand;
         object->setProperty("pendingPlayback", pending);
@@ -177,51 +189,97 @@ juce::var AudioClient::status()
     }
     return copy;
 }
+juce::var AudioClient::diagnostics()
+{
+    std::lock_guard lock(mutex);
+    auto copy = health.clone();
+    copy.getDynamicObject()->setProperty("events", healthEvents);
+    copy.getDynamicObject()->setProperty("observedMs", monotonicMs());
+    return copy;
+}
 void AudioClient::run()
 {
     int retries = 0;
-    int64_t generation = 0;
+    int64_t generation = 0, commandSequence = 0;
     while (!quitting)
     {
-        int sockets[2];
+        int sockets[2], errors[2];
         pid_t pid = -1;
         if (socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) != 0)
             break;
-        for (int socket : sockets)
-            fcntl(socket, F_SETFD, FD_CLOEXEC);
+        if (pipe(errors) != 0)
+        {
+            close(sockets[0]);
+            close(sockets[1]);
+            break;
+        }
+        for (int fd : {sockets[0], sockets[1], errors[0], errors[1]})
+            fcntl(fd, F_SETFD, FD_CLOEXEC);
         int noSig = 1;
         setsockopt(sockets[0], SOL_SOCKET, SO_NOSIGPIPE, &noSig, sizeof(noSig));
-        // stdin is the inherited private channel; the engine has no network listener.
         posix_spawn_file_actions_t actions;
         posix_spawn_file_actions_init(&actions);
         posix_spawn_file_actions_adddup2(&actions, sockets[1], STDIN_FILENO);
-        posix_spawn_file_actions_addclose(&actions, sockets[0]);
-        posix_spawn_file_actions_addclose(&actions, sockets[1]);
+        posix_spawn_file_actions_adddup2(&actions, errors[1], STDERR_FILENO);
+        for (int fd : {sockets[0], sockets[1], errors[0], errors[1]})
+            posix_spawn_file_actions_addclose(&actions, fd);
         auto path = executable.getFullPathName().toStdString();
         char *args[] = {path.data(), nullptr};
         int rc = posix_spawn(&pid, path.c_str(), &actions, nullptr, args, environ);
         posix_spawn_file_actions_destroy(&actions);
         close(sockets[1]);
+        close(errors[1]);
         if (rc != 0)
         {
             close(sockets[0]);
+            close(errors[0]);
             std::lock_guard lock(mutex);
             latest = message("status");
             latest.getDynamicObject()->setProperty("error", "Cannot launch audio process");
             break;
         }
-        auto fd = sockets[0];
+        int fd = sockets[0];
         fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK);
-        auto hello = message("hello");
-        sendMessage(fd, hello);
+        fcntl(errors[0], F_SETFL, fcntl(errors[0], F_GETFL) | O_NONBLOCK);
+        ++generation;
+        juce::String pending, stderrTail, lastCommand;
+        bool healthy = true;
+        const char *reason = "none";
+        int failureErrno = 0;
+        double lastStatusMs = monotonicMs(), lastCommandMs = 0;
+        uint64_t received = 0;
+        juce::var observed;
+        auto drainErrors = [&]
+        {
+            char b[2048];
+            for (int i = 0; i < 8; ++i)
+            {
+                auto n = read(errors[0], b, sizeof(b));
+                if (n <= 0)
+                    break;
+                stderrTail += juce::String::fromUTF8(b, (int)n);
+                if (stderrTail.length() > 16384)
+                    stderrTail = stderrTail.getLastCharacters(16384);
+            }
+        };
+        auto send = [&](juce::var cmd)
+        {
+            lastCommand = cmd["command"].toString();
+            cmd.getDynamicObject()->setProperty("ipcCommandSequence", (juce::int64)++commandSequence);
+            lastCommandMs = monotonicMs();
+            if (!sendMessage(fd, cmd))
+            {
+                failureErrno = errno;
+                reason = "command write failed";
+                healthy = false;
+                return false;
+            }
+            return true;
+        };
+        send(message("hello"));
         auto monitor = message("gain");
         monitor.getDynamicObject()->setProperty("value", targetGain.load());
-        sendMessage(fd, monitor);
-        ++generation;
-        juce::String pending;
-        bool healthy = true;
-        const char *healthFailure = "none";
-        auto lastMessage = juce::Time::getMillisecondCounter();
+        send(monitor);
         while (!quitting && !restartRequested && healthy)
         {
             std::deque<juce::var> commands;
@@ -230,100 +288,154 @@ void AudioClient::run()
                 commands.swap(outgoing);
             }
             for (auto &cmd : commands)
-                if (!sendMessage(fd, cmd))
-                {
-                    healthFailure = "command write failed";
-                    healthy = false;
+                if (!send(cmd))
                     break;
-                }
             pollfd p{fd, POLLIN, 0};
             poll(&p, 1, 10);
-            if (p.revents & POLLIN)
+            drainErrors();
+            if (healthy && (p.revents & POLLIN))
             {
-                char buffer[8192];
-                auto n = recv(fd, buffer, sizeof(buffer), 0);
+                char b[8192];
+                auto n = recv(fd, b, sizeof(b), 0);
                 if (n <= 0)
                 {
-                    healthFailure = "socket closed";
+                    failureErrno = n < 0 ? errno : 0;
+                    reason = "socket closed";
                     healthy = false;
-                    break;
                 }
-                pending += juce::String::fromUTF8(buffer, (int)n);
-                if (pending.length() > 131072)
+                else
                 {
-                    healthFailure = "oversized response";
-                    healthy = false;
-                    break;
-                }
-                while (pending.containsChar('\n'))
-                {
-                    auto line = pending.upToFirstOccurrenceOf("\n", false, false);
-                    pending = pending.fromFirstOccurrenceOf("\n", false, false);
-                    auto state = juce::JSON::parse(line);
-                    if ((int)state["version"] != protocolVersion)
+                    pending += juce::String::fromUTF8(b, (int)n);
+                    if (pending.length() > 131072)
                     {
-                        healthFailure = "invalid status response";
+                        reason = "oversized response";
                         healthy = false;
-                        break;
                     }
-                    if (auto *object = state.getDynamicObject())
+                    while (healthy && pending.containsChar('\n'))
                     {
-                        object->setProperty("processGeneration", (juce::int64)generation);
-                        if ((uint64_t)(juce::int64)state["playGeneration"] < playbackGeneration)
+                        auto line = pending.upToFirstOccurrenceOf("\n", false, false);
+                        pending = pending.fromFirstOccurrenceOf("\n", false, false);
+                        auto state = juce::JSON::parse(line);
+                        if ((int)state["version"] != protocolVersion)
                         {
-                            object->setProperty("playing", false);
-                            object->setProperty("pendingPlayback", true);
+                            reason = "invalid status response";
+                            healthy = false;
+                            break;
                         }
-                    }
-                    {
+                        lastStatusMs = monotonicMs();
+                        ++received;
+                        observed = state.clone();
+                        if (auto *o = state.getDynamicObject())
+                        {
+                            o->setProperty("processGeneration", (juce::int64)generation);
+                            if ((uint64_t)(int64_t)state["playGeneration"] < playbackGeneration)
+                            {
+                                o->setProperty("playing", false);
+                                o->setProperty("pendingPlayback", true);
+                            }
+                        }
                         std::lock_guard lock(mutex);
                         latest = state;
+                        auto *h = health.getDynamicObject();
+                        h->setProperty("helperPid", (int)pid);
+                        h->setProperty("processGeneration", generation);
+                        h->setProperty("lastHeartbeatMs", lastStatusMs);
+                        h->setProperty("lastCommandMs", lastCommandMs);
+                        h->setProperty("sentSequence", commandSequence);
+                        h->setProperty("statusesReceived", (juce::int64)received);
+                        h->setProperty("lastStatusSequence", observed["statusSequence"]);
+                        h->setProperty("lastEchoedCommand", observed["lastCommandSequence"]);
                     }
-                    lastMessage = juce::Time::getMillisecondCounter();
                 }
             }
-            if (p.revents & (POLLHUP | POLLERR | POLLNVAL))
+            if (healthy && (p.revents & (POLLHUP | POLLERR | POLLNVAL)))
             {
-                healthFailure = "socket hangup";
+                reason = "socket hangup";
                 healthy = false;
             }
-            if (juce::Time::getMillisecondCounter() - lastMessage > 5000)
+            if (healthy && monotonicMs() - lastStatusMs > 5000)
             {
-                healthFailure = "status heartbeat timed out";
+                reason = "status heartbeat timed out";
                 healthy = false;
             }
         }
-        if (!healthy && !quitting && !restartRequested)
-            std::fprintf(stderr, "SoundPlus audio helper %d: %s\n", (int)pid, healthFailure);
+        const bool explicitRestart = restartRequested.exchange(false);
+        auto failedMs = monotonicMs();
         sendMessage(fd, message("quit"));
         close(fd);
-        int status = 0;
+        int status = 0, supervisorSignal = 0;
         bool reaped = false;
-        for (int i = 0; i < 40; ++i)
+        auto reap = [&](int attempts)
         {
-            if (waitpid(pid, &status, WNOHANG) == pid)
+            for (int i = 0; i < attempts; ++i)
             {
-                reaped = true;
-                break;
+                if (waitpid(pid, &status, WNOHANG) == pid)
+                {
+                    reaped = true;
+                    break;
+                }
+                std::this_thread::sleep_for(std::chrono::milliseconds(25));
             }
-            std::this_thread::sleep_for(std::chrono::milliseconds(25));
+        };
+        reap(40);
+        if (!reaped)
+        {
+            supervisorSignal = SIGTERM;
+            kill(pid, SIGCONT);
+            kill(pid, SIGTERM);
+            reap(20);
         }
         if (!reaped)
         {
-            kill(pid, SIGTERM);
-            waitpid(pid, &status, 0);
+            supervisorSignal = SIGKILL;
+            kill(pid, SIGKILL);
+            while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
+            {
+            }
+            reaped = true;
         }
-        bool explicitRestart = restartRequested.exchange(false);
+        drainErrors();
+        close(errors[0]);
         if (quitting)
             break;
+        auto *event = new juce::DynamicObject();
+        event->setProperty("helperPid", (int)pid);
+        event->setProperty("processGeneration", generation);
+        event->setProperty("reason", explicitRestart ? "explicit reconnect" : reason);
+        event->setProperty("failureMs", failedMs);
+        event->setProperty("lastHeartbeatMs", lastStatusMs);
+        event->setProperty("heartbeatAgeMs", failedMs - lastStatusMs);
+        event->setProperty("lastCommandMs", lastCommandMs);
+        event->setProperty("lastCommand", lastCommand);
+        event->setProperty("sentSequence", commandSequence);
+        event->setProperty("statusesReceived", (juce::int64)received);
+        event->setProperty("pendingResponseBytes", (juce::int64)pending.getNumBytesAsUTF8());
+        event->setProperty("errno", failureErrno);
+        event->setProperty("exitCode", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+        event->setProperty("exitSignal", WIFSIGNALED(status) ? WTERMSIG(status) : 0);
+        event->setProperty("supervisorSignal", supervisorSignal);
+        event->setProperty("stderrTail", stderrTail);
+        event->setProperty("lastStatus", observed);
+        event->setProperty("classification",
+                           explicitRestart                                        ? "explicitReconnect"
+                           : juce::String(reason) == "status heartbeat timed out" ? "watchdogTimeout"
+                           : WIFSIGNALED(status) && supervisorSignal == 0         ? "helperSignalExit"
+                                                                                  : "ipcOrHelperExit");
+        juce::var eventValue(event);
+        std::fprintf(stderr, "SoundPlus audio health: %s\n",
+                     juce::JSON::toString(eventValue, true).toRawUTF8());
         {
             std::lock_guard lock(mutex);
+            healthEvents.add(eventValue);
+            while (healthEvents.size() > 8)
+                healthEvents.remove(0);
             outgoing.clear();
             desiredPlaying = false;
             desiredId.clear();
             latest = message("status");
-            latest.getDynamicObject()->setProperty(
-                "error", "Audio process restarted. Select a sound to audition again.");
+            restartNotice = explicitRestart ? "Audio device reconnected. Select a sound to audition again."
+                                            : "Audio process restarted. Select a sound to audition again.";
+            latest.getDynamicObject()->setProperty("error", restartNotice);
         }
         if (explicitRestart)
             retries = 0;

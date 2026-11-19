@@ -90,11 +90,12 @@ void AudioEngine::command(const juce::var &message)
         playback.request(message, deviceRate.load());
         return;
     }
-    if (name == "device" || name == "device_rate")
+    if (name == "device" || name == "device_rate" || name == "device_buffer")
     {
         auto setup = devices.getAudioDeviceSetup();
         if ((name == "device_rate" && deviceRate.load() == (double)message["rate"]) ||
-            (name == "device" && setup.outputDeviceName == message["name"].toString()))
+            (name == "device" && setup.outputDeviceName == message["name"].toString()) ||
+            (name == "device_buffer" && setup.bufferSize == (int)message["frames"]))
             return;
         auto state = playback.status();
         if (lastPlay["command"].toString() == "play_design" && (bool)state["playing"])
@@ -109,6 +110,8 @@ void AudioEngine::command(const juce::var &message)
         playback.stop(requestedGeneration);
         if (name == "device")
             setup.outputDeviceName = message["name"].toString();
+        else if (name == "device_buffer")
+            setup.bufferSize = (int)message["frames"];
         else
         {
             setup.sampleRate = (double)message["rate"];
@@ -174,6 +177,8 @@ void AudioEngine::timerCallback()
     }
     for (auto &message : commands)
     {
+        commandSequence = (uint64_t)(int64_t)message["ipcCommandSequence"];
+        commandMs = monotonicMs();
         auto name = message["command"].toString();
         if ((name == "play" || name == "play_design" || name == "stop") &&
             (uint64_t)(int64_t)message["playGeneration"] < newest)
@@ -190,6 +195,10 @@ void AudioEngine::sendStatus()
         state = message("status");
     auto *object = state.getDynamicObject();
     object->setProperty("version", protocolVersion);
+    object->setProperty("statusSequence", (juce::int64)++statusSequence);
+    object->setProperty("statusMs", monotonicMs());
+    object->setProperty("lastCommandSequence", (juce::int64)commandSequence);
+    object->setProperty("lastCommandMs", commandMs);
     object->setProperty("sampleRate", deviceRate.load());
     object->setProperty("outputs", outputs);
     object->setProperty("peakResidentBytes", performance.json()["peakResidentBytes"]);
@@ -204,6 +213,10 @@ void AudioEngine::sendStatus()
         for (auto rate : device->getAvailableSampleRates())
             rates.add(rate);
         object->setProperty("availableRates", rates);
+        juce::Array<juce::var> buffers;
+        for (auto size : device->getAvailableBufferSizes())
+            buffers.add(size);
+        object->setProperty("availableBufferFrames", buffers);
     }
     sendMessage(STDIN_FILENO, state);
 }

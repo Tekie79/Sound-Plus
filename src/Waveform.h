@@ -23,7 +23,8 @@ struct WaveformData
 class WaveformCache
 {
   public:
-    explicit WaveformCache(juce::File directory, std::function<void()> beforeRead = {});
+    using Checkpoint = std::function<void(const Asset &, int64_t, const std::function<bool()> &)>;
+    explicit WaveformCache(juce::File directory, std::function<void()> beforeRead = {}, Checkpoint = {});
     ~WaveformCache();
     uint64_t request(const Asset &);
     uint64_t cancel();

@@ -1,5 +1,6 @@
 #include "Catalog.h"
 #include "LibraryService.h"
+#include "ReliabilityTests.h"
 #include "AudioStream.h"
 #include "AudioIPC.h"
 #include "Performance.h"
@@ -151,6 +152,8 @@ int main(int argc, char **argv)
             prepareDesignWorkload(juce::File(argv[2]));
             return 0;
         }
+        if(argc>=3 && juce::String(argv[1])=="--prepare-reliability-workload")
+        {prepareReliabilityWorkload(juce::File(argv[2]));return 0;}
         if (argc >= 5 && (juce::String(argv[1]) == "--interrupt-designer-save" ||
                           juce::String(argv[1]) == "--interrupt-designer-render"))
         {
@@ -180,6 +183,12 @@ int main(int argc, char **argv)
             runCapacityRecovery(juce::File(argv[2]), juce::File(argv[3]));
             return 0;
         }
+        if (argc >= 4 && juce::String(argv[1]) == "--library-stability")
+        { runLibraryStabilityTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc >= 4 && juce::String(argv[1]) == "--audio-health")
+        { runAudioHealthTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc >= 3 && juce::String(argv[1]) == "--waveform-scheduling")
+        { runWaveformSchedulingTests(juce::File(argv[2])); return 0; }
         if (argc >= 4 && juce::String(argv[1]) == "--semantic-integrity")
         {
             runSemanticIntegrity(juce::File(argv[2]), juce::File(argv[3]));
