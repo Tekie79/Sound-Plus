@@ -43,6 +43,7 @@ struct LayerRouting
     std::vector<int> inputs;      // Physical source indices in interpreted order, <=16 of1..64.
     std::vector<ChannelRoute> routes;
     bool spatial = false, needsSelection = false;
+    bool legacyAnalysisMean = false; // v2: arithmetic mean of all physical inputs into one Mono voice.
     double azimuth = 0, width = 60, divergence = 0, lfeDb = -90, lfeCutoff = 120;
 };
 juce::var routingJson(const LayerRouting &);

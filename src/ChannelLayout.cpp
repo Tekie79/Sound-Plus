@@ -355,6 +355,8 @@ juce::var routingJson(const LayerRouting &r)
     p->setProperty("matrix", rs);
     p->setProperty("spatial", r.spatial);
     p->setProperty("needsSelection", r.needsSelection);
+    if (r.legacyAnalysisMean)
+        p->setProperty("legacyAnalysisMean", true);
     p->setProperty("azimuth", r.azimuth);
     p->setProperty("width", r.width);
     p->setProperty("divergence", r.divergence);
@@ -366,10 +368,11 @@ LayerRouting routingFromJson(const juce::var &v)
 {
     LayerRouting r;
     r.interpretation = layoutFromJson(v["interpretation"]);
+    r.legacyAnalysisMean = (bool)v["legacyAnalysisMean"];
     if (auto *a = v["inputs"].getArray())
     {
-        if (a->size() > 16)
-            throw std::runtime_error("Input selection exceeds16");
+        if (a->size() > (r.legacyAnalysisMean ? 64 : 16))
+            throw std::runtime_error("Input selection exceeds qualified source bound");
         for (auto &i : *a)
             r.inputs.push_back((int)i);
     }
@@ -395,11 +398,13 @@ void validateRouting(const LayerRouting &r, int count, const ChannelLayout &bus)
     validateLayout(r.interpretation);
     if (r.needsSelection)
     {
-        if (count <= 16 || !r.inputs.empty() || !r.routes.empty() || r.spatial)
+        if (count <= 16 || !r.inputs.empty() || !r.routes.empty() || r.spatial || r.legacyAnalysisMean)
             throw std::runtime_error("Invalid unresolved input selection");
         return;
     }
-    if (r.inputs.size() != (size_t)r.interpretation.size())
+    if (r.legacyAnalysisMean && (r.interpretation.id != "mono-v1" || (int)r.inputs.size() != count))
+        throw std::runtime_error("Legacy analysis requires every physical source channel into Mono");
+    if (!r.legacyAnalysisMean && r.inputs.size() != (size_t)r.interpretation.size())
         throw std::runtime_error("Select explicit source channels before playback");
     std::set<int> used;
     for (int i : r.inputs)
@@ -418,7 +423,7 @@ void validateRouting(const LayerRouting &r, int count, const ChannelLayout &bus)
     finite(r.divergence, 0, 1);
     finite(r.lfeDb, -90, 0);
     finite(r.lfeCutoff, 20, 200);
-    if (r.spatial && (!horizontalLayout(bus) || r.inputs.size() > 2))
+    if (r.spatial && (!horizontalLayout(bus) || r.interpretation.size() > 2))
         throw std::runtime_error("Spatial Panner supports mono/stereo points; beds use channel routing");
 }
 ChannelMatrix routingMatrix(const LayerRouting &r, const ChannelLayout &bus, double pan)

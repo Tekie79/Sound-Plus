@@ -343,7 +343,14 @@ class Voice
                 for (int c = 0; c < inputChannels; ++c)
                 {
                     float value = 0;
-                    if (layoutAware)
+                    if (layoutAware && layer.routing.legacyAnalysisMean)
+                    {
+                        double sum = 0;
+                        for (int physical : layer.routing.inputs)
+                            sum += scratch.getSample(physical, n);
+                        value = (float)(sum / layer.routing.inputs.size());
+                    }
+                    else if (layoutAware)
                         value = scratch.getSample(layer.routing.inputs[(size_t)c], n);
                     else if (layer.region.auditionPair < 0)
                     {
@@ -379,9 +386,9 @@ class Voice
     Voice(const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {},
           int version = 2)
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
-          rack(prepareRack(l.effects, rate, invariant, layout.id.isEmpty() ? 2 : (int)l.routing.inputs.size(),
-                           !layout.id.isEmpty())),
-          layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? (int)l.routing.inputs.size() : 2),
+          rack(prepareRack(l.effects, rate, invariant,
+                           layout.id.isEmpty() ? 2 : l.routing.interpretation.size(), !layout.id.isEmpty())),
+          layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? l.routing.interpretation.size() : 2),
           routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
           previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {

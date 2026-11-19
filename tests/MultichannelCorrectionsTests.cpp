@@ -1219,6 +1219,167 @@ void auditionOwner(const juce::File &root, const juce::File &app)
     audio.stop();
 }
 
+void legacyConversion(const juce::File &root, const juce::File &app)
+{
+    int cases = 0;
+    double maximum = 0;
+    for (int channels : {1, 2, 3, 4, 5, 6, 16, 63, 64})
+    {
+        std::vector<float> levels;
+        for (int c = 0; c < channels; ++c)
+            levels.push_back(.001f * (c + 1));
+        auto file = root.getChildFile("source-" + juce::String(channels) + ".wav");
+        file.getParentDirectory().createDirectory();
+        constant(file, levels, 4096);
+        for (bool known : {false, true})
+        {
+            if (known && channels != 2 && channels != 6)
+                continue;
+            for (int pair : {-1, 0, (channels - 1) / 2})
+            {
+                auto legacy = design(file);
+                legacy.original.masterDb = 0;
+                auto &layer = legacy.original.layers[0];
+                layer.region.auditionPair = pair;
+                layer.pan = .37;
+                if (known)
+                    layer.source.layoutOverride =
+                        sp::channelLayout(channels == 6 ? "5.1-side-v1" : "stereo-v1");
+                auto old = pcm(legacy);
+                for (auto target : {sp::channelLayout("stereo-v1"), sp::channelLayout("5.1-side-v1")})
+                {
+                    auto converted = legacy;
+                    sp::setMixLayout(converted.original, target);
+                    converted.renderSettings.layout = "same";
+                    auto &r = converted.original.layers[0].routing;
+                    bool mono = pair < 0 || pair * 2 + 1 >= channels;
+                    check(r.interpretation.id == (mono ? "mono-v1" : "stereo-v1") &&
+                              r.legacyAnalysisMean == (pair < 0),
+                          "Converted legacy interpretation is explicit Mono mean or original physical pair");
+                    if (pair < 0)
+                    {
+                        check((int)r.inputs.size() == channels,
+                              "Analysis mean retains all physical source indices");
+                        for (int i = 0; i < channels; ++i)
+                            check(r.inputs[(size_t)i] == i, "Analysis physical input order");
+                    }
+                    else
+                    {
+                        check(r.inputs[0] == pair * 2 && (int)r.inputs.size() == (mono ? 1 : 2),
+                              "Non-first and odd-final legacy physical pair retained");
+                        if (!mono)
+                            check(r.inputs[1] == pair * 2 + 1, "Second physical pair member retained");
+                    }
+                    auto actual = pcm(converted);
+                    double mean = 0;
+                    for (auto level : levels)
+                        mean += level;
+                    mean /= channels;
+                    for (int c = 0; c < target.size(); ++c)
+                    {
+                        double expected = 0;
+                        if (target.id == "stereo-v1")
+                        {
+                            if (mono)
+                                expected =
+                                    (pair < 0 ? mean : levels[(size_t)pair * 2]) *
+                                    (c == 0
+                                         ? std::cos((layer.pan + 1) * juce::MathConstants<double>::pi / 4)
+                                         : std::sin((layer.pan + 1) * juce::MathConstants<double>::pi / 4));
+                            else
+                                expected =
+                                    levels[(size_t)pair * 2 + c] *
+                                    (c == 0 ? std::cos(layer.pan * juce::MathConstants<double>::halfPi) : 1);
+                        }
+                        else if (mono && c == 2)
+                            expected = pair < 0 ? mean : levels[(size_t)pair * 2];
+                        else if (!mono && c < 2)
+                            expected = levels[(size_t)pair * 2 + c];
+                        for (int n = 0; n < 4096; ++n)
+                        {
+                            maximum = std::max(maximum, std::abs(actual.getSample(c, n) - expected));
+                            check(std::abs(actual.getSample(c, n) - expected) < 1e-7,
+                                  "Converted signal matches independent pair/mean and bus oracle");
+                        }
+                    }
+                    if (target.id == "stereo-v1")
+                        check(pcmDifference(old, actual, 4096) < 1e-7,
+                              "Converted legacy Stereo preserves actual historical PCM");
+                    auto saved = root.getChildFile("Converted.soundplus");
+                    sp::saveDesignAtomic(saved, converted);
+                    auto reopened = sp::loadDesign(saved);
+                    check(reopened.original.layers[0].routing.legacyAnalysisMean == r.legacyAnalysisMean &&
+                              reopened.original.layers[0].routing.inputs == r.inputs &&
+                              pcmDifference(actual, pcm(reopened), 4096) == 0,
+                          "Converted inputs and PCM persist through real save/reopen");
+                    ++cases;
+                }
+            }
+        }
+    }
+    auto anti = root.getChildFile("anti-phase.wav");
+    constant(anti, {.2f, -.2f}, 4096);
+    auto mean = design(anti);
+    mean.original.layers[0].region.auditionPair = -1;
+    sp::setMixLayout(mean.original, sp::channelLayout("stereo-v1"));
+    check(pcm(mean).getMagnitude(0, 4096) == 0,
+          "Legacy stereo Analysis Mix preserves arithmetic anti-phase cancellation");
+    auto version1 = mean;
+    version1.original.routingVersion = 1;
+    check(rejects([&] { sp::validateDesign(version1); }),
+          "Mean conversion cannot masquerade under old routing identity");
+    auto file = root.getChildFile("source-6.wav");
+    auto legacy = design(file);
+    legacy.name = "Legacy pair and analysis conversion";
+    legacy.original.masterDb = 0;
+    legacy.original.layers[0].region.auditionPair = 1;
+    auto second = legacy.original.layers[0];
+    second.id = juce::Uuid().toString();
+    second.region.auditionPair = -1;
+    second.placement = 4800;
+    legacy.original.layers.push_back(second);
+    auto historicalDocument = historical(root.getChildFile("immutable"), app);
+    legacy.takes = historicalDocument.takes;
+    legacy.outputs = historicalDocument.outputs;
+    auto oldRecipe = legacy.takes[0].recipeHash, oldEvents = legacy.takes[0].eventHash,
+         oldOutput = legacy.outputs.back().sha256;
+    sp::saveDesignAtomic(root.getChildFile("Legacy before conversion.soundplus"), legacy);
+    Worker worker;
+    sp::DesignSession session(root.getChildFile("session/library.sqlite"), worker.services());
+    session.document = legacy;
+    session.edit("Convert legacy inputs",
+                 [](auto &doc)
+                 {
+                     sp::setMixLayout(doc.original, sp::channelLayout("5.1-side-v1"));
+                     doc.renderSettings.layout = "same";
+                 });
+    check(session.document.original.layers[0].routing.inputs == std::vector<int>({2, 3}) &&
+              session.document.original.layers[1].routing.legacyAnalysisMean,
+          "One undoable conversion preserves pair and mean across whole mix");
+    session.undo();
+    check(session.document.original.layout.id.isEmpty() &&
+              session.document.original.layers[0].region.auditionPair == 1 &&
+              session.document.original.layers[1].region.auditionPair == -1,
+          "Undo restores entire legacy mix");
+    session.redo();
+    session.save(root.getChildFile("Legacy converted.soundplus"));
+    worker.drain();
+    auto reopened = sp::loadDesign(root.getChildFile("Legacy converted.soundplus"));
+    check(reopened.takes[0].recipeHash == oldRecipe && reopened.takes[0].eventHash == oldEvents &&
+              reopened.outputs.back().sha256 == oldOutput,
+          "Conversion/save/Undo/Redo retain historical frozen take and output identities");
+    auto invalid = legacy;
+    invalid.original.layers[1].region.auditionPair = 31;
+    auto before = juce::JSON::toString(sp::designToJson(invalid), true);
+    check(rejects([&] { sp::setMixLayout(invalid.original, sp::channelLayout("5.1-side-v1")); }) &&
+              before == juce::JSON::toString(sp::designToJson(invalid), true),
+          "Unrepresentable later layer leaves entire legacy mix unchanged");
+    auto state = sp::message("R16");
+    state.getDynamicObject()->setProperty("cases", cases);
+    state.getDynamicObject()->setProperty("maximumOracleError", maximum);
+    root.getChildFile("conversion-evidence.json").replaceWithText(juce::JSON::toString(state, true));
+}
+
 void preferences(const juce::File &root)
 {
     auto source = root.getChildFile("input.wav");
@@ -1350,6 +1511,7 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     routingEditors(root.getChildFile("R13"), app);
     replacement(root.getChildFile("R14"), app);
     auditionOwner(root.getChildFile("R15"), app);
+    legacyConversion(root.getChildFile("R16"), app);
     auto result = sp::message("multichannel-corrections-results");
     result.getDynamicObject()->setProperty("checks", checks);
     result.getDynamicObject()->setProperty("R12", spatial);
@@ -1366,6 +1528,8 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     scenarios.append(
         "R14 actual index replacement, overrides, revisions, rename/relocation and Designer Add");
     scenarios.append("R15 reference owner mode transitions, native adoption and independent audition PCM");
+    scenarios.append("R16 physical pairs, odd finals, all-channel mean, PCM, transactional conversion and "
+                     "immutable historical identities");
     result.getDynamicObject()->setProperty("scenarios", scenarios);
     result.getDynamicObject()->setProperty("root", root.getFullPathName());
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(result, true));

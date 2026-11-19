@@ -21,19 +21,20 @@ class MatrixPicture final : public juce::Component
             matrix = routingMatrix(routing, bus, pan);
             if (routing.spatial)
             {
-                for (size_t i = 0; i < routing.inputs.size(); ++i)
+                for (size_t i = 0; i < (size_t)routing.interpretation.size(); ++i)
                 {
-                    auto g = spatialGains(
-                        bus,
-                        routing.azimuth +
-                            (routing.inputs.size() == 2 ? (i == 0 ? -routing.width : routing.width) * .5 : 0),
-                        routing.divergence);
+                    auto g =
+                        spatialGains(bus,
+                                     routing.azimuth + (routing.interpretation.size() == 2
+                                                            ? (i == 0 ? -routing.width : routing.width) * .5
+                                                            : 0),
+                                     routing.divergence);
                     for (int c = 0; c < bus.size(); ++c)
-                        matrix[c][i] = g[c] * (routing.inputs.size() == 2 ? .70710678f : 1.f);
+                        matrix[c][i] = g[c] * (routing.interpretation.size() == 2 ? .70710678f : 1.f);
                     int lfe = bus.roles.indexOf("LFE");
                     if (lfe >= 0 && routing.lfeDb > -90)
-                        matrix[lfe][i] =
-                            (float)juce::Decibels::decibelsToGain(routing.lfeDb) / routing.inputs.size();
+                        matrix[lfe][i] = (float)juce::Decibels::decibelsToGain(routing.lfeDb) /
+                                         routing.interpretation.size();
                 }
             }
         }
@@ -45,11 +46,12 @@ class MatrixPicture final : public juce::Component
             g.setColour(ui::muted);
             g.drawText(bus.roles[c], 82 + c * 48, 0, 48, 26, juce::Justification::centred);
         }
-        for (int i = 0; i < (int)routing.inputs.size(); ++i)
+        for (int i = 0; i < routing.interpretation.size(); ++i)
         {
             g.setColour(ui::muted);
-            g.drawText(routing.interpretation.roles[i] + " [" + juce::String(routing.inputs[(size_t)i] + 1) +
-                           "]",
+            g.drawText(routing.legacyAnalysisMean ? juce::String("Mean [all]")
+                                                  : routing.interpretation.roles[i] + " [" +
+                                                        juce::String(routing.inputs[(size_t)i] + 1) + "]",
                        4, 28 + i * 28, 76, 28, juce::Justification::left);
             for (int c = 0; c < bus.size(); ++c)
             {
@@ -164,7 +166,8 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                 state.kind = "Unresolved role route (zero)";
             }
         }
-        state.signature = boundContext + ":" + l->routing.interpretation.id;
+        state.signature = boundContext + ":" + l->routing.interpretation.id + ":" +
+                          juce::String((int)l->routing.legacyAnalysisMean);
         for (auto physical : l->routing.inputs)
             state.signature += ":source" + juce::String(physical);
         state.signature += ":" + juce::String(i) + ":" + juce::String(o) + ":" +
@@ -232,10 +235,11 @@ struct RoutingPanel final : juce::Component, private juce::Timer
         }
         setEnabled(true);
         auto bus = view.session.performanceMix().layout;
-        int desiredHeight = std::min(540, 300 + std::max(1, (int)l->routing.inputs.size()) * 28);
+        int desiredHeight = std::min(540, 300 + std::max(1, l->routing.interpretation.size()) * 28);
         if (getHeight() != desiredHeight)
             setSize(620, desiredHeight);
-        auto signature = boundContext + ":" + l->routing.interpretation.id + ":" + bus.id;
+        auto signature = boundContext + ":" + l->routing.interpretation.id + ":" + bus.id + ":" +
+                         juce::String((int)l->routing.legacyAnalysisMean);
         for (auto c : l->routing.inputs)
             signature += ":" + juce::String(c);
         if (signature != listSignature)
@@ -245,7 +249,23 @@ struct RoutingPanel final : juce::Component, private juce::Timer
             interpretation.clear(juce::dontSendNotification);
             input.clear(juce::dontSendNotification);
             output.clear(juce::dontSendNotification);
-            int n = (int)l->routing.inputs.size();
+            int n = l->routing.interpretation.size();
+            subset.clear(juce::dontSendNotification);
+            if (l->source.channels <= 16)
+                subset.addItem("All " + juce::String(l->source.channels) + " source channels", 1);
+            for (int c = 0; c < l->source.channels; c += 2)
+                subset.addItem("Source " + juce::String(c + 1) + " / " +
+                                   juce::String(std::min(c + 2, l->source.channels)),
+                               c / 2 + 2);
+            if (l->source.channels > 16)
+                for (int first = 0; first < l->source.channels; first += 16)
+                    subset.addItem("Source " + juce::String(first + 1) + " - " +
+                                       juce::String(std::min(first + 16, l->source.channels)),
+                                   100 + first / 16);
+            subset.setTextWhenNothingSelected(l->routing.legacyAnalysisMean
+                                                  ? "Analysis: all-channel mean"
+                                                  : "Selected " + juce::String(n) + " of " +
+                                                        juce::String(l->source.channels));
             for (auto p : namedLayouts())
                 if (p.size() == n)
                     options.push_back(p);
@@ -259,8 +279,10 @@ struct RoutingPanel final : juce::Component, private juce::Timer
             }
             interpretation.setTextWhenNothingSelected(layoutName(l->routing.interpretation));
             for (int i = 0; i < n; ++i)
-                input.addItem(l->routing.interpretation.roles[i] + " [source " +
-                                  juce::String(l->routing.inputs[(size_t)i] + 1) + "]",
+                input.addItem(l->routing.legacyAnalysisMean
+                                  ? "Mono [all-channel mean]"
+                                  : l->routing.interpretation.roles[i] + " [source " +
+                                        juce::String(l->routing.inputs[(size_t)i] + 1) + "]",
                               i + 1);
             for (int i = 0; i < bus.size(); ++i)
                 output.addItem(bus.roles[i], i + 1);
@@ -293,15 +315,15 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                  &interpretation, &subset, &spatial, &divergence, &lfe, &cutoff, &input, &output, &trim,
                  &invert, &muted, &apply, &defaults, &byIndex})
             c->setEnabled(!frozen);
-        interpretation.setEnabled(!frozen && !l->routing.needsSelection);
+        interpretation.setEnabled(!frozen && !l->routing.needsSelection && !l->routing.legacyAnalysisMean);
         apply.setEnabled(!frozen && !l->routing.needsSelection);
         spatial.setEnabled(!frozen && !l->routing.needsSelection && horizontalLayout(bus) &&
-                           l->routing.inputs.size() <= 2);
+                           l->routing.interpretation.size() <= 2);
         bool moving =
             view.session.document.activeTake.isEmpty() &&
             (!view.session.takeBusy() || view.session.takeState == DesignSession::TakeState::recording);
         angle.setEnabled(moving && l->routing.spatial);
-        width.setEnabled(moving && l->routing.spatial && l->routing.inputs.size() == 2);
+        width.setEnabled(moving && l->routing.spatial && l->routing.interpretation.size() == 2);
         lfe.setEnabled(!frozen && l->routing.spatial && bus.roles.contains("LFE"));
         cutoff.setEnabled(lfe.isEnabled());
         if (l->routing.spatial)
@@ -334,7 +356,7 @@ struct RoutingPanel final : juce::Component, private juce::Timer
         subset.setTitle("Explicit source channel selection");
         input.setTitle("Route input");
         output.setTitle("Route output");
-        int n = (int)l->routing.inputs.size();
+        int n = l->routing.interpretation.size();
         for (auto p : namedLayouts())
             if (p.size() == n)
                 options.push_back(p);
@@ -347,19 +369,6 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                 interpretation.setSelectedId((int)i + 1, juce::dontSendNotification);
         }
         interpretation.setTextWhenNothingSelected(layoutName(l->routing.interpretation));
-        if (l->source.channels <= 16)
-            subset.addItem("All " + juce::String(l->source.channels) + " source channels", 1);
-        for (int c = 0; c < l->source.channels; c += 2)
-            subset.addItem("Source " + juce::String(c + 1) + " / " +
-                               juce::String(std::min(c + 2, l->source.channels)),
-                           c / 2 + 2);
-        if (l->source.channels > 16)
-            for (int first = 0; first < l->source.channels; first += 16)
-                subset.addItem("Source " + juce::String(first + 1) + " - " +
-                                   juce::String(std::min(first + 16, l->source.channels)),
-                               100 + first / 16);
-        subset.setTextWhenNothingSelected("Selected " + juce::String(n) + " of " +
-                                          juce::String(l->source.channels));
         interpretation.onChange = [this]
         {
             if (!updating)
@@ -382,6 +391,7 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                  [&](auto &l)
                  {
                      l.routing.inputs.clear();
+                     l.routing.legacyAnalysisMean = false;
                      l.routing.needsSelection = false;
                      if (chosen == 1)
                      {
@@ -468,8 +478,10 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                 edit("LFE filter", [&](auto &l) { l.routing.lfeCutoff = cutoff.getValue(); });
         };
         for (int i = 0; i < n; ++i)
-            input.addItem(l->routing.interpretation.roles[i] + " [source " +
-                              juce::String(l->routing.inputs[(size_t)i] + 1) + "]",
+            input.addItem(l->routing.legacyAnalysisMean
+                              ? "Mono [all-channel mean]"
+                              : l->routing.interpretation.roles[i] + " [source " +
+                                    juce::String(l->routing.inputs[(size_t)i] + 1) + "]",
                           i + 1);
         for (int i = 0; i < view.session.document.activeMix().layout.size(); ++i)
             output.addItem(view.session.document.activeMix().layout.roles[i], i + 1);
@@ -509,7 +521,7 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                              auto m =
                                  routingMatrix(l.routing, view.session.document.activeMix().layout, l.pan);
                              for (int o = 0; o < view.session.document.activeMix().layout.size(); ++o)
-                                 for (int i = 0; i < (int)l.routing.inputs.size(); ++i)
+                                 for (int i = 0; i < l.routing.interpretation.size(); ++i)
                                      if (m[o][i] != 0)
                                          l.routing.routes.push_back(
                                              {i, o, juce::Decibels::gainToDecibels((double)std::abs(m[o][i])),
@@ -543,7 +555,7 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                  [&](auto &l)
                  {
                      l.routing.routes.clear();
-                     for (int i = 0; i < std::min((int)l.routing.inputs.size(),
+                     for (int i = 0; i < std::min(l.routing.interpretation.size(),
                                                   view.session.document.activeMix().layout.size());
                           ++i)
                          l.routing.routes.push_back({i, i, 0, false, false});
@@ -680,11 +692,13 @@ void DesignerView::channelPopup()
         l = &session.performanceMix().layers.front();
     if (!l)
         return;
-    showChannelDetails(
-        *this, getLocalArea(channelDetail.getParentComponent(), channelDetail.getBounds()), peakPool,
-        l->source, session.performanceMix().layout.id.isEmpty() ? ChannelLayout{} : l->routing.interpretation,
-        session.performanceMix().layout.id.isEmpty() ? std::vector<int>{} : l->routing.inputs, 5,
-        l->region.startSample, l->region.endSample, l->reverse);
+    showChannelDetails(*this, getLocalArea(channelDetail.getParentComponent(), channelDetail.getBounds()),
+                       peakPool, l->source,
+                       session.performanceMix().layout.id.isEmpty() || l->routing.legacyAnalysisMean
+                           ? ChannelLayout{}
+                           : l->routing.interpretation,
+                       session.performanceMix().layout.id.isEmpty() ? std::vector<int>{} : l->routing.inputs,
+                       5, l->region.startSample, l->region.endSample, l->reverse);
 }
 void DesignerView::monitorPopup()
 {

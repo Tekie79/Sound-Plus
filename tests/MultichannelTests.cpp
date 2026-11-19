@@ -166,8 +166,10 @@ sp::DesignDocument design(const juce::File &f, const sp::ChannelLayout &layout)
     d.name = "Multichannel QA";
     d.original.masterDb = 0;
     auto l = sp::makeDesignLayer(sp::inspectDesignSource(f), 0, -1, true);
+    d.original.layout = layout;
+    sp::initialiseRouting(l,
+                          layout); // This helper constructs a NEW complete source, not a legacy conversion.
     d.original.layers = {l};
-    sp::setMixLayout(d.original, layout);
     d.selectedLayer = l.id;
     d.renderSettings.layout = "same";
     d.renderSettings.tailSeconds = 0;

@@ -415,9 +415,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
             (uint64_t)(juce::int64)state["intentGeneration"] == playingGeneration &&
             !playingId.startsWith("design:") && playingPath.isNotEmpty())
         {
-            playingSpec.positionSample = std::max(playingSpec.startSample, (int64_t)state["sourceSample"]);
-            if ((bool)state["pendingPlayback"])
-                playingSpec.positionSample = playingSpec.startSample;
+            playingSpec.positionSample = std::max(
+                playingSpec.startSample,
+                (bool)state["pendingPlayback"] ? playingSpec.positionSample : (int64_t)state["sourceSample"]);
             if (playingSpec.endSample > 0)
                 playingSpec.positionSample = std::min(playingSpec.endSample - 1, playingSpec.positionSample);
             playingSpec.auditionPair =

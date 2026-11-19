@@ -9,9 +9,9 @@ Starting HEAD `6364dfd` exactly matches the reviewed artifact; no later applicat
 - ✓ R13 implementation and focused production-control/PCM checks: selected route binding; precise one-field edits; implicit/absent no-op; preserved drafts; layer/document stale-context guards; Undo/Redo/reopen. Native workflow remains in QA gate.
 - ✓ R14 implementation/focused actual-service tests: revision-aware replacement override invalidation through actual metadata/indexing/Library/Add paths.
 - ✓ R15 implementation/focused production-callback, native-helper adoption and independent PCM tests: actual-owner audition specification across reference/candidate mode changes, revisions, pending and stopped states.
-- ◉ R16: transactional legacy pair/analysis conversion, actual input indices/PCM, persistence and immutable takes.
+- ✓ R16 implementation/focused verification: transactional legacy pair/analysis conversion, actual input indices/PCM, persistence and immutable takes.
 - ✓ R17 implementation/focused automated checks: mandatory historical fixture, actual render-panel callbacks, stereo/mono split and interleaved, exact legacy WAV hash, membership/selection/save/reopen/Print/Undo/Redo/missing stem. Native workflow remains in QA gate.
-- ○ Native normal/minimum workflows, focused indexing/waveform pressure, all21 existing suites plus correction coverage, fresh source/artifact/PCM/UI evidence.
+- ◉ Native normal/minimum workflows, focused indexing/waveform pressure, all21 existing suites plus correction coverage, fresh source/artifact/PCM/UI evidence.
 - ○ Closure report, corrected Source Pools v1.5 brief, actual latest user design reopened, coherent local commits and clean tree; no push.
 
 Compatibility decision before R12 DSP edits: preserve existing `stock-layout-takes-v1` recipe/receipt processing. New live/new-take processing uses an explicit corrected version. A deliberate corrected copy retains the original take and its outputs. Legacy stereo remains unchanged. Implement exact version identifiers and document admission/migration when inspected.

@@ -39,23 +39,33 @@ void initialiseRouting(DesignLayer &l, const ChannelLayout &bus, bool preserveLe
         l.source.detectedChannels = l.source.channels <= 2
                                         ? channelLayout(l.source.channels == 1 ? "mono-v1" : "stereo-v1")
                                         : discreteLayout(l.source.channels, true);
-    l.routing.needsSelection = false;
+    l.routing = {};
+    if (preserveLegacySelection)
+    {
+        if (l.region.auditionPair < 0)
+        {
+            l.routing.legacyAnalysisMean = true;
+            for (int i = 0; i < l.source.channels; ++i)
+                l.routing.inputs.push_back(i);
+            l.routing.interpretation = channelLayout("mono-v1");
+        }
+        else
+        {
+            int first = l.region.auditionPair * 2;
+            if (first < 0 || first >= l.source.channels)
+                throw std::runtime_error(
+                    "Legacy pair is unavailable; choose source channels before conversion");
+            l.routing.inputs = {first};
+            if (first + 1 < l.source.channels)
+                l.routing.inputs.push_back(first + 1);
+            l.routing.interpretation = channelLayout(l.routing.inputs.size() == 1 ? "mono-v1" : "stereo-v1");
+        }
+        return;
+    }
     if (l.source.channels > 16)
     {
-        l.routing.inputs.clear();
-        l.routing.routes.clear();
-        l.routing.spatial = false;
-        if (!preserveLegacySelection || l.region.auditionPair < 0)
-        {
-            l.routing.needsSelection = true;
-            l.routing.interpretation = discreteLayout(16);
-            return;
-        }
-        int first = l.region.auditionPair * 2;
-        l.routing.inputs = {first};
-        if (first + 1 < l.source.channels)
-            l.routing.inputs.push_back(first + 1);
-        l.routing.interpretation = channelLayout(l.routing.inputs.size() == 1 ? "mono-v1" : "stereo-v1");
+        l.routing.needsSelection = true;
+        l.routing.interpretation = discreteLayout(16);
         return;
     }
     l.routing.interpretation =
@@ -70,10 +80,11 @@ void initialiseRouting(DesignLayer &l, const ChannelLayout &bus, bool preserveLe
 void setMixLayout(DesignMix &m, const ChannelLayout &l)
 {
     validateLayout(l);
-    bool legacy = m.layout.id.isEmpty();
-    m.layout = l;
-    m.routingVersion = 2;
-    for (auto &v : m.layers)
+    auto candidate = m;
+    bool legacy = candidate.layout.id.isEmpty();
+    candidate.layout = l;
+    candidate.routingVersion = 2;
+    for (auto &v : candidate.layers)
     {
         if (legacy || v.routing.inputs.empty())
             initialiseRouting(v, l, legacy);
@@ -82,8 +93,14 @@ void setMixLayout(DesignMix &m, const ChannelLayout &l)
             v.routing.routes.clear();
             v.routing.spatial = false;
         }
+        validateRouting(v.routing, v.source.channels, l);
+        if (legacy && !v.routing.needsSelection)
+            (void)routingMatrix(v.routing, l, v.pan);
     }
+    validateLayoutMix(candidate, 48000);
+    m = std::move(candidate); // Commit only after every layer can be represented.
 }
+
 bool upgradeLiveSpatial(DesignDocument &d)
 {
     bool changed = false;
@@ -142,7 +159,9 @@ void validateLayoutMix(const DesignMix &m, double rate)
             throw std::runtime_error("Detected source layout/count mismatch");
         if (l.routing.spatial)
             ++spatial;
-        int n = (int)l.routing.inputs.size();
+        if (l.routing.legacyAnalysisMean && m.routingVersion != 2)
+            throw std::runtime_error("Legacy analysis conversion requires routing v2");
+        int n = l.routing.interpretation.size();
         matrixWork += n * m.layout.size();
         preparedBytes += (l.source.channels + 2 * n) * 8192. * 4 + 131072 + n * 512 * 4;
         for (auto &fx : l.effects)
