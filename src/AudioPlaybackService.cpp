@@ -136,6 +136,10 @@ void AudioPlaybackService::prepare()
                     document.activeVariation.clear();
                     document.activeTake.clear();
                     document.takes.clear();
+                    // This is a temporary graph projection, not a saved document.
+                    // Its removed take contexts cannot retain UI output preferences.
+                    // The original document/checkpoint and durable receipts stay intact.
+                    document.outputSelections.clear();
                     document.sampleRate = t.sampleRate;
                     document.renderSettings.tailSeconds = 0;
                     document.takeProcessing = true;

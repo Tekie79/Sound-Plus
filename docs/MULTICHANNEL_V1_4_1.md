@@ -15,7 +15,7 @@ A mandatory pre-repair fixture and source/render reference live at `verification
 
 ## Persistence corrections
 
-Deleted take preferences are removed in the same Undo transaction; receipts/files remain durable. Validation accepts only `live` or current take IDs with at most current-takes+1 preferences. Loading an affected bounded old document prunes dangling preference metadata only; malformed or excessive metadata, payload checksums and 64MiB document bounds remain guarded.
+Deleted take preferences are removed in the same Undo transaction; receipts/files remain durable. The helper's temporary recording graph clears preferences when it strips take contexts; the real document and checkpoint retain their valid preferences. Native QA caught this additional projection path, covered by actual session/helper capture at the current-context limit. Validation accepts only `live` or current take IDs with at most current-takes+1 preferences. Loading an affected bounded old document prunes dangling preference metadata only; malformed or excessive metadata, payload checksums and 64MiB document bounds remain guarded.
 
 Legacy split rendering persists the split flag, versioned output-set membership and selected finalized-output identity without injecting layout fields into an old frozen recipe. Interleaved Print master and role-named stems retain their actual paths/checksums. A missing member makes an explicitly selected set unavailable rather than substituting another output. Old output receipts/files remain intact.
 

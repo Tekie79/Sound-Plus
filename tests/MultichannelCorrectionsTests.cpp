@@ -1380,6 +1380,54 @@ void legacyConversion(const juce::File &root, const juce::File &app)
     root.getChildFile("conversion-evidence.json").replaceWithText(juce::JSON::toString(state, true));
 }
 
+void nativePreferenceCapture(const juce::File &root, const juce::File &app, sp::DesignDocument d)
+{
+    Worker worker;
+    sp::AudioClient audio(app);
+    audio.gain(0);
+    juce::PropertiesFile prefs(root.getChildFile("view.settings"), sp::ui::preferenceOptions());
+    sp::DesignerView view(root.getChildFile("library.sqlite"), audio, prefs);
+    sp::CorrectionViewTestAccess::bind(view, d, worker.services());
+    auto &session = sp::CorrectionViewTestAccess::session(view);
+    session.selectTake(d.takes.front().id);
+    session.deleteTake();
+    check(session.document.takes.size() == 15 && session.document.outputSelections.size() == 16,
+          "Native replacement capture starts with Live plus fifteen valid take preferences");
+    session.recordTake();
+    worker.drain();
+    until(
+        [&]
+        {
+            session.poll();
+            worker.drain();
+            return session.takeState == sp::DesignSession::TakeState::ready ||
+                   session.takeState == sp::DesignSession::TakeState::incomplete;
+        },
+        "Actual session/helper capture reaches durable terminal state");
+    check(session.takeState == sp::DesignSession::TakeState::ready,
+          ("Native capture with retained preferences must be Ready: " + session.message).toRawUTF8());
+    auto *t = sp::selectedTake(session.document);
+    check(t && t->complete && t->outputFrames > 0 && session.document.takes.size() == 16 &&
+              session.document.outputSelections.size() == 16,
+          "Temporary capture graph clears removed-context preferences without mutating document preferences");
+    session.document.outputFolder = root.getChildFile("outputs").getFullPathName();
+    session.render();
+    sp::CorrectionViewTestAccess::waitRender(session);
+    worker.drain();
+    auto output = session.readyOutput();
+    check(output.existsAsFile(), "New preference-bearing native take renders successfully");
+    session.chooseOutput(output.getFullPathName());
+    auto saved = root.getChildFile("Native preference capture.soundplus");
+    session.save(saved);
+    worker.drain();
+    auto reopened = sp::loadDesign(saved);
+    check(reopened.outputSelections.size() == 17 && reopened.takes.size() == 16 &&
+              sp::selectedTake(reopened)->complete,
+          "Actual native replacement capture and explicit output restore bounded preferences/save/reopen");
+    root.getChildFile("evidence.json")
+        .replaceWithText(juce::JSON::toString(sp::takeToJson(*sp::selectedTake(reopened)), true));
+}
+
 void preferences(const juce::File &root)
 {
     auto source = root.getChildFile("input.wav");
@@ -1506,6 +1554,8 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
     preferences(root.getChildFile("R11"));
+    nativePreferenceCapture(root.getChildFile("R11-native"), app,
+                            sp::loadDesign(root.getChildFile("R11/Lifetime preferences.soundplus")));
     legacySplit(root.getChildFile("R17"), app);
     auto spatial = spatialCorrection(root.getChildFile("R12"), app);
     routingEditors(root.getChildFile("R13"), app);
