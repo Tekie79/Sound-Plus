@@ -1,0 +1,127 @@
+{
+  "kind": "Independent Python literal-speaker oracle; actual consumed native PCM",
+  "frames": 39936,
+  "channels": 6,
+  "rate": 48000,
+  "nativeReplayMaximumError": 0.0,
+  "nativeRenderMaximumError": 0.0,
+  "renderPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/native-render/Native repeated negative wraps-take-r1-50ad3eb0.wav",
+  "renderSha256": "5b3eb33cb36d5fb01c2894d4f36d4e48b584bc5c3b8ddcf7dd3eedef7cca65bd",
+  "steadyOracleMaximumError": 6.520373296847737e-09,
+  "windows": [
+    {
+      "eventFrame": 0,
+      "first": 512,
+      "end": 5120,
+      "azimuth": 0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 5120,
+      "first": 5632,
+      "end": 9216,
+      "azimuth": -90.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 9216,
+      "first": 9728,
+      "end": 12800,
+      "azimuth": -180.0,
+      "maximumError": 6.520373296847737e-09,
+      "minimumEnergy": 0.040000003688480223
+    },
+    {
+      "eventFrame": 12800,
+      "first": 13312,
+      "end": 16896,
+      "azimuth": 90.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 16896,
+      "first": 17408,
+      "end": 20480,
+      "azimuth": 0.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 20480,
+      "first": 20992,
+      "end": 24064,
+      "azimuth": -90.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 24064,
+      "first": 24576,
+      "end": 27648,
+      "azimuth": -180.0,
+      "maximumError": 6.520373296847737e-09,
+      "minimumEnergy": 0.040000003688480223
+    },
+    {
+      "eventFrame": 27648,
+      "first": 28160,
+      "end": 31232,
+      "azimuth": 90.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 31232,
+      "first": 31744,
+      "end": 34304,
+      "azimuth": 0.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 34304,
+      "first": 34816,
+      "end": 37888,
+      "azimuth": -90.0,
+      "maximumError": 2.980232227667301e-09,
+      "minimumEnergy": 0.040000001192092904
+    },
+    {
+      "eventFrame": 37888,
+      "first": 38400,
+      "end": 39936,
+      "azimuth": -130.0,
+      "maximumError": 5.1149641883130315e-09,
+      "minimumEnergy": 0.04000000149497085
+    }
+  ],
+  "oldVersionSha256": "83aa8ed02bb3f76e616be61beed5406986f1f8936d2f5ae655db485870277b12",
+  "oldFinal512FramesSilent": true,
+  "humanListening": false,
+  "physicalSurroundMapping": false,
+  "files": {
+    "nativeRaw": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/native-original.f32",
+      "sha256": "2df1952e036b7e2dd2c2db2de133cf5e9c6fe7bc56cee380b7a8e816b766126f"
+    },
+    "nativeReplayRaw": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/native-replay.f32",
+      "sha256": "9404b648cf8f95a6344e36834cadfffa4a293bb87139b2e089b858b790df395d"
+    },
+    "nativeDocument": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/Native negative wraps.soundplus",
+      "sha256": "6cc7e1cb5ef0aa8911e71413b602fc3f0f30885ce132a85a0bd5bd4d6772c9fa"
+    },
+    "correctedDocument": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/Corrected negative wraps.soundplus",
+      "sha256": "d733e95e067ec02f795fc9f24abbecbcb600e646d1ff830cf3b8c2f43d246b71"
+    },
+    "oldRender": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/212586e3d77c4764a3bdb920bd0222b3/R12/old-render/Repeated negative wraps v1-take-r1-b1e55184.wav",
+      "sha256": "83aa8ed02bb3f76e616be61beed5406986f1f8936d2f5ae655db485870277b12"
+    }
+  }
+}

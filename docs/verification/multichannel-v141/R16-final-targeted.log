@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 1: multichannel_corrections
+1/2 Test #1: multichannel_corrections .........   Passed   12.80 sec
+    Start 2: multichannel
+2/2 Test #2: multichannel .....................   Passed    5.43 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =  18.23 sec

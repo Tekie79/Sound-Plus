@@ -1,0 +1,118 @@
+{
+  "Native correction QA.soundplus": {
+    "id": "c1c08a08c08b4aa78c30b1efe87354e2",
+    "revision": 5,
+    "takes": 0,
+    "preferences": 0,
+    "outputs": 0,
+    "sha256": "a42655c0d602b26bba51b58095cfa9a8ac3c5539fae0d6831354f8e595d1c6df"
+  },
+  "Native legacy conversion.soundplus": {
+    "id": "945363e7953443a5a38670e7221fa295",
+    "revision": 4,
+    "takes": 1,
+    "preferences": 0,
+    "outputs": 1,
+    "sha256": "ddfac644e1c3aa06de11c707336388053a9c0aa2d3eb51f214e2fabf1ed0494d"
+  },
+  "Native split delivery.soundplus": {
+    "id": "8431f4794bcc4933aa6ce1f9558425b7",
+    "revision": 30,
+    "takes": 1,
+    "preferences": 1,
+    "outputs": 5,
+    "sha256": "e29a85544b1ab185171515bdd82f31d8af05f535230ac61959ea268da7cbc415"
+  },
+  "Native preference churn.soundplus": {
+    "id": "829a9b517db14dc89c95feffeac211c3",
+    "revision": 76,
+    "takes": 16,
+    "preferences": 17,
+    "outputs": 28,
+    "sha256": "7487287ecc00c5c98a92c8727006aac83142d1ab30c7d21115b9048c3cd41f5d"
+  },
+  "Native spatial correction.soundplus": {
+    "id": "92fb42b9800545cbbb59bb76cb5ecb5b",
+    "revision": 5,
+    "takes": 2,
+    "preferences": 0,
+    "outputs": 2,
+    "sha256": "632ebc3e4ea7960cb06697f08ce40f3d8b6bad1b20daf94695649702309506b9"
+  },
+  "R11": {
+    "currentTakes": 16,
+    "currentPreferences": 17,
+    "currentTake": "716fd8fa521d4f778b45d6698e8c979a",
+    "complete": true,
+    "frames": 4096,
+    "explicitOutput": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v141/native-fixture/Renders/Take 16-take-r73-afa59d84.wav",
+    "allReceiptFilesRetained": true
+  },
+  "R16": {
+    "pairInputs": [
+      2,
+      3
+    ],
+    "meanInputs": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5
+    ],
+    "layout": "5.1-side-v1"
+  },
+  "R12": {
+    "oldId": "38c23115258f4932825bbbdeb04eca98",
+    "oldRecipeHash": "a9b5151167e7fe0f662ff8076cc4d7a49adfb8c86ef930e2f2bb39bd3d9079e6",
+    "newId": "52dd10c5576247938b4fd2ce1d830cb2",
+    "newRecipeHash": "984365b28806a93f54f1e09cbcf04b503485cfb6b0f6f0789e0d8de8de889bb0",
+    "lineage": {
+      "takeId": "38c23115258f4932825bbbdeb04eca98",
+      "recipeHash": "a9b5151167e7fe0f662ff8076cc4d7a49adfb8c86ef930e2f2bb39bd3d9079e6",
+      "eventHash": "80d92ba435f3473ea08a67fbb7f85696b157dc16c04c42152ee57ea58d19a541"
+    },
+    "nativeRenderedOracleError": 5.1149641883130315e-09,
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v141/native-fixture/Renders/Repeated negative wraps v1 (corrected)-take-r4-b92a30ac.wav",
+    "sha256": "814d6329bcefbc10aa81929eb166b63abeb9591c61ae35f5151c2a039cb24e65"
+  },
+  "R17": {
+    "selected": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/80a0c41a20d94ef6bc162fff14a7886f/R17/outputs/Native XY and four macros-take-r25-ec676da6-split/Mix.wav",
+    "members": [
+      {
+        "role": "L",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/80a0c41a20d94ef6bc162fff14a7886f/R17/outputs/Native XY and four macros-take-r25-ec676da6-split/L.wav",
+        "sha256": "fc620e81cd32d0c103f525ae5137d991fb9d4c9892ef92cac6016ce32725b64b"
+      },
+      {
+        "role": "R",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/80a0c41a20d94ef6bc162fff14a7886f/R17/outputs/Native XY and four macros-take-r25-ec676da6-split/R.wav",
+        "sha256": "7b7085530cfd58953c6148721338725f29bd049c1214dddd5ad2ddc6159c3fbe"
+      }
+    ],
+    "printPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output/80a0c41a20d94ef6bc162fff14a7886f/R17/outputs/Native XY and four macros-take-r25-ec676da6-split/Mix.wav",
+    "printChannels": 2
+  },
+  "R14": {
+    "before": {
+      "id": "a5febabef32a46b39f473f4ffe5e6b52",
+      "revision": 2,
+      "channels": 6,
+      "layout_override": "{\"id\": \"5.1-rear-v1\", \"roles\": [\"L\", \"R\", \"C\", \"LFE\", \"Lb\", \"Rb\"]}"
+    },
+    "after": {
+      "id": "a5febabef32a46b39f473f4ffe5e6b52",
+      "revision": 3,
+      "channels": 2,
+      "layout_override": ""
+    }
+  },
+  "qualifications": {
+    "humanListening": false,
+    "physicalSurroundMapping": false,
+    "physicalUnplug": false,
+    "nativeResolveDrag": "unverified; correctly targeted receiver drop not established",
+    "historicalResolveAPI": "separate v1.4 evidence, not repeated here"
+  }
+}

@@ -1,0 +1,62 @@
+{
+  "stage": "final actual session reopened with AI enabled",
+  "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "revision": 9731,
+  "documentSha256": "6df7ba5262574e6e2fba76ca1cd9a8b23b0ebc3a50ba3df65287d8527a63c96c",
+  "documentUnchanged": true,
+  "settingsSha256": "ab06c14f9b7792ffcb99dffc1f3ed04187fa203f13202de1f5b1504d4bcc90df",
+  "settingsUnchanged": true,
+  "catalogAssetCount": 43,
+  "catalogIdsSha256": "76db7a93d6e665731345267b8f86bb19ee937c4bffb3970e79c0c4dcecbfc6f2",
+  "media": {
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav": {
+      "sha256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849",
+      "unchanged": true
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav": {
+      "sha256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b",
+      "unchanged": true
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/external/rain.wav": {
+      "sha256": "5f15ab2d8f6ef9932909b1b75c8ac254cbea46c93b4b2f0f3542abdf09b9abc0",
+      "unchanged": true
+    },
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav": {
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true
+    },
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav": {
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true
+    },
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav": {
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true
+    }
+  },
+  "nativeObserved": {
+    "name": "Rain glass design",
+    "revision": 9731,
+    "variation": "Kept: Rain glass - kept B",
+    "blend": false,
+    "x": 0.321,
+    "y": 0.218,
+    "macros": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "macrosEnabled": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "monitor": 0.7,
+    "workspace": "Perform",
+    "browser": true,
+    "AI": "enabled"
+  },
+  "catalogIdsUnchanged": true
+}

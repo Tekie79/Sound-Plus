@@ -1,0 +1,17 @@
+{
+  "compiledSource": "1b48b12e1ca35afb1ae9501d701ed9ef9994620e",
+  "binaries": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "48a9705dcc485c66c55c5df2a19ca1f1b1b51e2fcf90f5e949f438ad89f3eea4",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "d4b0b2ee62f37aa99c95aca29b31a810765212d8caadc465f52082b6d34d8cf7",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "2efc5c2a8debaa32333501afb2d4132b25afd215c57483b3ad25224a31a6451b",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "5904ab6cc5d7e242fc29ac501f1c95524f0c8d3d636506b3aa399106ea7e7f4f"
+  },
+  "platform": {
+    "os": "macOS 26.3.2 (25D2150)",
+    "chip": "Apple M5 Pro",
+    "ramGiB": 48,
+    "architecture": "arm64",
+    "display": "built-in Retina 2x",
+    "nativeAudio": "MacBook Pro Speakers, 48000Hz/512frames"
+  }
+}
