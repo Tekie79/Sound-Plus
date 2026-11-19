@@ -7,9 +7,9 @@ Starting HEAD `6364dfd` exactly matches the reviewed artifact; no later applicat
 - ✓ R11 implementation and focused automated checks:23 lifetime IDs /16 current takes; Live+take preferences; Delete/Undo/Redo/save/autosave/reopen; bounded dangling metadata repair; injected write failure. Native workflow remains in the separate QA gate.
 - ✓ R12 implementation/focused verification: routing v2 / stock-layout-takes-v2 and IPC7; archived v1 WAV/hash behavior preserved; corrected-copy lineage/receipt; independent mono/stereo/divergence/revolution oracles; real graph adoption; controlled and native capture/replay/render; startup migration/stale completion guards. Six relevant suites passed. Native UI workflow remains in QA gate.
 - ✓ R13 implementation and focused production-control/PCM checks: selected route binding; precise one-field edits; implicit/absent no-op; preserved drafts; layer/document stale-context guards; Undo/Redo/reopen. Native workflow remains in QA gate.
-- ◉ R14: revision-aware replacement override invalidation through actual metadata/indexing/Library/Add paths.
-- ○ R15: actual-owner audition specification across reference/candidate mode changes, revisions, pending and stopped states.
-- ○ R16: transactional legacy pair/analysis conversion, actual input indices/PCM, persistence and immutable takes.
+- ✓ R14 implementation/focused actual-service tests: revision-aware replacement override invalidation through actual metadata/indexing/Library/Add paths.
+- ✓ R15 implementation/focused production-callback, native-helper adoption and independent PCM tests: actual-owner audition specification across reference/candidate mode changes, revisions, pending and stopped states.
+- ◉ R16: transactional legacy pair/analysis conversion, actual input indices/PCM, persistence and immutable takes.
 - ✓ R17 implementation/focused automated checks: mandatory historical fixture, actual render-panel callbacks, stereo/mono split and interleaved, exact legacy WAV hash, membership/selection/save/reopen/Print/Undo/Redo/missing stem. Native workflow remains in QA gate.
 - ○ Native normal/minimum workflows, focused indexing/waveform pressure, all21 existing suites plus correction coverage, fresh source/artifact/PCM/UI evidence.
 - ○ Closure report, corrected Source Pools v1.5 brief, actual latest user design reopened, coherent local commits and clean tree; no push.

@@ -152,6 +152,44 @@ struct CorrectionViewTestAccess
     {
         v.addPrint.onClick();
     }
+    static void candidate(LibraryView &v, const Asset &a)
+    {
+        v.selectedAsset = a;
+        v.selectedId = a.id;
+        v.rangeRequest = v.requested;
+        v.table.deselectAllRows();
+    }
+    static void prepareAudition(LibraryView &v, const Asset &r, const Asset &c)
+    {
+        v.stopTimer();
+        v.library.setChangeCallback({});
+        v.cancelPendingUpdate();
+        v.pinnedReference.source = r;
+        v.pinnedReference.startSample = 1000;
+        v.pinnedReference.endSample = r.samples - 1000;
+        v.snapshot.reference.present = true;
+        candidate(v, c);
+    }
+    static void reference(LibraryView &v, int64_t seek)
+    {
+        v.playReference(seek);
+    }
+    static void auditionMode(LibraryView &v, int id)
+    {
+        v.auditionChannels.setSelectedId(id, juce::sendNotificationSync);
+    }
+    static PlaybackRegion auditionSpec(LibraryView &v)
+    {
+        return v.playingSpec;
+    }
+    static juce::String auditionPath(LibraryView &v)
+    {
+        return v.playingPath;
+    }
+    static void interpretation(LibraryView &v, const Asset &a, const ChannelLayout &l)
+    {
+        v.updateAuditionInterpretation(a, l);
+    }
     static void failWrite(DesignSession &s)
     {
         s.services.write = [](const auto &, const auto &)
@@ -946,6 +984,241 @@ void routingEditors(const juce::File &root, const juce::File &app)
           "Document adoption safely rebinds and rejects stale route draft");
 }
 
+void replacement(const juce::File &root, const juce::File &app)
+{
+    auto folder = root.getChildFile("sources");
+    folder.createDirectory();
+    auto file = folder.getChildFile("replace.wav");
+    wave(file, 6);
+    auto database = root.getChildFile("library.sqlite");
+    sp::LibraryService library(database);
+    until([&] { return library.ready(); }, "Actual indexing service starts");
+    library.addFolder(folder);
+    auto ready = [&](int count, int64_t revision = 0)
+    {
+        sp::Asset a;
+        until(
+            [&]
+            {
+                sp::Catalog db(database, true);
+                auto rows = db.search("");
+                if (rows.size() != 1)
+                    return false;
+                a = rows[0];
+                return a.state == "ready" && a.channels == count && a.revision >= revision;
+            },
+            "Actual discovery/metadata publishes replaced source");
+        return a;
+    };
+    auto a = ready(6);
+    auto id = a.id;
+    auto overrideWith = [&](sp::Asset source, const sp::ChannelLayout &layout)
+    {
+        library.setLayoutOverride(source, layout);
+        until(
+            [&]
+            {
+                sp::Catalog db(database, true);
+                return db.asset(id).layoutOverride == layout;
+            },
+            "Actual queued override commits for matching revision");
+        return ready(source.channels);
+    };
+    a = overrideWith(a, sp::channelLayout("5.1-side-v1"));
+    auto frozen = design(file);
+    frozen.original.layers[0].source = a;
+    auto originalFrozen = sp::designToJson(frozen).toString();
+    auto frozenSource = frozen.original.layers[0].source;
+    auto old = a;
+    int replacementSerial = 0;
+    auto replace = [&](int channels)
+    {
+        check(file.deleteFile(), "Replace owned fixture only");
+        wave(file, channels, 4800 + channels + ++replacementSerial * 31);
+        library.rescan();
+        a = ready(channels, a.revision + 1);
+        check(a.id == id && a.layoutOverride.id.isEmpty(),
+              "Changed source revision uses safe detected layout; stable catalog identity");
+    };
+    replace(2);
+    library.setLayoutOverride(old, sp::channelLayout("5.1-side-v1"));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    a = ready(2);
+    check(a.layoutOverride.id.isEmpty(), "Delayed stale six-channel override cannot reach stereo revision");
+    a = overrideWith(a, sp::discreteLayout(2));
+    old = a;
+    replace(6);
+    library.setLayoutOverride(old, sp::discreteLayout(2));
+    std::this_thread::sleep_for(std::chrono::milliseconds(100));
+    a = ready(6);
+    check(a.layoutOverride.id.isEmpty(), "Delayed stereo override cannot reach six-channel revision");
+    a = overrideWith(a, sp::channelLayout("5.1-side-v1"));
+    replace(6);
+    a = overrideWith(a, sp::channelLayout("5.1-side-v1"));
+    auto rev = a.revision;
+    auto sha = hash(file);
+    library.rescan();
+    std::this_thread::sleep_for(std::chrono::milliseconds(120));
+    a = ready(6);
+    check(a.revision == rev && a.layoutOverride.id == "5.1-side-v1",
+          "Unchanged reopen/rescan retains reviewed interpretation");
+    auto renamed = folder.getChildFile("renamed.wav");
+    check(file.moveFileTo(renamed), "Owned same-inode rename");
+    file = renamed;
+    library.rescan();
+    until(
+        [&]
+        {
+            sp::Catalog db(database, true);
+            a = db.asset(id);
+            return a.relative == "renamed.wav";
+        },
+        "Indexer recognizes rename");
+    check(a.revision == rev && a.layoutOverride.id == "5.1-side-v1" && hash(file) == sha,
+          "Rename retains identity/override and byte hash");
+    auto nested = folder.getChildFile("relocated");
+    nested.createDirectory();
+    auto moved = nested.getChildFile(file.getFileName());
+    check(file.moveFileTo(moved), "Owned same-byte relocation");
+    file = moved;
+    library.rescan();
+    until(
+        [&]
+        {
+            sp::Catalog db(database, true);
+            a = db.asset(id);
+            return a.relative == "relocated/renamed.wav";
+        },
+        "Indexer resolves same-inode folder relocation");
+    check(a.revision == rev && a.layoutOverride.id == "5.1-side-v1" && hash(file) == sha,
+          "Verified same-byte same-inode relocation retains interpretation");
+    check(frozen.original.layers[0].source.revision == frozenSource.revision &&
+              frozen.original.layers[0].source.layoutOverride == frozenSource.layoutOverride,
+          "Catalog updates cannot rewrite a frozen layer source");
+    // Recover a catalog left by the reviewed bug, then exercise metadata's guard.
+    {
+        sp::Catalog db(database);
+        db.exec("UPDATE assets SET layout_override='{\"id\":\"stereo-v1\",\"roles\":[\"L\",\"R\"]}'");
+        auto stale = db.asset(id);
+        check(stale.layoutOverride.id.isEmpty(), "Already incompatible override is never exposed");
+        db.metadata(stale, a.duration, 6, a.sampleRate, {}, a.samples);
+        check(db.asset(id).layoutOverride.id.isEmpty(),
+              "Metadata refresh clears incompatible historical override");
+    }
+    a = ready(6);
+    // Actual Designer Add retains complete supported-source semantics.
+    Worker worker;
+    sp::DesignSession session(root.getChildFile("session/library.sqlite"), worker.services());
+    session.add(a, 0, a.samples, false, -2);
+    worker.drain();
+    check(session.document.activeMix().layers.size() == 1 &&
+              session.document.activeMix().layers[0].routing.inputs.size() == 6,
+          "Designer Add succeeds after replacement with full supported source");
+    auto b = pcm(session.document);
+    check(b.getMagnitude(0, b.getNumSamples()) > 0, "Replaced source is usable in actual Designer graph");
+    sp::PcmStream stream(file, 48000, 0, -1, -2, a.layoutOverride);
+    stream.fill();
+    check(stream.available() > 0 && stream.channelCount() == 6,
+          "Detected fallback auditions complete source without stale count mismatch");
+    auto state = sp::message("R14");
+    state.getDynamicObject()->setProperty("id", id);
+    state.getDynamicObject()->setProperty("revision", a.revision);
+    state.getDynamicObject()->setProperty("path", file.getFullPathName());
+    root.getChildFile("replacement-evidence.json").replaceWithText(juce::JSON::toString(state, true));
+}
+void auditionOwner(const juce::File &root, const juce::File &app)
+{
+    root.createDirectory();
+    auto file = root.getChildFile("reference-six.wav");
+    constant(file, {.01f, .02f, .03f, .04f, .05f, .06f}, 48000 * 8);
+    auto reference = sp::inspectDesignSource(file);
+    reference.layoutOverride = sp::channelLayout("5.1-side-v1");
+    auto candidateFile = root.getChildFile("candidate.wav");
+    wave(candidateFile, 2);
+    auto candidate = sp::inspectDesignSource(candidateFile);
+    sp::LibraryView view(root.getChildFile("library.sqlite"), app, false);
+    sp::CorrectionViewTestAccess::prepareAudition(view, reference, candidate);
+    auto &audio = view.audioClient();
+    audio.gain(0);
+    until([&] { return audio.status()["device"].toString().isNotEmpty(); }, "Native reference helper opens");
+    sp::CorrectionViewTestAccess::reference(view, 1000);
+    // A mode change during pending adoption must preserve reference ownership.
+    sp::CorrectionViewTestAccess::auditionMode(view, 1);
+    auto assertSpec = [&](int pair)
+    {
+        auto spec = sp::CorrectionViewTestAccess::auditionSpec(view);
+        check(sp::CorrectionViewTestAccess::auditionPath(view) == file.getFullPathName() &&
+                  spec.auditionPair == pair && spec.sourceLayoutOverride == "5.1-side-v1" &&
+                  spec.revision == reference.revision && spec.startSample == 1000 &&
+                  spec.endSample == reference.samples - 1000,
+              "Actual replay specification stays with reference path/range/revision/interpretation");
+        sp::PcmStream stream(file, 48000, spec.startSample, spec.endSample, pair,
+                             sp::channelLayout(spec.sourceLayoutOverride));
+        stream.fill(1024);
+        juce::AudioBuffer<float> b(2, 1024);
+        float gain = 1;
+        stream.read(b.getArrayOfWritePointers(), 2, 1024, gain, 1);
+        auto matrix = sp::conversionMatrix(reference.layoutOverride, sp::channelLayout("stereo-v1"));
+        for (int c = 0; c < 2; ++c)
+        {
+            double expected = 0;
+            if (pair == -1)
+                expected = .035;
+            else if (pair >= 0)
+                expected = (pair * 2 + c + 1) * .01;
+            else
+                for (int i = 0; i < 6; ++i)
+                    expected += matrix[c][i] * (i + 1) * .01;
+            for (int n = 0; n < 1024; ++n)
+                check(std::abs(b.getSample(c, n) - expected) < 1e-7,
+                      "Reference audition has expected independent channel PCM");
+        }
+        until(
+            [&]
+            {
+                auto s = audio.status();
+                return (bool)s["playing"] && s["id"].toString() == "reference-" + reference.id &&
+                       (int)s["auditionPair"] == pair;
+            },
+            "Native helper adopts actual reference mode");
+    };
+    assertSpec(-1);
+    for (auto layout : {sp::ChannelLayout{}, sp::discreteLayout(6), sp::channelLayout("stereo-v1")})
+    {
+        candidate.layoutOverride = layout;
+        sp::CorrectionViewTestAccess::candidate(view, candidate);
+        sp::CorrectionViewTestAccess::auditionMode(view, 2);
+        assertSpec(0);
+        sp::CorrectionViewTestAccess::auditionMode(view, 100);
+        assertSpec(-2);
+    }
+    auto generation = audio.status()["intentGeneration"];
+    sp::CorrectionViewTestAccess::interpretation(view, candidate, sp::discreteLayout(2));
+    check(audio.status()["intentGeneration"] == generation,
+          "Candidate interpretation cannot restart reference stream");
+    auto newer = reference;
+    ++newer.revision;
+    sp::CorrectionViewTestAccess::interpretation(view, newer, sp::discreteLayout(6));
+    check(audio.status()["intentGeneration"] == generation,
+          "New source revision cannot mutate old active owner");
+    sp::CorrectionViewTestAccess::interpretation(view, reference, sp::discreteLayout(6));
+    check(sp::CorrectionViewTestAccess::auditionSpec(view).sourceLayoutOverride == sp::discreteLayout(6).id,
+          "Matching owner interpretation edit updates exact revision");
+    audio.stop();
+    generation = audio.status()["intentGeneration"];
+    sp::CorrectionViewTestAccess::candidate(view, candidate);
+    sp::CorrectionViewTestAccess::auditionMode(view, 1);
+    check(audio.status()["intentGeneration"] == generation, "Stopped selection/mode change stays silent");
+    // A different intent, including Designer, cannot be stolen by this stale Library view.
+    audio.playRegion("design:protected", candidateFile, {});
+    generation = audio.status()["intentGeneration"];
+    sp::CorrectionViewTestAccess::auditionMode(view, 2);
+    check(audio.status()["intentGeneration"] == generation &&
+              audio.status()["intentId"].toString() == "design:protected",
+          "Protected Designer/other audition intent cannot be stolen");
+    audio.stop();
+}
+
 void preferences(const juce::File &root)
 {
     auto source = root.getChildFile("input.wav");
@@ -1075,6 +1348,8 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     legacySplit(root.getChildFile("R17"), app);
     auto spatial = spatialCorrection(root.getChildFile("R12"), app);
     routingEditors(root.getChildFile("R13"), app);
+    replacement(root.getChildFile("R14"), app);
+    auditionOwner(root.getChildFile("R15"), app);
     auto result = sp::message("multichannel-corrections-results");
     result.getDynamicObject()->setProperty("checks", checks);
     result.getDynamicObject()->setProperty("R12", spatial);
@@ -1088,6 +1363,9 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
                      "capture/replay, old/new dispatch and corrected-copy provenance");
     scenarios.append("R13 actual route editors: precision, one-field edits, implicit/absent, drafts, "
                      "selection/context, Undo/Redo and PCM");
+    scenarios.append(
+        "R14 actual index replacement, overrides, revisions, rename/relocation and Designer Add");
+    scenarios.append("R15 reference owner mode transitions, native adoption and independent audition PCM");
     result.getDynamicObject()->setProperty("scenarios", scenarios);
     result.getDynamicObject()->setProperty("root", root.getFullPathName());
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(result, true));

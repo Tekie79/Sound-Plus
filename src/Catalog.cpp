@@ -94,8 +94,14 @@ Asset readAsset(Statement &s)
         a.layoutConfidence = "unknown";
     }
     auto overrideText = s.str(17);
-    if (overrideText.isNotEmpty())
-        a.layoutOverride = layoutFromJson(juce::JSON::parse(overrideText));
+    if (overrideText.isNotEmpty() && a.channels > 0)
+    {
+        auto proposed = layoutFromJson(juce::JSON::parse(overrideText));
+        // Older catalogs may contain an override from a replaced source. Never
+        // expose that incompatible interpretation to audition or Designer Add.
+        if (proposed.size() == a.channels)
+            a.layoutOverride = proposed;
+    }
     return a;
 }
 constexpr auto currentColumns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.inode,a.revision,"
@@ -392,7 +398,7 @@ bool Catalog::discover(const Root &r, const juce::String &relative, const FileSt
         {
             id = s.str(0);
             changed = s.integer(1) != st.size || s.integer(2) != st.modified || s.integer(3) != st.inode;
-            revision = s.integer(4) + (changed && s.str(5) != "pending" ? 1 : 0);
+            revision = s.integer(4) + (changed ? 1 : 0);
         }
     }
     if (id.isEmpty() && confirmedRename.isNotEmpty())
@@ -454,7 +460,8 @@ bool Catalog::discover(const Root &r, const juce::String &relative, const FileSt
         {
             Statement s(db, "UPDATE assets SET "
                             "relative=?,name=?,size=?,modified=?,inode=?,seen=?,online=1,revision=?,state='"
-                            "pending',duration=NULL,channels=NULL,sample_rate=NULL,error='' WHERE id=?");
+                            "pending',duration=NULL,channels=NULL,sample_rate=NULL,error='',"
+                            "channel_layout='',layout_override='' WHERE id=?");
             s.bind(1, relative);
             s.bind(2, juce::File(r.path).getChildFile(relative).getFileName());
             s.bind(3, st.size);
@@ -534,10 +541,14 @@ bool Catalog::setLayoutOverride(const juce::String &id, int64_t revision, const 
 void Catalog::metadata(const Asset &a, double duration, int channels, double rate, const juce::String &error,
                        int64_t sourceSamples)
 {
+    auto current = asset(a.id);
+    auto retained = current.layoutOverride;
+    if (retained.size() != channels)
+        retained = {};
     Statement s(
         db, "UPDATE assets SET "
-            "duration=?,channels=?,sample_rate=?,state=?,error=?,samples=?,channel_layout=? WHERE id=? AND "
-            "revision=? AND modified=?");
+            "duration=?,channels=?,sample_rate=?,state=?,error=?,samples=?,channel_layout=?,layout_override=? "
+            "WHERE id=? AND revision=? AND modified=? AND size=? AND inode=?");
     sqlite3_bind_double(s.s, 1, duration);
     s.bind(2, (int64_t)channels);
     sqlite3_bind_double(s.s, 3, rate);
@@ -552,9 +563,12 @@ void Catalog::metadata(const Asset &a, double duration, int channels, double rat
     info.getDynamicObject()->setProperty("layout", layoutJson(layout));
     info.getDynamicObject()->setProperty("confidence", a.layoutConfidence);
     s.bind(7, juce::JSON::toString(info, true));
-    s.bind(8, a.id);
-    s.bind(9, a.revision);
-    s.bind(10, a.modified);
+    s.bind(8, retained.id.isEmpty() ? juce::String() : juce::JSON::toString(layoutJson(retained), true));
+    s.bind(9, a.id);
+    s.bind(10, a.revision);
+    s.bind(11, a.modified);
+    s.bind(12, a.size);
+    s.bind(13, a.inode);
     s.step();
 }
 namespace

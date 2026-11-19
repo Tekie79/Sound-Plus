@@ -411,18 +411,18 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     {
         auto state = audio.status();
         if (((bool)state["playing"] || (bool)state["pendingPlayback"]) &&
-            !state["id"].toString().startsWith("design:") && playingPath.isNotEmpty())
+            state["intentId"].toString() == playingId && !audio.captureBusy() &&
+            (uint64_t)(juce::int64)state["intentGeneration"] == playingGeneration &&
+            !playingId.startsWith("design:") && playingPath.isNotEmpty())
         {
             playingSpec.positionSample = std::max(playingSpec.startSample, (int64_t)state["sourceSample"]);
             if ((bool)state["pendingPlayback"])
                 playingSpec.positionSample = playingSpec.startSample;
             if (playingSpec.endSample > 0)
                 playingSpec.positionSample = std::min(playingSpec.endSample - 1, playingSpec.positionSample);
-            if (auto *a = selected())
-                playingSpec.sourceLayoutOverride = a->layoutOverride.id;
             playingSpec.auditionPair =
                 (auditionChannels.getSelectedId() == 100 ? -2 : auditionChannels.getSelectedId() - 2);
-            audio.playRegion(playingId, juce::File(playingPath), playingSpec);
+            playingGeneration = audio.playRegion(playingId, juce::File(playingPath), playingSpec);
         }
     };
     auditionChannels.setTooltip("Analysis Mix reproduces the encoder's all-channel mono average; opposite "
@@ -488,14 +488,15 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                     {
                         auto layout = r == 400 ? ChannelLayout{} : choices[(size_t)r - 401];
                         safe->library.setLayoutOverride(source, layout);
-                        if (safe->selectedAsset && safe->selectedAsset->id == source.id)
+                        if (safe->selectedAsset && safe->selectedAsset->id == source.id &&
+                            safe->selectedAsset->revision == source.revision)
                             safe->selectedAsset->layoutOverride = layout;
                         for (auto &a : safe->snapshot.results)
                             if (a.id == source.id && a.revision == source.revision)
                                 a.layoutOverride = layout;
                         safe->table.updateContent();
                         safe->table.repaint();
-                        safe->auditionChannels.onChange();
+                        safe->updateAuditionInterpretation(source, layout);
                     }
                 });
         }
@@ -1346,7 +1347,8 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     if (onBeforeAudition)
         onBeforeAudition();
     auditionOwner = a->id;
-    audio.playRegion(a->id, juce::File(path), region);
+    playingSource = *a;
+    playingGeneration = audio.playRegion(a->id, juce::File(path), region);
 }
 void LibraryView::playFromPlayhead()
 {
@@ -1678,6 +1680,23 @@ void LibraryView::submitReference(const AudioReference &ref)
     dispatchedMs = monotonicMs();
     requested = library.findSimilar(ref, rootFilter);
 }
+void LibraryView::updateAuditionInterpretation(const Asset &source, const ChannelLayout &layout)
+{
+    // Selection and a pinned reference are independent. A catalog edit can
+    // refresh only the exact source revision that owns this audition intent.
+    auto matches = [&](const Asset &a)
+    {
+        return a.id == source.id && a.revision == source.revision && a.size == source.size &&
+               a.modified == source.modified && a.inode == source.inode;
+    };
+    if (matches(pinnedReference.source))
+        pinnedReference.source.layoutOverride = layout;
+    if (!matches(playingSource))
+        return;
+    playingSource.layoutOverride = layout;
+    playingSpec.sourceLayoutOverride = layout.id;
+    auditionChannels.onChange();
+}
 void LibraryView::playReference(int64_t seek)
 {
     if (!snapshot.reference.present || pinnedReference.source.samples <= 0)
@@ -1710,7 +1729,8 @@ void LibraryView::playReference(int64_t seek)
     playingSpec = region;
     if (onBeforeAudition)
         onBeforeAudition();
-    audio.playRegion(id, juce::File(a.path), region);
+    playingSource = a;
+    playingGeneration = audio.playRegion(id, juce::File(a.path), region);
 }
 void LibraryView::navigate(int direction)
 {

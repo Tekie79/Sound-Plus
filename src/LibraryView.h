@@ -229,6 +229,9 @@ class LibraryView final : public juce::Component,
     juce::String referenceWaveKey;
     juce::String playingPath;
     PlaybackRegion playingSpec;
+    Asset playingSource;
+    uint64_t playingGeneration = 0;
+    void updateAuditionInterpretation(const Asset &, const ChannelLayout &);
     int navigationToPlay = -1;
 };
 } // namespace sp
