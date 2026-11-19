@@ -23,9 +23,19 @@ PerformView::Pad::Pad(PerformView &o) : owner(o)
     setTitle("Source Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.");
     setMouseCursor(juce::MouseCursor::CrosshairCursor);
 }
+juce::Rectangle<float> PerformView::Pad::surfaceBounds() const
+{
+    return getLocalBounds().toFloat().reduced(8);
+}
+juce::Rectangle<float> PerformView::Pad::movementBounds() const
+{
+    // Reserve the whole marker, including its glow, inside the rounded frame.
+    return surfaceBounds().reduced(haloRadius + 1);
+}
 void PerformView::Pad::paint(juce::Graphics &g)
 {
-    auto b = getLocalBounds().toFloat().reduced(8);
+    auto b = surfaceBounds();
+    auto travel = movementBounds();
     auto &s = owner.session.performanceMix().performance;
     g.setColour(ui::background);
     g.fillRoundedRectangle(b, 12);
@@ -36,14 +46,14 @@ void PerformView::Pad::paint(juce::Graphics &g)
     auto weights = blendWeights(s, owner.session.performanceMix());
     for (int i = 0; i < 4; ++i)
     {
-        float x = (i % 2) ? b.getRight() - 12 : b.getX() + 12,
-              y = (i / 2) ? b.getBottom() - 12 : b.getY() + 12;
+        float x = (i % 2) ? travel.getRight() : travel.getX(),
+              y = (i / 2) ? travel.getBottom() : travel.getY();
         g.setColour(ui::accent.withAlpha((float)(s.blendEnabled ? .2 + .8 * weights[(size_t)i] : .25)));
         g.fillEllipse(x - 3, y - 3, 6, 6);
     }
-    auto p = juce::Point<float>(b.getX() + (float)s.x * b.getWidth(), b.getY() + (float)s.y * b.getHeight());
+    auto p = travel.getRelativePoint((float)std::clamp(s.x, 0., 1.), (float)std::clamp(s.y, 0., 1.));
     g.setColour(ui::accent.withAlpha(.12f));
-    g.fillEllipse(p.x - 15, p.y - 15, 30, 30);
+    g.fillEllipse(p.x - haloRadius, p.y - haloRadius, haloRadius * 2, haloRadius * 2);
     g.setColour(s.blendEnabled ? ui::accent : ui::muted);
     g.fillEllipse(p.x - 6, p.y - 6, 12, 12);
     if (hasKeyboardFocus(false))
@@ -62,7 +72,7 @@ void PerformView::Pad::mouseDrag(const juce::MouseEvent &e)
 {
     if (!owner.controlValid())
         return;
-    auto b = getLocalBounds().toFloat().reduced(8);
+    auto b = movementBounds();
     owner.setPad((e.x - b.getX()) / b.getWidth(), (e.y - b.getY()) / b.getHeight());
 }
 void PerformView::Pad::mouseUp(const juce::MouseEvent &)

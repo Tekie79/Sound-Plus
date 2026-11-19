@@ -76,11 +76,73 @@ struct PerformanceViewTestAccess
                 1,
                 p != start};
     }
+    static void padBoundary(PerformView &view)
+    {
+        auto &session = view.session;
+        auto saved = session.document.activeMix().performance;
+        auto &pad = view.pad;
+        for (auto size :
+             {juce::Point<int>(664, 308), juce::Point<int>(752, 360), juce::Point<int>(1400, 1000)})
+        {
+            view.setSize(size.x, size.y);
+            juce::Path frame;
+            frame.addRoundedRectangle(pad.surfaceBounds(), 12);
+            auto render = [&](double x, double y)
+            {
+                auto &state = session.document.activeMix().performance;
+                state.x = x;
+                state.y = y;
+                juce::Image image(juce::Image::ARGB, pad.getWidth(), pad.getHeight(), true);
+                juce::Graphics g(image);
+                pad.paint(g);
+                return image;
+            };
+            for (bool enabled : {false, true})
+            {
+                session.document.activeMix().performance.blendEnabled = enabled;
+                auto centre = render(.5, .5);
+                for (double x : {0., .5, 1.})
+                    for (double y : {0., .5, 1.})
+                    {
+                        auto pixels = render(x, y);
+                        for (int py = 0; py < pixels.getHeight(); ++py)
+                            for (int px = 0; px < pixels.getWidth(); ++px)
+                                if (!frame.contains(px + .5f, py + .5f))
+                                    check(pixels.getPixelAt(px, py) == centre.getPixelAt(px, py),
+                                          "Pad marker/glow never paint outside the rounded frame");
+                    }
+            }
+            auto start = pad.movementBounds().getCentre();
+            for (auto end : {juce::Point<float>(-100, -100), juce::Point<float>(pad.getWidth() + 100.f, -100),
+                             juce::Point<float>(-100, pad.getHeight() + 100.f),
+                             juce::Point<float>(pad.getWidth() + 100.f, pad.getHeight() + 100.f)})
+            {
+                pad.mouseDown(pointer(pad, start, start));
+                pad.mouseDrag(pointer(pad, end, start));
+                pad.mouseUp(pointer(pad, end, start));
+                auto &state = session.document.activeMix().performance;
+                check(state.x == (end.x < 0 ? 0. : 1.) && state.y == (end.y < 0 ? 0. : 1.),
+                      "Dragging beyond every pad corner still reaches exact 0/1 model endpoints");
+                session.undo();
+            }
+            auto corner = pad.movementBounds().getBottomRight();
+            pad.mouseDown(pointer(pad, corner, corner));
+            pad.mouseUp(pointer(pad, corner, corner));
+            check(session.document.activeMix().performance.x == 1 &&
+                      session.document.activeMix().performance.y == 1,
+                  "Visible inset marker endpoint and mouse mapping agree");
+            session.undo();
+        }
+        session.document.activeMix().performance = saved;
+        view.setSize(752, 360);
+        view.refresh();
+    }
     static void run(DesignSession &session)
     {
         PerformView view(session);
         view.setSize(752, 360);
         session.onChange = [&] { view.refresh(); };
+        padBoundary(view);
         session.document.activeMix().performance.blendLaw = 1;
         view.refresh();
         check(view.updateBlend.isVisible(), "Legacy blend exposes an explicit upgrade action");

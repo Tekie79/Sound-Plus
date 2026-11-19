@@ -25,7 +25,10 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     struct Pad : juce::Component
     {
         PerformView &owner;
+        static constexpr float haloRadius = 15.f;
         explicit Pad(PerformView &);
+        juce::Rectangle<float> surfaceBounds() const;
+        juce::Rectangle<float> movementBounds() const;
         void paint(juce::Graphics &) override;
         void mouseDown(const juce::MouseEvent &) override;
         void mouseDrag(const juce::MouseEvent &) override;
