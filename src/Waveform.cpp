@@ -108,8 +108,16 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
             juce::File source(a.path);
             auto same = [&](const FileStamp &s)
             { return s.size == a.size && s.modified == a.modified && s.inode == a.inode; };
-            if (!fileStamp(source, before) || !same(before))
+            if (!fileStamp(source, before))
+            {
+                data->status = WaveformData::Status::offline;
+                throw std::runtime_error("Source offline");
+            }
+            if (!same(before))
+            {
+                data->status = WaveformData::Status::changed;
                 throw std::runtime_error("Recording changed or is offline");
+            }
             directory.createDirectory();
             auto cache = directory.getChildFile(a.id + "-" + juce::String(a.revision) + "-peaks-v1.bin");
             if (cache.existsAsFile() && cache.getSize() <= 600000)
@@ -209,6 +217,8 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
         }
         catch (const std::exception &e)
         {
+            if (data->status == WaveformData::Status::ready)
+                data->status = WaveformData::Status::decodeError;
             data->error = e.what();
             data->peaks.clear();
         }

@@ -56,5 +56,11 @@ class Benchmark final : private juce::Timer
     int64_t lastDesignerFrame = 0;
     bool designerGestureEnded = false;
     int editingIndexOverlap = 0;
+    int waveformScrolls = 0;
+    int pendingWaveformScrolls = 0;
+    int waveformScrollPaints = 0;
+    bool waveformScrollAwaitingPaint = false;
+    int64_t waveformScrollStartPaints = 0;
+    double lastWaveformScroll = 0;
 };
 } // namespace sp

@@ -24,7 +24,7 @@ juce::String duration(double seconds)
 LibraryView::LibraryView(const juce::File &db, const juce::File &executable, bool enableAI,
                          const juce::File &modelDirectory)
     : library(db, enableAI ? executable : juce::File(), modelDirectory), audio(executable),
-      waveformCache(db.getParentDirectory().getChildFile("waveforms")),
+      peakPool(std::make_shared<WaveformPool>(db.getParentDirectory().getChildFile("waveforms"))),
       referenceWaveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
     pauseIndex.setToggleable(true);
@@ -422,7 +422,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     {
         library.retryAnalysis();
         if (selectedAsset)
-            waveformRequest = waveformCache.request(*selectedAsset);
+            peakPool->retry(*selectedAsset);
     };
     setSize(1200, 1000);
     pauseIndex.onClick = [this] { library.pause(!library.snapshot().progress.pauseRequested); };
@@ -660,7 +660,7 @@ void LibraryView::setCompact(bool value)
     for (int id = 2; id <= 6; ++id)
         table.getHeader().setColumnVisible(id, !value);
     table.setHeaderHeight(value ? 0 : 34);
-    table.setRowHeight(value ? 44 : 58);
+    table.setRowHeight(58);
     search.setTextToShowWhenEmpty(
         value ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
     resized();
@@ -702,19 +702,30 @@ const Asset *LibraryView::selected() const
 }
 void LibraryView::requestPageForRow(int row)
 {
+    // The table can still display the previous query while a newer one starts.
+    // Paging pins membership; never pin the new query using one of those old rows.
+    if (snapshot.request != requested)
+        return;
     if (row < 0 || row >= snapshot.total)
+        return;
+    if (rowAsset(row))
         return;
     int top = table.getViewport()->getViewPositionY() / table.getRowHeight();
     int page = std::max(0, (top / 128) * 128 - 128);
-    if (requestedPage == page)
+    // A semantic prefix/refresh may replace an already fetched larger page.
+    // Deduplicate only within that exact published page, not the whole query.
+    if (requestedPage == page && requestedPageSerial == snapshot.pageSerial)
         return;
     requestedPage = page;
+    requestedPageSerial = snapshot.pageSerial;
     library.page(page, 512);
 }
-void LibraryView::benchmarkScroll(int row)
+bool LibraryView::benchmarkScroll(int row)
 {
+    auto before = table.getViewport()->getViewPositionY();
     table.scrollToEnsureRowIsOnscreen(row);
     requestPageForRow(row);
+    return before != table.getViewport()->getViewPositionY();
 }
 void LibraryView::handleAsyncUpdate()
 {
@@ -745,22 +756,43 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         return;
     }
     const auto &a = *asset;
-    if (compact)
-    {
-        g.setColour(a.online ? text : muted);
-        g.setFont(juce::FontOptions(13.f));
-        g.drawText(a.name, 12, 0, w - 24, h, juce::Justification::centredLeft, true);
-        return;
-    }
     g.setColour(a.online ? text : muted);
-    g.setFont(juce::FontOptions(14.0f));
+    g.setFont(juce::FontOptions(compact ? 13.f : 14.f));
     juce::String value;
     if (column == 1)
     {
-        g.drawText(a.name, 12, 6, w - 24, 23, juce::Justification::centredLeft, true);
-        g.setFont(juce::FontOptions(11.5f));
-        g.setColour(muted);
-        g.drawText(a.path, 12, 29, w - 24, 20, juce::Justification::centredLeft, true);
+        g.drawText(a.name, 12, 3, w - 24, 23, juce::Justification::centredLeft, true);
+        const int previewWidth = compact ? w - 24 : std::clamp(w / 2, 60, 180);
+        const int previewX = compact ? 12 : w - previewWidth - 12;
+        const juce::Rectangle<float> area((float)previewX, 31, (float)previewWidth, 19);
+        auto peaks = peakPool->get(a);
+        if (!a.online || a.state == "failed" || (peaks && !peaks->error.isEmpty()))
+        {
+            g.setFont(juce::FontOptions(10.5f));
+            g.setColour(muted);
+            g.drawText(!a.online || (peaks && peaks->status == WaveformData::Status::offline) ? "Offline"
+                       : a.state == "failed"                                                  ? "Unreadable"
+                                             : "Waveform unavailable",
+                       area, juce::Justification::centredLeft);
+        }
+        else if (auto columns = peakPool->columns(a, 0, a.samples, false, previewWidth))
+        {
+            ++rowPreviewPaints;
+            paintCompactWaveform(g, area, *columns, accent.withAlpha(.65f));
+        }
+        else
+        {
+            g.setFont(juce::FontOptions(10.5f));
+            g.setColour(muted);
+            g.drawText("Loading waveform", area, juce::Justification::centredLeft);
+        }
+        if (!compact)
+        {
+            g.setFont(juce::FontOptions(11.f));
+            g.setColour(muted);
+            g.drawText(a.path, 12, 29, std::max(0, previewX - 22), 20, juce::Justification::centredLeft,
+                       true);
+        }
         return;
     }
     if (column == 2)
@@ -827,8 +859,6 @@ void LibraryView::selectedRowsChanged(int)
             rangeRevision = a->revision;
             rangeSamples = a->samples;
             waveform.setData({});
-            waveformRequest = waveformCache.request(*a);
-            waveformApplied = 0;
         }
         if (newRange)
         {
@@ -1321,10 +1351,36 @@ void LibraryView::timerCallback()
         referenceWaveform.setData(data);
         referenceWaveform.setRange(pinnedReference.startSample, pinnedReference.endSample, true);
     }
-    if (auto data = waveformCache.snapshot();
-        data && data->generation == waveformRequest && waveformApplied != waveformRequest)
+    // Visible rows first, then two neighbors on either side. Paging remains independent.
+    std::vector<Asset> rows;
+    if (isShowing())
     {
-        waveformApplied = waveformRequest;
+        const auto first = table.getViewport()->getViewPositionY() / table.getRowHeight();
+        const auto count = table.getViewport()->getHeight() / table.getRowHeight() + 1;
+        auto append = [&](int row)
+        {
+            if (auto *a = rowAsset(row); a && a->samples > 0)
+                rows.push_back(*a);
+        };
+        for (int row = first; row < first + count; ++row)
+            append(row);
+        for (int i = 1; i <= 2; ++i)
+        {
+            append(first - i);
+            append(first + count + i - 1);
+        }
+    }
+    peakPool->demand(0, isShowing() && selectedAsset ? std::vector<Asset>{*selectedAsset}
+                                                     : std::vector<Asset>{});
+    peakPool->demand(2, rows);
+    peakPool->tick();
+    if (peakRevision != peakPool->revision())
+    {
+        peakRevision = peakPool->revision();
+        table.repaint();
+    }
+    if (auto data = selectedAsset ? peakPool->get(*selectedAsset) : nullptr; data && waveform.data() != data)
+    {
         waveform.setData(data);
         waveform.setRange(regionStart, regionEnd, waveformNeedsZoom);
         waveformNeedsZoom = false;

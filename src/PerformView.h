@@ -2,12 +2,16 @@
 #include "DesignSession.h"
 #include "PerformanceState.h"
 #include "DesignControls.h"
+#include "SourceCard.h"
 namespace sp
 {
 class PerformView final : public juce::Component, public juce::DragAndDropTarget
 {
   public:
-    explicit PerformView(DesignSession &);
+    explicit PerformView(DesignSession &, std::shared_ptr<WaveformPool> = {});
+    std::function<void(const juce::String &)> onOpenEdit;
+    void updateTransport(const juce::var &);
+    void refreshSourcePeaks();
     void refresh();
     void resized() override;
     void paint(juce::Graphics &) override;
@@ -46,13 +50,14 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     PerformanceTarget editingTarget;
     std::array<juce::ComboBox, 4> assignments;
     std::array<juce::Label, 4> assignmentNames, macroNames, macroFeedback;
+    std::array<std::unique_ptr<SourceCard>, 4> cards;
     std::array<juce::Slider, 4> macros;
     std::array<std::unique_ptr<IconButton>, 4> macroEnable, macroReset, macroMap;
     juce::Slider xValue, yValue;
-    IconButton blendEnable{"Enable blend surface", ActionIcon::check},
-        blendReset{"Centre blend surface", ActionIcon::history};
+    ui::TextActionButton blendEnable{"Blend off", true}, updateBlend{"Update law"};
+    IconButton blendReset{"Centre blend surface", ActionIcon::history};
     juce::ComboBox layerSource;
-    juce::Label blendState, mappingTitle, mappingFeedback, policy, minimumLabel, maximumLabel;
+    juce::Label blendState, xLabel, yLabel, mappingTitle, mappingFeedback, policy, minimumLabel, maximumLabel;
     IconButton back{"Back to macros", ActionIcon::previous},
         removeMapping{"Unassign target", ActionIcon::trash};
     juce::ComboBox mappingChoice, targetChoice, curve;
@@ -64,6 +69,7 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     void setPad(double, double);
     void beginControl();
     void endControl(bool cancel = false);
+    void restoreControlValues();
     bool controlValid() const;
     void openMapping(int);
     void updateMappingFields();

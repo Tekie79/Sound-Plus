@@ -5,7 +5,7 @@ Uses an isolated backup of an existing indexed catalog and generated original
 audio. It does not modify the source catalog or its media and makes no sound
 relevance claim. Requires the existing optional local semantic model.
 """
-import argparse, hashlib, json, math, sqlite3, subprocess, tempfile, wave, array
+import argparse, hashlib, json, math, sqlite3, subprocess, tempfile, wave, array, shutil
 from pathlib import Path
 
 def write(path, data):
@@ -20,16 +20,26 @@ def main():
     p.add_argument('--interactions',action='store_true',help='Measure continuous real canvas-handler edits during search/indexing')
     p.add_argument('--stock-effects',action='store_true',help='Measure actual inspector stock-effect sliders and selection commands')
     p.add_argument('--performance-controls',action='store_true',help='Exercise the shared blend pad and four macro controls')
+    p.add_argument('--waveform-scroll',action='store_true',help='Scroll visible file previews during the native workload')
+    p.add_argument('--waveform-cache-from',type=Path,help='Reuse derivative files in a fresh process for warm measurement')
+    p.add_argument('--fixture-from',type=Path,help='Reuse an unchanged generated workload document/source identities')
     a=p.parse_args();a.interactions = a.interactions or a.stock_effects or a.performance_controls;out=a.output.resolve()
     if out.exists():raise RuntimeError('Choose a fresh evidence directory')
     out.mkdir(parents=True);catalog=Path(tempfile.mkdtemp(prefix='soundplus-designer-performance-',dir='/private/tmp'))
     source=sqlite3.connect(a.catalog.resolve().as_uri()+'?mode=ro',uri=True)
     dest=sqlite3.connect(catalog/'library.sqlite');source.backup(dest);dest.close();source.close()
-    subprocess.run([str(a.tests.resolve()),'--prepare-designer-workload',str(out/'fixture')],check=True)
+    if a.waveform_cache_from:
+        shutil.copytree(a.waveform_cache_from,catalog/'waveforms')
+    if a.fixture_from:
+        (out/'fixture').mkdir()
+        shutil.copy2(a.fixture_from/'workload.soundplus',out/'fixture/workload.soundplus')
+    else:
+        subprocess.run([str(a.tests.resolve()),'--prepare-designer-workload',str(out/'fixture')],check=True)
     sounds=['heavy rain','glass breaking','crickets in the night','a chainsaw running','a metal impact','a door closing','birds singing','water splashing','a quiet room','wind blowing','footsteps on gravel','an engine idling','a small dog barking','fire crackling','waves on a beach','thunder rumbling','a wooden creak','traffic passing','a saw cutting','a crowd talking']
     templates=['{}','The sound of {}','Find {}','A recording of {}','I hear {}','Listen for {}','A close recording of {}','Background: {}','An audio clip of {}','Please find {}']
     queries=[{'text':t.format(s)} for t in templates for s in sounds]
     plan=dict(mode='semantic-designer-perform' if a.performance_controls else 'semantic-designer-stock' if a.stock_effects else 'semantic-designer-edit' if a.interactions else 'semantic-designer',designFile=str(out/'fixture/workload.soundplus'),queryCount=len(queries),queries=queries)
+    if a.waveform_scroll:plan['waveformScroll']=True
     if a.interactions:
         incoming=out/'incoming';incoming.mkdir()
         for n in range(30):
@@ -64,6 +74,17 @@ def main():
         summary['interface']='Visible Perform workspace and compact Library browser, shared transport and output controls'
         summary['continuity']={k:report['controls'].get(k) for k in ['samePlaybackGeneration','sameHelper','sameGraphEpoch','noUnderruns','editingOverlappedIndexing','workspaceSwitchPreservesRecipeAndPlayhead']}
         if not all(summary['continuity'].values()):raise RuntimeError('Performance workload continuity assertion failed: '+str(summary['continuity']))
+    with sqlite3.connect(catalog/'library.sqlite') as db:
+        summary['catalogFiles']=db.execute('select count(*) from assets').fetchone()[0]
+    summary['waveforms']=report.get('waveforms',{})
+    summary['rowPreviewPaints']=report.get('rowPreviewPaints',0)
+    summary['waveformScrolls']=report.get('waveformScrolls',0)
+    summary['pendingWaveformScrolls']=report.get('pendingWaveformScrolls',0)
+    summary['waveformScrollPaints']=report.get('waveformScrollPaints',0)
+    summary['displayScale']=report.get('displayScale')
+    summary['waveformCacheCondition']='Warm derivative files copied; fresh process/in-memory pool' if a.waveform_cache_from else 'Cold derivative directory; OS file cache uncontrolled'
+    if a.waveform_scroll and (summary['rowPreviewPaints']==0 or summary['waveformScrolls']<10 or summary['pendingWaveformScrolls']!=600 or summary['waveformScrollPaints']<10):
+        raise RuntimeError('Visible waveform/scroll workload did not execute')
     write(out/'summary.json',summary);print(json.dumps(summary,indent=2))
 
 if __name__=='__main__':main()

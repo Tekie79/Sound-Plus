@@ -1,5 +1,7 @@
 #include "PerformanceState.h"
 #include <cmath>
+#include <limits>
+#include <juce_graphics/juce_graphics.h>
 #include <set>
 namespace sp
 {
@@ -25,6 +27,8 @@ void bound(double v, double lo, double hi)
 } // namespace
 bool hasPerformance(const PerformanceState &s)
 {
+    if (s.blendLaw != 2)
+        return true;
     if (s.blendEnabled || s.x != .5 || s.y != .5)
         return true;
     for (auto &a : s.assignments)
@@ -42,7 +46,9 @@ bool hasPerformance(const PerformanceState &s)
 juce::var performanceToJson(const PerformanceState &s)
 {
     auto o = obj();
-    put(o, "version", 1);
+    put(o, "version", s.blendLaw == 1 ? 1 : 2);
+    if (s.blendLaw != 1)
+        put(o, "blendLaw", s.blendLaw);
     put(o, "blendEnabled", s.blendEnabled);
     put(o, "x", s.x);
     put(o, "y", s.y);
@@ -86,8 +92,9 @@ PerformanceState performanceFromJson(const juce::var &o)
     PerformanceState s;
     if (o.isVoid())
         return s;
-    if ((int)o["version"] != 1)
+    if ((int)o["version"] != 1 && (int)o["version"] != 2)
         throw std::runtime_error("Unsupported performance state version");
+    s.blendLaw = (int)o["version"] == 1 ? 1 : (int)o["blendLaw"];
     auto *slots = o["assignments"].getArray(), *macros = o["macros"].getArray();
     if (!slots || slots->size() != 4 || !macros || macros->size() != 4)
         throw std::runtime_error("Performance controls require four slots/macros");
@@ -198,6 +205,12 @@ void assignBlendLayer(DesignMix &mix, int slot, const juce::String &id)
 {
     if (slot < 0 || slot >= 4)
         throw std::runtime_error("Invalid blend slot");
+    auto &assignment = mix.performance.assignments[(size_t)slot];
+    auto previous = std::find_if(mix.layers.begin(), mix.layers.end(),
+                                 [&](auto &layer) { return layer.id == assignment.layer; });
+    const bool custom =
+        assignment.name.isNotEmpty() && (previous == mix.layers.end() || assignment.name != previous->name);
+    const auto alias = custom ? assignment.name : juce::String();
     if (id.isNotEmpty())
     {
         for (int i = 0; i < 4; ++i)
@@ -208,10 +221,10 @@ void assignBlendLayer(DesignMix &mix, int slot, const juce::String &id)
         auto l = std::find_if(mix.layers.begin(), mix.layers.end(), [&](auto &v) { return v.id == id; });
         if (l == mix.layers.end())
             throw std::runtime_error("Blend layer is missing");
-        mix.performance.assignments[(size_t)slot] = {id, l->name};
+        assignment = {id, custom ? alias : l->name};
     }
     else
-        mix.performance.assignments[(size_t)slot] = {};
+        assignment = {{}, alias};
 }
 bool performanceEffectOwned(const DesignMix &mix, const juce::String &layer, const StockEffect &effect,
                             int index)
@@ -257,6 +270,8 @@ void addMacroMapping(DesignMix &mix, int index, PerformanceMapping map)
 void validatePerformance(const DesignMix &mix)
 {
     auto &s = mix.performance;
+    if (s.blendLaw != 1 && s.blendLaw != 2)
+        throw std::runtime_error("Unsupported blend interpolation law");
     bound(s.x, 0, 1);
     bound(s.y, 0, 1);
     std::set<juce::String> slots, targets;
@@ -298,6 +313,7 @@ std::array<double, 4> blendWeights(const PerformanceState &s, const DesignMix &m
     std::array<double, 4> w{(1 - s.x) * (1 - s.y), s.x * (1 - s.y), (1 - s.x) * s.y, s.x * s.y};
     double energy = 0;
     int count = 0;
+    std::array<int, 4> occupied{};
     for (int i = 0; i < 4; ++i)
     {
         auto id = s.assignments[(size_t)i].layer;
@@ -307,12 +323,65 @@ std::array<double, 4> blendWeights(const PerformanceState &s, const DesignMix &m
             w[(size_t)i] = 0;
         else
         {
+            occupied[(size_t)count] = i;
             energy += w[(size_t)i] * w[(size_t)i];
             ++count;
         }
     }
     if (!count)
         return w;
+    if (s.blendLaw == 2 && count < 4)
+    {
+        // Project onto the convex hull of the occupied corners. On a segment use
+        // its linear coordinates; on a triangle use barycentric coordinates.
+        // Projection is continuous, including outside the hull at empty edges.
+        // Normalize amplitudes afterward, as for the four-corner bilinear law.
+        const std::array<juce::Point<double>, 4> corners{{{0, 0}, {1, 0}, {0, 1}, {1, 1}}};
+        const juce::Point<double> p{s.x, s.y};
+        w = {};
+        if (count == 1)
+            w[(size_t)occupied[0]] = 1;
+        else
+        {
+            double nearest = std::numeric_limits<double>::max();
+            for (int a = 0; a < count; ++a)
+                for (int b = a + 1; b < count; ++b)
+                {
+                    auto ai = occupied[(size_t)a], bi = occupied[(size_t)b];
+                    auto first = corners[(size_t)ai], delta = corners[(size_t)bi] - first;
+                    const auto t = std::clamp(((p.x - first.x) * delta.x + (p.y - first.y) * delta.y) /
+                                                  (delta.x * delta.x + delta.y * delta.y),
+                                              0., 1.);
+                    const auto distance = p.getDistanceSquaredFrom(first + delta * t);
+                    if (distance < nearest)
+                    {
+                        nearest = distance;
+                        w = {};
+                        w[(size_t)ai] = 1 - t;
+                        w[(size_t)bi] = t;
+                    }
+                }
+            if (count == 3)
+            {
+                auto a = corners[(size_t)occupied[0]], b = corners[(size_t)occupied[1]],
+                     c = corners[(size_t)occupied[2]];
+                const auto det = (b.y - c.y) * (a.x - c.x) + (c.x - b.x) * (a.y - c.y);
+                const auto u = ((b.y - c.y) * (p.x - c.x) + (c.x - b.x) * (p.y - c.y)) / det;
+                const auto v = ((c.y - a.y) * (p.x - c.x) + (a.x - c.x) * (p.y - c.y)) / det;
+                const auto z = 1 - u - v;
+                if (u >= 0 && v >= 0 && z >= 0)
+                {
+                    w = {};
+                    w[(size_t)occupied[0]] = u;
+                    w[(size_t)occupied[1]] = v;
+                    w[(size_t)occupied[2]] = z;
+                }
+            }
+        }
+        energy = 0;
+        for (auto value : w)
+            energy += value * value;
+    }
     for (int i = 0; i < 4; ++i)
     {
         auto &value = w[(size_t)i];

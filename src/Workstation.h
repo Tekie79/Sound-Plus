@@ -10,7 +10,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     Workstation(const juce::File &db,bool enableAI,const juce::File &modelDirectory,bool benchmark)
         : preferences(db.getParentDirectory().getChildFile("interface.settings"),sp::ui::preferenceOptions()),
           library(db,juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory),
-          designer(db,library.audioClient(),preferences),divider(*this)
+          designer(db,library.audioClient(),preferences,library.waveformProvider()),divider(*this)
     {
         browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",300);
         addAndMakeVisible(library);addChildComponent(designer);addChildComponent(divider);

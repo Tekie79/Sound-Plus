@@ -11,6 +11,8 @@ std::pair<int64_t, int64_t> markRangeAtPlayhead(int64_t first, int64_t last, int
                                                 bool markIn);
 struct WaveformData
 {
+    enum class Status { ready, offline, changed, decodeError };
+    Status status = Status::ready;
     juce::String assetId, error;
     int64_t revision = 0, samples = 0;
     double rate = 0;

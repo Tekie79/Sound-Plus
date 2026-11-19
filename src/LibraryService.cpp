@@ -97,6 +97,8 @@ struct LibraryService::Impl
     juce::String preferredAnalysis;
     double semanticDue = 0;
     uint64_t semanticInputVersion = 0, semanticResultVersion = 0;
+    std::atomic<uint64_t> semanticWorkRequest{0}, semanticHandledInput{0}, readerSession{0}, readerSemanticSeen{0};
+    std::atomic<int> semanticWorkPhase{0};
     AudioReference reference;
     bool exampleMode=false;
     struct SemanticResult
@@ -747,6 +749,7 @@ struct LibraryService::Impl
                     q = text; root = filter; id = request; token = workToken;
                     usingExample=exampleMode;example=reference;
                 }
+                semanticWorkRequest=id;semanticWorkPhase=1;
                 SemanticResult result; result.request = id;result.example=usingExample;
                 if (!usingExample && q.length()==32 && q.containsOnly("0123456789abcdefABCDEF"))
                 {
@@ -802,7 +805,7 @@ struct LibraryService::Impl
                     else
                     {
                         auto begin = monotonicMs(); auto command = message("text"); command.getDynamicObject()->setProperty("text",q);
-                        auto response = inference->call(command,true);
+                        semanticWorkPhase=2;auto response = inference->call(command,true);
                         result.timing.workerRoundTripMs = monotonicMs()-begin;
                         if (response["error"].toString().isNotEmpty()) throw std::runtime_error(response["error"].toString().toStdString());
                         if (response["model"].toString() != modelId() || response["preprocessing"].toString() != preprocessingId())
@@ -816,10 +819,11 @@ struct LibraryService::Impl
                         cache.emplace_back(q,vector); if (cache.size() > 64) cache.pop_front();
                     }
                     }
-                    if (workToken != token) { lastInput = input; continue; }
+                    if (workToken != token) { lastInput = input;semanticHandledInput=input;semanticWorkPhase=5; continue; }
                     read.cancelWhen(&workToken,token);
                     RetrievalMetrics metrics;
                     auto retrievalBegan=monotonicMs();
+                    semanticWorkPhase=3;
                     result.candidates = index.search(read,vector,root,excluded,100,&metrics,[&]{return stopping || workToken!=token;});
                     if (encoded)
                     {
@@ -841,10 +845,10 @@ struct LibraryService::Impl
                             state.silentWindows=encoded->silentWindows;
                             if(encoded->silentWindows)state.status+=" ("+juce::String(encoded->silentWindows)+" silent windows skipped)";
                         }
-                        semanticResult = std::move(result); ++semanticResultVersion; wake.notify_all();
+                        semanticResult = std::move(result); ++semanticResultVersion;semanticWorkPhase=4; wake.notify_all();
                     }
                 }
-                catch (const QueryCancelled &) {}
+                catch (const QueryCancelled &) {semanticWorkPhase=5;}
                 catch (const std::exception &e)
                 {
                     if (!stopping)
@@ -862,7 +866,7 @@ struct LibraryService::Impl
                         }
                     }
                 }
-                lastInput = input; lastAnalysis = corpus; lastCompleted = monotonicMs();
+                lastInput = input;semanticHandledInput=input; lastAnalysis = corpus; lastCompleted = monotonicMs();
             }
         }
         catch (const std::exception &e) { if (!stopping) aiStatus("Semantic reader stopped",e.what()); }
@@ -1277,7 +1281,7 @@ struct LibraryService::Impl
                     page = pagePending; offset = desiredOffset; limit = desiredLimit; isPinned = pinned;
                     pagePending = false;
                     if (semanticResult.request == id) semantic = semanticResult;
-                    else lastSemantic = semanticVersion;
+                    else {lastSemantic = semanticVersion;readerSemanticSeen=lastSemantic;}
                 }
                 try
                 {
@@ -1306,7 +1310,7 @@ struct LibraryService::Impl
                                 current.version = v; ++current.pageSerial; notifyLocked();
                             }
                         }
-                        lastSemantic = semanticVersion; lastVersion = v;
+                        lastSemantic = semanticVersion;readerSemanticSeen=lastSemantic; lastVersion = v;
                         continue;
                     }
                     if (page && id == session)
@@ -1362,7 +1366,7 @@ struct LibraryService::Impl
                             ++current.pageSerial; notifyLocked();
                         }
                     }
-                    session = id; lastRequest = id; lastVersion = v; lastMembership = membership;
+                    session = id;readerSession=id; lastRequest = id; lastVersion = v; lastMembership = membership;
                     lastBackground = monotonicMs();
                 }
                 catch (const QueryCancelled &)
@@ -1439,6 +1443,24 @@ LibrarySnapshot LibraryService::snapshot()
 {
     std::lock_guard lock(impl->mutex);
     return impl->current;
+}
+juce::var LibraryService::queryDiagnostics()
+{
+    std::lock_guard lock(impl->mutex);
+    auto *o=new juce::DynamicObject();
+    o->setProperty("request",(juce::int64)impl->request);
+    o->setProperty("workToken",(juce::int64)impl->workToken.load());
+    o->setProperty("input",(juce::int64)impl->semanticInputVersion);
+    o->setProperty("handledInput",(juce::int64)impl->semanticHandledInput.load());
+    o->setProperty("semanticWorkRequest",(juce::int64)impl->semanticWorkRequest.load());
+    o->setProperty("semanticWorkPhase",impl->semanticWorkPhase.load());
+    o->setProperty("semanticResultRequest",(juce::int64)impl->semanticResult.request);
+    o->setProperty("semanticResultVersion",(juce::int64)impl->semanticResultVersion);
+    o->setProperty("readerSession",(juce::int64)impl->readerSession.load());
+    o->setProperty("readerSemanticSeen",(juce::int64)impl->readerSemanticSeen.load());
+    o->setProperty("completed",(juce::int64)impl->current.semanticCompletedRequest);
+    o->setProperty("pinned",impl->pinned);
+    return juce::var(o);
 }
 bool LibraryService::ready() const
 {

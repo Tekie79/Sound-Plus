@@ -18,6 +18,12 @@ void Benchmark::painted(uint64_t id, int rows, double sent, double applied)
     const auto now = monotonicMs();
     lastPainted = id;
     lastPaintedOffset = view.snapshot.offset;
+    if (waveformScrollAwaitingPaint && id == view.requested &&
+        view.rowPreviewPaints > waveformScrollStartPaints)
+    {
+        waveformScrollAwaitingPaint = false;
+        ++waveformScrollPaints;
+    }
     if (!firstPaint)
         firstPaint = now - startMs;
     if (rows && !firstNonempty)
@@ -135,6 +141,13 @@ void Benchmark::dispatch()
     waiting = plan["mode"].toString().startsWith("semantic")
                   ? view.benchmarkSemanticSearch(q["text"].toString(), root)
                   : view.benchmarkSearch(q["text"].toString(), root);
+    if ((bool)plan["waveformScroll"])
+    {
+        // Reproduce the actual old-row scroll while the new query is pending.
+        // It must not pin the new query before its semantic results arrive.
+        view.benchmarkScroll(0);
+        ++pendingWaveformScrolls;
+    }
     sendMs = monotonicMs();
 }
 void Benchmark::save(bool success, const juce::String &error)
@@ -160,6 +173,29 @@ void Benchmark::save(bool success, const juce::String &error)
     o->setProperty("peakDurableMetadataBacklog", peakPending);
     o->setProperty("maxPendingSearches", 1);
     o->setProperty("audio", view.audio.status());
+    o->setProperty("waveforms", view.peakPool->metrics());
+    o->setProperty("rowPreviewPaints", (juce::int64)view.rowPreviewPaints);
+    o->setProperty("waveformScrolls", waveformScrolls);
+    o->setProperty("pendingWaveformScrolls", pendingWaveformScrolls);
+    o->setProperty("waveformScrollPaints", waveformScrollPaints);
+    auto *queryState = new juce::DynamicObject();
+    queryState->setProperty("waiting", (juce::int64)waiting);
+    queryState->setProperty("requested", (juce::int64)view.requested);
+    queryState->setProperty("snapshotRequest", (juce::int64)view.snapshot.request);
+    queryState->setProperty("semanticCompleted", (juce::int64)view.snapshot.semanticCompletedRequest);
+    queryState->setProperty("newResultsAvailable", view.snapshot.newResultsAvailable);
+    queryState->setProperty("total", view.snapshot.total);
+    queryState->setProperty("query", view.search.getText());
+    queryState->setProperty("offset", view.snapshot.offset);
+    queryState->setProperty("loadedRows", (int)view.snapshot.results.size());
+    queryState->setProperty("requestedPage", view.requestedPage);
+    queryState->setProperty("requestedPageSerial", (juce::int64)view.requestedPageSerial);
+    queryState->setProperty("pageSerial", (juce::int64)view.snapshot.pageSerial);
+    queryState->setProperty("awaitingScrollPaint", waveformScrollAwaitingPaint);
+    queryState->setProperty("service", view.library.queryDiagnostics());
+    o->setProperty("queryState", juce::var(queryState));
+    if (auto *display = juce::Desktop::getInstance().getDisplays().getPrimaryDisplay())
+        o->setProperty("displayScale", display->scale);
     if (designer)
         o->setProperty("interactions", designer->interactionMetrics());
     o->setProperty("controls", controls);
@@ -580,6 +616,7 @@ void Benchmark::semanticTick(double now)
             audioDispatch = now;
             workload = "continuous-designer-edits";
             controls.getDynamicObject()->setProperty("audioAtStart", state);
+            controls.getDynamicObject()->setProperty("waveformsAtStart", view.peakPool->metrics());
             if (plan["updateFolder"].toString().isNotEmpty())
                 view.library.addFolder(juce::File(plan["updateFolder"].toString()));
         }
@@ -591,6 +628,27 @@ void Benchmark::semanticTick(double now)
                 return;
             }
             auto elapsed = now - audioDispatch;
+            if (waiting && now - view.dispatchedMs > 10000)
+            {
+                save(false, "Semantic search did not reach a paint acknowledgement within ten seconds");
+                return;
+            }
+            if (waveformScrollAwaitingPaint && now - lastWaveformScroll > 5000)
+            {
+                save(false, "Visible scrolled waveform rows did not paint within five seconds");
+                return;
+            }
+            if ((bool)plan["waveformScroll"] && !waveformScrollAwaitingPaint &&
+                now - lastWaveformScroll >= 250 && view.snapshot.total > 0 &&
+                view.snapshot.request == view.requested &&
+                view.snapshot.semanticCompletedRequest == view.requested)
+            {
+                waveformScrollStartPaints = view.rowPreviewPaints;
+                waveformScrollAwaitingPaint =
+                    view.benchmarkScroll((waveformScrolls * 7) % view.snapshot.total);
+                lastWaveformScroll = now;
+                ++waveformScrolls;
+            }
             if ((int64_t)state["sourceSample"] < lastDesignerFrame)
             {
                 save(false, "Clock moved backwards during parameter-only editing");
@@ -627,7 +685,7 @@ void Benchmark::semanticTick(double now)
                 if (mode == "semantic-designer-perform")
                     record("workspaceSwitchPreservesRecipeAndPlayhead", designer->benchmarkWorkspaceSwitch());
             }
-            if (!waiting && index < count)
+            if (!waiting && !waveformScrollAwaitingPaint && index < count)
                 dispatch();
             if (index >= count && run < 2)
             {

@@ -112,15 +112,20 @@ std::vector<FadePoint> fadePointsFromJson(const juce::var &value)
 }
 namespace
 {
-bool performanceFormat(const DesignDocument &d)
+int performanceFormat(const DesignDocument &d)
 {
-    auto used=[](const DesignMix &m){return hasPerformance(m.performance) || std::any_of(m.layers.begin(),m.layers.end(),[](auto &l){return l.controlGain!=1;});};
-    return used(d.original) || std::any_of(d.variations.begin(),d.variations.end(),[&](auto &v){return used(v.mix);});
+    auto version=[](const DesignMix &m){
+        bool used=hasPerformance(m.performance) || std::any_of(m.layers.begin(),m.layers.end(),[](auto &l){return l.controlGain!=1;});
+        return used ? (m.performance.blendLaw==2 ? 3 : 2) : 1;
+    };
+    int result=version(d.original);
+    for(auto &v:d.variations)result=std::max(result,version(v.mix));
+    return result;
 }
 }
 juce::var designToJson(const DesignDocument &d)
 {
-    auto o=object();put(o,"outputFolder",d.outputFolder);put(o,"format","SoundPlus referenced design");put(o,"version",performanceFormat(d)?2:1);put(o,"dsp",performanceFormat(d)?"stock-perform-v1":shapedFades(d) ? "stock-sinc32-v2" : "stock-sinc32-v1");put(o,"id",d.id);put(o,"revision",(juce::int64)d.revision);put(o,"name",d.name);put(o,"sampleRate",d.sampleRate);put(o,"original",mixJson(d.original));put(o,"activeVariation",d.activeVariation);put(o,"selectedLayer",d.selectedLayer);put(o,"playhead",(juce::int64)d.playhead);
+    auto o=object();put(o,"outputFolder",d.outputFolder);put(o,"format","SoundPlus referenced design");put(o,"version",performanceFormat(d));put(o,"dsp",performanceFormat(d)==3?"stock-perform-v2":performanceFormat(d)==2?"stock-perform-v1":shapedFades(d) ? "stock-sinc32-v2" : "stock-sinc32-v1");put(o,"id",d.id);put(o,"revision",(juce::int64)d.revision);put(o,"name",d.name);put(o,"sampleRate",d.sampleRate);put(o,"original",mixJson(d.original));put(o,"activeVariation",d.activeVariation);put(o,"selectedLayer",d.selectedLayer);put(o,"playhead",(juce::int64)d.playhead);
     juce::Array<juce::var> variations;for(auto &v:d.variations){auto n=object();put(n,"id",v.id);put(n,"name",v.name);put(n,"seed",juce::String::toHexString((juce::int64)v.seed));put(n,"kept",v.kept);if(v.snapshot)put(n,"snapshot",true);put(n,"mix",mixJson(v.mix));variations.add(n);}put(o,"variations",variations);
     auto settings=object();auto &s=d.variationSettings;put(settings,"count",s.count);put(settings,"enabled",(int)s.enabled);put(settings,"gainDb",s.gainDb);put(settings,"pan",s.pan);put(settings,"placementSeconds",s.placementSeconds);put(settings,"ratePercent",s.ratePercent);put(settings,"fadeSeconds",s.fadeSeconds);put(settings,"trimSeconds",s.trimSeconds);put(settings,"effectAmount",s.effectAmount);put(o,"variationSettings",settings);put(o,"renderSettings",renderJson(d.renderSettings));
     juce::Array<juce::var> outputs;for(auto &v:d.outputs){auto n=object();put(n,"path",v.path);put(n,"sha256",v.sha256);put(n,"variation",v.variation);put(n,"kind",v.kind);put(n,"created",v.created);put(n,"samples",(juce::int64)v.samples);put(n,"revision",(juce::int64)v.revision);put(n,"peak",v.peak);put(n,"clipped",(juce::int64)v.clipped);put(n,"settings",renderJson(v.settings));outputs.add(n);}put(o,"outputs",outputs);return o;
@@ -128,12 +133,12 @@ juce::var designToJson(const DesignDocument &d)
 DesignDocument designFromJson(const juce::var &o)
 {
     int version=(int)o["version"];auto dsp=o["dsp"].toString();
-    if(o["format"].toString()!="SoundPlus referenced design" || (version!=1 && version!=2) || (version==2?dsp!="stock-perform-v1":(dsp!="stock-sinc32-v1" && dsp!="stock-sinc32-v2")))throw std::runtime_error("Unsupported SoundPlus design version");
+    if(o["format"].toString()!="SoundPlus referenced design" || (version<1 || version>3) || (version==3?dsp!="stock-perform-v2":version==2?dsp!="stock-perform-v1":(dsp!="stock-sinc32-v1" && dsp!="stock-sinc32-v2")))throw std::runtime_error("Unsupported SoundPlus design version");
     DesignDocument d;d.outputFolder=o["outputFolder"].toString();d.id=o["id"].toString();d.name=o["name"].toString();d.revision=integer(o,"revision");d.sampleRate=(double)o["sampleRate"];d.original=mixFrom(o["original"]);d.activeVariation=o["activeVariation"].toString();d.selectedLayer=o["selectedLayer"].toString();d.playhead=integer(o,"playhead");
     if(auto *a=o["variations"].getArray()){if(a->size()>32)throw std::runtime_error("Too many variations");for(auto &v:*a){DesignVariation n;n.id=v["id"].toString();n.name=v["name"].toString();n.seed=(uint64_t)v["seed"].toString().getHexValue64();n.kept=(bool)v["kept"];n.snapshot=(bool)v["snapshot"];n.mix=mixFrom(v["mix"]);d.variations.push_back(std::move(n));}}
     auto s=o["variationSettings"];d.variationSettings={(int)s["count"],(uint32_t)(int)s["enabled"],(double)s["gainDb"],(double)s["pan"],(double)s["placementSeconds"],(double)s["ratePercent"],(double)s["fadeSeconds"],(double)s["trimSeconds"],(double)s["effectAmount"]};d.renderSettings=renderFrom(o["renderSettings"]);
     if(auto *a=o["outputs"].getArray()){if(a->size()>1000)throw std::runtime_error("Too much export history");for(auto &v:*a){DesignOutput n;n.path=v["path"].toString();n.sha256=v["sha256"].toString();n.variation=v["variation"].toString();n.kind=v["kind"].toString();n.created=v["created"].toString();n.samples=integer(v,"samples");n.revision=integer(v,"revision");n.peak=(double)v["peak"];n.clipped=integer(v,"clipped");n.settings=renderFrom(v["settings"]);d.outputs.push_back(n);}}
-    validateDesign(d);if(performanceFormat(d) && version!=2)throw std::runtime_error("Performance controls require document version 2");if(shapedFades(d) && version==1 && o["dsp"].toString()!="stock-sinc32-v2")throw std::runtime_error("Non-linear fades require stock DSP version 2");return d;
+    validateDesign(d);if(performanceFormat(d)>version)throw std::runtime_error("Performance blend law requires a newer document version");if(shapedFades(d) && version==1 && o["dsp"].toString()!="stock-sinc32-v2")throw std::runtime_error("Non-linear fades require stock DSP version 2");return d;
 }
 void validateDesign(const DesignDocument &d)
 {

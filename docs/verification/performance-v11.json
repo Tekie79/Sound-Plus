@@ -1,0 +1,1305 @@
+{
+  "milestone": "SoundPlus Performance Mixer v1.1",
+  "recordedAt": "2026-11-18T19:26:38.702072-05:00",
+  "startingHead": "e6ca7484830d6bfc8d3c95a22b7b8b6e889d1e6f",
+  "cleanAtStart": true,
+  "instructions": [
+    "AGENTS.md",
+    "docs/reviews/Codex_Performance_v1_1_Waveforms_Usability.md",
+    "docs/reviews/Review_e6ca748_Performance_Waveforms.md",
+    "attachment 257b25c0-3965-4506-83e4-866bb222c301/Pasted text.txt (user request)"
+  ],
+  "machine": {
+    "model": "MacBook Pro Mac17,8",
+    "chip": "Apple M5 Pro",
+    "memoryGiB": 48,
+    "macOS": "26.3.2 (25D2150)",
+    "audioDevice": "MacBook Pro Speakers",
+    "sampleRate": 48000,
+    "bufferFrames": 512,
+    "physicalDisplayScale": 2,
+    "otherPhysicalScalesTested": false
+  },
+  "artifacts": [
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "sha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f"
+    },
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "sha256": "697c067eeade3abb18e6323e5f7e257855870f3bf36b44f99cd45d307348c4f7"
+    },
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "sha256": "b6d09c002a4353421ef983049fb9b4248fb205ba0a55d8486f3f3db150f40eee"
+    }
+  ],
+  "commands": [
+    ".tools/cmake/data/bin/cmake --build build --parallel 6",
+    ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "python3 scripts/benchmark_designer.py --catalog build/gain-hover-native/library.sqlite --output build/performance-v11/cold-final --performance-controls --waveform-scroll",
+    "python3 scripts/benchmark_designer.py --catalog build/gain-hover-native/library.sqlite --output build/performance-v11/warm-final --performance-controls --waveform-scroll --waveform-cache-from /private/tmp/soundplus-designer-performance-jjidh4co/waveforms --fixture-from build/performance-v11/cold-final/fixture",
+    "python3 scripts/benchmark_designer.py --catalog build/gain-hover-native/library.sqlite --output build/performance-v11/cold-postfix-{1,2,3} --performance-controls --waveform-scroll (three separate serial invocations)",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus --data-dir /private/tmp/soundplus-designer-performance-n30z2jl9 --disable-ai",
+    "open build/SoundPlus_artefacts/Release/SoundPlus.app (default catalog; use prior --data-dir command to reopen the working catalog instead)"
+  ],
+  "regressions": {
+    "status": "Passed",
+    "suites": 14,
+    "seconds": 50.98,
+    "log": "performance-v11-ctest.log",
+    "checks": {
+      "waveform_previews": 3634,
+      "performance_state": 19930,
+      "designer_view_commands": 79,
+      "designer_canvas": 1449,
+      "designer_session": 121,
+      "designer_workflow": 66299,
+      "designer_fades": 1137,
+      "icon_system": 750
+    },
+    "performancePcm": {
+      "version": 5,
+      "command": "performance-test",
+      "checks": 19930,
+      "nativePreMonitorError": 0.0,
+      "monitorGain": 0.13,
+      "nativeStatus": {
+        "version": 5,
+        "command": "status",
+        "id": "design:04b8c69b143045e1b88d1a6c587f3c5f",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 72230,
+        "outputRate": 48000.0,
+        "sourceSample": 52800,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 52800,
+        "playing": false,
+        "seconds": 1.1,
+        "firstCallbackMs": 106390278.6894583,
+        "peak": 0.009634074755013,
+        "preMonitorPeak": 0.074106156826019,
+        "design": true,
+        "designLayers": 5,
+        "producerMaxMs": 0.708875000476837,
+        "error": "",
+        "callbacks": 106,
+        "frames": 54272,
+        "underruns": 0,
+        "designRevision": 1,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 46989312,
+        "cpuSeconds": 0.093403,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:04b8c69b143045e1b88d1a6c587f3c5f",
+        "pendingPlayback": false
+      },
+      "directory": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-state-test-output/879e11e7ebd34b74a651ca9994a73a87"
+    },
+    "waveformFixtures": {
+      "checks": 3634,
+      "waveforms": {
+        "requests": 71,
+        "decodes": 67,
+        "diskHits": 3,
+        "memoryHits": 421,
+        "retainedSources": 48,
+        "retainedGeometries": 96,
+        "retainedPeakBytes": 1536,
+        "pending": false,
+        "firstReadyMs": 0.0,
+        "requestToUiAdoptionMs": {
+          "n": 71,
+          "p50": 0.0,
+          "p95": 0.0,
+          "p99": 6000.0
+        }
+      },
+      "fixture": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/waveform-preview-test-output/06a78e03534c408d8ac92b83a9b054da",
+      "nativeDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/waveform-preview-test-output/06a78e03534c408d8ac92b83a9b054da/native-source-cards.soundplus"
+    },
+    "controlledWaveformClockWarning": "Fixture clock is injected; its latency percentiles are NOT real performance measurements."
+  },
+  "failBefore": [
+    {
+      "case": "blend",
+      "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 1: performance_state\n1/1 Test #1: performance_state ................***Failed    0.58 sec\nFAIL after 0 checks: Sparse blend stays continuous from every endpoint/edge approach direction\n\n\n0% tests passed, 1 tests failed out of 1\n\nTotal Test time (real) =   0.59 sec\n\nThe following tests FAILED:\n\t  1 - performance_state (Failed)\nErrors while running CTest\n",
+      "sha256": "9deb998b0c4d8d2f4d3d27e994a1fe646852a4dc9f27384fb11d648112bef257"
+    },
+    {
+      "case": "slider",
+      "log": "Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\nTest project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build\n    Start 1: performance_state\n1/1 Test #1: performance_state ................***Failed    0.56 sec\nFAIL after 0 checks: Remaining held-slider events and release cannot resurrect a cancelled gesture\n\n\n0% tests passed, 1 tests failed out of 1\n\nTotal Test time (real) =   0.56 sec\n\nThe following tests FAILED:\n\t  1 - performance_state (Failed)\nErrors while running CTest\n",
+      "sha256": "2596335500d7a2e96676ce7371e7d179029ae3c76457d79aeb76874c332389ae"
+    },
+    {
+      "case": "paging",
+      "log": "FAIL after 0 checks: A shorter replacement result page re-fetches missing visible rows\n",
+      "sha256": "60a4dcec4461ac8d1e80961784a21a7b6ebff867b1b83857db5d2c34721d4118"
+    }
+  ],
+  "closure": [
+    {
+      "item": "Review Finding 1: sparse continuity",
+      "status": "Fixed",
+      "source": "src/PerformanceState.cpp:311",
+      "evidence": "All 16 masks, corners/edges, 25 points x 8 approach directions x 4 shrinking distances; unit-power/nonnegative/finite; legacy/new manifest and PCM roundtrips; new three-slot sparse native pre-monitor/render error 0.0; explicit native Update law + Undo/Redo."
+    },
+    {
+      "item": "Review Finding 2: Escape through held release",
+      "status": "Fixed in code and actual native toolkit callbacks; physical held-pointer check pending",
+      "source": "src/PerformView.cpp:388",
+      "evidence": "All four configured macro and X/Y slider callbacks: start/change/Escape/continued held values/release/fresh drag/Undo/Redo/document or variation switch. Computer-control API exposes atomic drag, so no claim of physical mid-drag key synthesis."
+    },
+    {
+      "item": "Perform source cards",
+      "status": "Delivered",
+      "source": "src/SourceCard.cpp:22",
+      "evidence": "Real 26-point all-channel peaks, range/reverse/rate semantics, passive shared head, stable identities and aliases; distinct loading/silent/offline/missing/decode states. Native same-file ranges/reverse, 4ch and 0.02 ms one-sample source."
+    },
+    {
+      "item": "Bounded shared waveform provider",
+      "status": "Delivered",
+      "source": "src/WaveformPreview.cpp:87",
+      "evidence": "Serial worker, 48 sources / 96 geometries / 40 demands per owner; controlled late-completion/rebind/LRU/visible-demand tests; current worker offline/reconnect status."
+    },
+    {
+      "item": "Library / compact Browser rows",
+      "status": "Delivered for visible rows",
+      "source": "src/LibraryView.cpp:740",
+      "evidence": "Virtualized visible rows + 2 neighbors; no paint decoding; late result cannot rebind; existing detailed audition retained. Missing visible-row page re-fetch reproduced before correction and passes after."
+    },
+    {
+      "item": "Usability / layouts",
+      "status": "Verified on 2x Mac display",
+      "source": "src/PerformView.cpp:678",
+      "evidence": "1040x648 and 1360x860 content; axis labels, compact macro states, context mappings, title ellipsis/tooltips, focus, numeric and fine-arrow pad edits; existing Lucide/theme and fixed 10-point fade controls retained."
+    },
+    {
+      "item": "Toolbar capture/display ambiguity",
+      "status": "Unresolved, not reproduced",
+      "evidence": "Native app-window captures retain glyphs through Edit/Perform, focus, Finder occlusion/exposure, minimize/AXRaise and resize. No physical display witness. No repaint workaround added."
+    },
+    {
+      "item": "Combined search/index/play/scroll",
+      "status": "Final cold/warm plus three repeats passed; earlier helper restart unresolved",
+      "evidence": "3000 final serial queries, all5 same helper/graph/play generation and zero underruns. Failed intermediate experiments retained below. Observability is not a claimed restart fix."
+    },
+    {
+      "item": "Resolve delivery",
+      "status": "Open independent receiving-app qualification",
+      "evidence": "No Resolve receiving import/placement/save/SoundPlus-exit/project-reopen sequence executed in this pass. Internal card drops and durable WAVs do not qualify Resolve."
+    }
+  ],
+  "measurements": {
+    "cold": {
+      "timestamp": {
+        "thermalState": "nominal",
+        "lowPowerMode": false,
+        "elapsedMs": 14105.67241667211
+      },
+      "appSha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f",
+      "catalogCopy": "/private/tmp/soundplus-designer-performance-jjidh4co",
+      "queries": 600,
+      "paintMs": {
+        "p50": 13.160000011324883,
+        "p95": 21.369249999523163,
+        "p99": 48.129374995827675
+      },
+      "allQueriesDuringEightLayerPlayback": true,
+      "nativePlaybackWallSeconds": 12.005140833333135,
+      "audioProcessCpuPercentOfOneCore": 7.710979928112868,
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:5c5c377cabb54ea68635bf1d99efee90",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 72303,
+        "outputRate": 48000.0,
+        "sourceSample": 576000,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": true,
+        "seconds": 12.0,
+        "firstCallbackMs": 106455401.3600417,
+        "peak": 0.001178048318252,
+        "preMonitorPeak": 0.02945052459836,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 2.285708338022232,
+        "error": "",
+        "callbacks": 1321,
+        "frames": 676352,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 303,
+        "editLatencyMs": 39.35354170203209,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52019200,
+        "cpuSeconds": 0.986609,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:5c5c377cabb54ea68635bf1d99efee90",
+        "pendingPlayback": false
+      },
+      "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+      "monitorGain": 0.04,
+      "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+      "pointerHandlerToPaintMs": {
+        "n": 0
+      },
+      "editToCallbackMs": {
+        "n": 240,
+        "p50": 52.933625027537346,
+        "p95": 68.9039166867733,
+        "p99": 72.49558329582214
+      },
+      "editingSamplesWithIndexing": 191,
+      "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+      "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+      "continuity": {
+        "samePlaybackGeneration": true,
+        "sameHelper": true,
+        "sameGraphEpoch": true,
+        "noUnderruns": true,
+        "editingOverlappedIndexing": true,
+        "workspaceSwitchPreservesRecipeAndPlayhead": true
+      },
+      "catalogFiles": 73,
+      "waveforms": {
+        "requests": 619,
+        "decodes": 76,
+        "diskHits": 543,
+        "memoryHits": 15823,
+        "retainedSources": 48,
+        "retainedGeometries": 76,
+        "retainedPeakBytes": 718720,
+        "pending": false,
+        "firstReadyMs": 110.39491666853428,
+        "requestToUiAdoptionMs": {
+          "n": 512,
+          "p50": 5.411624997854233,
+          "p95": 11.754374995827675,
+          "p99": 33.04458333551884
+        }
+      },
+      "rowPreviewPaints": 7193,
+      "waveformScrolls": 48,
+      "pendingWaveformScrolls": 600,
+      "waveformScrollPaints": 39,
+      "displayScale": 2.0,
+      "waveformCacheCondition": "Cold derivative directory; OS file cache uncontrolled",
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-final/native.json",
+        "sha256": "d5c9040ff21462afc00c037adbdd909225c70423df468ee6c3f4cbfe71b9d145"
+      }
+    },
+    "warm": {
+      "timestamp": {
+        "thermalState": "nominal",
+        "lowPowerMode": false,
+        "elapsedMs": 14062.603375002742
+      },
+      "appSha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f",
+      "catalogCopy": "/private/tmp/soundplus-designer-performance-gcs2qxm5",
+      "queries": 600,
+      "paintMs": {
+        "p50": 13.109333336353302,
+        "p95": 21.96454167366028,
+        "p99": 46.74899999797344
+      },
+      "allQueriesDuringEightLayerPlayback": true,
+      "nativePlaybackWallSeconds": 12.006145541653037,
+      "audioProcessCpuPercentOfOneCore": 7.660851659752272,
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:5c5c377cabb54ea68635bf1d99efee90",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 72324,
+        "outputRate": 48000.0,
+        "sourceSample": 576000,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": true,
+        "seconds": 12.0,
+        "firstCallbackMs": 106491348.0776667,
+        "peak": 0.001178126549348,
+        "preMonitorPeak": 0.029452482238412,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 1.675708338618279,
+        "error": "",
+        "callbacks": 1322,
+        "frames": 676864,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 304,
+        "editLatencyMs": 54.49424996972084,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52051968,
+        "cpuSeconds": 0.982701,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:5c5c377cabb54ea68635bf1d99efee90",
+        "pendingPlayback": false
+      },
+      "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+      "monitorGain": 0.04,
+      "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+      "pointerHandlerToPaintMs": {
+        "n": 0
+      },
+      "editToCallbackMs": {
+        "n": 248,
+        "p50": 54.45320835709572,
+        "p95": 70.24783329665661,
+        "p99": 72.49483336508274
+      },
+      "editingSamplesWithIndexing": 192,
+      "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+      "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+      "continuity": {
+        "samePlaybackGeneration": true,
+        "sameHelper": true,
+        "sameGraphEpoch": true,
+        "noUnderruns": true,
+        "editingOverlappedIndexing": true,
+        "workspaceSwitchPreservesRecipeAndPlayhead": true
+      },
+      "catalogFiles": 73,
+      "waveforms": {
+        "requests": 673,
+        "decodes": 30,
+        "diskHits": 642,
+        "memoryHits": 15862,
+        "retainedSources": 48,
+        "retainedGeometries": 76,
+        "retainedPeakBytes": 718720,
+        "pending": true,
+        "firstReadyMs": 57.365666672587395,
+        "requestToUiAdoptionMs": {
+          "n": 512,
+          "p50": 5.513541668653488,
+          "p95": 12.080416664481163,
+          "p99": 26.411999985575676
+        }
+      },
+      "rowPreviewPaints": 7232,
+      "waveformScrolls": 48,
+      "pendingWaveformScrolls": 600,
+      "waveformScrollPaints": 39,
+      "displayScale": 2.0,
+      "waveformCacheCondition": "Warm derivative files copied; fresh process/in-memory pool",
+      "rawEvidence": {
+        "path": "build/performance-v11/warm-final/native.json",
+        "sha256": "c349b07f6e939d2bc0fcbb28a53df0d5f9710a94c8502a6768a2224757f9e183"
+      }
+    }
+  },
+  "postFixRepeats": [
+    {
+      "summary": {
+        "timestamp": {
+          "thermalState": "nominal",
+          "lowPowerMode": false,
+          "elapsedMs": 14100.778041675687
+        },
+        "appSha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f",
+        "catalogCopy": "/private/tmp/soundplus-designer-performance-eju701vh",
+        "queries": 600,
+        "paintMs": {
+          "p50": 13.067125007510185,
+          "p95": 18.357374995946884,
+          "p99": 45.17912499606609
+        },
+        "allQueriesDuringEightLayerPlayback": true,
+        "nativePlaybackWallSeconds": 12.002515875011683,
+        "audioProcessCpuPercentOfOneCore": 7.636832223719993,
+        "audio": {
+          "version": 5,
+          "command": "status",
+          "id": "design:70028d911fcf44efbaa2f857ab66336b",
+          "playGeneration": 1,
+          "graphEpoch": 1,
+          "preparationsRequested": 1,
+          "helperPid": 72335,
+          "outputRate": 48000.0,
+          "sourceSample": 576000,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 0,
+          "endSample": 2242286,
+          "playing": true,
+          "seconds": 12.0,
+          "firstCallbackMs": 106506377.4309167,
+          "peak": 0.001177683123387,
+          "preMonitorPeak": 0.029441395774484,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 1.772958338260651,
+          "error": "",
+          "callbacks": 1321,
+          "frames": 676352,
+          "underruns": 0,
+          "designRevision": 2,
+          "heardEdit": 303,
+          "editLatencyMs": 65.23849999904633,
+          "stalePreparationsDiscarded": 0,
+          "preparing": false,
+          "sampleRate": 48000.0,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "peakResidentBytes": 52084736,
+          "cpuSeconds": 0.975511,
+          "bufferFrames": 512,
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:70028d911fcf44efbaa2f857ab66336b",
+          "pendingPlayback": false
+        },
+        "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+        "monitorGain": 0.04,
+        "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+        "pointerHandlerToPaintMs": {
+          "n": 0
+        },
+        "editToCallbackMs": {
+          "n": 249,
+          "p50": 55.482916697859764,
+          "p95": 69.97629170119762,
+          "p99": 75.39624999463558
+        },
+        "editingSamplesWithIndexing": 193,
+        "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+        "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+        "continuity": {
+          "samePlaybackGeneration": true,
+          "sameHelper": true,
+          "sameGraphEpoch": true,
+          "noUnderruns": true,
+          "editingOverlappedIndexing": true,
+          "workspaceSwitchPreservesRecipeAndPlayhead": true
+        },
+        "catalogFiles": 73,
+        "waveforms": {
+          "requests": 604,
+          "decodes": 76,
+          "diskHits": 528,
+          "memoryHits": 15738,
+          "retainedSources": 48,
+          "retainedGeometries": 76,
+          "retainedPeakBytes": 718720,
+          "pending": false,
+          "firstReadyMs": 155.5882916599512,
+          "requestToUiAdoptionMs": {
+            "n": 512,
+            "p50": 5.864958330988884,
+            "p95": 12.585249990224838,
+            "p99": 33.44366666674614
+          }
+        },
+        "rowPreviewPaints": 7140,
+        "waveformScrolls": 48,
+        "pendingWaveformScrolls": 600,
+        "waveformScrollPaints": 39,
+        "displayScale": 2.0,
+        "waveformCacheCondition": "Cold derivative directory; OS file cache uncontrolled"
+      },
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-postfix-1/native.json",
+        "sha256": "5759bf74d1218302be69dcb8de9462bfc9d8bea1e45dcd717d86b99f86b929e6"
+      }
+    },
+    {
+      "summary": {
+        "timestamp": {
+          "thermalState": "nominal",
+          "lowPowerMode": false,
+          "elapsedMs": 14050.142749994993
+        },
+        "appSha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f",
+        "catalogCopy": "/private/tmp/soundplus-designer-performance-voo5mplg",
+        "queries": 600,
+        "paintMs": {
+          "p50": 13.206083327531815,
+          "p95": 19.142166659235954,
+          "p99": 46.83645832538605
+        },
+        "allQueriesDuringEightLayerPlayback": true,
+        "nativePlaybackWallSeconds": 12.002990416675805,
+        "audioProcessCpuPercentOfOneCore": 7.581818933519021,
+        "audio": {
+          "version": 5,
+          "command": "status",
+          "id": "design:44500c5535f6440390f3844257a5ae32",
+          "playGeneration": 1,
+          "graphEpoch": 1,
+          "preparationsRequested": 1,
+          "helperPid": 72344,
+          "outputRate": 48000.0,
+          "sourceSample": 576000,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 0,
+          "endSample": 2242286,
+          "playing": true,
+          "seconds": 12.0,
+          "firstCallbackMs": 106521417.4615833,
+          "peak": 0.001177639351226,
+          "preMonitorPeak": 0.029440302401781,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 1.70004166662693,
+          "error": "",
+          "callbacks": 1322,
+          "frames": 676864,
+          "underruns": 0,
+          "designRevision": 2,
+          "heardEdit": 302,
+          "editLatencyMs": 42.84616670012474,
+          "stalePreparationsDiscarded": 0,
+          "preparing": false,
+          "sampleRate": 48000.0,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "peakResidentBytes": 52330496,
+          "cpuSeconds": 0.971964,
+          "bufferFrames": 512,
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:44500c5535f6440390f3844257a5ae32",
+          "pendingPlayback": false
+        },
+        "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+        "monitorGain": 0.04,
+        "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+        "pointerHandlerToPaintMs": {
+          "n": 0
+        },
+        "editToCallbackMs": {
+          "n": 250,
+          "p50": 56.519583359360695,
+          "p95": 69.11179162561893,
+          "p99": 74.41316662728786
+        },
+        "editingSamplesWithIndexing": 192,
+        "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+        "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+        "continuity": {
+          "samePlaybackGeneration": true,
+          "sameHelper": true,
+          "sameGraphEpoch": true,
+          "noUnderruns": true,
+          "editingOverlappedIndexing": true,
+          "workspaceSwitchPreservesRecipeAndPlayhead": true
+        },
+        "catalogFiles": 73,
+        "waveforms": {
+          "requests": 604,
+          "decodes": 76,
+          "diskHits": 527,
+          "memoryHits": 15824,
+          "retainedSources": 48,
+          "retainedGeometries": 76,
+          "retainedPeakBytes": 718720,
+          "pending": true,
+          "firstReadyMs": 58.06679166853428,
+          "requestToUiAdoptionMs": {
+            "n": 512,
+            "p50": 6.209791660308838,
+            "p95": 12.676208332180977,
+            "p99": 31.658333331346512
+          }
+        },
+        "rowPreviewPaints": 7187,
+        "waveformScrolls": 48,
+        "pendingWaveformScrolls": 600,
+        "waveformScrollPaints": 39,
+        "displayScale": 2.0,
+        "waveformCacheCondition": "Cold derivative directory; OS file cache uncontrolled"
+      },
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-postfix-2/native.json",
+        "sha256": "c8e6f5a0f470eaf7de5bd1effc6689b3cdc95d02d37029800d76340952bab8e1"
+      }
+    },
+    {
+      "summary": {
+        "timestamp": {
+          "thermalState": "nominal",
+          "lowPowerMode": false,
+          "elapsedMs": 14047.876999989152
+        },
+        "appSha256": "d75e173cbb0db54fe1f4aa3e4a02dfdca4512fc370b4a3d96d08e35be0fe712f",
+        "catalogCopy": "/private/tmp/soundplus-designer-performance-_6aavax4",
+        "queries": 600,
+        "paintMs": {
+          "p50": 13.293750002980232,
+          "p95": 20.106666654348373,
+          "p99": 44.318041667342186
+        },
+        "allQueriesDuringEightLayerPlayback": true,
+        "nativePlaybackWallSeconds": 12.000521125003695,
+        "audioProcessCpuPercentOfOneCore": 7.641584814923756,
+        "audio": {
+          "version": 5,
+          "command": "status",
+          "id": "design:99eb506432034307ab9d621c1ea35e01",
+          "playGeneration": 1,
+          "graphEpoch": 1,
+          "preparationsRequested": 1,
+          "helperPid": 72366,
+          "outputRate": 48000.0,
+          "sourceSample": 576000,
+          "sourceRate": 48000.0,
+          "auditionPair": 0,
+          "startSample": 0,
+          "endSample": 2242286,
+          "playing": true,
+          "seconds": 12.0,
+          "firstCallbackMs": 106536468.1589167,
+          "peak": 0.001177940284833,
+          "preMonitorPeak": 0.029447825625539,
+          "design": true,
+          "designLayers": 8,
+          "producerMaxMs": 1.600874990224838,
+          "error": "",
+          "callbacks": 1321,
+          "frames": 676352,
+          "underruns": 0,
+          "designRevision": 2,
+          "heardEdit": 302,
+          "editLatencyMs": 64.25983329117298,
+          "stalePreparationsDiscarded": 0,
+          "preparing": false,
+          "sampleRate": 48000.0,
+          "outputs": [
+            "MacBook Pro Speakers"
+          ],
+          "peakResidentBytes": 52133888,
+          "cpuSeconds": 0.976528,
+          "bufferFrames": 512,
+          "device": "MacBook Pro Speakers",
+          "availableRates": [
+            44100.0,
+            48000.0,
+            88200.0,
+            96000.0
+          ],
+          "processGeneration": 1,
+          "intentId": "design:99eb506432034307ab9d621c1ea35e01",
+          "pendingPlayback": false
+        },
+        "source": "Three generated 40-second WAVs: 44.1 kHz mono, 48 kHz four-channel, 96 kHz stereo. Eight active layers, linked rates 1 / 0.875, reverse, fades, 24 layer inserts + two master inserts.",
+        "monitorGain": 0.04,
+        "interface": "Visible Perform workspace and compact Library browser, shared transport and output controls",
+        "pointerHandlerToPaintMs": {
+          "n": 0
+        },
+        "editToCallbackMs": {
+          "n": 255,
+          "p50": 55.45558328926563,
+          "p95": 70.62379166483879,
+          "p99": 74.56824997067451
+        },
+        "editingSamplesWithIndexing": 193,
+        "editingProtocol": "Ten seconds of blend-pad position updates and four actual macro slider notifications at 25 ms input intervals; shared parameter coalescing. Eight layers, four blend assignments, five mapped continuous targets; search and 30-file indexing overlap.",
+        "measurementBoundary": "View control handler / actual slider notification -> last coalesced edit -> first tagged device callback PCM. Excludes OS dispatch and physical acoustic delay.",
+        "continuity": {
+          "samePlaybackGeneration": true,
+          "sameHelper": true,
+          "sameGraphEpoch": true,
+          "noUnderruns": true,
+          "editingOverlappedIndexing": true,
+          "workspaceSwitchPreservesRecipeAndPlayhead": true
+        },
+        "catalogFiles": 73,
+        "waveforms": {
+          "requests": 647,
+          "decodes": 76,
+          "diskHits": 570,
+          "memoryHits": 15707,
+          "retainedSources": 48,
+          "retainedGeometries": 76,
+          "retainedPeakBytes": 718720,
+          "pending": true,
+          "firstReadyMs": 58.040875002741814,
+          "requestToUiAdoptionMs": {
+            "n": 512,
+            "p50": 6.245583340525627,
+            "p95": 12.607416659593582,
+            "p99": 33.070624992251396
+          }
+        },
+        "rowPreviewPaints": 7064,
+        "waveformScrolls": 48,
+        "pendingWaveformScrolls": 600,
+        "waveformScrollPaints": 39,
+        "displayScale": 2.0,
+        "waveformCacheCondition": "Cold derivative directory; OS file cache uncontrolled"
+      },
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-postfix-3/native.json",
+        "sha256": "24b5090941836fb1bebbf92f723e8c658e4d6a05c9610d41d913c46d47969cdb"
+      }
+    }
+  ],
+  "failedExperiments": [
+    {
+      "name": "cold-delivery",
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-delivery/native.json",
+        "sha256": "d6bdd539c7f458e8b93a94c59156601a18a30f662cab7555fa2654e19fcca9aa"
+      },
+      "error": "Transport interrupted during continuous editing",
+      "queryAcknowledgements": 326,
+      "elapsedMs": 48946.27229166031,
+      "queryState": null,
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:138f4b0fc9cc42018e8522316377c5af",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 70910,
+        "outputRate": 48000.0,
+        "sourceSample": 2242286,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": false,
+        "seconds": 46.71429166666667,
+        "firstCallbackMs": 103473074.6075,
+        "peak": 0.0,
+        "preMonitorPeak": 0.0,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 2.573499992489815,
+        "error": "",
+        "callbacks": 4582,
+        "frames": 2345984,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 302,
+        "editLatencyMs": 62.17979170382023,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52379648,
+        "cpuSeconds": 4.670484,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:138f4b0fc9cc42018e8522316377c5af",
+        "pendingPlayback": false
+      },
+      "semantic": {
+        "model": "clap-htsat-unfused-q8-c28f2883575e",
+        "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1",
+        "ready": true,
+        "error": "",
+        "modelLoadMs": 2192.1549583226442,
+        "files": 73,
+        "pending": 0,
+        "failed": 0,
+        "regions": 104,
+        "vectorBytes": 212992,
+        "sourceSecondsThisSession": 150.0,
+        "windowsThisSession": 30,
+        "analysisWallMs": 1176.0731250047684,
+        "firstWindowStartedMs": 103473080.1543333,
+        "lastWindowPublishedMs": 103478644.814375,
+        "helperPeakResidentBytes": 459259904,
+        "indexReady": true,
+        "indexReused": false,
+        "indexBuilding": false,
+        "indexRegions": 104,
+        "indexBytes": 214656,
+        "indexOpenMs": 0.0,
+        "indexBuildMs": 4.179333329200745,
+        "indexStatus": "Sound index ready"
+      },
+      "waveformScrolls": 22,
+      "waveformScrollPaints": null,
+      "nativeLog": ""
+    },
+    {
+      "name": "cold-diagnostic-7",
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-7/native.json",
+        "sha256": "d962354fe4fa70cbc679b4a8a45338397ed45cc0558f31588696b6c848d06d29"
+      },
+      "error": "Transport interrupted during continuous editing",
+      "queryAcknowledgements": 465,
+      "elapsedMs": 48880.08858333528,
+      "queryState": {
+        "waiting": 0,
+        "requested": 466,
+        "snapshotRequest": 466,
+        "semanticCompleted": 466,
+        "newResultsAvailable": false,
+        "total": 73,
+        "query": "A recording of a metal impact",
+        "service": {
+          "request": 466,
+          "workToken": 466,
+          "input": 933,
+          "handledInput": 933,
+          "semanticWorkRequest": 466,
+          "semanticWorkPhase": 4,
+          "semanticResultRequest": 466,
+          "semanticResultVersion": 466,
+          "readerSession": 466,
+          "readerSemanticSeen": 466,
+          "completed": 466,
+          "pinned": true
+        }
+      },
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:798133e1f5204dcab223080e62547f32",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 72033,
+        "outputRate": 48000.0,
+        "sourceSample": 2242286,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 2242286,
+        "playing": false,
+        "seconds": 46.71429166666667,
+        "firstCallbackMs": 106226769.0745833,
+        "peak": 2.862924020519131e-06,
+        "preMonitorPeak": 7.1571441367e-05,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 3.125208333134651,
+        "error": "",
+        "callbacks": 4577,
+        "frames": 2343424,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 304,
+        "editLatencyMs": 63.0282916277647,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52346880,
+        "cpuSeconds": 4.762338000000001,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "processGeneration": 1,
+        "intentId": "design:798133e1f5204dcab223080e62547f32",
+        "pendingPlayback": false
+      },
+      "semantic": {
+        "model": "clap-htsat-unfused-q8-c28f2883575e",
+        "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1",
+        "ready": true,
+        "error": "",
+        "modelLoadMs": 2148.7095416784286,
+        "files": 73,
+        "pending": 0,
+        "failed": 0,
+        "regions": 104,
+        "vectorBytes": 212992,
+        "sourceSecondsThisSession": 150.0,
+        "windowsThisSession": 30,
+        "analysisWallMs": 1158.1648750305176,
+        "firstWindowStartedMs": 106226774.5140417,
+        "lastWindowPublishedMs": 106232300.7814167,
+        "helperPeakResidentBytes": 460914688,
+        "indexReady": true,
+        "indexReused": false,
+        "indexBuilding": false,
+        "indexRegions": 104,
+        "indexBytes": 214656,
+        "indexOpenMs": 0.0,
+        "indexBuildMs": 3.35037499666214,
+        "indexStatus": "Sound index ready"
+      },
+      "waveformScrolls": 30,
+      "waveformScrollPaints": 22,
+      "nativeLog": ""
+    },
+    {
+      "name": "cold-qualified",
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-qualified/native.json",
+        "sha256": "6eab007115c13df3161a42348a5ee7599e241784a45c6269c0144d9e8d9ab3aa"
+      },
+      "error": "Transport interrupted during continuous editing",
+      "queryAcknowledgements": 425,
+      "elapsedMs": 39169.429291665554,
+      "queryState": {
+        "waiting": 427,
+        "requested": 427,
+        "snapshotRequest": 427,
+        "semanticCompleted": 0,
+        "newResultsAvailable": false,
+        "total": 0,
+        "query": "The sound of a door closing"
+      },
+      "audio": {
+        "version": 5,
+        "command": "status",
+        "error": "Audio process restarted. Select a sound to audition again.",
+        "intentId": "",
+        "pendingPlayback": false,
+        "playing": false
+      },
+      "semantic": {
+        "model": "clap-htsat-unfused-q8-c28f2883575e",
+        "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1",
+        "ready": true,
+        "error": "",
+        "modelLoadMs": 2208.6632916778326,
+        "files": 73,
+        "pending": 0,
+        "failed": 0,
+        "regions": 104,
+        "vectorBytes": 212992,
+        "sourceSecondsThisSession": 150.0,
+        "windowsThisSession": 30,
+        "analysisWallMs": 1212.1330833137035,
+        "firstWindowStartedMs": 105129899.6400833,
+        "lastWindowPublishedMs": 105135496.4299583,
+        "helperPeakResidentBytes": 453296128,
+        "indexReady": true,
+        "indexReused": false,
+        "indexBuilding": false,
+        "indexRegions": 104,
+        "indexBytes": 214656,
+        "indexOpenMs": 0.0,
+        "indexBuildMs": 3.761541664600372,
+        "indexStatus": "Sound index ready"
+      },
+      "waveformScrolls": 32,
+      "waveformScrollPaints": 25,
+      "nativeLog": ""
+    }
+  ],
+  "intermediateDiagnostics": [
+    {
+      "run": 1,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-1/native.json",
+        "sha256": "8df1048f5d00b76b4fe2458369164049245856c69426540347cf18cae787dc6c"
+      }
+    },
+    {
+      "run": 2,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-2/native.json",
+        "sha256": "1457e2ea7cbf3ea21ee6243776bfd45c04c4cc0ae91cab9e34236df4ed7e4650"
+      }
+    },
+    {
+      "run": 3,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-3/native.json",
+        "sha256": "1eb6747649a37498f73bea16c0b31b5f8006796fcd1ba9f0426792d6c4a9922c"
+      }
+    },
+    {
+      "run": 4,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-4/native.json",
+        "sha256": "8d5a0728174f9037ce2c4136e37eb00d861cb3984c66e0dd2cb88ca349b8bb5c"
+      }
+    },
+    {
+      "run": 5,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-5/native.json",
+        "sha256": "f282f04e8de1cd121195306252e0f67e29959ad60bdf23961dc675b5185d809d"
+      }
+    },
+    {
+      "run": 6,
+      "success": true,
+      "queryAcknowledgements": 600,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-6/native.json",
+        "sha256": "f4e8373dc69c505ac9ae8ceafe05aaa70f998160d795bbe3284bd67a5ce7e9c1"
+      }
+    },
+    {
+      "run": 7,
+      "success": false,
+      "queryAcknowledgements": 465,
+      "rawEvidence": {
+        "path": "build/performance-v11/cold-diagnostic-7/native.json",
+        "sha256": "d962354fe4fa70cbc679b4a8a45338397ed45cc0558f31588696b6c848d06d29"
+      }
+    }
+  ],
+  "nativeUi": {
+    "catalog": "/private/tmp/soundplus-designer-performance-n30z2jl9",
+    "document": "build/performance-mixer/live-blend-delivery/fixture/workload.soundplus",
+    "savedReopenedRevision": 1924,
+    "activeVariation": "Focused",
+    "savedValues": {
+      "Weight": 0.8,
+      "Spread": 0.5,
+      "Tone": 0.5,
+      "Space": 0.5,
+      "X": 0.7,
+      "Y": 0.3
+    },
+    "checks": {
+      "updateLawUndoRedo": "Passed; active legacy mix only, other Balanced snapshot retains legacy law",
+      "cardDrag": "Passed; Body to empty BR moves assignment without new voice; Undo restores",
+      "libraryDrop": "Passed; clip-004 to BR creates one ordinary ninth layer; Undo restores eight",
+      "aliasAndReplace": "Passed; double-click title, type Transient accent, replace Room via picker; alias retained; Undo restores recipe",
+      "playbackOwnership": "Passed; selecting Body during Library audition left Library playback active and Designer stopped",
+      "bypassResetMapping": "Passed; Blend on/off, Tone bypass on/off, Weight reset/Undo; mapping minimum 500 ->1000 yields current 4242.64 Hz from 3000, Undo restores",
+      "keyboardEdit": "Passed; Return on card opens assigned stable layer in Edit",
+      "fineArrowNumeric": "Passed on final binary; pointer pad + ShiftRight changes X, two native Undos restore .700/.300; AX numeric set X .750 and native Undo restores .700",
+      "reopen": "Passed; native quit and launch, saved r1924 reopens with Focused and matching values/cards",
+      "renderPrintBack": "Passed during this implementation pass; full and primary finalized WAV receipts, ordinary ninth print-back layer, Undo returns eight. Later paging/diagnostic/tiny-duration changes did not alter DSP; final CTest PCM parity passed.",
+      "sourceStates": "Passed; actual silence flat, long filename ellipsis, offline and decoder error distinct; missing-layer variant; generated reconnect ready after worker revalidation",
+      "tinyDuration": "Passed on final binary; native visual and AX one-sample hint 0.02 ms / 0.02 milliseconds",
+      "normalMinimum": "Passed; content1360x860 and1040x648, source cards/pad/macros/context mapping/transport/output/focus reachable, no overlap observed at2x",
+      "fadeControls": "Existing 10-logical-point subdued two-tone clip-corner handles and IN/OUT directions preserved; final canvas/fade suites pass"
+    },
+    "nativeGestureLimitation": "Configured JUCE callbacks/handlers run on supported Mac; physical held mouse + simultaneous Escape cannot be synthesized by the available atomic drag API.",
+    "sourceGalleryObserved": "build/waveform-preview-test-output/e65eed9fb2cc47228df78a9c40af13ef/native-source-cards.soundplus (generated earlier in this pass; ranges/tiny duration rechecked on final binary; latest CTest also generates an equivalent new gallery)"
+  },
+  "nativeOutputs": [
+    {
+      "receipt": {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.1 QA/Eight layers - mixed rates and stock inserts-variation-r1920-1fb50c69.wav",
+        "sha256": "cfe46cc9f62f475c5275a576364ec4a63840a3191c0dbdf8ee5dcb642575a4bc",
+        "variation": "eb91a078ca7e45e0bb8bad89d4059b83",
+        "kind": "design-render",
+        "created": "2026-11-18T18:00:16.210-05:00",
+        "samples": 2242286,
+        "revision": 1920,
+        "peak": 0.050865493714809,
+        "clipped": 0,
+        "settings": {
+          "rate": 48000.0,
+          "tailSeconds": 1.0,
+          "channels": 2,
+          "bits": 24,
+          "first": 0,
+          "last": -1,
+          "normalize": false,
+          "dither": false
+        }
+      },
+      "exists": true,
+      "hashMatches": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "frames": 2242286,
+      "bits": 24
+    },
+    {
+      "receipt": {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.1 QA/Eight layers - mixed rates and stock inserts-variation-r1921-0fc39b3c.wav",
+        "sha256": "bdf4b467f54d814849c2b74cff97b82782d560f4f8f3d133d0585f6fc632cd74",
+        "variation": "eb91a078ca7e45e0bb8bad89d4059b83",
+        "kind": "layer-render",
+        "created": "2026-11-18T18:00:33.710-05:00",
+        "samples": 1968000,
+        "revision": 1921,
+        "peak": 0.002371635520831,
+        "clipped": 0,
+        "settings": {
+          "rate": 48000.0,
+          "tailSeconds": 1.0,
+          "channels": 2,
+          "bits": 24,
+          "first": 0,
+          "last": -1,
+          "normalize": false,
+          "dither": false
+        }
+      },
+      "exists": true,
+      "hashMatches": true,
+      "sampleRate": 48000,
+      "channels": 2,
+      "frames": 1968000,
+      "bits": 24
+    }
+  ],
+  "previousDurableOutputs": [
+    {
+      "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1929-307e4ef0.wav",
+      "expectedSha256": "aa21267d61d418f3eaa420157fa7212c028c43e9334ff38aace24d0ee93a0afb",
+      "actualSha256": "aa21267d61d418f3eaa420157fa7212c028c43e9334ff38aace24d0ee93a0afb",
+      "unchanged": true
+    },
+    {
+      "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1930-1423357c.wav",
+      "expectedSha256": "5cb6a05d984d00a10ee9bf19a0ad66260baa7f74bc9815d9fa55339bb14896f6",
+      "actualSha256": "5cb6a05d984d00a10ee9bf19a0ad66260baa7f74bc9815d9fa55339bb14896f6",
+      "unchanged": true
+    }
+  ],
+  "screenshots": [
+    {
+      "path": "docs/verification/performance-v11-after-minimum.jpg",
+      "sha256": "5cf24be22fe632829b939abe7616b41bb1ada392fcd98c6c871ed49a9f5ad3d1"
+    },
+    {
+      "path": "docs/verification/performance-v11-after-normal.jpg",
+      "sha256": "51d4267a1428bee9a8f5f8a17f2c9471cddb4a30ff17018f727819361d87f08d"
+    },
+    {
+      "path": "docs/verification/performance-v11-before-minimum.jpg",
+      "sha256": "6fbaa19a5e2a65c080e2f3ee615c3809a2b7247aff543c7123d2b227e8399f16"
+    },
+    {
+      "path": "docs/verification/performance-v11-before-normal.jpg",
+      "sha256": "04c4528655b92f91f3628ad802ccf1fa491769da2841041576b7172806141683"
+    },
+    {
+      "path": "docs/verification/performance-v11-icons-exposure.jpg",
+      "sha256": "ce731ef9d48c2abf07e594fc8489a8163439ad98d6d034014a0eebe6b719815e"
+    },
+    {
+      "path": "docs/verification/performance-v11-library.jpg",
+      "sha256": "925a1653b029a3a61c133c0ed7023e961bc113efc2da97dbe582a9b34b29c911"
+    },
+    {
+      "path": "docs/verification/performance-v11-mapping-focus.jpg",
+      "sha256": "ca0f256cf1dc9554457a983355a1633db3f4d9a4d6790c692da63041bcd3e186"
+    },
+    {
+      "path": "docs/verification/performance-v11-ranges-reverse.jpg",
+      "sha256": "166d0f0c01601bd4412668de2379343a09413d24550502980a591399eddd4a47"
+    },
+    {
+      "path": "docs/verification/performance-v11-source-states.jpg",
+      "sha256": "17b380f3fad832e24a4811d432c9a424dbbb3050a4520bf3ef2932046ee3f79a"
+    }
+  ],
+  "humanEvidence": {
+    "heldPointerEscape": "Not verified physically; optional user check requested, no result received before restoring working design",
+    "listening": "Not verified by human; no result received. Automated pre-monitor/render PCM error0.0 is separate.",
+    "physicalToolbar": "No human physical-display observation received; native window captures did not reproduce disappearance."
+  },
+  "workingDesign": {
+    "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+    "name": "Rain glass design",
+    "protectedRevision": 8567,
+    "beforeSha256": "fc6a1c84c7d1b6e66e94e02c9dfb459f932e670c120e377539f09b93d3bdf550",
+    "backup": "build/performance-v11/working-before",
+    "preRestoreMainFileUnchanged": true,
+    "reopened": true,
+    "reopenedRevision": 8567,
+    "reopenedSha256": "fc6a1c84c7d1b6e66e94e02c9dfb459f932e670c120e377539f09b93d3bdf550",
+    "mainFileUnchanged": true,
+    "nativeObservation": "CUA AX: Rain glass design revision8567, Kept: Rain glass - kept B, legacy law retained, Blend off, sources clip-001/clip-005/rain; no controls edited after reopening."
+  },
+  "limits": [
+    "Short 73-file development workload, not a large-library guarantee, 30-minute soak, 256-frame or other-interface qualification.",
+    "Cold means fresh derivative directory; OS file cache uncontrolled. Warm uses copied derivatives and same source identities plus30 new files.",
+    "Latencies exclude OS input dispatch and DAC/acoustic delay; last coalesced edit to first tagged callback is not every raw input event.",
+    "One intermediate helper restart remains unexplained; five final serial workload passes do not prove absence of that intermittent issue.",
+    "Toolbar physical/capture ambiguity, physical held-Escape and human listening remain separately qualified.",
+    "Resolve physical delivery remains open; see BUTTON_SEMANTICS_AND_RESOLVE_DELIVERY.md for manual receiver steps."
+  ]
+}

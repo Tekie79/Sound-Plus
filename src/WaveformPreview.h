@@ -1,0 +1,59 @@
+#pragma once
+#include "Waveform.h"
+#include <map>
+namespace sp
+{
+using PeakColumns = std::vector<std::pair<float, float>>;
+// All-channel extrema. Edge bins intersecting the requested half-open range are
+// included conservatively: cache resolution, rather than sample-exact trimming.
+PeakColumns compactWaveformColumns(const WaveformData &, int64_t first, int64_t last, bool reverse,
+                                   int width);
+void paintCompactWaveform(juce::Graphics &, juce::Rectangle<float>, const PeakColumns &, juce::Colour,
+                          std::optional<double> playhead = {});
+juce::String waveformSourceKey(const Asset &);
+
+// One serial decoder/cache worker shared by the detailed audition, Designer and
+// visible file rows. Demands are replaced per surface, not appended per paint.
+// Lower owner number is higher priority. UI-thread API; immutable worker results.
+class WaveformPool
+{
+  public:
+    explicit WaveformPool(const juce::File &, std::function<void()> beforeRead = {},
+                          std::function<double()> now = {});
+    void demand(int owner, const std::vector<Asset> &);
+    bool tick();
+    std::shared_ptr<const WaveformData> get(const Asset &);
+    std::shared_ptr<const PeakColumns> columns(const Asset &, int64_t first, int64_t last, bool reverse,
+                                               int width);
+    void retry(const Asset &);
+    juce::var metrics() const;
+    uint64_t revision() const
+    {
+        return changedGeneration;
+    }
+    static constexpr size_t maxSources = 48, maxGeometries = 96, maxDemand = 40;
+
+  private:
+    struct Entry
+    {
+        std::shared_ptr<const WaveformData> data;
+        uint64_t used = 0;
+        double validated = 0;
+    };
+    struct Geometry
+    {
+        std::shared_ptr<const PeakColumns> data;
+        uint64_t used = 0;
+    };
+    std::shared_ptr<std::atomic<uint64_t>> decodes;
+    std::function<double()> now;
+    WaveformCache worker;
+    std::map<int, std::vector<Asset>> owners;
+    std::map<juce::String, Entry> completed;
+    std::map<juce::String, Geometry> geometries;
+    juce::String pending;
+    double startedMs = 0, submittedMs = 0, firstReadyMs = -1;
+    std::vector<double> loadMs;
+    uint64_t token = 0, clock = 0, requests = 0, diskHits = 0, memoryHits = 0, changedGeneration = 0;
+};
+} // namespace sp

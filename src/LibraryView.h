@@ -2,6 +2,7 @@
 #include "LibraryService.h"
 #include "AudioIPC.h"
 #include "Waveform.h"
+#include "WaveformPreview.h"
 #include "UIComponents.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 namespace sp
@@ -27,7 +28,7 @@ class LibraryView final : public juce::Component,
         library.addFolder(f);
     }
     uint64_t benchmarkSearch(const juce::String &q, const juce::String &root = {});
-    void benchmarkScroll(int row);
+    bool benchmarkScroll(int row);
     uint64_t benchmarkSemanticSearch(const juce::String &q, const juce::String &root = {});
     bool isInterestedInFileDrag(const juce::StringArray &) override;
     void filesDropped(const juce::StringArray &, int, int) override;
@@ -35,6 +36,10 @@ class LibraryView final : public juce::Component,
     AudioClient &audioClient()
     {
         return audio;
+    }
+    std::shared_ptr<WaveformPool> waveformProvider()
+    {
+        return peakPool;
     }
     void setCompact(bool);
     void parkPlayback();
@@ -49,9 +54,11 @@ class LibraryView final : public juce::Component,
 
   private:
     friend class Benchmark;
+    friend struct LibraryPreviewTestAccess;
     double dispatchedMs = 0, appliedMs = 0;
     uint64_t appliedPage = 0;
     int requestedPage = -1;
+    uint64_t requestedPageSerial = 0;
     std::optional<Asset> selectedAsset;
     int selectedAssetRow = -1;
     const Asset *rowAsset(int row) const;
@@ -121,7 +128,9 @@ class LibraryView final : public juce::Component,
     ui::LookAndFeel look;
     LibraryService library;
     AudioClient audio;
-    WaveformCache waveformCache;
+    std::shared_ptr<WaveformPool> peakPool;
+    uint64_t peakRevision = 0;
+    int64_t rowPreviewPaints = 0;
     WaveformView waveform;
     WaveformCache referenceWaveformCache;
     WaveformView referenceWaveform;
@@ -191,7 +200,6 @@ class LibraryView final : public juce::Component,
     bool updating = false;
     bool updatingRange = false, matchMode = false, rangeEdited = false, waveformNeedsZoom = false;
     int64_t regionStart = 0, regionEnd = 0, rangeRevision = -1, rangeSamples = 0;
-    uint64_t waveformRequest = 0, waveformApplied = 0;
     uint64_t rangeRequest = 0;
     juce::String rangeAssetId;
     int64_t parkedCandidateSeek = -1, parkedReferenceSeek = -1;

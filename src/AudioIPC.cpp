@@ -220,6 +220,7 @@ void AudioClient::run()
         ++generation;
         juce::String pending;
         bool healthy = true;
+        const char *healthFailure = "none";
         auto lastMessage = juce::Time::getMillisecondCounter();
         while (!quitting && !restartRequested && healthy)
         {
@@ -231,6 +232,7 @@ void AudioClient::run()
             for (auto &cmd : commands)
                 if (!sendMessage(fd, cmd))
                 {
+                    healthFailure = "command write failed";
                     healthy = false;
                     break;
                 }
@@ -242,12 +244,14 @@ void AudioClient::run()
                 auto n = recv(fd, buffer, sizeof(buffer), 0);
                 if (n <= 0)
                 {
+                    healthFailure = "socket closed";
                     healthy = false;
                     break;
                 }
                 pending += juce::String::fromUTF8(buffer, (int)n);
                 if (pending.length() > 131072)
                 {
+                    healthFailure = "oversized response";
                     healthy = false;
                     break;
                 }
@@ -258,6 +262,7 @@ void AudioClient::run()
                     auto state = juce::JSON::parse(line);
                     if ((int)state["version"] != protocolVersion)
                     {
+                        healthFailure = "invalid status response";
                         healthy = false;
                         break;
                     }
@@ -278,10 +283,18 @@ void AudioClient::run()
                 }
             }
             if (p.revents & (POLLHUP | POLLERR | POLLNVAL))
+            {
+                healthFailure = "socket hangup";
                 healthy = false;
+            }
             if (juce::Time::getMillisecondCounter() - lastMessage > 5000)
+            {
+                healthFailure = "status heartbeat timed out";
                 healthy = false;
+            }
         }
+        if (!healthy && !quitting && !restartRequested)
+            std::fprintf(stderr, "SoundPlus audio helper %d: %s\n", (int)pid, healthFailure);
         sendMessage(fd, message("quit"));
         close(fd);
         int status = 0;

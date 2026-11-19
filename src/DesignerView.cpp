@@ -20,19 +20,17 @@ struct DesignerView::Canvas : DesignerCanvas
 {
     explicit Canvas(DesignerView &view)
         : DesignerCanvas(
-              view.session,
-              [&view](const Asset &asset) -> std::shared_ptr<const WaveformData>
-              {
-                  auto found = view.waveforms.find(view.waveformKey(asset));
-                  return found == view.waveforms.end() ? nullptr : found->second;
-              },
-              view.preferences)
+              view.session, [&view](const Asset &asset) -> std::shared_ptr<const WaveformData>
+              { return view.peakPool->get(asset); }, view.preferences)
     {
     }
 };
-DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce::PropertiesFile &prefs)
+DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce::PropertiesFile &prefs,
+                           std::shared_ptr<WaveformPool> shared)
     : session(catalog, client), audio(client), preferences(prefs),
-      peaks(catalog.getParentDirectory().getChildFile("waveforms"))
+      peakPool(shared
+                   ? shared
+                   : std::make_shared<WaveformPool>(catalog.getParentDirectory().getChildFile("waveforms")))
 {
     setWantsKeyboardFocus(true);
     meter.addMouseListener(this, false);
@@ -46,7 +44,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
-    perform = std::make_unique<PerformView>(session);
+    perform = std::make_unique<PerformView>(session, peakPool);
+    perform->onOpenEdit = [this](const juce::String &) { setPerformMode(false); };
     addAndMakeVisible(*perform);
     for (auto *button : {&editWorkspace, &performWorkspace, &snapshotButton})
         addAndMakeVisible(button);
@@ -1067,7 +1066,7 @@ void DesignerView::updateEffects()
 }
 juce::String DesignerView::waveformKey(const Asset &a) const
 {
-    return a.id + ":" + juce::String(a.revision) + ":" + juce::String(a.modified);
+    return waveformSourceKey(a);
 }
 void DesignerView::refresh()
 {
@@ -1229,23 +1228,36 @@ void DesignerView::timerCallback()
                        ? state["error"].toString()
                        : session.message,
                    juce::dontSendNotification);
-    if (auto result = peaks.snapshot();
-        result && result->generation == peakRequest && requestedPeakKey.isNotEmpty())
+    std::vector<Asset> cards, visibleLayers;
+    if (isShowing())
     {
-        waveforms[requestedPeakKey] = result;
-        requestedPeakKey.clear();
-    }
-    if (requestedPeakKey.isEmpty())
-        for (auto &l : session.document.activeMix().layers)
+        if (performMode)
         {
-            auto key = waveformKey(l.source);
-            if (!waveforms.contains(key))
-            {
-                requestedPeakKey = key;
-                peakRequest = peaks.request(l.source);
-                break;
-            }
+            for (auto &assignment : session.document.activeMix().performance.assignments)
+                for (auto &layer : session.document.activeMix().layers)
+                    if (layer.id == assignment.layer)
+                        cards.push_back(layer.source);
         }
+        else
+        {
+            const auto top = canvasViewport.getViewPositionY();
+            const auto bottom = top + canvasViewport.getHeight();
+            auto &layers = session.document.activeMix().layers;
+            for (int i = 0; i < (int)layers.size(); ++i)
+                if (canvas->viewport.rowTop(i) + canvas->viewport.rowHeight(i) >= top - 100 &&
+                    canvas->viewport.rowTop(i) < bottom + 100)
+                    visibleLayers.push_back(layers[(size_t)i].source);
+        }
+    }
+    peakPool->demand(1, cards);
+    peakPool->demand(3, visibleLayers);
+    peakPool->tick();
+    if (peakRevision != peakPool->revision())
+    {
+        peakRevision = peakPool->revision();
+        perform->refreshSourcePeaks();
+    }
+    perform->updateTransport(state);
     canvas->repaint();
     repaint();
 }

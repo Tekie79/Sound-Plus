@@ -14,7 +14,8 @@ class DesignerView final : public juce::Component,
                            public juce::DragAndDropTarget
 {
   public:
-    DesignerView(const juce::File &catalog, AudioClient &, juce::PropertiesFile &);
+    DesignerView(const juce::File &catalog, AudioClient &, juce::PropertiesFile &,
+                 std::shared_ptr<WaveformPool> = {});
     ~DesignerView() override;
     DesignSession session;
     std::function<void()> onLibrary;
@@ -146,10 +147,8 @@ class DesignerView final : public juce::Component,
     juce::String candidateSignature, effectSignature, lastComparison, comparisonDocument;
     bool clipHeld = false;
     float peak = 0;
-    WaveformCache peaks;
-    juce::String requestedPeakKey;
-    uint64_t peakRequest = 0;
-    std::map<juce::String, std::shared_ptr<const WaveformData>> waveforms;
+    std::shared_ptr<WaveformPool> peakPool;
+    uint64_t peakRevision = 0;
     std::unique_ptr<juce::FileChooser> chooser;
     void timerCallback() override;
     bool keyPressed(const juce::KeyPress &, juce::Component *) override;

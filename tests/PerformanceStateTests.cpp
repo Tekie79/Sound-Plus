@@ -81,6 +81,19 @@ struct PerformanceViewTestAccess
         PerformView view(session);
         view.setSize(752, 360);
         session.onChange = [&] { view.refresh(); };
+        session.document.activeMix().performance.blendLaw = 1;
+        view.refresh();
+        check(view.updateBlend.isVisible(), "Legacy blend exposes an explicit upgrade action");
+        view.updateBlend.onClick();
+        check(session.document.activeMix().performance.blendLaw == 2,
+              "Actual upgrade action selects continuous law");
+        session.undo();
+        check(session.document.activeMix().performance.blendLaw == 1 && !session.canUndo(),
+              "Upgrade is recoverable in one Undo");
+        session.document.activeMix().performance.blendLaw = 2;
+        view.refresh();
+        check(view.blendEnable.getTitle() == view.blendEnable.getButtonText(),
+              "Blend accessible action matches its visible on/off state");
         auto initial = session.document.activeMix().performance.x;
         auto &pad = view.pad;
         juce::Point<float> start{20, 20}, end{90, 90};
@@ -98,6 +111,113 @@ struct PerformanceViewTestAccess
         pad.mouseUp(pointer(pad, end, start));
         check(session.document.activeMix().performance.x == initial && !session.canUndo(),
               "Escape restores the full pad gesture without an undo entry");
+        for (auto *slider :
+             std::initializer_list<juce::Slider *>{&view.macros[0], &view.macros[1], &view.macros[2],
+                                                   &view.macros[3], &view.xValue, &view.yValue})
+        {
+            const auto original = mixText(session.document.activeMix());
+            const auto value = slider->getValue();
+            slider->onDragStart();
+            slider->setValue(value < .5 ? .85 : .15, juce::sendNotificationSync);
+            view.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
+            check(mixText(session.document.activeMix()) == original,
+                  "Slider Escape restores the complete original state immediately");
+            slider->setValue(.95, juce::sendNotificationSync);
+            slider->setValue(.05, juce::sendNotificationSync);
+            slider->onDragEnd();
+            check(mixText(session.document.activeMix()) == original && !session.canUndo(),
+                  "Remaining held-slider events and release cannot resurrect a cancelled gesture");
+            // JUCE normally repaints/refreshed fields after release; drive the next real gesture.
+            view.refresh();
+            slider->onDragStart();
+            slider->setValue(.4, juce::sendNotificationSync);
+            slider->setValue(value < .5 ? .8 : .2, juce::sendNotificationSync);
+            slider->onDragEnd();
+            const auto changed = mixText(session.document.activeMix());
+            check(changed != original && session.canUndo(), "Fresh slider drag works after cancellation");
+            session.undo();
+            check(mixText(session.document.activeMix()) == original && !session.canUndo(),
+                  "Fresh slider drag has one undo step");
+            session.redo();
+            check(mixText(session.document.activeMix()) == changed, "Fresh slider drag can be redone");
+            session.undo();
+            auto baseDocument = session.document;
+            slider->onDragStart();
+            slider->setValue(.37, juce::sendNotificationSync);
+            session.cancelGesture();
+            session.document = baseDocument;
+            session.document.id = juce::Uuid().toString();
+            view.refresh();
+            const auto replacement = mixText(session.document.activeMix());
+            slider->setValue(.91, juce::sendNotificationSync);
+            slider->onDragEnd();
+            check(mixText(session.document.activeMix()) == replacement && !session.canUndo(),
+                  "Late held-slider values cannot edit a replacement document");
+            session.document = baseDocument;
+            DesignVariation variation;
+            variation.name = "Held gesture target";
+            variation.mix = baseDocument.activeMix();
+            session.document.variations.push_back(variation);
+            view.refresh();
+            slider->onDragStart();
+            slider->setValue(.37, juce::sendNotificationSync);
+            session.selectVariation(variation.id);
+            const auto candidate = mixText(session.document.activeMix());
+            slider->setValue(.91, juce::sendNotificationSync);
+            slider->onDragEnd();
+            check(mixText(session.document.activeMix()) == candidate,
+                  "Actual variation switching rejects the old held slider's values");
+            session.undo();
+            session.undo();
+            session.document = baseDocument;
+            view.refresh();
+        }
+        const auto beforeDrop = mixText(session.document.activeMix());
+        const auto layerCount = session.document.activeMix().layers.size();
+        auto payload = view.cards[0]->dragPayload.clone();
+        const auto sourceId = session.document.activeMix().performance.assignments[0].layer;
+        view.itemDropped({payload, view.cards[0].get(), view.slotBounds[3].getCentre()});
+        check(session.document.activeMix().performance.assignments[3].layer == sourceId &&
+                  session.document.activeMix().performance.assignments[0].layer.isEmpty() &&
+                  session.document.activeMix().layers.size() == layerCount,
+              "Actual card drop moves an existing assignment without duplicate voices");
+        session.undo();
+        check(mixText(session.document.activeMix()) == beforeDrop && !session.canUndo(),
+              "Card move is one complete undo step");
+        session.redo();
+        check(session.document.activeMix().performance.assignments[3].layer == sourceId,
+              "Card move can be redone");
+        session.undo();
+        view.itemDropped({"SoundPlus layer:" + session.document.activeMix().layers[2].id, &view,
+                          view.slotBounds[1].getCentre()});
+        check(session.document.activeMix().performance.assignments[1].layer ==
+                  session.document.activeMix().layers[2].id,
+              "Existing stable-layer drag payload remains supported");
+        auto swapPayload = view.cards[0]->dragPayload.clone();
+        const auto otherId = session.document.activeMix().performance.assignments[1].layer;
+        view.itemDropped({swapPayload, view.cards[0].get(), view.slotBounds[1].getCentre()});
+        check(session.document.activeMix().performance.assignments[1].layer == sourceId &&
+                  session.document.activeMix().performance.assignments[0].layer == otherId,
+              "Dropping onto an occupied card swaps stable assignments instead of creating a conflict");
+        session.undo();
+        session.undo();
+        DesignDocument captured;
+        captured.original.layers = {session.document.activeMix().layers[2]};
+        view.itemDropped(
+            {juce::JSON::toString(designToJson(captured), true), &view, view.slotBounds[1].getCentre()});
+        check(session.document.activeMix().layers.size() == layerCount + 1,
+              "Actual Library payload creates one ordinary design layer through the existing path");
+        session.undo();
+        check(mixText(session.document.activeMix()) == beforeDrop && !session.canUndo(),
+              "Library card drop and assignment undo together");
+        auto documentId = session.document.id;
+        session.document.id = juce::Uuid().toString();
+        view.refresh();
+        view.itemDropped({payload, &view, view.slotBounds[3].getCentre()});
+        check(mixText(session.document.activeMix()) == beforeDrop && !session.canUndo(),
+              "A stale cross-document assignment payload cannot mutate the new design");
+        session.document.id = documentId;
+        view.refresh();
         auto macroInitial = session.document.activeMix().performance.macros[0].value;
         view.macros[0].onDragStart();
         view.macros[0].setValue(.1, juce::sendNotificationSync);
@@ -229,6 +349,100 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
         bypass.performance.blendEnabled = false;
         check(sp::resolvePerformance(bypass).layers[0].controlGain == 1, "Blend bypass returns base levels");
     }
+    // Endpoint approaches, every occupancy arrangement, not just bounds on first-N slots.
+    for (int mask = 0; mask < 16; ++mask)
+    {
+        auto mix = d.original;
+        for (int i = 0; i < 4; ++i)
+            if (mask & (1 << i))
+                sp::assignBlendLayer(mix, i, mix.layers[(size_t)i].id);
+        mix.performance.blendEnabled = true;
+        for (double x : {0., .1, .5, .9, 1.})
+            for (double y : {0., .1, .5, .9, 1.})
+            {
+                mix.performance.x = x;
+                mix.performance.y = y;
+                const auto at = sp::blendWeights(mix.performance, mix);
+                if (mask == 15)
+                {
+                    auto legacy = mix.performance;
+                    legacy.blendLaw = 1;
+                    check(at == sp::blendWeights(legacy, mix),
+                          "Full four-slot law preserves bilinear sound exactly");
+                }
+                double power = 0;
+                for (int i = 0; i < 4; ++i)
+                {
+                    check(std::isfinite(at[i]) && at[i] >= 0 && at[i] <= 1 &&
+                              ((mask & (1 << i)) || at[i] == 0),
+                          "Every occupancy mask has bounded nonnegative occupied weights");
+                    power += at[i] * at[i];
+                }
+                check(std::abs(power - (mask ? 1 : 0)) < 1e-10,
+                      "All occupancy masks preserve equal-power normalization");
+                for (double distance : {1e-2, 1e-3, 1e-5, 1e-7})
+                    for (int direction = 0; direction < 8; ++direction)
+                    {
+                        const auto angle = direction * juce::MathConstants<double>::pi / 4;
+                        auto near = mix.performance;
+                        near.x = std::clamp(x + distance * std::cos(angle), 0., 1.);
+                        near.y = std::clamp(y + distance * std::sin(angle), 0., 1.);
+                        const auto approaching = sp::blendWeights(near, mix);
+                        double error = 0;
+                        for (int i = 0; i < 4; ++i)
+                            error += std::pow(at[i] - approaching[i], 2);
+                        const auto step = std::hypot(near.x - x, near.y - y);
+                        check(std::sqrt(error) <= 8 * step + 1e-10,
+                              "Sparse blend stays continuous from every endpoint/edge approach direction");
+                    }
+            }
+    }
+    auto legacyDesign = d;
+    legacyDesign.original.performance.blendLaw = 1;
+    for (int i = 0; i < 3; ++i)
+        sp::assignBlendLayer(legacyDesign.original, i, legacyDesign.original.layers[(size_t)i].id);
+    auto &legacyState = legacyDesign.original.performance;
+    legacyState.blendEnabled = true;
+    legacyState.x = legacyState.y = 1;
+    auto legacyWeights = sp::blendWeights(legacyState, legacyDesign.original);
+    check(std::abs(legacyWeights[0] - 1 / std::sqrt(3.)) < 1e-12,
+          "Legacy saved law retains its exact endpoint behavior, without silent migration");
+    auto oldFormat = sp::designToJson(legacyDesign);
+    check((int)oldFormat["version"] == 2 && (int)oldFormat["original"]["performance"]["version"] == 1,
+          "Unmodified legacy performance state stays compatible with the original manifest");
+    auto oldReopened = sp::designFromJson(oldFormat);
+    check(oldReopened.original.performance.blendLaw == 1 && pcmDifference(legacyDesign, oldReopened) == 0,
+          "Reopening legacy designs preserves the old law and PCM");
+    auto upgraded = oldReopened;
+    upgraded.original.performance.blendLaw = 2;
+    auto newWeights = sp::blendWeights(upgraded.original.performance, upgraded.original);
+    check(newWeights[0] == 0 && std::abs(newWeights[1] - 1 / std::sqrt(2.)) < 1e-12 &&
+              std::abs(newWeights[2] - newWeights[1]) < 1e-12,
+          "New triangular law projects the empty corner onto the occupied opposite edge");
+    auto newFormat = sp::designToJson(upgraded);
+    check((int)newFormat["version"] == 3 && newFormat["dsp"].toString() == "stock-perform-v2",
+          "New law has an explicit document/DSP compatibility gate");
+    auto newReopened = sp::designFromJson(newFormat);
+    check(newReopened.original.performance.blendLaw == 2 && pcmDifference(upgraded, newReopened) == 0,
+          "New-law state is deterministic across save/reopen and rendering");
+    newFormat.getDynamicObject()->setProperty("version", 2);
+    newFormat.getDynamicObject()->setProperty("dsp", "stock-perform-v1");
+    rejects([&] { sp::designFromJson(newFormat); }, "Old manifest cannot disguise new-law audio state");
+    for (auto &l : legacyDesign.original.layers)
+        l.mute = false;
+    upgraded.original.performance.blendEnabled = false;
+    check(sp::resolvePerformance(upgraded.original).layers[0].controlGain == 1,
+          "Updated sparse law bypass restores unchanged base amplitudes");
+    auto aliases = d.original;
+    sp::assignBlendLayer(aliases, 0, aliases.layers[0].id);
+    aliases.performance.assignments[0].name = "Custom role";
+    sp::assignBlendLayer(aliases, 0, aliases.layers[2].id);
+    check(aliases.performance.assignments[0].name == "Custom role",
+          "Replacing the source retains its custom role alias");
+    sp::assignBlendLayer(aliases, 0, {});
+    sp::assignBlendLayer(aliases, 0, aliases.layers[3].id);
+    check(aliases.performance.assignments[0].name == "Custom role",
+          "Clearing and choosing again retain a custom alias");
     auto &mix = d.original;
     sp::assignBlendLayer(mix, 0, mix.layers[0].id);
     rejects([&] { sp::assignBlendLayer(mix, 1, mix.layers[0].id); },
@@ -298,7 +512,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     auto saved = root.getChildFile("performance.soundplus");
     sp::saveDesignAtomic(saved, d);
     auto recall = sp::loadDesign(saved);
-    check((int)sp::designToJson(recall)["version"] == 2,
+    check((int)sp::designToJson(recall)["version"] == 3,
           "Performance documents use the explicit new compatibility gate");
     check(pcmDifference(d, recall) == 0, "Save/reopen retains effective sound");
     auto forged = sp::designToJson(d);
@@ -407,6 +621,12 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
         check(error < 1e-7, "Primary-layer printing keeps its full-design blend weight instead of "
                             "renormalizing a single slot");
     }
+    // Native/offline parity also exercises the new empty-corner triangle law.
+    auto &nativeMix = d.activeMix();
+    sp::assignBlendLayer(nativeMix, 1, nativeMix.layers[2].id);
+    sp::assignBlendLayer(nativeMix, 2, nativeMix.layers[3].id);
+    nativeMix.performance.blendEnabled = true;
+    nativeMix.performance.x = nativeMix.performance.y = 1;
     // Actual permanent export and supervised native producer, from the same initial history.
     d.renderSettings.tailSeconds = .1;
     d.renderSettings.bits = 32;
@@ -442,7 +662,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     audio.playDesign("design:" + d.id, snapshotFile, 0, capture);
     wait([&]
          { return audio.status()["id"].toString() == "design:" + d.id && (bool)audio.status()["playing"]; },
-         "Version-2 performance design plays through the real helper");
+         "Version-3 performance design plays through the real helper");
     wait([&] { return !(bool)audio.status()["playing"] && !(bool)audio.status()["pendingPlayback"]; },
          "Native performance reaches its finalized tail");
     juce::MemoryBlock bytes;

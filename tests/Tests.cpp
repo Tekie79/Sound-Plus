@@ -14,6 +14,7 @@
 #include "IconTests.h"
 #include "ViewCommandTests.h"
 #include "PerformanceStateTests.h"
+#include "WaveformPreviewTests.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <iostream>
 #include <thread>
@@ -71,6 +72,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 3 && juce::String(argv[1]) == "--waveform-previews")
+        {
+            runWaveformPreviewTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--performance-state")
         {
             runPerformanceStateTests(juce::File(argv[2]), juce::File(argv[3]));

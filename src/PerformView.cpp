@@ -110,7 +110,8 @@ void PerformView::LayerDrag::mouseDrag(const juce::MouseEvent &e)
                 if (!container->isDragAndDropActive())
                     container->startDragging("SoundPlus layer:" + layer, this);
 }
-PerformView::PerformView(DesignSession &s) : pad(*this), layerDrag(*this), session(s)
+PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
+    : pad(*this), layerDrag(*this), session(s)
 {
     setWantsKeyboardFocus(true);
     for (auto *c : std::initializer_list<juce::Component *>{
@@ -120,6 +121,16 @@ PerformView::PerformView(DesignSession &s) : pad(*this), layerDrag(*this), sessi
              &addMapping,  &mappingFeedback, &policy,       &back})
         addAndMakeVisible(c);
     blendEnable.setToggleable(true);
+    addAndMakeVisible(updateBlend);
+    addAndMakeVisible(xLabel);
+    addAndMakeVisible(yLabel);
+    label(xLabel, juce::String::fromUTF8("X · Left–Right"));
+    label(yLabel, juce::String::fromUTF8("Y · Top–Bottom"));
+    updateBlend.setTooltip(
+        "Update this mix to continuous sparse blending. This may change its sound near "
+        "empty corners. Undo restores the legacy law; saving requires document version 3.");
+    updateBlend.onClick = [this]
+    { session.edit("Update blend interpolation", [](auto &d) { d.activeMix().performance.blendLaw = 2; }); };
     blendEnable.onClick = [this]
     {
         session.edit("Blend bypass",
@@ -162,6 +173,15 @@ PerformView::PerformView(DesignSession &s) : pad(*this), layerDrag(*this), sessi
         auto n = (size_t)i;
         addAndMakeVisible(assignments[n]);
         addAndMakeVisible(assignmentNames[n]);
+        cards[n] = std::make_unique<SourceCard>(assignmentNames[n], assignments[n], pool);
+        addAndMakeVisible(*cards[n]);
+        cards[n]->onSelect = [this](const juce::String &id) { session.selectLayer(id); };
+        cards[n]->onEdit = [this](const juce::String &id)
+        {
+            session.selectLayer(id);
+            if (onOpenEdit)
+                onOpenEdit(id);
+        };
         assignments[n].setTitle("Assign " + juce::String(slotNames[i]) + " blend layer");
         assignmentNames[n].setEditable(false, true, false);
         assignmentNames[n].setColour(juce::Label::textColourId, ui::text);
@@ -238,8 +258,13 @@ PerformView::PerformView(DesignSession &s) : pad(*this), layerDrag(*this), sessi
         macros[n].onDragEnd = [this] { endControl(); };
         macros[n].onValueChange = [this, i]
         {
-            if (updating || staleControl || (controlGesture && !controlValid()))
+            if (updating)
                 return;
+            if (staleControl || (controlGesture && !controlValid()))
+            {
+                restoreControlValues();
+                return;
+            }
             session.edit("Macro",
                          [&](auto &d) {
                              d.activeMix().performance.macros[(size_t)i].value = macros[(size_t)i].getValue();
@@ -362,6 +387,8 @@ bool PerformView::controlValid() const
 }
 void PerformView::endControl(bool cancel)
 {
+    if (cancel && !controlGesture)
+        return;
     if (controlValid())
     {
         if (cancel)
@@ -370,12 +397,27 @@ void PerformView::endControl(bool cancel)
             session.endGesture();
     }
     controlGesture = false;
-    staleControl = false;
+    // Escape must stay latched until onDragEnd / mouseUp. A held slider may
+    // still send values after cancellation; it must not start ordinary edits.
+    staleControl = cancel;
+    restoreControlValues();
+}
+void PerformView::restoreControlValues()
+{
+    const auto &s = session.document.activeMix().performance;
+    for (int i = 0; i < 4; ++i)
+        macros[(size_t)i].setValue(s.macros[(size_t)i].value, juce::dontSendNotification);
+    xValue.setValue(s.x, juce::dontSendNotification);
+    yValue.setValue(s.y, juce::dontSendNotification);
+    pad.repaint();
 }
 void PerformView::setPad(double x, double y)
 {
     if (staleControl || (controlGesture && !controlValid()))
+    {
+        restoreControlValues();
         return;
+    }
     session.edit("Blend position",
                  [&](auto &d)
                  {
@@ -472,7 +514,21 @@ void PerformView::refresh()
             assignments[n].setText("Unresolved layer", juce::dontSendNotification);
             ++missing;
         }
-        assignmentNames[n].setText(a.name.isNotEmpty() ? a.name : slotNames[i], juce::dontSendNotification);
+        const DesignLayer *assignedLayer = nullptr;
+        for (auto &layer : mix.layers)
+            if (layer.id == a.layer)
+                assignedLayer = &layer;
+        const auto weights = blendWeights(s, mix);
+        cards[n]->bind(assignedLayer, a.layer, a.name,
+                       assignedLayer && session.selectedIds.contains(assignedLayer->id),
+                       s.blendEnabled ? weights[n] : 0);
+        auto *drag = new juce::DynamicObject();
+        drag->setProperty("type", "SoundPlus blend assignment");
+        drag->setProperty("document", session.document.id);
+        drag->setProperty("variation", session.document.activeVariation);
+        drag->setProperty("slot", i);
+        drag->setProperty("layer", a.layer);
+        cards[n]->dragPayload = juce::var(drag);
         auto &m = s.macros[n];
         macroNames[n].setText(m.name, juce::dontSendNotification);
         macroNames[n].setTooltip(m.name + " · double-click to rename");
@@ -489,15 +545,26 @@ void PerformView::refresh()
             if (!performanceTargetValue(mix, map.target))
                 ++unresolved;
         macroFeedback[n].setText(unresolved ? juce::String(unresolved) + " unresolved"
-                                            : juce::String(m.mappings.size()) + " targets" +
-                                                  (m.enabled ? "" : " · bypassed"),
+                                 : m.mappings.empty()
+                                     ? "No mapped targets"
+                                     : juce::String(m.mappings.size()) +
+                                           (m.mappings.size() == 1 ? " target - " : " targets - ") +
+                                           (m.enabled ? "Enabled" : "Bypassed"),
                                  juce::dontSendNotification);
     }
     blendEnable.setToggleState(s.blendEnabled, juce::dontSendNotification);
-    blendState.setText(missing          ? "Unresolved layer assignment"
-                       : s.blendEnabled ? "Blend active"
-                                        : "Blend bypassed",
+    blendEnable.setButtonText(s.blendEnabled ? "Blend on" : "Blend off");
+    updateBlend.setVisible(s.blendLaw == 1);
+    blendState.setSize(std::max(20, blendBounds.getWidth() - (s.blendLaw == 1 ? 198 : 118)), 28);
+    blendState.setText(missing           ? "Missing assigned layer"
+                       : s.blendLaw == 1 ? "Legacy blend law"
+                       : s.blendEnabled  ? "Equal-power blend"
+                                         : "Move to prepare; enable to hear",
                        juce::dontSendNotification);
+    blendState.setTooltip(
+        s.blendLaw == 1
+            ? "Saved sound retained. Update law explicitly to remove sparse-corner jumps. Undo is available."
+            : "While Blend is off, movement prepares a position. Enable Blend to hear it.");
     if (!xValue.isMouseButtonDown())
         xValue.setValue(s.x, juce::dontSendNotification);
     if (!yValue.isMouseButtonDown())
@@ -612,25 +679,29 @@ void PerformView::resized()
 {
     int w = getWidth(), h = getHeight(), split = std::clamp((int)(w * .48), 280, std::max(280, w - 280));
     blendBounds = {0, 0, split - 8, h};
-    macroArea = {split, 0, w - split, h};
-    blendEnable.setBounds(8, 5, 28, 28);
-    blendReset.setBounds(38, 5, 28, 28);
-    blendState.setBounds(72, 5, split - 84, 28);
+    macroArea = {split, 0, w - split, mappingOpen ? std::min(h, 390) : std::min(h, 320)};
+    blendEnable.setBounds(8, 3, 70, 28);
+    blendReset.setBounds(80, 3, 26, 28);
+    updateBlend.setBounds(split - 86, 3, 70, 28);
+    blendState.setBounds(112, 3, split - (session.document.activeMix().performance.blendLaw == 1 ? 206 : 126),
+                         28);
     int half = (split - 28) / 2;
     for (int i = 0; i < 4; ++i)
     {
-        int x = 10 + (i % 2) * (half + 6), y = i < 2 ? 38 : h - 104;
-        slotBounds[(size_t)i] = {x, y, half, 43};
-        assignmentNames[(size_t)i].setBounds(x, y, half, 18);
-        assignments[(size_t)i].setBounds(x, y + 19, half, 24);
+        int x = 10 + (i % 2) * (half + 6), y = i < 2 ? 34 : h - 118;
+        slotBounds[(size_t)i] = {x, y, half, 70};
+        cards[(size_t)i]->setBounds(slotBounds[(size_t)i]);
     }
-    int diameter = std::max(60, std::min(split - 36, h - 198));
-    pad.setBounds((split - 8 - diameter) / 2, 84, diameter, diameter);
-    xValue.setBounds(10, h - 56, half, 24);
-    yValue.setBounds(16 + half, h - 56, half, 24);
-    layerSource.setBounds(10, h - 27, split - 58, 23);
-    layerDrag.setBounds(split - 42, h - 28, 28, 24);
-    int row = std::max(58, (h - 16) / 4);
+    int diameter = std::max(60, std::min(split - 36, h - 226));
+    pad.setBounds((split - 8 - diameter) / 2, 108, diameter, diameter);
+    xLabel.setBounds(10, h - 46, half, 14);
+    yLabel.setBounds(16 + half, h - 46, half, 14);
+    xValue.setBounds(10, h - 30, half, 24);
+    yValue.setBounds(16 + half, h - 30, half, 24);
+    // Source cards themselves are the existing-layer drag handles; pickers remain accessible.
+    layerSource.setVisible(false);
+    layerDrag.setVisible(false);
+    int row = std::min(76, std::max(64, (h - 16) / 4));
     for (int i = 0; i < 4; ++i)
     {
         auto n = (size_t)i;
@@ -669,7 +740,8 @@ void PerformView::resized()
 }
 bool PerformView::isInterestedInDragSource(const SourceDetails &d)
 {
-    return d.description.toString().startsWith("SoundPlus layer:") ||
+    return d.description["type"].toString() == "SoundPlus blend assignment" ||
+           d.description.toString().startsWith("SoundPlus layer:") ||
            d.description.toString().contains("SoundPlus referenced design");
 }
 int PerformView::slotAt(juce::Point<int> p) const
@@ -691,7 +763,24 @@ void PerformView::itemDropped(const SourceDetails &details)
     session.beginGesture();
     try
     {
-        if (description.startsWith("SoundPlus layer:"))
+        if (details.description["type"].toString() == "SoundPlus blend assignment")
+        {
+            auto &payload = details.description;
+            const int from = (int)payload["slot"];
+            if (payload["document"].toString() != session.document.id ||
+                payload["variation"].toString() != session.document.activeVariation || from < 0 ||
+                from >= 4 ||
+                session.document.activeMix().performance.assignments[(size_t)from].layer !=
+                    payload["layer"].toString())
+                throw std::runtime_error("The dragged assignment has changed; drag it again");
+            session.edit("Move blend assignment",
+                         [&](auto &d)
+                         {
+                             auto &slots = d.activeMix().performance.assignments;
+                             std::swap(slots[(size_t)from], slots[(size_t)slot]);
+                         });
+        }
+        else if (description.startsWith("SoundPlus layer:"))
         {
             auto id = description.fromFirstOccurrenceOf("SoundPlus layer:", false, false);
             session.edit("Assign blend layer", [&](auto &d) { assignBlendLayer(d.activeMix(), slot, id); });
@@ -716,6 +805,18 @@ void PerformView::itemDropped(const SourceDetails &details)
         session.message = e.what();
     }
     refresh();
+}
+void PerformView::refreshSourcePeaks()
+{
+    for (auto &card : cards)
+        card->refreshPeaks();
+}
+void PerformView::updateTransport(const juce::var &state)
+{
+    const auto owned = state["id"].toString() == "design:" + session.document.id;
+    const auto frame = (bool)state["playing"] ? (int64_t)state["sourceSample"] : session.document.playhead;
+    for (auto &card : cards)
+        card->transport(owned, frame, session.document.sampleRate);
 }
 void PerformView::benchmarkControls(int phase, double value)
 {

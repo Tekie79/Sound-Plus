@@ -14,6 +14,13 @@ class TextActionButton final : public juce::TextButton
         setTooltip(name);
         setMouseCursor(juce::MouseCursor::PointingHandCursor);
     }
+    void setButtonText(const juce::String &name)
+    {
+        if (getTooltip() == getButtonText())
+            setTooltip(name);
+        juce::TextButton::setButtonText(name);
+        setTitle(name);
+    }
     void paintButton(juce::Graphics &g, bool over, bool down) override
     {
         auto bounds = getLocalBounds().toFloat().reduced(.5f);

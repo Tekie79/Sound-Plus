@@ -28,6 +28,7 @@ struct PerformanceMacro
 struct BlendAssignment { juce::String layer, name; };
 struct PerformanceState
 {
+    int blendLaw = 2; // 1: saved v1 bilinear sparse law; 2: continuous convex-hull law.
     bool blendEnabled = false;
     double x = .5, y = .5;
     std::array<BlendAssignment, 4> assignments;

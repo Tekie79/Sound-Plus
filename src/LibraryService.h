@@ -60,6 +60,7 @@ class LibraryService
     void page(int offset, int limit = 256);
     void setChangeCallback(std::function<void()>);
     LibrarySnapshot snapshot();
+    juce::var queryDiagnostics(); // Explicit benchmark diagnostics, not a user query path.
     bool ready() const;
     void installModel(const juce::File &offlinePack = {});
     void cancelModelInstall();
