@@ -8,6 +8,7 @@
 #include <map>
 namespace sp
 {
+class PoolMappingReview;
 class DesignerView final : public juce::Component,
                            private juce::Timer,
                            private juce::KeyListener,
@@ -58,6 +59,7 @@ class DesignerView final : public juce::Component,
 
   private:
     friend class Benchmark;
+    friend struct PoolCorrectionViewAccess;
     friend struct CorrectionViewTestAccess;
     friend struct DesignerViewTestAccess;
     friend struct TakeIntegrityTestAccess;
@@ -79,6 +81,7 @@ class DesignerView final : public juce::Component,
     std::unique_ptr<PerformView> perform;
     std::unique_ptr<SourcePoolView> alternatives;
     void choosePoolFiles(const juce::String &layer, const juce::String &relocate = {});
+    std::unique_ptr<PoolMappingReview> makePoolReviewPanel(const juce::String &entry);
     void reviewPoolSource(const juce::String &entry);
     void showPoolPopup(const juce::String &layer);
     std::unique_ptr<juce::FileChooser> poolChooser;

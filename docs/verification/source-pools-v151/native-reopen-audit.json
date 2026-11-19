@@ -1,0 +1,51 @@
+{
+  "utc": "2026-11-19T22:22:13.859640+00:00",
+  "revision": 39,
+  "payloadChecksumVerified": true,
+  "savedFileSha256": "cb9276d716184e0283d48bee0ee5e0af58c6fdb944555ef170474b333351bee9",
+  "nativeEventCount": 78,
+  "frozenTakesAndReceiptsEqualToAcknowledgedR33": true,
+  "liveAzimuth": 90.00000000000001,
+  "frozenTake2Azimuth": 83.50000000000001,
+  "poolEntrySnapshotSynchronized": true,
+  "customPhysicalInputs": [
+    0,
+    3
+  ],
+  "printChannels": 6,
+  "onlineOutputs": [
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r30-920a0423.wav",
+      "sha256": "d4f72d65b117822fea5385c95b5f975483f9bd9d5b57f673db20ff796f104183"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Mix.wav",
+      "sha256": "d4f72d65b117822fea5385c95b5f975483f9bd9d5b57f673db20ff796f104183"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/L.wav",
+      "sha256": "85ff0c041965553ca08f1f21f01f77937b0054e7bc46f1d499df43c34fa3304b"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/R.wav",
+      "sha256": "d0aac4e31bf355277e2bcc07db1a785cb861afad1934dad2b5744d7b1d1712e9"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/C.wav",
+      "sha256": "d0aac4e31bf355277e2bcc07db1a785cb861afad1934dad2b5744d7b1d1712e9"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/LFE.wav",
+      "sha256": "955d7eda8107c2a331b2fa62a761b89c7d867085d856aeab152ffabde0f52379"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Ls.wav",
+      "sha256": "f5dfce159131a4e270bec5b1e3cf38837f8f8805befccaa47ebf057cf3e90695"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Rs.wav",
+      "sha256": "d7bbdeb199979f1dbf3d1da3b6591a3093707b9481167ef9c37a77dddf5a55f0"
+    }
+  ],
+  "note": "Final binary reopened the saved r35 document; custom review unchanged remained r35. Returned Live to Stereo, set azimuth90 and exercised Undo/Redo while playing; saved r39 and quit. Immutable takes/receipts remain exactly equal to acknowledged r33. No human listening assertion."
+}

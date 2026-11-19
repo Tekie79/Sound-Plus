@@ -1,0 +1,10 @@
+{
+  "utc": "2026-11-19T21:42:52.203785+00:00",
+  "parent": "5ab604837cc6d82e123fca6f367f9c773b8f72b6",
+  "note": "Behavior-preserving extraction of actual review component plus new harness. R18 predicate and review constructor/refresh logic unchanged from reviewed HEAD. Both production callback regressions fail before repair.",
+  "sha256": {
+    "src/SourcePools.cpp": "5c499dbde5e61e599a5308eeba4ed85d9647cd1479f46e837117a6e6aab6093f",
+    "src/PoolMappingReview.cpp": "a0ef863c9d922e351358024235e0a285aaf824c7af0eff94f5608e491e933371",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "d4999a9c630ded4a1f55bae2f72a05ba1f3b0c0436e1319a79852b62fcabdbf5"
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "samples": 100,
+  "distinctHeardSequences": 74,
+  "indexOverlapSamples": 42,
+  "elapsedMs": 3343.698624998331,
+  "latencyObservationMs": {
+    "p50": 43.311333388090134,
+    "p95": 52.66695836186409,
+    "p99": 53.81704166531563
+  },
+  "underruns": 0,
+  "preparationsStart": 1,
+  "preparationsEnd": 1,
+  "playGenerationStart": 1,
+  "playGenerationEnd": 1,
+  "activeEndPlaying": true,
+  "sourceClockStart": 97024,
+  "sourceClockEnd": 259840,
+  "condition": "256 generated real WAV files in eight batches; 100 real panner callbacks, canvas trim/history callbacks, shared previews; no semantic/maximum-capacity claim",
+  "note": "100 paired azimuth/width updates; one first-observed helper status per heard sequence for latency. Telemetry samples are not independent PCM samples."
+}

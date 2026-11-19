@@ -6,6 +6,14 @@ namespace sp
 {
 namespace
 {
+void stripLiveRouting(juce::var routing)
+{
+    if (auto *r = routing.getDynamicObject())
+    {
+        r->removeProperty("azimuth");
+        r->removeProperty("width");
+    }
+}
 void stripRack(juce::var rack)
 {
     if (auto *effects = rack.getArray())
@@ -46,6 +54,12 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
     }
 }
 } // namespace
+juce::var liveRoutingStructure(const LayerRouting &routing)
+{
+    auto value = routingJson(routing);
+    stripLiveRouting(value);
+    return value;
+}
 juce::String designPlaybackContext(const DesignDocument &d)
 {
     if (auto *t = selectedTake(d))
@@ -64,11 +78,7 @@ juce::String designStructure(const DesignDocument &document)
     for (auto &layer : *mix["layers"].getArray())
     {
         stripRack(layer["effects"]);
-        if (auto *r = layer["routing"].getDynamicObject())
-        {
-            r->removeProperty("azimuth");
-            r->removeProperty("width");
-        }
+        stripLiveRouting(layer["routing"]);
         for (const char *key : {"controlGain", "name", "first", "last", "placement", "sync", "fadeIn",
                                 "fadeOut", "gainDb", "pan", "rate", "reverse", "locked", "locks", "colour",
                                 "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints"})

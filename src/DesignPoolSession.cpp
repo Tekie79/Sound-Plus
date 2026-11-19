@@ -215,6 +215,14 @@ void DesignSession::requestPoolActivation(const juce::String &id, const juce::St
                             safe->message = "Obsolete source preparation discarded";
                             return;
                         }
+                        // A verified unchanged review is observational, including seeded provenance.
+                        if (remove.isEmpty() && layer->pool->selected == entry &&
+                            signature(candidate) == original && layer->source.error.isEmpty() &&
+                            layer->source.online)
+                        {
+                            safe->message = "Source verified; reviewed mapping unchanged";
+                            return;
+                        }
                         auto previousRevision = safe->document.revision;
                         safe->edit(remove.isEmpty() ? "Select alternative" : "Remove selected alternative",
                                    [&](auto &d)

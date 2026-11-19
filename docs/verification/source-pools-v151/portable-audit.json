@@ -1,0 +1,21 @@
+{
+  "passed": true,
+  "checks": 322,
+  "captureReplayMaxError": 0.0,
+  "independentMappingMaxError": 6.4153730938709685e-09,
+  "outputErrors": [
+    0.0,
+    0.0
+  ],
+  "frames": 8192,
+  "roles": [
+    "L",
+    "R",
+    "C",
+    "LFE",
+    "Ls",
+    "Rs"
+  ],
+  "compiledSourceTreeSha256": "54f139a80149f5e3f512195d366ac0a043ae24a3f93b441d4a4534135dc7deb1",
+  "qualification": "Generated numerical byte/PCM evidence; no native receiving-app or human listening claim"
+}

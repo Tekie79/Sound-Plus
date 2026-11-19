@@ -1,4 +1,5 @@
 #include "SourcePools.h"
+#include "DesignLive.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <set>
 #include <cmath>
@@ -429,9 +430,10 @@ bool pooledSourcesDiffer(const DesignMix &a, const DesignMix &b)
         if (l.pool && r->pool && l.pool->selected != r->pool->selected)
             return true;
         if (!sameStamp(l.source, r->source) || l.source.path != r->source.path ||
-            l.region.startSample != r->region.startSample || l.region.endSample != r->region.endSample ||
-            l.region.auditionPair != r->region.auditionPair ||
-            canonical(routingJson(l.routing)) != canonical(routingJson(r->routing)))
+            l.source.sampleRate != r->source.sampleRate || l.source.channels != r->source.channels ||
+            l.source.samples != r->source.samples || a.layout != b.layout ||
+            a.routingVersion != b.routingVersion || l.region.auditionPair != r->region.auditionPair ||
+            canonical(liveRoutingStructure(l.routing)) != canonical(liveRoutingStructure(r->routing)))
             return true;
     }
     return false;

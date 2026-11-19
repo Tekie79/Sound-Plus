@@ -1,0 +1,106 @@
+{
+  "revision": 35,
+  "customUnchangedBeforeRevision": 35,
+  "customUnchangedAfterRevision": 35,
+  "customPayloadIdentical": true,
+  "customInputs": [
+    0,
+    3
+  ],
+  "retainedInitialSpatialRouting": {
+    "interpretation": {
+      "id": "stereo-v1",
+      "roles": [
+        "L",
+        "R"
+      ]
+    },
+    "inputs": [
+      0,
+      1
+    ],
+    "matrix": [],
+    "spatial": true,
+    "needsSelection": false,
+    "azimuth": 83.50000000000001,
+    "width": 229.20000000000002,
+    "divergence": 0.2,
+    "lfeDb": -12.0,
+    "lfeCutoff": 87.0
+  },
+  "takeSeconds": 0.608,
+  "frozenTakeAndReceiptsUnchangedAfterLiveEdit": true,
+  "nativeOutputPcmMaxDifference": 0.0,
+  "outputs": [
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r30-920a0423.wav",
+      "sha256": "d4f72d65b117822fea5385c95b5f975483f9bd9d5b57f673db20ff796f104183",
+      "header": {
+        "channels": 6,
+        "rate": 48000,
+        "frames": 29184,
+        "mask": 1551
+      },
+      "recipeHash": "79025cdc6cfd16aef55ebe11499754e70d34b4381537b974364b05665011efe1",
+      "eventHash": "1800699db4910dec06d005aa55b2b834813be417cfc7bf4b3e5f8157e28485b7",
+      "members": []
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Mix.wav",
+      "sha256": "d4f72d65b117822fea5385c95b5f975483f9bd9d5b57f673db20ff796f104183",
+      "header": {
+        "channels": 6,
+        "rate": 48000,
+        "frames": 29184,
+        "mask": 1551
+      },
+      "recipeHash": "79025cdc6cfd16aef55ebe11499754e70d34b4381537b974364b05665011efe1",
+      "eventHash": "1800699db4910dec06d005aa55b2b834813be417cfc7bf4b3e5f8157e28485b7",
+      "members": [
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/L.wav",
+          "role": "L",
+          "sha256": "85ff0c041965553ca08f1f21f01f77937b0054e7bc46f1d499df43c34fa3304b"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/R.wav",
+          "role": "R",
+          "sha256": "d0aac4e31bf355277e2bcc07db1a785cb861afad1934dad2b5744d7b1d1712e9"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/C.wav",
+          "role": "C",
+          "sha256": "d0aac4e31bf355277e2bcc07db1a785cb861afad1934dad2b5744d7b1d1712e9"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/LFE.wav",
+          "role": "LFE",
+          "sha256": "955d7eda8107c2a331b2fa62a761b89c7d867085d856aeab152ffabde0f52379"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Ls.wav",
+          "role": "Ls",
+          "sha256": "f5dfce159131a4e270bec5b1e3cf38837f8f8805befccaa47ebf057cf3e90695"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v151/native-qa/renders/Take 2-take-r32-4744648c-split/Rs.wav",
+          "role": "Rs",
+          "sha256": "d7bbdeb199979f1dbf3d1da3b6591a3093707b9481167ef9c37a77dddf5a55f0"
+        }
+      ]
+    }
+  ],
+  "printChannels": 6,
+  "printInterpretation": {
+    "id": "5.1-side-v1",
+    "roles": [
+      "L",
+      "R",
+      "C",
+      "LFE",
+      "Ls",
+      "Rs"
+    ]
+  },
+  "note": "Native UI save was acknowledged before comparison. Earlier immediate copies captured in-progress saves and are excluded. Numerical output equality is separate from human listening."
+}

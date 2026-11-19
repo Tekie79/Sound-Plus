@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  1: pool_corrections
+1/5 Test  #1: pool_corrections .................   Passed    5.70 sec
+    Start  2: source_pools
+2/5 Test  #2: source_pools .....................   Passed    0.36 sec
+    Start  4: multichannel_corrections
+3/5 Test  #4: multichannel_corrections .........   Passed   13.10 sec
+    Start 14: designer_view_commands
+4/5 Test #14: designer_view_commands ...........   Passed    0.34 sec
+    Start 21: designer_transport
+5/5 Test #21: designer_transport ...............   Passed   16.13 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =  35.64 sec

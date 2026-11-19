@@ -146,6 +146,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     DesignLayer *selectedLayer();
 
   private:
+    friend struct PoolCorrectionViewAccess;
     friend struct CorrectionViewTestAccess;
     friend struct TakeIntegrityTestAccess;
     friend struct LayoutViewTestAccess;

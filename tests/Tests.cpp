@@ -77,10 +77,22 @@ void fixture(const juce::File &file, int channels = 1, int rate = 48000, double 
     require(writer->writeFromAudioSampleBuffer(b, 0, samples), "Write generated PCM");
 }
 } // namespace
+void preparePoolCorrectionUI(const juce::File &);
+void runPoolCorrectionTests(const juce::File &, const juce::File &, const juce::String &);
 int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-pool-correction-ui")
+        {
+            preparePoolCorrectionUI(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--pool-corrections")
+        {
+            runPoolCorrectionTests(juce::File(argv[2]), juce::File(argv[3]), argc > 4 ? argv[4] : "");
+            return 0;
+        }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-source-pool-ui")
         {
             prepareSourcePoolUI(juce::File(argv[2]));

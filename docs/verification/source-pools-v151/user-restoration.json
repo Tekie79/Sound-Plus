@@ -1,0 +1,20 @@
+{
+  "utc": "2026-11-19T22:23:33.873563+00:00",
+  "latestActualSessionIdentifiedBeforeWork": true,
+  "catalog": "build/gain-hover-native",
+  "documentId": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "revision": 17543,
+  "variationId": "e383571e7a124e6f98ada83b842abade",
+  "nativeUIVariation": "Variation 5",
+  "nativeUIPerformWorkspace": true,
+  "nativeUIMonitorVolume": 0.7,
+  "recoveryDocumentSha256": "443f0d4f3d0cc0061aecae81623f982172283bcf9c51cce52bdc01f15ce16bfd",
+  "recoveryDocumentsByteIdenticalToProtectedPostQuit": true,
+  "settingsByteIdenticalToProtectedPostQuit": true,
+  "catalogAssetIdentitiesMetadataUnchanged": 43,
+  "catalogRootsUnchanged": 1,
+  "sourceAndRenderHashesVerified": 9,
+  "noOlderBackupRestored": true,
+  "appLeftOpen": true,
+  "note": "Original session/catalog retained in place, closed before bundle rebuild, then reopened in the final native application. No QA snapshot was copied over it. Retained backups stay outside tracked delivery under build/source-pools-v151."
+}
