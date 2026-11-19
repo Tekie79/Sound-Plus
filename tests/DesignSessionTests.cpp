@@ -1,5 +1,6 @@
 #include "DesignSessionTests.h"
 #include "DesignSession.h"
+#include "DesignLive.h"
 #include <deque>
 #include <iostream>
 #include <future>
@@ -563,6 +564,67 @@ void runDesignSessionTests(const juce::File &parent)
                   latest.document.name == "Immutable final owner snapshot",
               "Destructor flush is unconditional with idle or busy worker");
         h.ui.clear();
+    }
+    for (bool held : {false, true})
+    {
+        Harness h(root.getChildFile(held ? "context-held" : "context-active"));
+        auto services = h.services();
+        juce::String audible;
+        services.stop = [&] {
+            audible.clear();
+            h.state.getDynamicObject()->setProperty("playing", false);
+            ++h.generation;
+        };
+        auto play = services.play;
+        services.play = [&, play](const auto &id, const auto &file, int64_t frame, const auto &mode) {
+            audible = sp::designPlaybackContext(sp::loadDesign(file));
+            return play(id, file, frame, mode);
+        };
+        sp::DesignSession session(h.directory.getChildFile("library.sqlite"), services);
+        session.document = recipe();
+        auto makeTake = [&](const char *name) {
+            sp::PerformTake t;
+            t.name = name; t.session = session.document.id; t.recipe = session.document.original;
+            t.bodyEnd = t.outputFrames = 48000; t.complete = true;
+            t.sources.push_back({t.recipe->layers[0].source.id, juce::String::repeatedString("a", 64), {}});
+            sp::hashTake(t); return t;
+        };
+        auto a = makeTake("A"), b = makeTake("B");
+        session.document.takes = {a, b};
+        auto start = [&] {
+            auto calls = h.plays;
+            session.play();
+            while (!h.io.empty()) h.run(h.io); // Hold the actual session completion after serialization.
+            if (!held) { h.drain(); check(h.plays == calls + 1 && audible == sp::designPlaybackContext(session.document),
+                "Active stream ownership agrees with displayed context"); }
+            return calls;
+        };
+        auto stopped = [&](int calls) {
+            h.drain();
+            check(audible.isEmpty() && !session.ownsPlayback() && (!held || h.plays == calls),
+                  "Undo/Redo context transition stops active stream and cannot start stale held preparation");
+        };
+        session.selectTake(a.id);
+        session.deleteTake();
+        auto calls = start();
+        session.undo(); // Live -> A, the reported failure.
+        check(session.document.activeTake == a.id, "Undo restores A"); stopped(calls);
+        calls = start();
+        session.redo(); // A -> Live.
+        check(session.document.activeTake.isEmpty(), "Redo restores Live"); stopped(calls);
+        session.undo();
+        session.editMetadata("Select B for history", [&](auto &d) { d.activeTake = b.id; });
+        calls = start(); session.undo(); // B -> A.
+        check(session.document.activeTake == a.id, "Undo restores the other take"); stopped(calls);
+        calls = start(); session.redo(); // A -> B.
+        check(session.document.activeTake == b.id, "Redo restores B"); stopped(calls);
+        session.selectTake({});
+        calls = start();
+        session.edit("Live gain", [](auto &d) { d.original.masterDb -= 1; });
+        h.drain();
+        check(h.plays == calls + 1 && audible == sp::designPlaybackContext(session.document),
+              "Legitimate Live to Live editing preserves active or held playback");
+        session.stop();
     }
     std::cout << "PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport "
                  "ownership: "

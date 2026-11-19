@@ -318,7 +318,7 @@ void DesignSession::reconcileSelection(const DesignDocument *before)
 }
 void DesignSession::changed(ChangeImpact impact)
 {
-    if ((active || previewWaiting) && auditionContext.startsWith("take:") &&
+    if ((active || previewWaiting) && auditionContext.isNotEmpty() &&
         auditionContext != designPlaybackContext(document))
         stop(); // Undo/context restoration must not label A's audio as another take or Live Design.
     dirty = true;
@@ -893,7 +893,7 @@ void DesignSession::schedulePreview(const juce::String &mode)
             saveDesignAtomic(file, snapshot, [=] { return serial != *cancellation; });
             return [safe, snapshot, position, file, mode]
             {
-                if (!safe)
+                if (!safe || designPlaybackContext(snapshot) != designPlaybackContext(safe->document))
                     return;
                 safe->expectedGeneration = safe->services.play("design:" + snapshot.id, file, position, mode);
                 safe->publishedStructure = designStructure(snapshot);
