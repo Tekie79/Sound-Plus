@@ -1,4 +1,5 @@
 #include "MultichannelTests.h"
+#include "MultichannelCorrectionsTests.h"
 #include "TakeTests.h"
 #include "TakeIntegrityTests.h"
 #include "DeviceCaptureTests.h"
@@ -192,6 +193,11 @@ int main(int argc, char **argv)
         if (argc >= 4 && juce::String(argv[1]) == "--multichannel")
         {
             runMultichannelTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--multichannel-corrections")
+        {
+            runMultichannelCorrectionsTests(juce::File(argv[2]), juce::File(argv[3]));
             return 0;
         }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-multichannel-ui")

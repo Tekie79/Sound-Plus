@@ -261,6 +261,7 @@ void DesignSession::deleteTake()
          [&](auto &d)
          {
              std::erase_if(d.takes, [&](auto &t) { return t.id == id; });
+             d.outputSelections.erase(id);
              d.activeTake.clear();
          });
     takeMutation = false;

@@ -56,6 +56,7 @@ class DesignerView final : public juce::Component,
     }
 
   private:
+    friend struct CorrectionViewTestAccess;
     friend struct DesignerViewTestAccess;
     friend struct TakeIntegrityTestAccess;
     void showSnapOptions();

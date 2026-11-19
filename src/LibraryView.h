@@ -53,6 +53,7 @@ class LibraryView final : public juce::Component,
     std::function<void(const Asset &, int64_t, int64_t, bool, int)> onAddToDesigner;
 
   private:
+    friend struct CorrectionViewTestAccess;
     friend class Benchmark;
     friend struct LayoutViewTestAccess;
     friend struct LibraryPreviewTestAccess;

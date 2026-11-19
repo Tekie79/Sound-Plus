@@ -215,7 +215,7 @@ juce::var fadePointsToJson(const std::vector<FadePoint> &);
 std::vector<FadePoint> fadePointsFromJson(const juce::var &);
 juce::var designToJson(const DesignDocument &);
 DesignDocument designFromJson(const juce::var &);
-void validateDesign(const DesignDocument &);
+void validateDesign(const DesignDocument &, bool verifyTakeContent = true);
 void saveDesignAtomic(const juce::File &,const DesignDocument &,const std::function<bool()> &cancelled=[] {return false;});
 DesignDocument loadDesign(const juce::File &);
 std::vector<DesignVariation> generateVariations(const DesignDocument &,uint64_t seed);

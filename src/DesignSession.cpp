@@ -372,12 +372,14 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         reconcileSelection(&before);
         bool unchangedTakes = sameTakes(before, document);
         auto validation = document;
+        // Keep current take identities available to metadata validation even
+        // when immutable recipe/event content was already proved unchanged.
+        validateDesign(validation, !unchangedTakes);
         if (unchangedTakes)
         {
             validation.takes.clear();
             validation.activeTake.clear();
         }
-        validateDesign(validation);
         auto comparison = before;
         if (unchangedTakes)
         {

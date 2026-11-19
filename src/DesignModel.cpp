@@ -287,13 +287,6 @@ DesignDocument designFromJson(const juce::var &o)
                         : (dsp != "stock-sinc32-v1" && dsp != "stock-sinc32-v2")))
         throw std::runtime_error("Unsupported SoundPlus design version");
     DesignDocument d;
-    if (auto *p = o["outputSelections"].getDynamicObject())
-    {
-        if (p->getProperties().size() > 17)
-            throw std::runtime_error("Too many output selections");
-        for (auto &v : p->getProperties())
-            d.outputSelections[v.name.toString()] = v.value.toString();
-    }
     d.outputFolder = o["outputFolder"].toString();
     d.id = o["id"].toString();
     d.name = o["name"].toString();
@@ -338,9 +331,27 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     if(auto *a=o["takes"].getArray()){if(a->size()>(int)maxDocumentTakes)throw std::runtime_error("Too many takes");for(auto &v:*a)d.takes.push_back(takeFromJson(v));}d.activeTake=o["activeTake"].toString();
+    if (o.hasProperty("outputSelections"))
+    {
+        auto *p = o["outputSelections"].getDynamicObject();
+        // Recover only dangling preference metadata from affected v1.4 documents.
+        // Bound input by the existing 1000-receipt history plus Live; no takes,
+        // receipts, source identities or durable files are discarded.
+        if (!p || p->getProperties().size() > 1001)
+            throw std::runtime_error("Invalid or excessive output selections");
+        for (auto &v : p->getProperties())
+        {
+            auto key = v.name.toString();
+            if (!v.value.isString())
+                throw std::runtime_error("Invalid output selection path");
+            if (key == "live" ||
+                std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return t.id == key; }))
+                d.outputSelections[key] = v.value.toString();
+        }
+    }
     validateDesign(d);if(performanceFormat(d)>version)throw std::runtime_error("Performance blend law requires a newer document version");if(shapedFades(d) && version==1 && o["dsp"].toString()!="stock-sinc32-v2")throw std::runtime_error("Non-linear fades require stock DSP version 2");return d;
 }
-void validateDesign(const DesignDocument &d)
+void validateDesign(const DesignDocument &d, bool verifyTakeContent)
 {
     if(d.id.isEmpty() || d.revision<1 || (d.sampleRate!=44100 && d.sampleRate!=48000 && d.sampleRate!=96000))throw std::runtime_error("Invalid design identity or sample rate");
     auto rack=[&](const std::vector<StockEffect> &fx){if(fx.size()>8)throw std::runtime_error("Eight inserts per rack maximum");juce::StringArray effectIds;for(auto &e:fx){if(e.id.isEmpty() || effectIds.contains(e.id))throw std::runtime_error("Duplicate insert identity");effectIds.add(e.id);makeStockEffect(e.type);for(double p:e.parameters)bounded(p,-100000,100000,"Nonfinite effect parameter");
@@ -404,8 +415,29 @@ void validateDesign(const DesignDocument &d)
     };
     mix(d.original);if(d.variations.size()>32)throw std::runtime_error("32 variations maximum");juce::StringArray variationIds;for(auto &v:d.variations){if(v.id.isEmpty() || variationIds.contains(v.id))throw std::runtime_error("Duplicate variation identity");variationIds.add(v.id);mix(v.mix);}
     if(d.activeVariation.isNotEmpty() && std::none_of(d.variations.begin(),d.variations.end(),[&](auto &v){return v.id==d.activeVariation;}))throw std::runtime_error("Active variation is missing");
-    if(d.takes.size()>maxDocumentTakes)throw std::runtime_error("16 takes maximum");juce::StringArray takeIds;for(auto &t:d.takes){if(takeIds.contains(t.id))throw std::runtime_error("Duplicate take identity");takeIds.add(t.id);validateTake(t);}if(d.activeTake.isNotEmpty() && !selectedTake(d))throw std::runtime_error("Selected take missing");
+    if (d.takes.size() > maxDocumentTakes)
+        throw std::runtime_error("16 takes maximum");
+    juce::StringArray takeIds;
+    for (auto &t : d.takes)
+    {
+        if (takeIds.contains(t.id))
+            throw std::runtime_error("Duplicate take identity");
+        takeIds.add(t.id);
+        if (verifyTakeContent)
+            validateTake(t);
+    }
+    if (d.activeTake.isNotEmpty() && !selectedTake(d))
+        throw std::runtime_error("Selected take missing");
     auto &s=d.variationSettings;if(s.count<1 || s.count>32)throw std::runtime_error("Variation count must be 1–32");bounded(s.gainDb,0,24,"Invalid variation gain bound");bounded(s.pan,0,1,"Invalid variation pan bound");bounded(s.placementSeconds,0,10,"Invalid variation timing bound");bounded(s.ratePercent,0,75,"Invalid variation rate bound");bounded(s.fadeSeconds,0,10,"Invalid variation fade bound");bounded(s.trimSeconds,0,10,"Invalid variation trim bound");bounded(s.effectAmount,0,1,"Invalid effect variation bound");
+    if (d.outputSelections.size() > d.takes.size() + 1)
+        throw std::runtime_error("Too many output selections for current contexts");
+    for (auto &[key, path] : d.outputSelections)
+    {
+        juce::ignoreUnused(path);
+        if (key != "live" &&
+            std::none_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return t.id == key; }))
+            throw std::runtime_error("Output selection refers to a missing take");
+    }
     for (auto &o : d.outputs)
         if (!o.channelProvenance.isVoid())
         {
