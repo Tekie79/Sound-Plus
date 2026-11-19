@@ -20,13 +20,55 @@ juce::var message(const juce::String &command)
 }
 bool sendMessage(int fd, const juce::var &msg)
 {
-    auto line = juce::JSON::toString(msg, true) + "\n";
+    // ASCII JSON preserves Unicode via escapes even when socket reads split a UTF-8 codepoint.
+    auto line = juce::JSON::toString(msg, juce::JSON::FormatOptions()
+                                              .withSpacing(juce::JSON::Spacing::singleLine)
+                                              .withEncoding(juce::JSON::Encoding::ascii)) +
+                "\n";
     auto bytes = line.getNumBytesAsUTF8();
-    // Commands are deliberately bounded to fit the socket send buffer in one write.
+    // Non-real-time workers only. A bounded frame is not guaranteed to fit a
+    // nonblocking stream socket in one write, even when the peer is healthy.
     if (bytes > 65536)
+    {
+        errno = EMSGSIZE;
         return false;
-    auto result = send(fd, line.toRawUTF8(), bytes, 0);
-    return result == (ssize_t)bytes;
+    }
+    auto deadline = monotonicMs() + 250;
+    size_t sent = 0;
+    while (sent < bytes)
+    {
+        auto n = send(fd, line.toRawUTF8() + sent, bytes - sent, MSG_DONTWAIT);
+        if (n > 0)
+        {
+            sent += (size_t)n;
+            continue;
+        }
+        if (n < 0 && errno == EINTR)
+            continue;
+        if (n < 0 && (errno == EAGAIN || errno == EWOULDBLOCK))
+        {
+            int remaining = (int)std::ceil(deadline - monotonicMs());
+            if (remaining <= 0)
+            {
+                errno = ETIMEDOUT;
+                return false;
+            }
+            pollfd writable{fd, POLLOUT, 0};
+            auto ready = poll(&writable, 1, std::min(remaining, 10));
+            if (ready < 0 && errno != EINTR)
+                return false;
+            if (ready > 0 && (writable.revents & (POLLERR | POLLHUP | POLLNVAL)))
+            {
+                errno = EPIPE;
+                return false;
+            }
+            continue;
+        }
+        if (n == 0)
+            errno = EPIPE;
+        return false;
+    }
+    return true;
 }
 AudioClient::AudioClient(juce::File exe) : executable(std::move(exe))
 {

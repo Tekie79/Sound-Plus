@@ -3,6 +3,9 @@
 #include "Performance.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <signal.h>
+#include <sys/socket.h>
+#include <unistd.h>
+#include <fcntl.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <iostream>
 namespace
@@ -23,6 +26,55 @@ template <class F> void until(F f, const char *s, int ms = 12000)
 void runAudioHealthTests(const juce::File &parent, const juce::File &app)
 {
     juce::ScopedJuceInitialiser_GUI gui;
+    // Force partial/EAGAIN writes using the real framed transport and a tiny socket.
+    int pair[2];
+    check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Controlled IPC socketpair");
+    int small = 1024;
+    setsockopt(pair[0], SOL_SOCKET, SO_SNDBUF, &small, sizeof(small));
+    fcntl(pair[0], F_SETFL, fcntl(pair[0], F_GETFL) | O_NONBLOCK);
+    auto frame = sp::message("backpressure");
+    frame.getDynamicObject()->setProperty("payload", juce::String::repeatedString("x", 60000));
+    frame.getDynamicObject()->setProperty("unicode", juce::String::fromUTF8("雨 café 😀"));
+    auto expected = juce::JSON::toString(frame, juce::JSON::FormatOptions()
+                                                    .withSpacing(juce::JSON::Spacing::singleLine)
+                                                    .withEncoding(juce::JSON::Encoding::ascii)) +
+                    "\n";
+    std::string received;
+    std::thread reader(
+        [&]
+        {
+            std::this_thread::sleep_for(std::chrono::milliseconds(20));
+            char bytes[4096];
+            while (received.size() < (size_t)expected.getNumBytesAsUTF8())
+            {
+                auto n = recv(pair[1], bytes, sizeof(bytes), 0);
+                if (n <= 0)
+                    break;
+                received.append(bytes, (size_t)n);
+                std::this_thread::sleep_for(std::chrono::milliseconds(1));
+            }
+        });
+    auto began = sp::monotonicMs();
+    bool sent = sp::sendMessage(pair[0], frame);
+    shutdown(pair[0], SHUT_WR);
+    reader.join();
+    check(sent && received == expected.toStdString() && sp::monotonicMs() - began >= 20,
+          "Partial nonblocking writes retain exactly one complete JSON frame");
+    check(juce::JSON::parse(juce::String::fromUTF8(received.c_str()))["unicode"] == frame["unicode"],
+          "Fragmented framed transport preserves Unicode source identities");
+    close(pair[0]);
+    close(pair[1]);
+    check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Blocked IPC socketpair");
+    fcntl(pair[0], F_SETFL, fcntl(pair[0], F_GETFL) | O_NONBLOCK);
+    setsockopt(pair[0], SOL_SOCKET, SO_SNDBUF, &small, sizeof(small));
+    began = sp::monotonicMs();
+    sent = sp::sendMessage(pair[0], frame);
+    int failure = errno;
+    auto blockedMs = sp::monotonicMs() - began;
+    close(pair[0]);
+    close(pair[1]);
+    check(!sent && failure == ETIMEDOUT && blockedMs >= 240 && blockedMs < 500,
+          "Unresponsive peer fails with a bounded explicit write timeout");
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
     auto file = root.getChildFile("tone.wav");
@@ -88,9 +140,14 @@ void runAudioHealthTests(const juce::File &parent, const juce::File &app)
     check(event["classification"].toString() == "helperSignalExit" && (int)event["exitSignal"] == SIGKILL &&
               (int)event["supervisorSignal"] == 0,
           "External signal distinguished from supervisor termination");
-    until([&]{auto s=audio.status();return (int)s["helperPid"]>0 && (int)s["helperPid"]!=pid &&
-                 (int64_t)s["statusSequence"]>=2 && !(bool)s["playing"];},
-          "New helper PID publishes a subsequent healthy idle heartbeat");
+    until(
+        [&]
+        {
+            auto s = audio.status();
+            return (int)s["helperPid"] > 0 && (int)s["helperPid"] != pid &&
+                   (int64_t)s["statusSequence"] >= 2 && !(bool)s["playing"];
+        },
+        "New helper PID publishes a subsequent healthy idle heartbeat");
     check(audio.status()["error"].toString().contains("restarted"),
           "Restart notice survives healthy status messages");
     check(juce::JSON::toString(sp::designToJson(session.document), true) == recipe &&
