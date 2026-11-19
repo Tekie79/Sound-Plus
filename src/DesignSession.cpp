@@ -2,6 +2,7 @@
 #include "PerformanceState.h"
 #include "DesignLive.h"
 #include "Performance.h"
+#include "SourcePools.h"
 #include <cmath>
 
 namespace sp
@@ -49,6 +50,7 @@ bool sameTakes(const DesignDocument &a, const DesignDocument &b)
             v->setProperty("correctedFrom", t.correctedFrom);
             v->setProperty("originalRecipeHash", t.originalRecipeHash);
             v->setProperty("originalEventHash", t.originalEventHash);
+            v->setProperty("poolOrigins", t.poolOrigins);
             juce::Array<juce::var> s;
             for (auto &source : t.sources)
             {
@@ -166,6 +168,7 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
 
 DesignSession::~DesignSession()
 {
+    invalidatePoolWork();
     stopTimer();
     services.reserveTake(false);
     // Capture on the owner thread. The worker never reads the mutable document.
@@ -379,6 +382,9 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
     try
     {
         edit(document);
+        if (before.activeVariation != document.activeVariation || before.activeTake != document.activeTake)
+            invalidatePoolWork();
+        syncPoolSelection(document.activeMix());
         if (before.id == document.id && before.activeVariation == document.activeVariation)
             unlinkManuallyEditedTargets(before.activeMix(), document.activeMix());
         reconcileSelection(&before);
@@ -411,6 +417,8 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         notify();
         return;
     }
+    if (ownsPlayback() && pooledSourcesDiffer(before.activeMix(), document.activeMix()))
+        stop();
     if (!gesture)
     {
         undoHistory.push_back({std::move(before), std::move(beforeSelection), label});
@@ -486,6 +494,7 @@ void DesignSession::cancelGesture()
 }
 void DesignSession::undo()
 {
+    invalidatePoolWork();
     if (takeBusy())
     {
         message = "Stop recording before Undo";
@@ -497,6 +506,8 @@ void DesignSession::undo()
     endGesture();
     if (undoHistory.empty())
         return;
+    if (ownsPlayback() && pooledSourcesDiffer(document.activeMix(), undoHistory.back().document.activeMix()))
+        stop();
     auto revision = document.revision + 1;
     redoHistory.push_back({document, selectedIds, undoHistory.back().label});
     document = std::move(undoHistory.back().document);
@@ -516,6 +527,7 @@ void DesignSession::undo()
 }
 void DesignSession::redo()
 {
+    invalidatePoolWork();
     if (takeBusy())
         return;
     if (replacing)
@@ -523,6 +535,8 @@ void DesignSession::redo()
     endGesture();
     if (redoHistory.empty())
         return;
+    if (ownsPlayback() && pooledSourcesDiffer(document.activeMix(), redoHistory.back().document.activeMix()))
+        stop();
     auto revision = document.revision + 1;
     undoHistory.push_back({document, selectedIds, redoHistory.back().label});
     document = std::move(redoHistory.back().document);
@@ -561,6 +575,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
     }
     endGesture();
     stop();
+    invalidatePoolWork();
     ++lifetime;
     acceptedImports.clear();
     *lifetimeGate = lifetime;
@@ -782,38 +797,43 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
                     if (!safe)
                         return;
                     safe->working = !safe->acceptedImports.empty();
-                    safe->edit("Drop sources",
-                               [&](auto &d)
-                               {
-                                   for (auto &source : sources)
-                                   {
-                                       if (!d.activeMix().layout.id.isEmpty() &&
-                                           d.activeMix().layers.empty() && source.channels > 2 &&
-                                           source.channels <= 16)
-                                       {
-                                           auto detected = source.layoutOverride.id.isNotEmpty()
-                                                               ? source.layoutOverride
-                                                               : source.detectedChannels;
-                                           setMixLayout(d.activeMix(),
-                                                        detected.id.isEmpty() ||
-                                                                detected.id.startsWith("unknown-")
-                                                            ? discreteLayout(source.channels)
-                                                            : detected);
-                                           d.renderSettings.layout = "same";
-                                       }
-                                       auto layer = makeDesignLayer(source, 0, source.samples, true);
-                                       if (!d.activeMix().layout.id.isEmpty())
-                                           initialiseRouting(layer, d.activeMix().layout);
-                                       layer.placement = placement;
-                                       d.selectedLayer = layer.id;
-                                       d.activeMix().layers.push_back(std::move(layer));
-                                   }
-                               });
+                    safe->edit(
+                        "Drop sources",
+                        [&](auto &d)
+                        {
+                            for (auto &source : sources)
+                            {
+                                if (!d.activeMix().layout.id.isEmpty() && d.activeMix().layers.empty() &&
+                                    source.channels > 2 && source.channels <= 16)
+                                {
+                                    auto detected = source.layoutOverride.id.isNotEmpty()
+                                                        ? source.layoutOverride
+                                                        : source.detectedChannels;
+                                    setMixLayout(d.activeMix(),
+                                                 detected.id.isEmpty() || detected.id.startsWith("unknown-")
+                                                     ? discreteLayout(source.channels)
+                                                     : detected);
+                                    d.renderSettings.layout = "same";
+                                }
+                                auto layer = makeDesignLayer(source, 0, source.samples, true);
+                                if (!d.activeMix().layout.id.isEmpty())
+                                    initialiseRouting(layer, d.activeMix().layout);
+                                layer.placement = placement;
+                                d.selectedLayer = layer.id;
+                                d.activeMix().layers.push_back(std::move(layer));
+                            }
+                        });
                 };
             });
 }
 void DesignSession::replaceSource(const juce::String &id, const juce::File &file)
 {
+    for (auto &l : document.activeMix().layers)
+        if (l.id == id && l.pool)
+        {
+            relinkPoolEntry(id, l.pool->selected, file);
+            return;
+        }
     protectStartupEdits();
     auto token = stamp(Operation::relink);
     juce::Component::SafePointer<DesignSession> safe(this);
@@ -889,6 +909,11 @@ void DesignSession::selectVariation(const juce::String &id)
 }
 void DesignSession::generate(uint64_t seed)
 {
+    if ((document.variationSettings.enabled & varySource) && hasSourcePools(document))
+    {
+        generatePoolVariations(seed);
+        return;
+    }
     edit("Generate variations",
          [&](auto &d)
          {

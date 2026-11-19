@@ -10,6 +10,7 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
   public:
     explicit PerformView(DesignSession &, std::shared_ptr<WaveformPool> = {});
     std::function<void(const juce::String &)> onOpenEdit;
+    std::function<void(const juce::String &)> onAlternatives;
     void updateTransport(const juce::var &);
     void refreshSourcePeaks();
     void refresh();

@@ -1,0 +1,178 @@
+{
+  "document": "049cb556f7f5437592ab5ea87479604f",
+  "revision": 12,
+  "entries": 7,
+  "selectedEntry": "4723dc17eeda43d68125e558871296f1",
+  "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/native-qa/media/Pool Rear.wav",
+  "sourceHeader": {
+    "channels": 6,
+    "rate": 48000,
+    "bits": 32,
+    "encoding": 3,
+    "frames": 240000
+  },
+  "output": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/native-qa/renders/Take 1-take-r10-6edbebc4.wav",
+  "renderHeader": {
+    "channels": 6,
+    "rate": 48000,
+    "bits": 32,
+    "encoding": 3,
+    "frames": 240000
+  },
+  "sha256": "0bc579d8c0dbbd1ed057c3be8ee88bcfcaf0229e488c958059ed05cc76987f09",
+  "pcmMaxError": 0.0,
+  "exportRoles": [
+    "L",
+    "R",
+    "C",
+    "LFE",
+    "Ls",
+    "Rs"
+  ],
+  "recipeHash": "35f1d5530c58767b2f952d1ad493b17b9f58a1f6779c63f81d045c2b8e6715d7",
+  "eventHash": "0b0572ae7623998d01b66f37611ef29f3ccd0d628b6212b5236435c0cb293276",
+  "origin": {
+    "layer": "3d0b3728151e4be6aa3ed92dd2bdd47d",
+    "pool": "6cbd52b3c461456f9a47ee7144b3e1c5",
+    "entry": {
+      "id": "4723dc17eeda43d68125e558871296f1",
+      "source": {
+        "id": "external-cd0b12aefd0543689197f1d6dd48d0fd",
+        "root": "",
+        "relative": "",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/native-qa/media/Pool Rear.wav",
+        "name": "Pool Rear.wav",
+        "revision": 1,
+        "size": 5760104,
+        "modified": 1795119671001902782,
+        "inode": 52333876,
+        "rate": 48000.0,
+        "samples": 240000,
+        "channels": 6,
+        "detectedLayout": {
+          "id": "5.1-rear-v1",
+          "roles": [
+            "L",
+            "R",
+            "C",
+            "LFE",
+            "Lb",
+            "Rb"
+          ]
+        },
+        "confidence": "container-mask"
+      },
+      "sha256": "89a2769559526a0b32aa589ee42417719579f4d5642c89e6c509e67f94b1c735",
+      "first": 0,
+      "last": 240000,
+      "channelPair": 0,
+      "external": true,
+      "enabled": true,
+      "reviewed": true,
+      "reviewedBus": {
+        "id": "5.1-side-v1",
+        "roles": [
+          "L",
+          "R",
+          "C",
+          "LFE",
+          "Ls",
+          "Rs"
+        ]
+      },
+      "routing": {
+        "interpretation": {
+          "id": "5.1-rear-v1",
+          "roles": [
+            "L",
+            "R",
+            "C",
+            "LFE",
+            "Lb",
+            "Rb"
+          ]
+        },
+        "inputs": [
+          0,
+          1,
+          2,
+          3,
+          4,
+          5
+        ],
+        "matrix": [
+          {
+            "in": 0,
+            "out": 0,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          },
+          {
+            "in": 1,
+            "out": 1,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          },
+          {
+            "in": 2,
+            "out": 2,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          },
+          {
+            "in": 3,
+            "out": 3,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          },
+          {
+            "in": 4,
+            "out": 4,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          },
+          {
+            "in": 5,
+            "out": 5,
+            "db": 0.0,
+            "invert": false,
+            "mute": false
+          }
+        ],
+        "spatial": false,
+        "needsSelection": false,
+        "azimuth": 0.0,
+        "width": 60.0,
+        "divergence": 0.0,
+        "lfeDb": -90.0,
+        "lfeCutoff": 120.0
+      }
+    },
+    "policy": "explicit-v1",
+    "seed": "0",
+    "ordinal": "0",
+    "processingAtFreeze": "stock-layout-takes-v2"
+  },
+  "printLayer": {
+    "id": "35a9a0826ed44b16b602cb0f546d71cb",
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/native-qa/renders/Take 1-take-r10-6edbebc4.wav",
+    "channels": 6,
+    "interpretation": {
+      "id": "5.1-side-v1",
+      "roles": [
+        "L",
+        "R",
+        "C",
+        "LFE",
+        "Ls",
+        "Rs"
+      ]
+    }
+  },
+  "note": "Native Browser drag, mapping, capture, render and actual Print callback; saved document audited independently. No human listening result is asserted."
+}

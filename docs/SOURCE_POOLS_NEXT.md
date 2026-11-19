@@ -34,3 +34,6 @@ Source switching remains disabled during Arming, Recording and Finalizing until 
 ## Corrected v1.4.1 contracts
 
 Use the [v1.4.1 compatibility and persistence contract](MULTICHANNEL_V1_4_1.md). Overrides belong to a source ID/revision and require reconfirmation after unverified replacement; a catalog refresh must not rewrite a resolved layer/take. Preserve physical pair indices and an explicit arithmetic-mean interpretation when converting old layers. Bind entry routing editors and audition requests to the actual source/context generation. Output-set membership and current-context output preferences are independent of the selected DSP layout and remain durable across entry/take changes. Retain old processing identities; create a separate versioned corrected copy rather than relabelling a frozen recipe.
+
+
+Source Pools v1.5 implementation: [workflow and limits](SOURCE_POOLS_V1_5.md), [ownership/identity contract](SOURCE_POOLS_V1_5_CONTRACT.md), [executed evidence and remaining qualifications](SOURCE_POOLS_V1_5_REPORT.md). The live-trigger/voice-event boundary above remains deferred.

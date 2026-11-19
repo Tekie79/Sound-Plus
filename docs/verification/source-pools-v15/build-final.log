@@ -1,0 +1,7 @@
+[0/2] Re-checking globbed directories...
+[1/6] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[2/6] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[3/6] Building CXX object CMakeFiles/SoundPlus.dir/src/SourcePoolView.cpp.o
+[4/6] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourcePoolView.cpp.o
+[5/6] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests
+[6/6] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus

@@ -29,9 +29,17 @@ bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
     if (!sources || sources->size() != (int)t.sources.size())
         return false;
     for (auto &s : t.sources)
+    {
         if (std::count_if(sources->begin(), sources->end(), [&](const auto &p)
                           { return p["id"].toString() == s.id && p["sha256"].toString() == s.sha256; }) != 1)
             return false;
+        auto expected = poolOriginsForSource(t, s.id);
+        if (!expected.isVoid())
+            for (auto &p : *sources)
+                if (p["id"].toString() == s.id &&
+                    juce::JSON::toString(p["poolOrigins"], true) != juce::JSON::toString(expected, true))
+                    return false;
+    }
     return true;
 }
 } // namespace
@@ -57,6 +65,7 @@ void DesignSession::recordTake()
         return;
     }
     endGesture();
+    invalidatePoolWork();
     document.activeTake.clear();
     stop();
     if (!document.activeMix().layout.id.isEmpty() && document.activeMix().routingVersion == 1)
@@ -225,6 +234,7 @@ void DesignSession::chooseOutput(const juce::String &path)
 }
 void DesignSession::selectTake(const juce::String &id)
 {
+    invalidatePoolWork();
     if (takeBusy())
     {
         message = "Stop recording before changing context";

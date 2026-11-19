@@ -1,5 +1,6 @@
 #include "DesignLive.h"
 #include "PerformanceState.h"
+#include "SourcePools.h"
 #include <juce_cryptography/juce_cryptography.h>
 namespace sp
 {
@@ -53,7 +54,8 @@ juce::String designPlaybackContext(const DesignDocument &d)
 }
 juce::String designStructure(const DesignDocument &document)
 {
-    auto mix = designMixToJson(document.activeMix());
+    auto resolved = audioSourceProjection(document);
+    auto mix = designMixToJson(resolved.activeMix());
     mix = mix.clone();
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
@@ -150,6 +152,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         layer.fadeOutPoints = fadePointsFromJson(value["fadeOutPoints"]);
         applyRack(layer.effects, value["effects"]);
     }
+    syncPoolSelection(changed.activeMix());
     validateDesign(changed);
     document = std::move(changed);
 }

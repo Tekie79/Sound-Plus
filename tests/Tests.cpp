@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 void runPlaybackSearchTests(const juce::File &, const juce::File &);
+void runSourcePoolTests(const juce::File &, const juce::File &);
+void prepareSourcePoolUI(const juce::File &);
 namespace
 {
 int checks = 0;
@@ -79,6 +81,16 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-source-pool-ui")
+        {
+            prepareSourcePoolUI(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--source-pools")
+        {
+            runSourcePoolTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--playback-search")
         {
             runPlaybackSearchTests(juce::File(argv[2]), juce::File(argv[3]));

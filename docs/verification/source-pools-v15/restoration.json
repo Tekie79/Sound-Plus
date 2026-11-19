@@ -1,0 +1,22 @@
+{
+  "utc": "2026-11-19T20:45:57.966563+00:00",
+  "document": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "revision": 17543,
+  "variation": "e383571e7a124e6f98ada83b842abade",
+  "recoveryEnvelopeIdenticalToPostQuit": true,
+  "mediaChecks": {
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/external/rain.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-014.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-030.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-038.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav": true
+  },
+  "nativeAXRevision17543": true,
+  "nativeAXVariation5": true,
+  "actualDataDir": "build/gain-hover-native",
+  "note": "Actual user session reopened, no older snapshot restored, no source edit or playback performed."
+}

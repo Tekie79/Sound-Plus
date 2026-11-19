@@ -4,6 +4,7 @@
 #include "UIComponents.h"
 #include "DesignControls.h"
 #include "PerformView.h"
+#include "SourcePoolView.h"
 #include <map>
 namespace sp
 {
@@ -56,6 +57,7 @@ class DesignerView final : public juce::Component,
     }
 
   private:
+    friend class Benchmark;
     friend struct CorrectionViewTestAccess;
     friend struct DesignerViewTestAccess;
     friend struct TakeIntegrityTestAccess;
@@ -75,6 +77,13 @@ class DesignerView final : public juce::Component,
     struct Canvas;
     std::unique_ptr<Canvas> canvas;
     std::unique_ptr<PerformView> perform;
+    std::unique_ptr<SourcePoolView> alternatives;
+    void choosePoolFiles(const juce::String &layer, const juce::String &relocate = {});
+    void reviewPoolSource(const juce::String &entry);
+    void showPoolPopup(const juce::String &layer);
+    std::unique_ptr<juce::FileChooser> poolChooser;
+    std::unique_ptr<juce::Component> poolPopover, poolReview;
+    uint64_t poolPopoverSerial = 0, poolReviewSerial = 0;
     ui::TextActionButton editWorkspace{"Edit", true}, performWorkspace{"Perform", true},
         snapshotButton{"Save Snapshot"};
     bool performMode = false;

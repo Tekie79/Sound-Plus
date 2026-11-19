@@ -78,7 +78,7 @@ WaveformPool::WaveformPool(const juce::File &directory, std::function<void()> be
 }
 void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
 {
-    if (owner < 0 || owner > 5)
+    if (owner < 0 || owner > 7)
         return;
     auto &wanted = owners[owner];
     wanted.clear();

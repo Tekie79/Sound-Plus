@@ -1,0 +1,24 @@
+{
+  "source": "6c3e18a60a8bd088de3aa03c9265782e900379e7",
+  "utc": "2026-11-19T19:35:46.243709+00:00",
+  "arch": "arm64",
+  "macOS": "26.3.2",
+  "artifacts": {
+    "app": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/baseline-build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "sha256": "74248b7b988c32cc997942b10678af50dfc96344a199c018d9487cb1357ae30c"
+    },
+    "audio": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/baseline-build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "sha256": "964e24008c6d2b03edce20b2067e8bc21688489d443d1e1b35b094ca943307d9"
+    },
+    "ai": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/baseline-build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "sha256": "b5a6da3b38e979c3c78d9023d84e8b282dbe70fd62007357bbdb66a626b33941"
+    },
+    "tests": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pools-v15/baseline-build/SoundPlusTests_artefacts/Release/SoundPlusTests",
+      "sha256": "118bfb1e5fbd711c598848c5b8a8e83d205dd2d304fa9453f54613186ceeb38a"
+    }
+  }
+}

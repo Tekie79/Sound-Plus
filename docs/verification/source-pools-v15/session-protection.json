@@ -1,0 +1,22 @@
+{
+  "document": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "revision": 17543,
+  "variation": "e383571e7a124e6f98ada83b842abade",
+  "utc": "2026-11-19T19:47:02.330253+00:00",
+  "documentSha256": "0ef1695acd2abbe73f0d4a57576f9f57faa5d69f00f75b3517f70ab2f388b182",
+  "files": {
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/external/rain.wav": "5f15ab2d8f6ef9932909b1b75c8ac254cbea46c93b4b2f0f3542abdf09b9abc0",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-014.wav": "4cb5f7267a35b54ee111306445dd3cb1ee73dc4993c3d31ddb81ca9728fdc873",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-030.wav": "83eb3e6065246fd87d1acbbe414aa5bfb7c2081a57c188713cdc017819ffc38f",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-038.wav": "02afa3102978b5fb16f9c6237d90231abb74318873309600f01caf4776746944",
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+  },
+  "postQuitDocumentSha256": "443f0d4f3d0cc0061aecae81623f982172283bcf9c51cce52bdc01f15ce16bfd",
+  "postQuitPlayhead": 781712,
+  "preQuitPlayhead": 356864,
+  "note": "Graceful quit parked the running playhead at 781712; revision 17543, variation, mixes and outputs remained identical. Post-quit snapshot is the final baseline for restoration."
+}

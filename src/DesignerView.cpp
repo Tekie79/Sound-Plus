@@ -46,6 +46,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
     perform = std::make_unique<PerformView>(session, peakPool);
+    perform->onAlternatives = [this](const auto &id) { showPoolPopup(id); };
     perform->onOpenEdit = [this](const juce::String &)
     {
         if (!session.takeBusy() && session.document.activeTake.isEmpty())
@@ -402,6 +403,15 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     inspector.addAndMakeVisible(relink);
     relink->setBounds(282, layerHeaderY, 28, 28);
     relink->onClick = [this] { chooseFile(2); };
+    alternatives = std::make_unique<SourcePoolView>(session, peakPool, preferences);
+    inspector.addAndMakeVisible(*alternatives);
+    alternatives->setBounds(8, inspectorY, 306, 30);
+    inspectorY += 36;
+    alternatives->onHeightChanged = [this] { layoutInspector(); };
+    alternatives->onAdd = [this] { choosePoolFiles(session.document.selectedLayer); };
+    alternatives->onReview = [this](const auto &id) { reviewPoolSource(id); };
+    alternatives->onRelocate = [this](const auto &id)
+    { choosePoolFiles(session.document.selectedLayer, id); };
     inspector.addAndMakeVisible(routingButton);
     routingButton.onClick = [this] { routingPopup(); };
     inspector.addAndMakeVisible(channelDetail);
@@ -719,6 +729,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
 }
 DesignerView::~DesignerView()
 {
+    poolReview.reset();
+    poolPopover.reset();
     session.onChange = {};
     stopTimer();
     canvasViewport.setViewedComponent(nullptr, false);
@@ -773,6 +785,12 @@ void DesignerView::layoutInspector()
         g.header->setToggleState(g.open, juce::dontSendNotification);
         y += 36;
         int height = g.height;
+        int poolDelta = g.name == "LAYER" && alternatives ? alternatives->preferredHeight() - 30 : 0;
+        int poolY = -1;
+        for (auto &[child, bounds] : g.children)
+            if (child == alternatives.get())
+                poolY = bounds.getY();
+        height += poolDelta;
         bool noSourceError = g.name == "LAYER" &&
                              (!session.selectedLayer() || session.selectedLayer()->source.error.isEmpty()) &&
                              session.document.activeMix().layout.id.isEmpty();
@@ -797,6 +815,10 @@ void DesignerView::layoutInspector()
         for (auto &[child, bounds] : g.children)
         {
             auto positioned = bounds;
+            if (child == alternatives.get())
+                positioned.setHeight(alternatives->preferredHeight());
+            else if (poolY >= 0 && bounds.getY() > poolY)
+                positioned.translate(0, poolDelta);
             if (noSourceError && bounds.getY() >= 56)
                 positioned.translate(0, -28);
             child->setBounds(positioned.translated(0, y));
@@ -1149,6 +1171,8 @@ void DesignerView::refresh()
     title.setTooltip("Referenced design | " + juce::String(d.sampleRate, 0) + " Hz timeline | revision " +
                      juce::String(d.revision));
     auto *layer = session.selectedLayer();
+    if (alternatives)
+        alternatives->bind();
     layerName.setText(layer ? layer->name : "Select a layer", juce::dontSendNotification);
     sourceInfo.setText(layer ? layer->source.error : juce::String(), juce::dontSendNotification);
     layerName.setTooltip(layer ? layer->source.path + "\n" + juce::String(layer->source.sampleRate, 0) +
@@ -1436,6 +1460,9 @@ void DesignerView::timerCallback()
                     visibleLayers.push_back(layers[(size_t)i].source);
         }
     }
+    if (alternatives)
+        if (auto foreground = alternatives->foregroundSource())
+            cards.insert(cards.begin(), *foreground);
     peakPool->demand(1, cards);
     peakPool->demand(3, visibleLayers);
     peakPool->tick();
@@ -1871,6 +1898,26 @@ void DesignerView::variationPopup()
     add("Fades +/-s", varyFades, s.fadeSeconds, 2, [](auto &s, double v) { s.fadeSeconds = v; });
     add("Trim +/-s", varyTrim, s.trimSeconds, 2, [](auto &s, double v) { s.trimSeconds = v; });
     add("Stock FX amount +/-", varyEffects, s.effectAmount, 1, [](auto &s, double v) { s.effectAmount = v; });
+    auto *sources = new juce::ToggleButton("Choose alternate source");
+    panel->children.add(sources);
+    panel->addAndMakeVisible(sources);
+    sources->setBounds(10, y, 354, 28);
+    sources->setTitle("Enable seeded source-choice variation");
+    sources->setTooltip("Opt-in deterministic choice among enabled, reviewed alternatives. The source-choice "
+                        "lock is independent of other locks.");
+    sources->setToggleState((s.enabled & varySource) != 0, juce::dontSendNotification);
+    sources->onClick = [this, sources]
+    {
+        session.editMetadata("Source variation enabled",
+                             [&](auto &d)
+                             {
+                                 if (sources->getToggleState())
+                                     d.variationSettings.enabled |= varySource;
+                                 else
+                                     d.variationSettings.enabled &= ~varySource;
+                             });
+    };
+    y += 35;
     auto *count = new juce::Slider();
     panel->children.add(count);
     panel->addAndMakeVisible(count);
@@ -2164,6 +2211,8 @@ juce::var DesignerView::interactionMetrics() const
     auto metrics = canvas->interactionMetrics();
     metrics.getDynamicObject()->setProperty("heardEdits", heardEdits);
     metrics.getDynamicObject()->setProperty("audio", audio.status());
+    if (alternatives)
+        metrics.getDynamicObject()->setProperty("sourcePools", alternatives->metrics());
     return metrics;
 }
 namespace

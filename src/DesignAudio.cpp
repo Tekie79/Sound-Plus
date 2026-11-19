@@ -1,4 +1,5 @@
 #include "DesignAudio.h"
+#include "SourcePools.h"
 #include "ProcessorBusContract.h"
 #include "DesignLive.h"
 #include "PerformanceState.h"
@@ -597,7 +598,8 @@ struct DesignGraph::Impl
     juce::AudioBuffer<float> block{2, 512};
     explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled,
                   const DesignDocument *effectiveInput)
-        : sampleRate(d.sampleRate), master(d.activeMix().masterDb), document(resolvePerformance(d))
+        : sampleRate(d.sampleRate), master(d.activeMix().masterDb),
+          document(resolvePerformance(audioSourceProjection(d)))
     {
         validateDesign(d);
         if (auto *t = selectedTake(d))
@@ -750,7 +752,7 @@ struct DesignReader::Impl : juce::AudioSource
          const std::function<bool()> &cancelled, int64_t warmup, const DesignDocument *effectiveInput)
         : document(effectiveInput    ? *effectiveInput
                    : selectedTake(d) ? takeDocument(d)
-                                     : d),
+                                     : audioSourceProjection(d)),
           graph(d, cancelled, &document), immutableReplay(selectedTake(d) != nullptr), firstFrame(first),
           lastOverride(last), tailSeconds(tail),
           end((last < 0 ? mixDuration(document.activeMix(), document.sampleRate) : last) +
@@ -1001,6 +1003,9 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                 if (source["id"].toString() == layer.source.id)
                 {
                     auto *o = source.getDynamicObject();
+                    auto origins = poolOriginsForSource(*t, layer.source.id);
+                    if (!origins.isVoid())
+                        o->setProperty("poolOrigins", origins);
                     o->setProperty("effectivePath", layer.source.path);
                     o->setProperty("revision", (juce::int64)layer.source.revision);
                     o->setProperty("size", (juce::int64)layer.source.size);

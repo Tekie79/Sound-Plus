@@ -56,9 +56,10 @@ void SourceCard::bind(const DesignLayer *value, const juce::String &id, const ju
     const auto description =
         layer ? nameToShow + "\n" + layer->source.path +
                     "\nAll-channel source overview before fades, gain and inserts. " +
-                    juce::String(readOnly ? "Frozen take source. Choose Live Design to edit."
-                                          : "Double-click waveform or press Return to open in Edit. Drag to "
-                                            "assign another corner.")
+                    juce::String(readOnly
+                                     ? "Frozen take source. Choose Live Design to edit."
+                                     : "Double-click waveform or press Return to open in Edit. Drag to "
+                                       "assign another corner. Right-click or Shift-Return for Alternatives.")
               : "Drop a Library sound or design layer, or choose a layer with the arrow.";
     title.setTooltip(description + (readOnly ? "" : "\nDouble-click title to edit alias."));
     auto channels =
@@ -193,16 +194,21 @@ void SourceCard::paint(juce::Graphics &g)
         g.drawRoundedRectangle(getLocalBounds().toFloat().reduced(.75f), 6, 1);
     }
 }
-void SourceCard::mouseDown(const juce::MouseEvent &)
+void SourceCard::mouseDown(const juce::MouseEvent &e)
 {
     grabKeyboardFocus();
+    if (e.mods.isPopupMenu() && layer && onAlternatives)
+    {
+        onAlternatives(layer->id);
+        return;
+    }
     if (layer && onSelect)
         onSelect(layer->id);
     capturedDrag = dragPayload.clone();
 }
 void SourceCard::mouseDrag(const juce::MouseEvent &e)
 {
-    if (!layer || e.getDistanceFromDragStart() < 5)
+    if (!layer || e.mods.isPopupMenu() || e.getDistanceFromDragStart() < 5)
         return;
     if (capturedDrag.isObject() &&
         (capturedDrag["document"] != dragPayload["document"] ||
@@ -220,6 +226,11 @@ void SourceCard::mouseDoubleClick(const juce::MouseEvent &)
 }
 bool SourceCard::keyPressed(const juce::KeyPress &k)
 {
+    if (k.isKeyCode(juce::KeyPress::returnKey) && k.getModifiers().isShiftDown() && layer && onAlternatives)
+    {
+        onAlternatives(layer->id);
+        return true;
+    }
     if (k.isKeyCode(juce::KeyPress::returnKey) && layer && onEdit)
     {
         onEdit(layer->id);

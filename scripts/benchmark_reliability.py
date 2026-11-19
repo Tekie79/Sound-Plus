@@ -65,6 +65,8 @@ def run(a):
     if a.replay_take:
         replay=out/'Replay input.soundplus';shutil.copyfile(a.replay_take.resolve(),replay)
     plan={'replayTake':str(replay) if replay else '', 'recordTake':a.record_take,'designLayout':a.design_layout,'channelDetails':a.channel_details,'detailSource':str(a.detail_source.resolve()) if a.detail_source else '','mode':'semantic-designer-reliability','durationMs':a.seconds*1000,'bufferFrames':a.buffer_frames,'cycleMs':a.cycle_ms,'designFile':str(root/'design/workload.soundplus'),'corpusFolder':manifest['corpus'],'corpusFiles':manifest['files'],'offlineFolder':manifest['offline'],'indexBatches':manifest['indexBatches']}
+
+    if a.pool_sources: plan['poolSources']=json.loads(a.pool_sources.read_text())
     write(out/'plan.json',plan)
     result=None
     try:
@@ -88,5 +90,5 @@ def run(a):
 
 p=argparse.ArgumentParser();sub=p.add_subparsers(dest='action',required=True)
 q=sub.add_parser('prepare');q.add_argument('--output',type=Path,required=True);q.add_argument('--files',type=int,default=10000);q.add_argument('--tests',type=Path,default=Path('build/SoundPlusTests_artefacts/Release/SoundPlusTests'))
-q=sub.add_parser('run');q.add_argument('--fixture',type=Path,required=True);q.add_argument('--output',type=Path,required=True);q.add_argument('--seconds',type=int,default=120);q.add_argument('--cycle-ms',type=int,default=1500);q.add_argument('--buffer-frames',type=int,choices=[256,512],default=512);q.add_argument('--warm-from',type=Path);q.add_argument('--record-take',action='store_true');q.add_argument('--design-layout',default='');q.add_argument('--channel-details',action='store_true');q.add_argument('--detail-source',type=Path);q.add_argument('--replay-take',type=Path);q.add_argument('--app',type=Path,default=Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus'))
+q=sub.add_parser('run');q.add_argument('--fixture',type=Path,required=True);q.add_argument('--output',type=Path,required=True);q.add_argument('--seconds',type=int,default=120);q.add_argument('--cycle-ms',type=int,default=1500);q.add_argument('--buffer-frames',type=int,choices=[256,512],default=512);q.add_argument('--warm-from',type=Path);q.add_argument('--record-take',action='store_true');q.add_argument('--design-layout',default='');q.add_argument('--channel-details',action='store_true');q.add_argument('--detail-source',type=Path);q.add_argument('--pool-sources',type=Path);q.add_argument('--replay-take',type=Path);q.add_argument('--app',type=Path,default=Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus'))
 a=p.parse_args();prepare(a) if a.action=='prepare' else run(a)

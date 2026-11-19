@@ -18,6 +18,7 @@ class SourceCard final : public juce::Component, public juce::SettableTooltipCli
     void mouseDoubleClick(const juce::MouseEvent &) override;
     bool keyPressed(const juce::KeyPress &) override;
     std::function<void(const juce::String &)> onSelect, onEdit;
+    std::function<void(const juce::String &)> onAlternatives;
     juce::var dragPayload;
     juce::String stateText() const
     {

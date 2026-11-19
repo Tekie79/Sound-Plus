@@ -1,5 +1,6 @@
 #include "DesignModel.h"
 #include "PerformanceState.h"
+#include "SourcePools.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <cmath>
@@ -52,6 +53,8 @@ juce::var mixJson(const DesignMix &mix)
             if (l.source.layoutOverride.id.isNotEmpty())
                 put(s, "interpretationOverride", layoutJson(l.source.layoutOverride));
         }
+        if (l.pool)
+            put(v, "sourcePool", sourcePoolToJson(*l.pool));
         put(v,"first",(juce::int64)l.region.startSample);put(v,"last",(juce::int64)l.region.endSample);put(v,"channelPair",l.region.auditionPair);
         put(v,"placement",(juce::int64)l.placement);put(v,"sync",(juce::int64)l.sync);put(v,"fadeIn",(juce::int64)l.fadeIn);put(v,"fadeOut",(juce::int64)l.fadeOut);
         if(l.fadeInShape!=FadeShape::linear)put(v,"fadeInShape",fadeShapeId(l.fadeInShape));
@@ -87,6 +90,18 @@ DesignMix mixFrom(const juce::var &o)
             l.source.layoutConfidence = s["layoutConfidence"].toString();
             if (s.hasProperty("interpretationOverride"))
                 l.source.layoutOverride = layoutFromJson(s["interpretationOverride"]);
+        }
+        if (v.hasProperty("sourcePool"))
+        {
+            l.pool = sourcePoolFromJson(v["sourcePool"]);
+            if (mix.layout.id.isEmpty())
+                for (auto &entry : l.pool->entries)
+                    if (entry.id == l.pool->selected)
+                    {
+                        l.source.detectedChannels = entry.source.detectedChannels;
+                        l.source.layoutConfidence = entry.source.layoutConfidence;
+                        l.source.layoutOverride = entry.source.layoutOverride;
+                    }
         }
         l.region.startSample=integer(v,"first");l.region.endSample=integer(v,"last");l.region.auditionPair=(int)v["channelPair"];l.region.revision=l.source.revision;l.region.size=l.source.size;l.region.modified=l.source.modified;l.region.inode=l.source.inode;
         l.placement=integer(v,"placement");l.sync=integer(v,"sync");l.fadeIn=integer(v,"fadeIn");l.fadeOut=integer(v,"fadeOut");l.fadeInShape=fadeShapeFromId(v["fadeInShape"].toString());l.fadeOutShape=fadeShapeFromId(v["fadeOutShape"].toString());l.fadeInPoints=fadePointsFromJson(v["fadeInPoints"]);l.fadeOutPoints=fadePointsFromJson(v["fadeOutPoints"]);l.controlGain=v.hasProperty("controlGain")?(double)v["controlGain"]:1;l.gainDb=(double)v["gainDb"];l.pan=(double)v["pan"];l.rate=(double)v["rate"];
@@ -228,7 +243,9 @@ juce::var designToJson(const DesignDocument &d)
     }
     put(o, "outputFolder", d.outputFolder);
     put(o, "format", "SoundPlus referenced design");
-    put(o, "version", performanceFormat(d));
+    put(o, "version", hasSourcePools(d) ? 7 : performanceFormat(d));
+    if (hasSourcePools(d))
+        put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
         performanceFormat(d) == 6   ? "stock-layout-v2"
         : performanceFormat(d) == 5 ? "stock-layout-v1"
@@ -296,8 +313,9 @@ juce::var designToJson(const DesignDocument &d)
 DesignDocument designFromJson(const juce::var &o)
 {
     int version=(int)o["version"];auto dsp=o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 6) ||
-        (version == 6   ? dsp != "stock-layout-v2"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 7) ||
+        (version == 7   ? (int)o["sourcePoolMetadataVersion"] != 1
+         : version == 6 ? dsp != "stock-layout-v2"
          : version == 5 ? dsp != "stock-layout-v1"
          : version == 4 ? dsp != "stock-takes-v1"
          : version == 3 ? dsp != "stock-perform-v2"
@@ -369,6 +387,10 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     validateDesign(d);
+    if (hasSourcePools(d) && version < 7)
+        throw std::runtime_error("Source pools require document manifest 7");
+    if (version == 7 && designToJson(d)["dsp"].toString() != dsp)
+        throw std::runtime_error("Source pool metadata cannot relabel the DSP contract");
     if (performanceFormat(d) > version)
         throw std::runtime_error("Document processing/metadata requires a newer version");
     if (shapedFades(d) && version == 1 && o["dsp"].toString() != "stock-sinc32-v2")
@@ -394,6 +416,7 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
         juce::StringArray ids;
         for (auto &l : m.layers)
         {
+            validatePool(l, m.layout);
             if (l.id.isEmpty() || ids.contains(l.id))
                 throw std::runtime_error("Duplicate or empty layer identity");
             ids.add(l.id);
@@ -534,6 +557,8 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d,uint64_t
 {
     validateDesign(d);auto &s=d.variationSettings;std::vector<DesignVariation> result;
     for(int n=0;n<s.count;++n){DesignVariation v;v.name="Variation "+juce::String(n+1);v.seed=seed+0x9e3779b97f4a7c15ULL*(uint64_t)(n+1);std::mt19937_64 rng(v.seed);auto delta=[&](double bound){return (((rng()>>11)*(1.0/9007199254740992.0))*2-1)*bound;};v.mix=d.activeMix();
+        if (s.enabled & varySource)
+            resolvePoolChoices(v.mix, seed, (uint64_t)n, d.sampleRate);
         for(auto &l:v.mix.layers){if(l.locked)continue;auto enabled=[&](uint32_t bit){return (s.enabled&bit) && !(l.locks&bit) && !(bit==varyGain && performanceOwns(v.mix,{l.id,{},"gain"})) && !(bit==varyPan && performanceOwns(v.mix,{l.id,{},"pan"}));};
             if(enabled(varyGain))l.gainDb=std::clamp(l.gainDb+delta(s.gainDb),-90.0,24.0);if(enabled(varyPan))l.pan=std::clamp(l.pan+delta(s.pan),-1.0,1.0);
             if(enabled(varyPlacement))l.placement=std::max<int64_t>(0,l.placement+(int64_t)std::llround(delta(s.placementSeconds)*d.sampleRate));
@@ -541,7 +566,9 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d,uint64_t
             if(enabled(varyFades)){if(!(l.locks&lockFadeIn))l.fadeIn=std::max<int64_t>(0,l.fadeIn+(int64_t)std::llround(delta(s.fadeSeconds)*d.sampleRate));if(!(l.locks&lockFadeOut))l.fadeOut=std::max<int64_t>(0,l.fadeOut+(int64_t)std::llround(delta(s.fadeSeconds)*d.sampleRate));}
             if(enabled(varyTrim)){auto amount=(int64_t)std::llround(s.trimSeconds*l.source.sampleRate);if(!(l.locks&lockTrimIn))l.region.startSample=std::clamp<int64_t>(l.region.startSample+(int64_t)std::llround(delta(amount)),0,l.sync);if(!(l.locks&lockTrimOut))l.region.endSample=std::clamp<int64_t>(l.region.endSample+(int64_t)std::llround(delta(amount)),l.sync+1,l.source.samples);}
             if(enabled(varyEffects))for(auto &e:l.effects)if(!e.locked){for(int p=0;p<(e.type=="gain" ? 1 : e.type=="filter" ? 2 : e.type=="delay" ? 3 : 4);++p)if(!(e.parameterLocks&(1u<<p)) && !performanceEffectOwned(v.mix,l.id,e,p)){auto &value=e.parameters[(size_t)p];if(e.type=="gain")value=std::clamp(value+delta(s.effectAmount*24),-90.0,24.0);else if(e.type=="filter")value=std::clamp(value*std::pow(2.0,delta(s.effectAmount*4)),p==0 ? 10.0 : 20.0,p==0 ? 20000.0 : 40000.0);else if(e.type=="delay" && p==0)value=std::clamp(value*(1+delta(s.effectAmount)),1.0,2000.0);else value=std::clamp(value+delta(s.effectAmount),0.0,e.type=="delay" && p==1 ? .95 : 1.0);}}}
-        result.push_back(std::move(v));}
+        syncPoolSelection(v.mix);
+        result.push_back(std::move(v));
+    }
     return result;
 }
 Asset inspectDesignSource(const juce::File &file)
@@ -566,9 +593,53 @@ Asset inspectDesignSource(const juce::File &file)
 }
 void resolveDesignSources(DesignDocument &d,const juce::File &catalog)
 {
-    Catalog db(catalog,true);auto resolve=[&](DesignMix &m){for(auto &l:m.layers){l.source.error.clear();if(!l.external){auto current=db.asset(l.source.id);if(current.id.isEmpty()){l.source.error="Missing catalog source; relink required";continue;}if(current.revision!=l.source.revision){l.source.error="Source revision changed; accept a replacement";continue;}l.source.path=current.path;}
-        FileStamp stamp;if(!fileStamp(juce::File(l.source.path),stamp))l.source.error="Offline or missing; relink source";
-        else if(stamp.size!=l.source.size || stamp.modified!=l.source.modified || stamp.inode!=l.source.inode)l.source.error="Source changed; accept a replacement";}};
+    Catalog db(catalog, true);
+    auto resolve = [&](DesignMix &m)
+    {
+        for (auto &l : m.layers)
+        {
+            l.source.error.clear();
+            if (!l.external)
+            {
+                auto current = db.asset(l.source.id);
+                if (current.id.isEmpty())
+                {
+                    l.source.error = "Missing catalog source; relink required";
+                    continue;
+                }
+                if (current.revision != l.source.revision)
+                {
+                    l.source.error = "Source revision changed; accept a replacement";
+                    continue;
+                }
+                l.source.path = current.path;
+            }
+            FileStamp stamp;
+            if (!fileStamp(juce::File(l.source.path), stamp))
+                l.source.error = "Offline or missing; relink source";
+            else if (stamp.size != l.source.size || stamp.modified != l.source.modified ||
+                     stamp.inode != l.source.inode)
+                l.source.error = "Source changed; accept a replacement";
+            if (l.pool)
+            {
+                auto at = std::find_if(l.pool->entries.begin(), l.pool->entries.end(),
+                                       [&](auto &e) { return e.id == l.pool->selected; });
+                if (at == l.pool->entries.end())
+                    throw std::runtime_error("Selected alternate is missing");
+                at->source.path = l.source.path;
+                if (l.source.error.isEmpty())
+                    try
+                    {
+                        verifyPoolEntry(*at);
+                        l.source = at->source;
+                    }
+                    catch (const std::exception &error)
+                    {
+                        l.source.error = error.what();
+                    }
+            }
+        }
+    };
     resolve(d.original);for(auto &v:d.variations)resolve(v.mix);
 }
 }

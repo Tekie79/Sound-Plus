@@ -39,7 +39,22 @@ struct PerformanceState
         for (int i = 0; i < 4; ++i) macros[(size_t)i].name = "Macro " + juce::String(i + 1);
     }
 };
-enum VariationParameter : uint32_t { varyGain=1,varyPan=2,varyPlacement=4,varyRate=8,varyReverse=16,varyFades=32,varyTrim=64,varyEffects=128, lockFadeIn=256,lockFadeOut=512,lockTrimIn=1024,lockTrimOut=2048 };
+enum VariationParameter : uint32_t
+{
+    varyGain = 1,
+    varyPan = 2,
+    varyPlacement = 4,
+    varyRate = 8,
+    varyReverse = 16,
+    varyFades = 32,
+    varyTrim = 64,
+    varyEffects = 128,
+    lockFadeIn = 256,
+    lockFadeOut = 512,
+    lockTrimIn = 1024,
+    lockTrimOut = 2048,
+    varySource = 4096
+};
 struct StockEffect
 {
     juce::String id=juce::Uuid().toString(),type="gain";
@@ -47,6 +62,24 @@ struct StockEffect
     std::array<double,4> parameters{0,0,0,0};
     uint32_t parameterLocks=0;
 };
+struct SourcePoolEntry
+{
+    juce::String id = juce::Uuid().toString(), fingerprint;
+    Asset source;
+    PlaybackRegion region;
+    LayerRouting routing;
+    ChannelLayout reviewedBus;
+    bool external = false, enabled = true, reviewed = false;
+};
+struct SourcePool
+{
+    juce::String id = juce::Uuid().toString(), selected;
+    std::vector<SourcePoolEntry> entries;
+    bool choiceLocked = false;
+    juce::String policy = "explicit-v1";
+    uint64_t seed = 0, ordinal = 0;
+};
+constexpr size_t maxPoolEntries = 64;
 struct DesignLayer
 {
     juce::String id=juce::Uuid().toString(),name;
@@ -62,6 +95,7 @@ struct DesignLayer
     uint32_t locks=0;
     uint32_t colour=0; // Optional ARGB track colour. Zero uses the application palette.
     std::vector<StockEffect> effects;
+    std::optional<SourcePool> pool;
 };
 struct DesignMix
 {
@@ -160,6 +194,8 @@ struct PerformTake
     std::vector<TakeSource> sources;
     juce::String checkpoint;
     juce::String correctedFrom, originalRecipeHash, originalEventHash;
+    // Versioned provenance, outside the unchanged DSP recipe/event hash contract.
+    juce::String poolOrigins; // Canonical JSON, immutable value semantics.
 };
 constexpr size_t maxTakeEvents=8192,maxDocumentTakes=16;
 constexpr int maxTakeSeconds=120;

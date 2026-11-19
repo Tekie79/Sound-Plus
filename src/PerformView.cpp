@@ -186,6 +186,11 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
         cards[n] = std::make_unique<SourceCard>(assignmentNames[n], assignments[n], pool);
         addAndMakeVisible(*cards[n]);
         cards[n]->onSelect = [this](const juce::String &id) { session.selectLayer(id); };
+        cards[n]->onAlternatives = [this](const auto &id)
+        {
+            if (onAlternatives)
+                onAlternatives(id);
+        };
         cards[n]->onEdit = [this](const juce::String &id)
         {
             session.selectLayer(id);

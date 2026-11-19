@@ -24,6 +24,11 @@ struct Benchmark::ReliabilityRun
     juce::Array<juce::var> queryTimes, selectedTimes, viewportTimes, progress;
     bool replayOpened = false, replayRender = false;
     int replayMetadataEdits = 0;
+    bool poolPrepared = false, poolPending = false, poolSelectedReady = false;
+    double poolAt = 0, lastObservation = 0;
+    int poolSamples = 0;
+    juce::String poolExpected;
+    juce::Array<juce::var> poolSelected, poolViewports, observations;
     juce::String replayRecipeHash, replayEventHash;
 };
 namespace
@@ -51,6 +56,11 @@ juce::var Benchmark::reliabilityReport() const
     o->setProperty("activeMs",
                    r.activeStart ? (r.activeEnd ? r.activeEnd : monotonicMs()) - r.activeStart : 0);
     o->setProperty("audioAtStop", r.stopAudio);
+    o->setProperty("poolSelectedPreviewMs", distribution(r.poolSelected, "ms"));
+    o->setProperty("poolWholeViewportMs", distribution(r.poolViewports, "ms"));
+    o->setProperty("poolSelectedRaw", r.poolSelected);
+    o->setProperty("poolViewportRaw", r.poolViewports);
+    o->setProperty("timestampedAudioObservations", r.observations);
     o->setProperty("cycles", r.cycles);
     o->setProperty("selectedFiles", r.selections);
     o->setProperty("semanticPinnedRefreshes", r.semanticPinUpdates);
@@ -245,6 +255,15 @@ void Benchmark::reliabilityTick(double now)
                                 l.routing.spatial = true;
                     });
         }
+        if (auto *files = plan["poolSources"].getArray(); files && !files->isEmpty())
+        {
+            juce::StringArray paths;
+            for (auto &file : *files)
+                paths.add(file.toString());
+            designer->session.addPoolFiles(designer->session.document.activeMix().layers.front().id, paths);
+            r.stage = 9;
+            return;
+        }
         if ((bool)plan["channelDetails"])
         {
             auto &m = designer->session.performanceMix();
@@ -261,6 +280,26 @@ void Benchmark::reliabilityTick(double now)
             designer->session.recordTake();
         else
             designer->session.play();
+        r.stage = 2;
+        return;
+    }
+    if (r.stage == 9)
+    {
+        if (designer->session.working)
+            return;
+        if (!designer->session.document.activeMix().layers.front().pool)
+        {
+            save(false, "Pool preparation failed");
+            return;
+        }
+        designer->session.selectLayer(designer->session.document.activeMix().layers.front().id);
+        designer->setPerformMode(false);
+        designer->inspectorOpen = true;
+        designer->alternatives->expandForPopup();
+        designer->refresh();
+        designer->resized();
+        designer->session.seek(0);
+        designer->session.play();
         r.stage = 2;
         return;
     }
@@ -316,6 +355,69 @@ void Benchmark::reliabilityTick(double now)
         r.stopAudio = state;
         r.stage = 4;
         return;
+    }
+    if (now - r.lastObservation >= 250 || (double)state["preMonitorPeak"] <= 1e-8 ||
+        (int64_t)state["underruns"] > 0)
+    {
+        auto v = juce::var(new juce::DynamicObject());
+        auto *o = v.getDynamicObject();
+        o->setProperty("monotonicMs", now);
+        o->setProperty("activeMs", elapsed);
+        for (auto key : {"sourceSample", "preMonitorPeak", "peak", "underruns", "playing",
+                         "preparationsRequested", "graphEpoch", "playGeneration"})
+            o->setProperty(key, state[key]);
+        r.observations.add(v);
+        r.lastObservation = now;
+    }
+    if (plan["poolSources"].isArray())
+    {
+        auto &v = *designer->alternatives;
+        if (!r.poolPending && now - r.poolAt >= 1300 && r.poolSamples < 32)
+        {
+            int n = v.getNumRows();
+            int row = 1 + (r.poolSamples * 5) % std::max(1, n - 1);
+            v.list.selectRow(row, false, false);
+            v.list.repaint();
+            if (auto *entry = v.entry(row))
+            {
+                r.poolAt = now;
+                r.poolExpected = entry->id;
+                r.poolPending = true;
+                r.poolSelectedReady = false;
+                ++r.poolSamples;
+            }
+        }
+        if (r.poolPending)
+        {
+            auto found = v.rows.find(r.poolExpected);
+            if (!r.poolSelectedReady && found != v.rows.end() && found->second.geometry &&
+                found->second.painted >= r.poolAt)
+            {
+                auto o = juce::var(new juce::DynamicObject());
+                o.getDynamicObject()->setProperty("ms", now - r.poolAt);
+                o.getDynamicObject()->setProperty("entry", r.poolExpected);
+                r.poolSelected.add(o);
+                r.poolSelectedReady = true;
+            }
+            auto area = v.list.getViewport()->getViewArea();
+            int first = area.getY() / 62, last = std::min(v.getNumRows(), (area.getBottom() + 61) / 62);
+            bool ready = first < last;
+            for (int row = first; row < last; ++row)
+                if (auto *entry = v.entry(row))
+                {
+                    auto found = v.rows.find(entry->id);
+                    ready &=
+                        found != v.rows.end() && found->second.geometry && found->second.painted >= r.poolAt;
+                }
+            if (ready && r.poolSelectedReady)
+            {
+                auto o = juce::var(new juce::DynamicObject());
+                o.getDynamicObject()->setProperty("ms", now - r.poolAt);
+                o.getDynamicObject()->setProperty("rows", last - first);
+                r.poolViewports.add(o);
+                r.poolPending = false;
+            }
+        }
     }
     ++r.audioChecks;
     if ((double)state["preMonitorPeak"] > 1e-8)
@@ -471,6 +573,13 @@ void Benchmark::reliabilityTick(double now)
             r.stage = 8;
             return;
         }
+        if (plan["poolSources"].isArray() && (r.poolSelected.size() < 20 || r.poolViewports.size() < 20))
+        {
+            save(false, "Pool preview/whole-viewport activity incomplete");
+            return;
+        }
+        r.activeEnd = now;
+        r.stopAudio = state;
         save(true);
         return;
     }

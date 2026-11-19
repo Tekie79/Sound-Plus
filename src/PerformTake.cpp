@@ -1,4 +1,5 @@
 #include "DesignModel.h"
+#include "SourcePools.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <set>
 #include <cmath>
@@ -156,6 +157,8 @@ juce::var takeToJson(const PerformTake &t)
     put(o, "kept", t.kept);
     put(o, "reason", t.reason);
     put(o, "checkpoint", t.checkpoint);
+    if (t.poolOrigins.isNotEmpty())
+        put(o, "poolOrigins", juce::JSON::parse(t.poolOrigins));
     if (t.correctedFrom.isNotEmpty())
     {
         auto origin = obj();
@@ -182,6 +185,8 @@ juce::var takeToJson(const PerformTake &t)
 PerformTake takeFromJson(const juce::var &o)
 {
     PerformTake t;
+    if (o.hasProperty("poolOrigins"))
+        t.poolOrigins = juce::JSON::toString(o["poolOrigins"], true);
     t.id = o["id"].toString();
     t.name = o["name"].toString();
     t.session = o["session"].toString();
@@ -284,8 +289,13 @@ void validateTake(const PerformTake &t)
         if (s.id.isEmpty() || s.sha256.length() != 64 || !ids.insert(s.id).second)
             throw std::runtime_error("Invalid take source fingerprint");
     for (auto &l : t.recipe->layers)
+    {
+        if (l.pool)
+            throw std::runtime_error("Frozen takes cannot depend on mutable source pools");
         if (!ids.contains(l.source.id))
             throw std::runtime_error("Take source fingerprint missing");
+    }
+    validatePoolOrigins(t);
 }
 PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
 {
@@ -295,9 +305,10 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     auto mix = d.activeMix();
     if (!mix.layout.id.isEmpty())
         mix.routingVersion = 2;
-    t.recipe = std::move(mix);
     if (!d.activeMix().layout.id.isEmpty())
         t.processing = "stock-layout-takes-v2";
+    freezePoolOrigins(t, mix);
+    t.recipe = std::move(mix);
     t.sampleRate = d.sampleRate;
     t.captureRate = d.sampleRate;
     t.reason = "Interrupted draft";

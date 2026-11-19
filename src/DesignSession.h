@@ -3,6 +3,7 @@
 #include "AudioIPC.h"
 #include "DesignRecovery.h"
 #include "SerialWorker.h"
+#include "SourcePools.h"
 #include <set>
 
 namespace sp
@@ -81,6 +82,18 @@ class DesignSession final : public juce::Component, private juce::Timer
     void addExternal(const juce::File &, int64_t placement = -1);
     void addExternals(const juce::StringArray &, int64_t placement);
     void replaceSource(const juce::String &layer, const juce::File &);
+    void addPoolSource(const juce::String &layer, const Asset &, int64_t first, int64_t last,
+                       bool external = false);
+    void addPoolFiles(const juce::String &layer, const juce::StringArray &);
+    void selectPoolEntry(const juce::String &layer, const juce::String &entry);
+    void reviewAndSelectPoolEntry(const juce::String &layer, const juce::String &entry, const LayerRouting &,
+                                  int pair);
+    void removePoolEntry(const juce::String &layer, const juce::String &entry,
+                         const juce::String &replacement = {});
+    void reorderPoolEntry(const juce::String &layer, const juce::String &entry, int delta);
+    void setPoolEntryEnabled(const juce::String &layer, const juce::String &entry, bool);
+    void lockPoolChoice(const juce::String &layer, bool);
+    void relinkPoolEntry(const juce::String &layer, const juce::String &entry, const juce::File &);
     void play();
     void playAccurate();
     void seek(int64_t);
@@ -175,6 +188,13 @@ class DesignSession final : public juce::Component, private juce::Timer
     std::array<uint64_t, (size_t)Operation::count> operations{};
     std::set<uint64_t> acceptedImports;
     uint64_t startupActivity = 0;
+    void invalidatePoolWork();
+    uint64_t poolHistoryEpoch = 0;
+    std::map<juce::String, std::shared_ptr<std::atomic<uint64_t>>> poolRequests;
+    void requestPoolActivation(const juce::String &, const juce::String &, std::optional<LayerRouting>,
+                               int pair = -99, const juce::String &remove = {});
+    void addPoolEntries(const juce::String &, std::function<std::vector<SourcePoolEntry>()>);
+    void generatePoolVariations(uint64_t);
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
