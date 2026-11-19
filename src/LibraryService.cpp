@@ -130,12 +130,13 @@ struct LibraryService::Impl
     DirectoryEvents events; // Outlives root watchers and all owned workers.
     std::vector<std::shared_ptr<Runtime>> roots;
     int completedJobs = 0;
-    explicit Impl(juce::File file, juce::File executable, juce::File model)
+    explicit Impl(juce::File file, juce::File executable, juce::File model, bool controlledSemantic)
         : database(std::move(file)), modelDirectory(model == juce::File() ? defaultModelDirectory() : model)
     {
         current.semantic.enabled = executable != juce::File();
         current.semantic.model = modelId(); current.semantic.preprocessing = preprocessingId();
-        if (current.semantic.enabled) inference = std::make_unique<AIProcess>(executable,modelDirectory);
+        if (current.semantic.enabled && !controlledSemantic) inference = std::make_unique<AIProcess>(executable,modelDirectory);
+        if (controlledSemantic) { current.semantic.enabled=true;current.semantic.ready=true; }
         writer = std::thread([this] { indexLoop(); });
         reader = std::thread([this] { searchLoop(); });
         if (inference)
@@ -1411,8 +1412,16 @@ struct LibraryService::Impl
         }
     }
 };
-LibraryService::LibraryService(juce::File file, juce::File executable, juce::File model)
-    : impl(std::make_unique<Impl>(std::move(file),std::move(executable),std::move(model))) {}
+LibraryService::LibraryService(juce::File file, juce::File executable, juce::File model, bool controlledSemantic)
+    : impl(std::make_unique<Impl>(std::move(file),std::move(executable),std::move(model),controlledSemantic)) {}
+void LibraryService::publishControlledSemantic(uint64_t request, std::vector<Asset> candidates)
+{
+    std::lock_guard lock(impl->mutex);
+    impl->semanticResult.request=request;
+    impl->semanticResult.candidates=std::move(candidates);
+    ++impl->semanticResultVersion;
+    impl->wake.notify_all();
+}
 LibraryService::~LibraryService() = default;
 void LibraryService::addFolder(const juce::File &f)
 {

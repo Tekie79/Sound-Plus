@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 1: library_stability
+1/4 Test #1: library_stability ................   Passed    1.52 sec
+    Start 2: waveform_scheduling
+2/4 Test #2: waveform_scheduling ..............   Passed    1.09 sec
+    Start 3: audio_health
+3/4 Test #3: audio_health .....................   Passed    7.06 sec
+    Start 4: waveform_previews
+4/4 Test #4: waveform_previews ................   Passed    0.48 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  10.15 sec

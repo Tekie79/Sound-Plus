@@ -50,11 +50,16 @@ class WaveformPool
     WaveformCache worker;
     std::map<int, std::vector<Asset>> owners;
     std::map<juce::String, Entry> completed;
+    // Bounded whole-source display summaries for demanded, evicted peak sources.
+    // Four surfaces *40 demands *2048 peak pairs maximum, separate from full peaks.
+    std::map<juce::String, Entry> displays;
     std::map<juce::String, Geometry> geometries;
     std::map<juce::String, uint64_t> serviced;
     juce::String pending;
     int pendingOwner = 0, foregroundStreak = 0;
     bool protectedBackground = false;
+    bool pendingValidation = false;
+    uint64_t validationAdmissions = 0, sinceValidation = 0;
     double startedMs = 0, submittedMs = 0, firstReadyMs = -1;
     std::vector<double> loadMs;
     uint64_t token = 0, clock = 0, requests = 0, diskHits = 0, memoryHits = 0, changedGeneration = 0;

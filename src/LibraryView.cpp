@@ -22,8 +22,8 @@ juce::String duration(double seconds)
 }
 } // namespace
 LibraryView::LibraryView(const juce::File &db, const juce::File &executable, bool enableAI,
-                         const juce::File &modelDirectory)
-    : library(db, enableAI ? executable : juce::File(), modelDirectory), audio(executable),
+                         const juce::File &modelDirectory, bool controlledSemantic)
+    : library(db, enableAI ? executable : juce::File(), modelDirectory, controlledSemantic), audio(executable),
       peakPool(std::make_shared<WaveformPool>(db.getParentDirectory().getChildFile("waveforms"))),
       referenceWaveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
@@ -845,6 +845,10 @@ void LibraryView::selectedRowsChanged(int)
 {
     if (updating)
         return;
+    updateSelection(true);
+}
+void LibraryView::updateSelection(bool explicitUserSelection)
+{
     if (auto *a = selected())
     {
         const auto playback = audio.status();
@@ -857,7 +861,7 @@ void LibraryView::selectedRowsChanged(int)
             (!rangeEdited && !a->matches.empty() && (!selectedAsset || selectedAsset->matches.empty()));
         // Freeze the matching ID sequence as soon as the user selects a row.
         // A new alphabetically earlier recording must not retarget that selection.
-        if(snapshot.request!=requested || !library.pinSelection(snapshot.request,snapshot.pageSerial,a->id))
+        if(snapshot.request!=requested || (explicitUserSelection && !library.pinSelection(snapshot.request,snapshot.pageSerial,a->id)))
             return;
         selectedId = a->id;
         selectedAsset = *a;
@@ -902,7 +906,7 @@ void LibraryView::selectedRowsChanged(int)
         assetId.setText(a->error, juce::dontSendNotification);
         detail.setTooltip(a->path + "\nAsset " + a->id + " | Revision " + juce::String(a->revision));
         assetId.setTooltip(a->path + "\n" + a->error);
-        if (continueAudition)
+        if (explicitUserSelection && continueAudition)
             playSelected(matchMode);
     }
 }
@@ -931,6 +935,10 @@ int LibraryView::restoreSelection(bool sameQuery)
 void LibraryView::cellDoubleClicked(int, int, const juce::MouseEvent &)
 {
     toggle();
+}
+void LibraryView::cellClicked(int row, int, const juce::MouseEvent &)
+{
+    if(!updating && row==table.getSelectedRow())updateSelection(true);
 }
 void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool chosen)
 {
@@ -1292,7 +1300,7 @@ void LibraryView::timerCallback()
                 sourceRow = (int)i + 1;
         sources.selectRow(sourceRow, true, false);
         updating = false;
-        if(row>=0)selectedRowsChanged(row);
+        if(row>=0)updateSelection(false);
         table.repaint();
         sources.repaint();
         repaint();

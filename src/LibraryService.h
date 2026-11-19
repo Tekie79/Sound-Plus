@@ -53,7 +53,7 @@ class LibraryService
 {
   public:
     explicit LibraryService(juce::File database, juce::File applicationExecutable = {},
-                             juce::File modelDirectory = {});
+                             juce::File modelDirectory = {}, bool controlledSemantic = false);
     ~LibraryService();
     void addFolder(const juce::File &);
     void rescan();
@@ -76,6 +76,8 @@ class LibraryService
     void clearReference();
 
   private:
+    friend struct LibraryReliabilityTestAccess;
+    void publishControlledSemantic(uint64_t, std::vector<Asset>);
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

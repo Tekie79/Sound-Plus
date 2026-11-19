@@ -11,6 +11,7 @@ struct WaveformCache::State
     std::mutex mutex;
     std::condition_variable wake, completed;
     std::optional<Asset> pending;
+    std::shared_ptr<const WaveformData> validation;
     std::shared_ptr<const WaveformData> result;
     std::atomic<uint64_t> generation{0};
     std::atomic<bool> stopping{false};
@@ -53,11 +54,12 @@ WaveformCache::~WaveformCache()
     else
         worker.detach();
 }
-uint64_t WaveformCache::request(const Asset &asset)
+uint64_t WaveformCache::request(const Asset &asset, std::shared_ptr<const WaveformData> validate)
 {
     std::lock_guard lock(state->mutex);
     auto id = ++state->generation;
     state->pending = asset;
+    state->validation = std::move(validate);
     state->wake.notify_all();
     return id;
 }
@@ -88,6 +90,7 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
     while (!stopping)
     {
         Asset a;
+        std::shared_ptr<const WaveformData> validation;
         uint64_t token;
         {
             std::unique_lock lock(mutex);
@@ -95,6 +98,7 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
             if (stopping)
                 return;
             a = *pending;
+            validation = std::move(state->validation);
             pending.reset();
             token = generation;
         }
@@ -120,6 +124,12 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                 data->status = WaveformData::Status::changed;
                 throw std::runtime_error("Recording changed or is offline");
             }
+            // Stamp-only service retains immutable display data without rereading
+            // derivatives. Offline/error entries decode again only on recovery.
+            if (validation && validation->status == WaveformData::Status::ready)
+                data->peaks = validation->peaks;
+            else
+            {
             directory.createDirectory();
             auto cache = directory.getChildFile(a.id + "-" + juce::String(a.revision) + "-peaks-v1.bin");
             if (cache.existsAsFile() && cache.getSize() <= 600000)
@@ -217,6 +227,7 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                 out.reset();
                 if (!temporary.overwriteTargetFileWithTemporary())
                     throw std::runtime_error("Cannot publish waveform cache");
+            }
             }
             if (!fileStamp(source, after) || !same(after))
                 throw std::runtime_error("Recording changed while loading waveform");

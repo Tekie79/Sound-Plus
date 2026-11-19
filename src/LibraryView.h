@@ -18,7 +18,7 @@ class LibraryView final : public juce::Component,
 {
   public:
     LibraryView(const juce::File &database, const juce::File &executable, bool enableAI = true,
-                const juce::File &modelDirectory = {});
+                const juce::File &modelDirectory = {}, bool controlledSemantic = false);
     ~LibraryView() override;
     void paint(juce::Graphics &) override;
     void paintOverChildren(juce::Graphics &) override;
@@ -74,7 +74,9 @@ class LibraryView final : public juce::Component,
     void paintRowBackground(juce::Graphics &, int, int, int, bool) override;
     void paintCell(juce::Graphics &, int, int, int, int, bool) override;
     void selectedRowsChanged(int) override;
+    void updateSelection(bool explicitUserSelection);
     void cellDoubleClicked(int, int, const juce::MouseEvent &) override;
+    void cellClicked(int, int, const juce::MouseEvent &) override;
     juce::var getDragSourceDescription(const juce::SparseSet<int> &) override;
     void paintListBoxItem(int, juce::Graphics &, int, int, bool) override;
     void listBoxItemClicked(int, const juce::MouseEvent &) override;

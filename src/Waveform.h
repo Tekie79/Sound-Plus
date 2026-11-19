@@ -26,7 +26,7 @@ class WaveformCache
     using Checkpoint = std::function<void(const Asset &, int64_t, const std::function<bool()> &)>;
     explicit WaveformCache(juce::File directory, std::function<void()> beforeRead = {}, Checkpoint = {});
     ~WaveformCache();
-    uint64_t request(const Asset &);
+    uint64_t request(const Asset &, std::shared_ptr<const WaveformData> validate = {});
     uint64_t cancel();
     std::shared_ptr<const WaveformData> snapshot();
 

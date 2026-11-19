@@ -88,6 +88,9 @@ void runAudioHealthTests(const juce::File &parent, const juce::File &app)
     check(event["classification"].toString() == "helperSignalExit" && (int)event["exitSignal"] == SIGKILL &&
               (int)event["supervisorSignal"] == 0,
           "External signal distinguished from supervisor termination");
+    until([&]{auto s=audio.status();return (int)s["helperPid"]>0 && (int)s["helperPid"]!=pid &&
+                 (int64_t)s["statusSequence"]>=2 && !(bool)s["playing"];},
+          "New helper PID publishes a subsequent healthy idle heartbeat");
     check(audio.status()["error"].toString().contains("restarted"),
           "Restart notice survives healthy status messages");
     check(juce::JSON::toString(sp::designToJson(session.document), true) == recipe &&

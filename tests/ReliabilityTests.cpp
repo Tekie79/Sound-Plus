@@ -54,7 +54,9 @@ struct LibraryReliabilityTestAccess
                       .copyFileTo(
                           folder.getChildFile("z-sound-" + juce::String(i).paddedLeft('0', 3) + ".wav")),
                   "Create actual sources");
-        LibraryView v(root.getChildFile("catalog/library.sqlite"), app, false);
+        // AI-enabled view with an injected semantic completion boundary. The real
+        // reader/fusion/publication and actual Refresh/typing handlers still run.
+        LibraryView v(root.getChildFile("catalog/library.sqlite"), app, true, {}, true);
         v.stopTimer();
         v.setSize(1040, 648);
         v.library.addFolder(folder);
@@ -76,6 +78,31 @@ struct LibraryReliabilityTestAccess
         auto first = v.regionStart, last = v.regionEnd;
         v.playSelected(true);
         auto generation = v.audio.status()["intentGeneration"];
+        auto checkRankingAdoption = [&](bool refresh)
+        {
+            if(refresh) v.refresh.onClick();
+            else { v.search.setText("z-sound",juce::dontSendNotification);v.search.onTextChange(); }
+            until([&]{v.timerCallback();return v.snapshot.request==v.requested && v.snapshot.results.size()==20;},
+                  "Fresh lexical prefix adopted before delayed semantics");
+            check(v.snapshot.semantic.enabled && v.selectedId==id,"AI-enabled lexical prefix retains selected ID");
+            check(!(bool)v.library.queryDiagnostics()["pinned"],"Programmatic restoration must not re-pin fresh request");
+            auto promoted=v.snapshot.results.back();
+            v.library.publishControlledSemantic(v.requested,{promoted});
+            until([&]{v.timerCallback();return v.snapshot.semanticCompletedRequest==v.requested;},
+                  "Delayed semantic ordering adopted after actual Refresh/typing");
+            check(v.snapshot.results.front().id==promoted.id && !v.snapshot.newResultsAvailable,
+                  "Explicit query adopts semantic order instead of re-offering Refresh");
+            check(v.selectedId==id && v.audio.status()["intentId"].toString()==id &&
+                  v.audio.status()["intentGeneration"]==generation,"Semantic restoration cannot retarget audition");
+            v.selectedRowsChanged(v.table.getSelectedRow());
+            check((bool)v.library.queryDiagnostics()["pinned"],"Subsequent deliberate selection pins current request");
+        };
+        checkRankingAdoption(false);
+        checkRankingAdoption(true);
+        v.benchmarkSearch("");
+        until([&]{v.timerCallback();return v.snapshot.request==v.requested;},"Restore initial query");
+        v.selectedRowsChanged(v.table.getSelectedRow());
+        v.setRegion(first,last,false);
         for (int i = 0; i < 30; ++i)
             check(juce::File(source.path)
                       .copyFileTo(folder.getChildFile("a-earlier-" + juce::String(i) + ".wav")),
@@ -304,7 +331,8 @@ void runWaveformSchedulingTests(const juce::File &parent)
         },
         "Background completes despite continuous foreground replacement");
     check((int)fair->metrics()["fairAdmissions"] > 0, "Fair background reservation is exercised");
-    auto pressure = std::make_shared<sp::WaveformPool>(root.getChildFile("pressure"));
+    double pressureClock=0;
+    auto pressure = std::make_shared<sp::WaveformPool>(root.getChildFile("pressure"),std::function<void()>{},[&]{return pressureClock;});
     std::vector<sp::Asset> rows, layers;
     for (int i = 0; i < 80; ++i)
     {
@@ -333,6 +361,32 @@ void runWaveformSchedulingTests(const juce::File &parent)
     check((int)pressure->metrics()["retainedSources"] <= 48 &&
               (int)pressure->metrics()["retainedGeometries"] <= 96,
           "Cache retention remains bounded under simultaneous-surface pressure");
+    until([&]{pressure->tick();return !(bool)pressure->metrics()["pending"];},"Unchanged pressure settles without evict/reload churn");
+    auto settledRequests=(int64_t)pressure->metrics()["requests"];
+    for(int i=0;i<1000;++i)pressure->tick();
+    check((int64_t)pressure->metrics()["requests"]==settledRequests,"Steady unchanged demands do not reload evicted display summaries");
+    auto absent=juce::File(other.path).getSiblingFile("offline-owned.wav");
+    check(juce::File(other.path).moveFileTo(absent),"Disconnect retained selected source");
+    pressureClock=6000;
+    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::offline;},
+          "Overdue validation detects Offline under unchanged over-capacity demand");
+    check(absent.moveFileTo(juce::File(other.path)),"Reconnect identical source");
+    pressureClock=12000;
+    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::ready;},
+          "Retained source recovers under sustained pressure");
+    auto original=juce::File(other.path).getSiblingFile("original-owned.wav");
+    check(juce::File(other.path).moveFileTo(original),"Retain exact original inode before replacement");
+    fixture(juce::File(other.path),24000);
+    pressureClock=18000;
+    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::changed;},
+          "Validation detects Changed under sustained pressure");
+    juce::File(other.path).deleteFile();check(original.moveFileTo(juce::File(other.path)),"Restore exact original source");
+    pressureClock=24000;
+    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::ready;},"Changed source recovers without reducing demands");
+    until([&]{pressure->tick();return !(bool)pressure->metrics()["pending"];},"Validation sweep settles");
+    settledRequests=(int64_t)pressure->metrics()["requests"];
+    for(int i=0;i<1000;++i)pressure->tick();
+    check((int64_t)pressure->metrics()["requests"]==settledRequests,"Post-validation work counts stable");
     auto record = pressure->metrics();
     record.getDynamicObject()->setProperty("checks", checks);
     record.getDynamicObject()->setProperty("completedBeyondBoundary", (int)completed.size());

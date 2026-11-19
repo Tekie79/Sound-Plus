@@ -1,0 +1,449 @@
+{
+  "reviewedCommit": "0cfa5f6cc303af4abf058513430fe74fe1559134",
+  "reviewHost": "Linux",
+  "scope": "Executed consistency checks of committed evidence; no native application or audio hardware execution.",
+  "hashes": {
+    "matched": [
+      {
+        "path": "docs/verification/performance-v12-corpus-manifest.json.gz",
+        "sha256": "78b31a8c9739f2efda643e2c2690dd92a587fd0787acff7de81b2d425ac93569"
+      },
+      {
+        "path": "docs/verification/performance-v12-cold-final.json.gz",
+        "sha256": "6c876b9ad128def34e03f1e0040782d0e7576d12867bfe8b827f172b96fe5186"
+      },
+      {
+        "path": "docs/verification/performance-v12-warm-qualified.json.gz",
+        "sha256": "70e26681659667607a858f0844de8fd9c4554954fa370e64eac7b030d72e5927"
+      },
+      {
+        "path": "docs/verification/performance-v12-soak-512.json.gz",
+        "sha256": "d3b6d8e9afb93eed382ced0b4db4a0688af85291caebbab7176166cbc4ba4209"
+      },
+      {
+        "path": "docs/verification/performance-v12-buffer-256.json.gz",
+        "sha256": "03c97db100cfd4dd0f049faeb26f499490d5b5f55efd7fd09461f17221f0c69d"
+      },
+      {
+        "path": "docs/verification/performance-v12-viewport-repro.json.gz",
+        "sha256": "577ec1879aec05f6158ece77d0d889e6c58692ccec3522068effc740a5b44c66"
+      },
+      {
+        "path": "docs/verification/performance-v12-edit-minimum.jpg",
+        "sha256": "a24a332249bf320b1858c5ecaa27002616d3457392bf5dfb56cc0446dfc110fc"
+      },
+      {
+        "path": "docs/verification/performance-v12-edit.jpg",
+        "sha256": "2b4a869f7122001a18d8a992d8f0ce2a13d68cacfe2ef7dcd2e0e6fd4ab35f57"
+      },
+      {
+        "path": "docs/verification/performance-v12-library-pinned.jpg",
+        "sha256": "b0a67a24ab64983c9c7eddfb837af8157e9c44d5479b01b9fa07734eb9b79548"
+      },
+      {
+        "path": "docs/verification/performance-v12-perform-minimum.jpg",
+        "sha256": "44325ae3b19995c31a25ec78f6ff4d76ef91707e8451a16b258beea26f8b0b1b"
+      },
+      {
+        "path": "docs/verification/performance-v12-perform.jpg",
+        "sha256": "7d0dcd4caaab9421f7b24e0edb2f73c9d1cbd248af3003734f4a007a55d2435b"
+      }
+    ],
+    "unavailableHere": [
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1937-01be8c2e.wav",
+      "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1940-6e666281.wav",
+      "build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+      "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1937-01be8c2e.wav",
+      "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1940-6e666281.wav"
+    ],
+    "mismatches": []
+  },
+  "corpus": {
+    "files": 10000,
+    "uniquePaths": 10000,
+    "distinctWholeFileHashes": 133,
+    "bytes": 1253073116,
+    "sampleRates": [
+      8000,
+      22050,
+      44100,
+      48000,
+      96000
+    ],
+    "channels": [
+      1,
+      2,
+      4
+    ],
+    "sourceFilesRehashedHere": false
+  },
+  "measurements": {
+    "cold512": {
+      "success": true,
+      "activeMs": 120003.00608333945,
+      "statisticsRecomputed": {
+        "queryToPaintMs": {
+          "n": 80,
+          "p50": 5.927041664719582,
+          "p95": 12.99812500178814,
+          "p99": 25.59350000321865
+        },
+        "selectedWaveformMs": {
+          "n": 80,
+          "p50": 26.236208334565163,
+          "p95": 49.30912499129772,
+          "p99": 56.973833322525024
+        },
+        "wholeViewportMs": {
+          "n": 80,
+          "p50": 236.90387499332428,
+          "p95": 284.5585833340883,
+          "p99": 310.9949166625738
+        },
+        "selectedResidentAtClickMs": {
+          "n": 2,
+          "p50": 1.818750008940697,
+          "p95": 3.235416665673256,
+          "p99": 3.235416665673256
+        },
+        "selectedNotResidentAtClickMs": {
+          "n": 78,
+          "p50": 29.072125002741814,
+          "p95": 54.16120833158493,
+          "p99": 56.973833322525024
+        },
+        "editToCallbackMs": {
+          "n": 3018,
+          "p50": 55.97554162144661,
+          "p95": 70.63333334028721,
+          "p99": 75.1215832978487
+        }
+      },
+      "viewportRowsAccountedFor": 80,
+      "audioObservationsChecked": 14,
+      "stableAudioFields": {
+        "helperPid": [
+          75058
+        ],
+        "processGeneration": [
+          1
+        ],
+        "playGeneration": [
+          1
+        ],
+        "graphEpoch": [
+          1
+        ],
+        "sampleRate": [
+          48000.0
+        ],
+        "bufferFrames": [
+          512
+        ]
+      },
+      "underrunsInObservations": 0,
+      "helperEvents": 0,
+      "nonzeroStatusObservations": 42859,
+      "totalStatusObservations": 42859,
+      "finalSourceSeconds": 119.98933333333333,
+      "waveformSources": 48,
+      "waveformGeometries": 96,
+      "retainedPeakBytes": 544552
+    },
+    "warm512": {
+      "success": true,
+      "activeMs": 120004.90520833433,
+      "statisticsRecomputed": {
+        "queryToPaintMs": {
+          "n": 80,
+          "p50": 6.100791677832603,
+          "p95": 13.036083325743675,
+          "p99": 24.893041655421257
+        },
+        "selectedWaveformMs": {
+          "n": 80,
+          "p50": 29.420291662216187,
+          "p95": 52.62379166483879,
+          "p99": 63.53554165363312
+        },
+        "wholeViewportMs": {
+          "n": 80,
+          "p50": 226.9282083362341,
+          "p95": 267.7310833334923,
+          "p99": 311.97404167056084
+        },
+        "selectedResidentAtClickMs": {
+          "n": 2,
+          "p50": 4.151500001549721,
+          "p95": 7.768291667103767,
+          "p99": 7.768291667103767
+        },
+        "selectedNotResidentAtClickMs": {
+          "n": 78,
+          "p50": 29.964833334088326,
+          "p95": 52.78520832955837,
+          "p99": 63.53554165363312
+        },
+        "editToCallbackMs": {
+          "n": 3011,
+          "p50": 55.45341669023037,
+          "p95": 70.11999996006489,
+          "p99": 74.12079167366028
+        }
+      },
+      "viewportRowsAccountedFor": 80,
+      "audioObservationsChecked": 14,
+      "stableAudioFields": {
+        "helperPid": [
+          75811
+        ],
+        "processGeneration": [
+          1
+        ],
+        "playGeneration": [
+          1
+        ],
+        "graphEpoch": [
+          1
+        ],
+        "sampleRate": [
+          48000.0
+        ],
+        "bufferFrames": [
+          512
+        ]
+      },
+      "underrunsInObservations": 0,
+      "helperEvents": 0,
+      "nonzeroStatusObservations": 42694,
+      "totalStatusObservations": 42694,
+      "finalSourceSeconds": 120.01066666666667,
+      "waveformSources": 48,
+      "waveformGeometries": 96,
+      "retainedPeakBytes": 547728
+    },
+    "soak512": {
+      "success": true,
+      "activeMs": 1800005.564791679,
+      "statisticsRecomputed": {
+        "queryToPaintMs": {
+          "n": 1197,
+          "p50": 6.281583338975906,
+          "p95": 13.62950000166893,
+          "p99": 15.325541660189629
+        },
+        "selectedWaveformMs": {
+          "n": 1197,
+          "p50": 27.752416655421257,
+          "p95": 55.1173750013113,
+          "p99": 65.78254167735577
+        },
+        "wholeViewportMs": {
+          "n": 1197,
+          "p50": 233.5096666663885,
+          "p95": 277.44783332943916,
+          "p99": 306.4947916716337
+        },
+        "selectedResidentAtClickMs": {
+          "n": 34,
+          "p50": 11.920416668057442,
+          "p95": 32.09183333814144,
+          "p99": 33.71233333647251
+        },
+        "selectedNotResidentAtClickMs": {
+          "n": 1163,
+          "p50": 28.418708339333534,
+          "p95": 55.11891666054726,
+          "p99": 65.78254167735577
+        },
+        "editToCallbackMs": {
+          "n": 44997,
+          "p50": 55.29712499678135,
+          "p95": 70.09475001692772,
+          "p99": 74.38283336162567
+        }
+      },
+      "viewportRowsAccountedFor": 1197,
+      "audioObservationsChecked": 182,
+      "stableAudioFields": {
+        "helperPid": [
+          75854
+        ],
+        "processGeneration": [
+          1
+        ],
+        "playGeneration": [
+          1
+        ],
+        "graphEpoch": [
+          1
+        ],
+        "sampleRate": [
+          48000.0
+        ],
+        "bufferFrames": [
+          512
+        ]
+      },
+      "underrunsInObservations": 0,
+      "helperEvents": 0,
+      "nonzeroStatusObservations": 652623,
+      "totalStatusObservations": 652623,
+      "finalSourceSeconds": 1800.0,
+      "waveformSources": 48,
+      "waveformGeometries": 96,
+      "retainedPeakBytes": 553016
+    },
+    "separate256": {
+      "success": true,
+      "activeMs": 60003.324374988675,
+      "statisticsRecomputed": {
+        "queryToPaintMs": {
+          "n": 40,
+          "p50": 5.63920833170414,
+          "p95": 13.261416673660278,
+          "p99": 14.159666672348976
+        },
+        "selectedWaveformMs": {
+          "n": 40,
+          "p50": 24.675791665911674,
+          "p95": 55.547333329916,
+          "p99": 66.62791666388512
+        },
+        "wholeViewportMs": {
+          "n": 40,
+          "p50": 236.33008332550526,
+          "p95": 293.3802083283663,
+          "p99": 308.58049999177456
+        },
+        "selectedResidentAtClickMs": {
+          "n": 1,
+          "p50": 2.528875008225441,
+          "p95": 2.528875008225441,
+          "p99": 2.528875008225441
+        },
+        "selectedNotResidentAtClickMs": {
+          "n": 39,
+          "p50": 25.04712501168251,
+          "p95": 57.54216666519642,
+          "p99": 66.62791666388512
+        },
+        "editToCallbackMs": {
+          "n": 1548,
+          "p50": 52.18379166722298,
+          "p95": 66.3640833646059,
+          "p99": 70.19370837509632
+        }
+      },
+      "viewportRowsAccountedFor": 40,
+      "audioObservationsChecked": 8,
+      "stableAudioFields": {
+        "helperPid": [
+          76147
+        ],
+        "processGeneration": [
+          1
+        ],
+        "playGeneration": [
+          1
+        ],
+        "graphEpoch": [
+          2
+        ],
+        "sampleRate": [
+          48000.0
+        ],
+        "bufferFrames": [
+          256
+        ]
+      },
+      "underrunsInObservations": 0,
+      "helperEvents": 0,
+      "nonzeroStatusObservations": 21204,
+      "totalStatusObservations": 21204,
+      "finalSourceSeconds": 60.00533333333333,
+      "waveformSources": 48,
+      "waveformGeometries": 96,
+      "retainedPeakBytes": 552288
+    }
+  },
+  "committedCTest": {
+    "registeredSuites": [
+      "library_stability",
+      "waveform_scheduling",
+      "audio_health",
+      "waveform_previews",
+      "performance_state",
+      "designer_view_commands",
+      "icon_system",
+      "library_and_audio",
+      "library_selection_audition",
+      "library_performance_regression",
+      "library_semantic_integrity",
+      "library_similar_integrity",
+      "designer_transport",
+      "designer_canvas",
+      "designer_session",
+      "designer_workflow",
+      "designer_fades"
+    ],
+    "passedSuites": [
+      "library_stability",
+      "waveform_scheduling",
+      "audio_health",
+      "waveform_previews",
+      "performance_state",
+      "designer_view_commands",
+      "icon_system",
+      "library_and_audio",
+      "library_selection_audition",
+      "library_performance_regression",
+      "library_semantic_integrity",
+      "library_similar_integrity",
+      "designer_transport",
+      "designer_canvas",
+      "designer_session",
+      "designer_workflow",
+      "designer_fades"
+    ],
+    "seconds": 59.81,
+    "rerunHere": false
+  },
+  "imagesDecoded": [
+    {
+      "path": "docs/verification/performance-v12-edit-minimum.jpg",
+      "width": 1041,
+      "height": 681
+    },
+    {
+      "path": "docs/verification/performance-v12-edit.jpg",
+      "width": 1171,
+      "height": 768
+    },
+    {
+      "path": "docs/verification/performance-v12-library-pinned.jpg",
+      "width": 1171,
+      "height": 768
+    },
+    {
+      "path": "docs/verification/performance-v12-perform-minimum.jpg",
+      "width": 1041,
+      "height": 681
+    },
+    {
+      "path": "docs/verification/performance-v12-perform.jpg",
+      "width": 1171,
+      "height": 768
+    }
+  ],
+  "limitations": [
+    "Native macOS tests and physical audio were not rerun on this Linux host.",
+    "Corpus manifest metadata was checked; original 10000 source files are not in the checkout.",
+    "Unavailable Mac app binaries, source documents and rendered WAVs were not rehashed here.",
+    "Zero recorded failures in these workloads does not resolve the historical intermittent helper restart cause.",
+    "Timing boundaries retain their committed definitions; selected-waveform adoption and callback observation are not physical display/DAC timings."
+  ]
+}
