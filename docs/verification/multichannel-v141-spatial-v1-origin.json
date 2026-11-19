@@ -1,0 +1,43 @@
+{
+  "origin": "Generated before the v1.4.1 spatial math correction, using routingVersion1 / stock-layout-takes-v1. Not a user document or hardware listening recording.",
+  "uiTargets": [
+    0,
+    -90,
+    -180,
+    90,
+    0,
+    -90,
+    -180,
+    90,
+    0,
+    -90,
+    -130
+  ],
+  "eventIntervalFrames": 1200,
+  "bodyFrames": 14400,
+  "final512FrameChannelPeaks": [
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0,
+    0.0
+  ],
+  "oldRecipeHash": "a9b5151167e7fe0f662ff8076cc4d7a49adfb8c86ef930e2f2bb39bd3d9079e6",
+  "oldEventHash": "80d92ba435f3473ea08a67fbb7f85696b157dc16c04c42152ee57ea58d19a541",
+  "oldWav": {
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v141/spatial-v1-fixture/outputs/Repeated negative wraps v1-take-r1-a065da6f.wav",
+    "sha256": "83aa8ed02bb3f76e616be61beed5406986f1f8936d2f5ae655db485870277b12",
+    "bytes": 346384,
+    "channels": 6,
+    "rate": 48000,
+    "bits": 32,
+    "mask": 1551,
+    "subtype": 3,
+    "align": 24,
+    "frames": 14400
+  },
+  "sourceSha256": "1026254b4b49c690b9771ce47d4d7e4d87244012b450e4756ae8c3dd1d7828f3",
+  "builderTestSha256": "bde4582c4a9a71fdfc11c1ef052a1f1bf8c02abb4b68887f4de3fa70c70d3395",
+  "pannerSourceSha256": "977b0c6f25de7c1fb7e88c8b33af88a2b8d760aba7e8b31593cd7c85d1de3555"
+}

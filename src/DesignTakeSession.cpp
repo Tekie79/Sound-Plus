@@ -175,17 +175,22 @@ void DesignSession::selectContextOutput()
     auto *take = selectedTake(document);
     auto preference = document.outputSelections.find(document.activeTake.isEmpty() ? juce::String("live")
                                                                                    : document.activeTake);
+    if (preference != document.outputSelections.end())
+    {
+        for (auto &o : document.outputs)
+            if (o.path == preference->second && o.takeId == document.activeTake &&
+                (!take || matchingTakeOutput(*take, o)) && !outputFiles(o).isEmpty())
+                lastOutput = juce::File(o.path);
+        // An explicitly selected set with a missing member is unavailable;
+        // never silently deliver another finalized output in its place.
+        return;
+    }
     for (auto it = document.outputs.rbegin(); it != document.outputs.rend(); ++it)
         if (it->takeId == document.activeTake && (!take || matchingTakeOutput(*take, *it)) &&
             !outputFiles(*it).isEmpty())
         {
-            if (lastOutput == juce::File())
-                lastOutput = juce::File(it->path);
-            if (preference != document.outputSelections.end() && preference->second == it->path)
-            {
-                lastOutput = juce::File(it->path);
-                break;
-            }
+            lastOutput = juce::File(it->path);
+            break;
         }
 }
 juce::File DesignSession::readyOutput()

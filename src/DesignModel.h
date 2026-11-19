@@ -176,6 +176,7 @@ struct DesignOutput
     juce::String tailPolicy;
     juce::var sourceProvenance;
     juce::var channelProvenance, files;
+    int outputSetVersion = 0; // Metadata contract; independent of legacy/new DSP.
 };
 struct DesignDocument
 {

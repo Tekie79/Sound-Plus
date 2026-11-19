@@ -103,10 +103,9 @@ juce::var renderJson(const DesignRenderSettings &s)
     put(o, "normalize", s.normalize);
     put(o, "dither", s.dither);
     if (s.layout.isNotEmpty())
-    {
         put(o, "layout", s.layout);
+    if (s.layout.isNotEmpty() || s.splitMono)
         put(o, "splitMono", s.splitMono);
-    }
     return o;
 }
 DesignRenderSettings renderFrom(const juce::var &o)
@@ -185,6 +184,9 @@ namespace
 {
 int performanceFormat(const DesignDocument &d)
 {
+    if ((d.renderSettings.splitMono && d.renderSettings.layout.isEmpty()) ||
+        std::any_of(d.outputs.begin(), d.outputs.end(), [](auto &o) { return o.outputSetVersion > 0; }))
+        return 6;
     auto version=[](const DesignMix &m){
         bool used=hasPerformance(m.performance) || std::any_of(m.layers.begin(),m.layers.end(),[](auto &l){return l.controlGain!=1;});
         return used ? (m.performance.blendLaw==2 ? 3 : 2) : 1;
@@ -215,7 +217,8 @@ juce::var designToJson(const DesignDocument &d)
     put(o, "format", "SoundPlus referenced design");
     put(o, "version", performanceFormat(d));
     put(o, "dsp",
-        performanceFormat(d) == 5   ? "stock-layout-v1"
+        performanceFormat(d) == 6   ? "stock-layout-v2"
+        : performanceFormat(d) == 5 ? "stock-layout-v1"
         : performanceFormat(d) == 4 ? "stock-takes-v1"
         : performanceFormat(d) == 3 ? "stock-perform-v2"
         : performanceFormat(d) == 2 ? "stock-perform-v1"
@@ -254,10 +257,11 @@ juce::var designToJson(const DesignDocument &d)
         put(n, "clipped", (juce::int64)v.clipped);
         put(n, "settings", renderJson(v.settings));
         if (!v.channelProvenance.isVoid())
-        {
             put(n, "channelProvenance", v.channelProvenance);
+        if (!v.files.isVoid())
             put(n, "files", v.files);
-        }
+        if (v.outputSetVersion)
+            put(n, "outputSetVersion", v.outputSetVersion);
         if (v.takeId.isNotEmpty())
         {
             put(n, "takeId", v.takeId);
@@ -279,8 +283,9 @@ juce::var designToJson(const DesignDocument &d)
 DesignDocument designFromJson(const juce::var &o)
 {
     int version=(int)o["version"];auto dsp=o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 5) ||
-        (version == 5   ? dsp != "stock-layout-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 6) ||
+        (version == 6   ? dsp != "stock-layout-v2"
+         : version == 5 ? dsp != "stock-layout-v1"
          : version == 4 ? dsp != "stock-takes-v1"
          : version == 3 ? dsp != "stock-perform-v2"
          : version == 2 ? dsp != "stock-perform-v1"
@@ -317,6 +322,7 @@ DesignDocument designFromJson(const juce::var &o)
             n.settings = renderFrom(v["settings"]);
             n.channelProvenance = v["channelProvenance"];
             n.files = v["files"];
+            n.outputSetVersion = (int)v["outputSetVersion"];
             n.takeId = v["takeId"].toString();
             n.recipeHash = v["recipeHash"].toString();
             n.eventHash = v["eventHash"].toString();
@@ -439,25 +445,39 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
             throw std::runtime_error("Output selection refers to a missing take");
     }
     for (auto &o : d.outputs)
+    {
+        if (o.outputSetVersion < 0 || o.outputSetVersion > 1)
+            throw std::runtime_error("Unsupported output-set metadata version");
+        auto out = channelLayout(o.settings.channels == 1 ? "mono-v1" : "stereo-v1");
         if (!o.channelProvenance.isVoid())
         {
-            auto bus = layoutFromJson(o.channelProvenance["design"]),
-                 out = layoutFromJson(o.channelProvenance["export"]);
+            auto bus = layoutFromJson(o.channelProvenance["design"]);
+            out = layoutFromJson(o.channelProvenance["export"]);
             validateLayout(bus);
             validateLayout(out);
             if ((int)o.channelProvenance["version"] != 1 || o.settings.channels != out.size() ||
                 o.settings.layout != out.id)
                 throw std::runtime_error("Invalid output channel contract");
-            if (auto *files = o.files.getArray())
+        }
+        if (!o.files.isVoid())
+        {
+            auto *files = o.files.getArray();
+            if (!files || files->size() != out.size() || files->size() < 1 || files->size() > 16)
+                throw std::runtime_error("Incomplete split output receipt");
+            juce::StringArray paths;
+            for (int c = 0; c < files->size(); ++c)
             {
-                if (files->size() != out.size())
-                    throw std::runtime_error("Incomplete split output receipt");
-                for (int c = 0; c < files->size(); ++c)
-                    if ((*files)[c]["role"].toString() != out.roles[c] ||
-                        (*files)[c]["sha256"].toString().length() != 64)
-                        throw std::runtime_error("Invalid split role/hash");
+                auto file = (*files)[c];
+                auto path = file["path"].toString();
+                if (file["role"].toString() != out.roles[c] || file["sha256"].toString().length() != 64 ||
+                    path.isEmpty() || paths.contains(path))
+                    throw std::runtime_error("Invalid split role/path/hash");
+                paths.add(path);
             }
         }
+        if (o.outputSetVersion && (!o.settings.splitMono || !o.files.isArray()))
+            throw std::runtime_error("Output-set identity requires split settings and members");
+    }
     auto &r = d.renderSettings;
     if (r.sampleRate != 44100 && r.sampleRate != 48000 && r.sampleRate != 96000)
         throw std::runtime_error("Invalid render rate");

@@ -195,6 +195,11 @@ int main(int argc, char **argv)
             runMultichannelTests(juce::File(argv[2]), juce::File(argv[3]));
             return 0;
         }
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-spatial-v1-fixture")
+        {
+            prepareSpatialV1Fixture(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--multichannel-corrections")
         {
             runMultichannelCorrectionsTests(juce::File(argv[2]), juce::File(argv[3]));

@@ -1146,6 +1146,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
             files.add(v);
         }
         result.files = files;
+        result.outputSetVersion = 1;
         result.path = setTarget.getChildFile("Mix.wav").getFullPathName();
         auto manifest = juce::var(new juce::DynamicObject());
         manifest.getDynamicObject()->setProperty("files", files);
