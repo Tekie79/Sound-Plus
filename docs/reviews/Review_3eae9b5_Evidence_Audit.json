@@ -1,0 +1,287 @@
+{
+  "reviewedCommit": "3eae9b569f1edb9bb94b345c9af5e4354ef7d64e",
+  "baseCommit": "0cfa5f6cc303af4abf058513430fe74fe1559134",
+  "reviewHost": "Linux",
+  "scope": "Executed consistency checks on committed evidence. Native macOS tests, source WAVs, generated output WAVs and human listening were not rerun or accessed here.",
+  "artifactHashes": {
+    "matched": [
+      {
+        "path": "docs/verification/performance-v13-recording-native.json.gz",
+        "sha256": "5fb342c3eefdc09ae80f7b42501eddf98698f14790018de1da58d6f32fa5fccb"
+      },
+      {
+        "path": "docs/verification/performance-v13-recording-summary.json.gz",
+        "sha256": "76aac48f53989fbff78b079208c4e8d9eeb3c6c987762c04a89e75ada3b1c0c6"
+      },
+      {
+        "path": "docs/verification/performance-v13-recording-plan.json.gz",
+        "sha256": "cfd8f11d0ef8e16e43f28120f9bad31900f9dd43cac577d8f6efb26439124d5f"
+      },
+      {
+        "path": "docs/verification/performance-v13-sustained-qa.soundplus.json.gz",
+        "sha256": "fb97fc54c11cb79e07e5dd3a5625bbf0a87eb6f21b0e335070642b5151ee6fa6"
+      },
+      {
+        "path": "docs/verification/performance-v13-native-qa.soundplus.json.gz",
+        "sha256": "36a171da1988aef668f779f2ca212153cb358c649ded21e9e1223fdece19157c"
+      },
+      {
+        "path": "docs/verification/performance-v13-source-output-audit.json.gz",
+        "sha256": "7c2c02e8bbd73d0bf31c5f629dcbe0ddb01e97e8b134a9480c7381f8a13607d5"
+      },
+      {
+        "path": "docs/verification/performance-v13-ctest.log",
+        "sha256": "d4600befa740c62a23c19a6f9301bd6c778b2782b560ce187d83a594228fefcc"
+      },
+      {
+        "path": "docs/verification/performance-v13-perform-normal.jpg",
+        "sha256": "d88384390ee106c078a4318035d7b32499c60eccf1e0e573b7f06e06be63d17e"
+      },
+      {
+        "path": "docs/verification/performance-v13-perform-minimum.jpg",
+        "sha256": "3f42916289b8a994b078e4168ce4ab9fcaa5ce2e33d1a225e985987bd7a7ab9a"
+      },
+      {
+        "path": "docs/verification/performance-v13-print-back.jpg",
+        "sha256": "643723bc20db15ebc3e2f83d3db101b8c0f71b12478360fdb95626af2731cadc"
+      }
+    ],
+    "unavailableHere": [
+      "/Users/harvest/Music/SoundPlus/Performance v1.3 QA/Native XY and four macros-take-r4-788c159f.wav",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-0.wav",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-1.wav",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-2.wav",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-3.wav",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v12/fixture-qualified/design/forty-minute-source.wav",
+      "build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+      "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav",
+      "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav",
+      "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav",
+      "build/gain-hover-native/designer-autosave/recovery.soundplus",
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "build/SoundPlusTests_artefacts/Release/SoundPlusTests"
+    ],
+    "mismatches": []
+  },
+  "recording": {
+    "summaryMatchesEmbeddedRecord": true,
+    "activeMs": 120000.68591666222,
+    "recomputedTimings": {
+      "queryToPaintMs": {
+        "n": 80,
+        "p50": 5.534166678786278,
+        "p95": 9.828499987721443,
+        "p99": 15.528708338737488
+      },
+      "selectedWaveformMs": {
+        "n": 80,
+        "p50": 29.366125002503395,
+        "p95": 50.941624999046326,
+        "p99": 64.7022916674614
+      },
+      "wholeViewportMs": {
+        "n": 80,
+        "p50": 233.85695832967758,
+        "p95": 276.2339583337307,
+        "p99": 332.2427500039339
+      }
+    },
+    "viewportRecordsChecked": 80,
+    "audioObservationsChecked": 15,
+    "stableAudioFields": {
+      "helperPid": [
+        82132
+      ],
+      "processGeneration": [
+        1
+      ],
+      "playGeneration": [
+        1
+      ],
+      "graphEpoch": [
+        1
+      ],
+      "preparationsRequested": [
+        1
+      ],
+      "sampleRate": [
+        48000.0
+      ],
+      "bufferFrames": [
+        512
+      ]
+    },
+    "reportedUnderruns": 0,
+    "helperEvents": 0,
+    "nonzeroStatusObservations": 43701,
+    "totalStatusObservations": 43708,
+    "zeroPeakObservations": 7,
+    "checkpointPeakBacklog": 30,
+    "consumedFrames": 5760000,
+    "eventCount": 4504,
+    "finalPhase": 3,
+    "memoryPeaks": {
+      "app": 194936832,
+      "audioHelper": 77135872,
+      "aiHelper": 462471168
+    }
+  },
+  "savedTakes": {
+    "sustained": {
+      "id": "8f6ad30b0d00435b8964693bcd867de3",
+      "name": "Sustained recorded motion",
+      "documentVersion": 4,
+      "documentRevision": 6,
+      "eventCount": 4504,
+      "firstEventFrame": 2560,
+      "lastEventFrame": 5758464,
+      "contiguousSequence": true,
+      "eventGenerationsMatch": true,
+      "bodyEnd": 5760000,
+      "outputFramesConsumed": 5760000,
+      "captureRate": 48000.0,
+      "exactDurationSeconds": 120.0,
+      "renderFrames": 5808000,
+      "tailSeconds": 1.0,
+      "receiptMatchesTakeIdentityHashesFrames": true,
+      "sourceFingerprintCount": 1,
+      "complete": true,
+      "kept": true,
+      "recipeHash": "2614768b13334389e8ec51b88f8a778d232bb46517a605f709febd5205238a01",
+      "eventHash": "b36a59be5733331626df098ac440c42a27d159cd60742cdf12c1e149ca0eb937",
+      "storedOutputSha256": "01558723db9d9232554d16fa426b7f3a9639ecae51fa9baf9fc306431d423210",
+      "originalOutputRehashedHere": false,
+      "envelopeAndCanonicalRecipeEventHashesRecomputedHere": false
+    },
+    "native": {
+      "id": "db051f772f1c4253b9bd39c524723bd4",
+      "name": "Native XY and four macros",
+      "documentVersion": 4,
+      "documentRevision": 7,
+      "eventCount": 6,
+      "firstEventFrame": 35840,
+      "lastEventFrame": 194048,
+      "contiguousSequence": true,
+      "eventGenerationsMatch": true,
+      "bodyEnd": 244736,
+      "outputFramesConsumed": 244736,
+      "captureRate": 48000.0,
+      "exactDurationSeconds": 5.0986666666666665,
+      "renderFrames": 263936,
+      "tailSeconds": 0.4,
+      "receiptMatchesTakeIdentityHashesFrames": true,
+      "sourceFingerprintCount": 4,
+      "complete": true,
+      "kept": true,
+      "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+      "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+      "storedOutputSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696",
+      "originalOutputRehashedHere": false,
+      "envelopeAndCanonicalRecipeEventHashesRecomputedHere": false
+    }
+  },
+  "corpusManifest": {
+    "files": 10000,
+    "uniquePaths": 10000,
+    "distinctWholeFileHashes": 133,
+    "bytes": 1253073116,
+    "sourceFilesRehashedHere": false
+  },
+  "sourceAuditRecord": {
+    "corpusMetadataMatchesManifest": true,
+    "oldDurableOutputRecords": 12,
+    "newOutputRecords": 4,
+    "olderBackupRestored": false,
+    "physicalFilesRecheckedHere": false
+  },
+  "committedTests": {
+    "suiteCount": 18,
+    "suiteNames": [
+      "recorded_takes",
+      "library_stability",
+      "waveform_scheduling",
+      "audio_health",
+      "waveform_previews",
+      "performance_state",
+      "designer_view_commands",
+      "icon_system",
+      "library_and_audio",
+      "library_selection_audition",
+      "library_performance_regression",
+      "library_semantic_integrity",
+      "library_similar_integrity",
+      "designer_transport",
+      "designer_canvas",
+      "designer_session",
+      "designer_workflow",
+      "designer_fades"
+    ],
+    "seconds": 72.55,
+    "takeChecks": 2820,
+    "rateCaseResults": [
+      {
+        "projectRate": 44100.0,
+        "outputRate": 44100.0,
+        "events": 1,
+        "bodyFrames": 1536,
+        "captureReplayMaxError": 0.0
+      },
+      {
+        "projectRate": 48000.0,
+        "outputRate": 48000.0,
+        "events": 1,
+        "bodyFrames": 1536,
+        "captureReplayMaxError": 0.0
+      },
+      {
+        "projectRate": 96000.0,
+        "outputRate": 96000.0,
+        "events": 1,
+        "bodyFrames": 1536,
+        "captureReplayMaxError": 0.0
+      },
+      {
+        "projectRate": 48000.0,
+        "outputRate": 44100.0,
+        "events": 1,
+        "bodyFrames": 1672,
+        "captureReplayMaxError": 0.0
+      },
+      {
+        "projectRate": 44100.0,
+        "outputRate": 48000.0,
+        "events": 1,
+        "bodyFrames": 1412,
+        "captureReplayMaxError": 0.0
+      }
+    ],
+    "nativeCaptureReplayMaxError": 0.0,
+    "rerunHere": false
+  },
+  "imagesDecodedAndVisuallyInspected": [
+    {
+      "path": "docs/verification/performance-v13-perform-minimum.jpg",
+      "width": 1040,
+      "height": 712
+    },
+    {
+      "path": "docs/verification/performance-v13-perform-normal.jpg",
+      "width": 1171,
+      "height": 768
+    },
+    {
+      "path": "docs/verification/performance-v13-print-back.jpg",
+      "width": 903,
+      "height": 768
+    }
+  ],
+  "limitations": [
+    "No native macOS build/tests/UI/audio hardware execution on this Linux host.",
+    "Compressed artifact hashes were recomputed; canonical JUCE envelope/recipe/event hashes were checked for cross-record agreement, not independently recomputed.",
+    "Original sources and rendered WAVs exist only on the reported Mac and were not rehashed or listened to here.",
+    "Seven zero-peak status observations are disclosed and not diagnosed by this audit.",
+    "Recorded passes do not cover the newly identified source-code edge cases or resolve the historical helper-restart cause."
+  ]
+}
