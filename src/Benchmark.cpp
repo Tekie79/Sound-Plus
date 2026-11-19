@@ -177,7 +177,7 @@ void Benchmark::save(bool success, const juce::String &error)
     o->setProperty("audio", view.audio.status());
     o->setProperty("audioHealth",view.audio.diagnostics());
     o->setProperty("reliability",reliabilityReport());
-    if((bool)plan["recordTake"] && designer){o->setProperty("recordedTakeDocument",designToJson(designer->session.document));o->setProperty("takeOutput",designer->session.lastOutput.getFullPathName());}
+    if(((bool)plan["recordTake"] || plan["replayTake"].toString().isNotEmpty()) && designer){o->setProperty("recordedTakeDocument",designToJson(designer->session.document));o->setProperty("takeOutput",designer->session.lastOutput.getFullPathName());}
     o->setProperty("waveforms", view.peakPool->metrics());
     o->setProperty("rowPreviewPaints", (juce::int64)view.rowPreviewPaints);
     o->setProperty("waveformScrolls", waveformScrolls);

@@ -61,8 +61,10 @@ class FileDragButton : public IconButton
             traceFile = juce::File(path);
     }
     juce::File file;
+    std::function<juce::File()> resolveFile;
     void mouseDown(const juce::MouseEvent &e) override
     {
+        if (resolveFile) file = resolveFile();
         started = false;
         tracedDrag = false;
         trace("mouse-down", e.getDistanceFromDragStart());
@@ -75,7 +77,7 @@ class FileDragButton : public IconButton
             trace("mouse-drag", e.getDistanceFromDragStart());
             tracedDrag = true;
         }
-        if (!started && isEnabled() && file != juce::File() && e.getDistanceFromDragStart() > 5)
+        if (!started && isEnabled() && file != juce::File() && file.existsAsFile() && e.getDistanceFromDragStart() > 5)
         {
             std::function<void()> ended;
             if (traceFile != juce::File())

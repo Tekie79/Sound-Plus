@@ -332,14 +332,15 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     copyOriginal.onClick = [this] { chooseFile(5); };
     addPrint.onClick = [this]
     {
-        if (session.lastOutput != juce::File() && !session.takeBusy())
+        auto output = session.readyOutput();
+        if (output != juce::File() && !session.takeBusy())
         {
-            auto output = session.lastOutput;
             if (session.document.activeTake.isNotEmpty())
                 session.selectTake({});
             session.addExternal(output);
         }
     };
+    dragOutput.resolveFile = [this] { return session.readyOutput(); };
     dragOriginal.setTooltip("Drag the complete unprocessed original file. The receiving app may reference "
                             "its current location. Layer DSP is not applied.");
     dragOutput.setTooltip("Drag the actual finalized durable WAV to Finder or another application.");
@@ -1219,8 +1220,8 @@ void DesignerView::refresh()
     bool frozen = session.takeBusy() || d.activeTake.isNotEmpty();
     newButton.setEnabled(!session.takeBusy() && !session.rendering);
     openButton.setEnabled(!session.takeBusy() && !session.rendering);
-    for (auto *b : {&recover, &add, &duplicate, &remove, &up, &down, &generate,
-                    &variationSettings, &renderSelection, &copyOriginal})
+    for (auto *b : {&recover, &add, &duplicate, &remove, &up, &down, &generate, &variationSettings,
+                    &renderSelection, &copyOriginal})
         if (frozen)
             b->setEnabled(false);
     candidates.setEnabled(!frozen);
@@ -1244,6 +1245,9 @@ void DesignerView::refresh()
 }
 void DesignerView::timerCallback()
 {
+    const auto previousOutput = session.lastOutput;
+    if (session.readyOutput() != previousOutput)
+        refresh();
     auto state = audio.status();
     refreshTakes();
     if (session.document.activeTake.isNotEmpty())
@@ -1604,8 +1608,8 @@ void DesignerView::chooseFile(int kind)
                                  safe->session.replaceSource(layer, file);
                              else if (kind == 4)
                              {
-                                 safe->session.edit("Render output folder", [&](auto &d)
-                                                    { d.outputFolder = file.getFullPathName(); });
+                                 safe->session.editMetadata("Render output folder", [&](auto &d)
+                                                            { d.outputFolder = file.getFullPathName(); });
                              }
                              else if (kind == 5)
                                  safe->session.copyOriginal(file);
@@ -1746,6 +1750,10 @@ void DesignerView::variationPopup()
 }
 void DesignerView::renderPopup()
 {
+    juce::CallOutBox::launchAsynchronously(makeRenderPanel(), renderSettings.getBounds(), this);
+}
+std::unique_ptr<juce::Component> DesignerView::makeRenderPanel()
+{
     struct Panel : juce::Component
     {
         juce::OwnedArray<juce::Component> children;
@@ -1768,8 +1776,10 @@ void DesignerView::renderPopup()
         box->setTitle(name);
         box->addItemList(items, 1);
         box->setSelectedId(selected, juce::dontSendNotification);
-        box->onChange = [this, box, set]
-        { session.edit("Render settings", [&](auto &d) { set(d.renderSettings, box->getSelectedId()); }); };
+        box->onChange = [this, box, set] {
+            session.editMetadata("Render settings",
+                                 [&](auto &d) { set(d.renderSettings, box->getSelectedId()); });
+        };
         y += 36;
     };
     auto s = session.document.renderSettings;
@@ -1806,9 +1816,15 @@ void DesignerView::renderPopup()
         editor->setInputRestrictions(20, "0123456789.");
         editor->onReturnKey = [this, editor, set]
         {
-            session.edit("Render range/tail",
-                         [&](auto &d) { set(d.renderSettings, editor->getText().getDoubleValue()); });
+            session.editMetadata("Render range/tail",
+                                 [&](auto &d) { set(d.renderSettings, editor->getText().getDoubleValue()); });
         };
+        if (session.document.activeTake.isNotEmpty() && !name.startsWith("Fixed tail"))
+        {
+            editor->setEnabled(false);
+            editor->setTooltip("Render Take exports the whole captured performance. Choose Live Design for "
+                               "timeline ranges.");
+        }
         y += 36;
     };
     number("Start (timeline s)", s.first / session.document.sampleRate,
@@ -1827,19 +1843,19 @@ void DesignerView::renderPopup()
         toggle->setToggleState(normalize ? s.normalize : s.dither, juce::dontSendNotification);
         toggle->onClick = [this, toggle, normalize]
         {
-            session.edit("Render level/dither",
-                         [&](auto &d)
-                         {
-                             if (normalize)
-                                 d.renderSettings.normalize = toggle->getToggleState();
-                             else
-                                 d.renderSettings.dither = toggle->getToggleState();
-                         });
+            session.editMetadata("Render level/dither",
+                                 [&](auto &d)
+                                 {
+                                     if (normalize)
+                                         d.renderSettings.normalize = toggle->getToggleState();
+                                     else
+                                         d.renderSettings.dither = toggle->getToggleState();
+                                 });
         };
         y += 32;
     }
     panel->setSize(358, y + 8);
-    juce::CallOutBox::launchAsynchronously(std::move(panel), renderSettings.getBounds(), this);
+    return panel;
 }
 bool DesignerView::keyPressed(const juce::KeyPress &key, juce::Component *)
 {

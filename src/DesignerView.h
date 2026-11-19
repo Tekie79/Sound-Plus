@@ -57,6 +57,7 @@ class DesignerView final : public juce::Component,
 
   private:
     friend struct DesignerViewTestAccess;
+    friend struct TakeIntegrityTestAccess;
     void showSnapOptions();
     IconButton zoomIn{"Zoom in (Command-wheel)", ActionIcon::zoom}, zoomOut{"Zoom out", ActionIcon::zoomOut},
         fitAll{"Fit design", ActionIcon::fit}, fitSelected{"Fit selected layers", ActionIcon::fitSelection},
@@ -85,6 +86,7 @@ class DesignerView final : public juce::Component,
     void nameTakeDialog();
     void takePopup();
     void refreshTakes();
+    std::unique_ptr<juce::Component> makeRenderPanel();
     ui::FileDragButton dragOutput{"Drag WAV"}, dragOriginal{"Drag Original"};
     AudioClient &audio;
     ui::LookAndFeel look;

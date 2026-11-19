@@ -7,10 +7,14 @@ namespace sp
 class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallback
 {
   public:
-    AudioEngine();
+    explicit AudioEngine(bool connectHardware = true);
     ~AudioEngine() override;
 
   private:
+    friend struct AudioEngineTestAccess;
+    void handleDeviceChanges();
+    const bool hardware;
+    uint64_t deviceReservationId = 0;
     void timerCallback() override;
     void audioDeviceIOCallbackWithContext(const float *const *, int, float *const *, int, int,
                                           const juce::AudioIODeviceCallbackContext &) override;

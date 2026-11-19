@@ -32,6 +32,7 @@ class WaveformPool
         return changedGeneration;
     }
     static constexpr size_t maxSources = 48, maxGeometries = 96, maxDemand = 40;
+    static constexpr size_t maxDisplaySources = 160, maxSummaryPairs = 2048;
 
   private:
     struct Entry
@@ -45,6 +46,7 @@ class WaveformPool
         std::shared_ptr<const PeakColumns> data;
         uint64_t used = 0;
     };
+    void adoptDisplay(const juce::String &, Entry);
     std::shared_ptr<std::atomic<uint64_t>> decodes;
     std::function<double()> now;
     WaveformCache worker;

@@ -5,8 +5,10 @@
 #include <unistd.h>
 namespace sp
 {
-AudioEngine::AudioEngine()
+AudioEngine::AudioEngine(bool connectHardware) : hardware(connectHardware)
 {
+    if (!hardware)
+        return;
     int noSig = 1;
     setsockopt(STDIN_FILENO, SOL_SOCKET, SO_NOSIGPIPE, &noSig, sizeof(noSig));
     fcntl(STDIN_FILENO, F_SETFL, fcntl(STDIN_FILENO, F_GETFL) | O_NONBLOCK);
@@ -17,8 +19,11 @@ AudioEngine::AudioEngine()
 AudioEngine::~AudioEngine()
 {
     stopTimer();
-    devices.removeAudioCallback(this);
-    devices.closeAudioDevice();
+    if (hardware)
+    {
+        devices.removeAudioCallback(this);
+        devices.closeAudioDevice();
+    }
 }
 void AudioEngine::audioDeviceIOCallbackWithContext(const float *const *, int, float *const *out, int channels,
                                                    int frames, const juce::AudioIODeviceCallbackContext &)
@@ -27,16 +32,21 @@ void AudioEngine::audioDeviceIOCallbackWithContext(const float *const *, int, fl
 }
 void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice *device)
 {
-    deviceRate = device->getCurrentSampleRate();
+    const auto rate = device->getCurrentSampleRate();
+    const auto previous = deviceRate.exchange(rate);
+    if (previous > 0 && previous != rate)
+        playback.deviceFault(CaptureDeviceLifecycle::rateChanged);
     deviceChanged = true;
 }
 void AudioEngine::audioDeviceStopped()
 {
     deviceRate = 0;
+    playback.deviceFault(CaptureDeviceLifecycle::stopped);
     deviceChanged = true;
 }
-void AudioEngine::audioDeviceError(const juce::String &)
+void AudioEngine::audioDeviceError(const juce::String &error)
 {
+    playback.deviceFault(CaptureDeviceLifecycle::error, &error);
     deviceChanged = true;
 }
 void AudioEngine::command(const juce::var &message)
@@ -55,6 +65,22 @@ void AudioEngine::command(const juce::var &message)
     }
     if (!hello)
         return;
+    if (name == "reserve_capture")
+    {
+        auto id = (uint64_t)(int64_t)message["reservationId"];
+        if ((bool)message["reserve"])
+        {
+            if (playback.captureBusy() && !playback.hasCaptureReservation())
+                return;
+            deviceReservationId = id;
+            playback.stop(requestedGeneration);
+            lastPlay = juce::var();
+            playback.reserveCapture((uint64_t)(int64_t)message["deviceFaultEpoch"]);
+        }
+        else if (id == deviceReservationId)
+            playback.releaseCaptureReservation();
+        return;
+    }
     if (name == "quit")
     {
         juce::JUCEApplicationBase::quit();
@@ -131,7 +157,7 @@ void AudioEngine::command(const juce::var &message)
         deviceChanged = true;
     }
 }
-void AudioEngine::timerCallback()
+void AudioEngine::handleDeviceChanges()
 {
     if (deviceChanged.exchange(false))
     {
@@ -143,9 +169,8 @@ void AudioEngine::timerCallback()
                 outputs.add(name);
         }
         auto state = playback.status();
-        if (playback.captureBusy() && (double)state["outputRate"] != deviceRate.load())
+        if (lastPlay["mode"].toString() == "record" || playback.captureLifecycleFailed())
         {
-            playback.interruptCapture();
             lastPlay = juce::var();
         }
         if (lastPlay.isObject() && deviceRate.load() > 0 && (double)state["outputRate"] != deviceRate.load())
@@ -160,6 +185,10 @@ void AudioEngine::timerCallback()
             playback.request(lastPlay, deviceRate.load());
         }
     }
+}
+void AudioEngine::timerCallback()
+{
+    handleDeviceChanges();
     char bytes[8192];
     for (int budget = 0; budget < 8; ++budget)
     {
@@ -215,6 +244,8 @@ void AudioEngine::sendStatus()
     object->setProperty("lastCommandSequence", (juce::int64)commandSequence);
     object->setProperty("lastCommandMs", commandMs);
     object->setProperty("sampleRate", deviceRate.load());
+    object->setProperty("deviceFaultEpoch", (juce::int64)playback.deviceFaultEpoch());
+    object->setProperty("deviceReservationId", (juce::int64)deviceReservationId);
     object->setProperty("outputs", outputs);
     object->setProperty("peakResidentBytes", performance.json()["peakResidentBytes"]);
     object->setProperty("cpuSeconds", performance.json()["cpuSeconds"]);

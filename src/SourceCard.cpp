@@ -20,7 +20,7 @@ SourceCard::SourceCard(juce::Label &t, juce::ComboBox &c, std::shared_ptr<Wavefo
     title.setMinimumHorizontalScale(1.f);
 }
 void SourceCard::bind(const DesignLayer *value, const juce::String &id, const juce::String &name,
-                      bool isSelected, double contribution)
+                      bool isSelected, double contribution, bool readOnly)
 {
     assigned = id;
     alias = name;
@@ -46,18 +46,23 @@ void SourceCard::bind(const DesignLayer *value, const juce::String &id, const ju
     filename = layer && nameToShow != layer->source.name ? layer->source.name : juce::String();
     const auto description =
         layer ? nameToShow + "\n" + layer->source.path +
-                    "\nAll-channel source overview before fades, gain and inserts. "
-                    "Double-click waveform or press Return to open in Edit. Drag to assign another corner."
+                    "\nAll-channel source overview before fades, gain and inserts. " +
+                    juce::String(readOnly ? "Frozen take source. Choose Live Design to edit."
+                                          : "Double-click waveform or press Return to open in Edit. Drag to "
+                                            "assign another corner.")
               : "Drop a Library sound or design layer, or choose a layer with the arrow.";
-    title.setTooltip(description + "\nDouble-click title to edit alias.");
+    title.setTooltip(description + (readOnly ? "" : "\nDouble-click title to edit alias."));
     setTooltip(description);
-    chooser.setTooltip("Choose, replace or clear this blend assignment");
-    setTitle(nameToShow + (layer ? ", " +
-                                       cardDuration((layer->region.endSample - layer->region.startSample) /
-                                                        (layer->source.sampleRate * layer->rate),
-                                                    true) +
-                                       ". All-channel source overview. Return opens Edit."
-                                 : ". Choose layer or drop sound."));
+    chooser.setTooltip(readOnly ? "Frozen take source assignment"
+                                : "Choose, replace or clear this blend assignment");
+    setTitle(nameToShow +
+             (layer ? ", " +
+                          cardDuration((layer->region.endSample - layer->region.startSample) /
+                                           (layer->source.sampleRate * layer->rate),
+                                       true) +
+                          juce::String(readOnly ? ". Read-only take source overview."
+                                                : ". All-channel source overview. Return opens Edit.")
+                    : ". Choose layer or drop sound."));
     refreshPeaks();
     repaint();
 }

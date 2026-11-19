@@ -257,7 +257,9 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                         }
                         if (token.kind == Operation::preview)
                             safe->previewWaiting = false;
-                        if (token.kind == Operation::take)
+                        // Source verification also uses this operation serial. A rejected
+                        // relocation leaves an existing complete take and its audition intact.
+                        if (token.kind == Operation::take && safe->takeBusy())
                         {
                             safe->services.reserveTake(false);
                             safe->takeState = TakeState::incomplete;
@@ -272,7 +274,7 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
     if (!accepted)
     {
         finishOperation(token);
-        if (token.kind == Operation::take)
+        if (token.kind == Operation::take && takeBusy())
         {
             services.reserveTake(false);
             takeState = TakeState::incomplete;
@@ -301,7 +303,7 @@ void DesignSession::restoreDerivedState()
     selectedIds.clear();
     if (layerById(document, document.selectedLayer))
         selectedIds.insert(document.selectedLayer);
-    lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
+    selectContextOutput();
 }
 void DesignSession::reconcileSelection(const DesignDocument *before)
 {
@@ -314,15 +316,20 @@ void DesignSession::reconcileSelection(const DesignDocument *before)
     else
         document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
 }
-void DesignSession::changed()
+void DesignSession::changed(ChangeImpact impact)
 {
+    if ((active || previewWaiting) && auditionContext.startsWith("take:") &&
+        auditionContext != designPlaybackContext(document))
+        stop(); // Undo/context restoration must not label A's audio as another take or Live Design.
     dirty = true;
     lastEdit = services.now();
-    if (active && previewDue <= 0)
+    selectContextOutput();
+    if (impact == ChangeImpact::audio && document.activeTake.isEmpty() && active && previewDue <= 0)
         previewDue = std::max(lastEdit, lastAudioUpdate + 25);
     notify();
 }
-void DesignSession::edit(const juce::String &label, const std::function<void(DesignDocument &)> &edit)
+void DesignSession::edit(const juce::String &label, const std::function<void(DesignDocument &)> &edit,
+                         ChangeImpact impact)
 {
     if (takeBusy() && !takeMutation)
     {
@@ -344,8 +351,7 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         notify();
         return;
     }
-    if (document.activeTake.isNotEmpty() && !takeMutation && label != "Record completed output" &&
-        label != "Render settings" && label != "Render output folder")
+    if (document.activeTake.isNotEmpty() && !takeMutation && impact != ChangeImpact::metadata)
     {
         message = "Choose Live Design before editing";
         notify();
@@ -396,7 +402,7 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
             undoHistory.erase(undoHistory.begin());
         redoHistory.clear();
     }
-    changed();
+    changed(impact);
 }
 void DesignSession::beginGesture()
 {
@@ -871,6 +877,7 @@ void DesignSession::schedulePreview(const juce::String &mode)
     auto serial = ++*previewSerial;
     auto snapshot = document;
     auto position = document.playhead;
+    auditionContext = designPlaybackContext(snapshot);
     auto file =
         directory.getChildFile("designer-preview").getChildFile(juce::Uuid().toString() + ".soundplus");
     auto cancellation = previewSerial;
@@ -893,7 +900,10 @@ void DesignSession::schedulePreview(const juce::String &mode)
                 safe->previewWaiting = false;
                 // Edits made while the snapshot/seek was preparing belong to
                 // the newly requested generation, not the previous stream.
-                if (safe->publishedStructure == designStructure(safe->document))
+                if (snapshot.activeTake.isNotEmpty())
+                    safe->previewDue = 0; // Immutable replay has no live catch-up path.
+                else if (designPlaybackContext(snapshot) == designPlaybackContext(safe->document) &&
+                         safe->publishedStructure == designStructure(safe->document))
                 {
                     if (safe->document.revision != snapshot.revision)
                         safe->services.parameters(safe->document, safe->expectedGeneration, safe->lastEdit);
@@ -957,6 +967,7 @@ void DesignSession::stop()
     if (active || previewWaiting || state["id"].toString().startsWith("design:"))
         services.stop();
     active = previewWaiting = seekGesture = seekWasPlaying = false;
+    auditionContext.clear();
     previewDue = 0;
     notify();
 }
@@ -1039,7 +1050,7 @@ void DesignSession::timerCallback()
     {
         previewDue = 0;
         lastAudioUpdate = now;
-        if (active)
+        if (active && document.activeTake.isEmpty())
         {
             if (publishedStructure == designStructure(document))
                 services.parameters(document, expectedGeneration, lastEdit);
@@ -1123,9 +1134,11 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
                         if (!safe || !safe->accepts(token))
                             return;
                         safe->rendering = false;
-                        safe->lastOutput = juce::File(output.path);
-                        safe->edit("Record completed output", [&](auto &d) { d.outputs.push_back(output); });
-                        safe->message = "Ready to drag: " + safe->lastOutput.getFileName();
+                        safe->edit(
+                            "Record completed output", [&](auto &d) { d.outputs.push_back(output); },
+                            ChangeImpact::metadata);
+                        safe->selectContextOutput();
+                        safe->message = "Rendered: " + juce::File(output.path).getFileName();
                         safe->notify();
                     });
             }

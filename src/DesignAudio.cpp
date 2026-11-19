@@ -457,13 +457,14 @@ struct DesignGraph::Impl
     std::vector<std::unique_ptr<Voice>> voices;
     Rack masterRack;
     juce::AudioBuffer<float> block{2, 512};
-    explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled)
+    explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled,
+                  const DesignDocument *effectiveInput)
         : sampleRate(d.sampleRate), master(d.activeMix().masterDb), document(resolvePerformance(d))
     {
         validateDesign(d);
         if (auto *t = selectedTake(d))
         {
-            takeBase = takeDocument(d);
+            takeBase = effectiveInput ? *effectiveInput : takeDocument(d);
             document = resolvePerformance(takeBase);
             sampleRate = t->sampleRate;
             master = document.activeMix().masterDb;
@@ -534,11 +535,18 @@ struct DesignGraph::Impl
     }
 };
 DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled)
-    : impl(std::make_unique<Impl>(d, cancelled))
+    : DesignGraph(d, cancelled, nullptr)
+{
+}
+DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled,
+                         const DesignDocument *effectiveInput)
+    : impl(std::make_unique<Impl>(d, cancelled, effectiveInput))
 {
 }
 void DesignGraph::updateParameters(const juce::var &parameters)
 {
+    if (impl->inputEnd >= 0)
+        return; // A frozen take only accepts its internal event timeline.
     applyDesignParameters(impl->document, parameters);
     for (auto &layer : impl->document.activeMix().layers)
         for (auto &voice : impl->voices)
@@ -581,8 +589,9 @@ double DesignGraph::rate() const
 }
 struct DesignReader::Impl : juce::AudioSource
 {
-    DesignGraph graph;
     DesignDocument document;
+    DesignGraph graph;
+    const bool immutableReplay;
     int64_t firstFrame, lastOverride;
     double tailSeconds;
     std::unique_ptr<juce::ResamplingAudioSource> resampler;
@@ -591,8 +600,11 @@ struct DesignReader::Impl : juce::AudioSource
     std::optional<PerformControls> pendingPerformance;
     TakeCapture *capture = nullptr;
     Impl(const DesignDocument &d, double rate, int64_t first, int64_t last, double tail,
-         const std::function<bool()> &cancelled, int64_t warmup)
-        : graph(d, cancelled), document(selectedTake(d) ? takeDocument(d) : d), firstFrame(first),
+         const std::function<bool()> &cancelled, int64_t warmup, const DesignDocument *effectiveInput)
+        : document(effectiveInput    ? *effectiveInput
+                   : selectedTake(d) ? takeDocument(d)
+                                     : d),
+          graph(d, cancelled, &document), immutableReplay(selectedTake(d) != nullptr), firstFrame(first),
           lastOverride(last), tailSeconds(tail),
           end((last < 0 ? mixDuration(document.activeMix(), document.sampleRate) : last) +
               (int64_t)std::llround(tail * document.sampleRate)),
@@ -632,11 +644,19 @@ struct DesignReader::Impl : juce::AudioSource
 };
 DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
                            double tail, const std::function<bool()> &cancelled, int64_t warmup)
-    : impl(std::make_unique<Impl>(d, outputRate, first, last, tail, cancelled, warmup))
+    : DesignReader(d, outputRate, first, last, tail, cancelled, warmup, nullptr)
+{
+}
+DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
+                           double tail, const std::function<bool()> &cancelled, int64_t warmup,
+                           const DesignDocument *effectiveInput)
+    : impl(std::make_unique<Impl>(d, outputRate, first, last, tail, cancelled, warmup, effectiveInput))
 {
 }
 void DesignReader::updateParameters(const juce::var &parameters)
 {
+    if (impl->immutableReplay)
+        return;
     applyDesignParameters(impl->document, parameters);
     impl->graph.updateParameters(parameters);
     impl->end = (impl->lastOverride < 0 ? mixDuration(impl->document.activeMix(), impl->document.sampleRate)
@@ -697,6 +717,9 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     auto checked = d;
     checked.renderSettings = settings;
     validateDesign(checked);
+    // Freeze the actual verified relocation once for metering, PCM and final
+    // publication guards. Unrelated Live Design paths never enter this snapshot.
+    const auto effectiveInput = selectedTake(d) ? takeDocument(d) : d;
     if (!folder.createDirectory())
         throw std::runtime_error("Cannot create output folder");
     auto name = juce::File::createLegalFileName(selectedTake(d) ? selectedTake(d)->name : d.name) +
@@ -711,7 +734,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     if (settings.normalize)
     {
         DesignReader meter(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
-                           cancelled);
+                           cancelled, -1, &effectiveInput);
         double peak = 0;
         while (auto n = meter.read(block, 4096, cancelled))
         {
@@ -726,7 +749,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
             normalize = std::pow(10.0, -1.0 / 20) / peak;
     }
     DesignReader reader(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
-                        cancelled);
+                        cancelled, -1, &effectiveInput);
     juce::WavAudioFormat format;
     auto stream = staging.getFile().createOutputStream();
     if (!stream)
@@ -739,7 +762,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     result.path = target.getFullPathName();
     result.samples = reader.length();
     result.revision = d.revision;
-    result.variation = d.activeVariation;
+    result.variation = selectedTake(d) ? juce::String() : d.activeVariation;
     result.settings = settings;
     result.created = juce::Time::getCurrentTime().toISO8601(true);
     if (auto *t = selectedTake(d))
@@ -750,6 +773,18 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         result.eventHash = t->eventHash;
         result.processing = t->processing;
         result.sourceProvenance = takeToJson(*t)["sources"];
+        for (auto &source : *result.sourceProvenance.getArray())
+            for (auto &layer : effectiveInput.activeMix().layers)
+                if (source["id"].toString() == layer.source.id)
+                {
+                    auto *o = source.getDynamicObject();
+                    o->setProperty("effectivePath", layer.source.path);
+                    o->setProperty("revision", (juce::int64)layer.source.revision);
+                    o->setProperty("size", (juce::int64)layer.source.size);
+                    o->setProperty("modified", (juce::int64)layer.source.modified);
+                    o->setProperty("inode", (juce::int64)layer.source.inode);
+                    break;
+                }
         result.projectRate = t->sampleRate;
         result.bodyEnd = t->bodyEnd;
         result.captureRate = t->captureRate;
@@ -781,9 +816,9 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                  (settings.normalize ? .6 : 1) * (double)reader.consumed() / reader.length());
     }
     writer.reset();
-    bool solo =
-        std::any_of(d.activeMix().layers.begin(), d.activeMix().layers.end(), [](auto &l) { return l.solo; });
-    for (auto &l : d.activeMix().layers)
+    bool solo = std::any_of(effectiveInput.activeMix().layers.begin(),
+                            effectiveInput.activeMix().layers.end(), [](auto &l) { return l.solo; });
+    for (auto &l : effectiveInput.activeMix().layers)
         if (!l.mute && (!solo || l.solo))
             sourceUnchanged(l.source);
     syncFile(staging.getFile());

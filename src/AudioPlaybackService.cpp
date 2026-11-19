@@ -26,22 +26,39 @@ AudioPlaybackService::~AudioPlaybackService()
 }
 void AudioPlaybackService::request(juce::var command, double rate)
 {
-    if (captureBusy())
-        return;
     bool recording = command["mode"].toString() == "record";
+    if (captureBusy() && !(recording && reservationPending.load()))
+        return;
+    if (recording)
+    {
+        if (!reservationPending.load())
+            reserveCapture((uint64_t)(int64_t)command["deviceFaultEpoch"]);
+        reservationPending = false;
+    }
     captureRequestGeneration = recording ? (uint64_t)(int64_t)command["playGeneration"] : 0;
     captureRequestActive = recording;
     auto serial = ++epoch;
     {
         std::lock_guard lock(mutex);
-        pending = Request{std::move(command), rate, serial};
+        pending = Request{std::move(command), rate, serial, recording ? deviceTicket.load() : 0};
     }
     wake.notify_one();
+}
+void AudioPlaybackService::reserveCapture(uint64_t baseline)
+{
+    deviceTicket = deviceLifecycle.reserve(baseline);
+    reservationPending = true;
+}
+void AudioPlaybackService::releaseCaptureReservation()
+{
+    reservationPending = false;
+    deviceLifecycle.cancel(deviceTicket.load());
 }
 bool AudioPlaybackService::captureBusy()
 {
     std::lock_guard lock(captureMutex);
-    return captureRequestActive || (retainedCapture && retainedCapture->phase <= TakeCapture::finalizing);
+    return reservationPending || captureRequestActive ||
+           (retainedCapture && retainedCapture->phase <= TakeCapture::finalizing);
 }
 void AudioPlaybackService::stop(uint64_t generation)
 {
@@ -91,6 +108,8 @@ void AudioPlaybackService::prepare()
             if (request.command["command"].toString() == "play_design")
             {
                 auto document = loadDesign(juce::File(request.command["path"].toString()));
+                result.context = designPlaybackContext(document);
+                result.immutableReplay = selectedTake(document) != nullptr;
                 auto requestedStructure = designStructure(document);
                 if (result.mode == "record")
                 {
@@ -101,9 +120,17 @@ void AudioPlaybackService::prepare()
                     t.captureRate = request.rate;
                     hashTake(t);
                     result.capture = std::make_shared<TakeCapture>(t);
+                    result.capture->deviceTicket = request.deviceTicket;
                     {
                         std::lock_guard lock(captureMutex);
                         retainedCapture = result.capture;
+                    }
+                    if (beforePrepare)
+                        beforePrepare();
+                    if (deviceLifecycle.failed(request.deviceTicket))
+                    {
+                        result.capture->deviceFailure(deviceLifecycle.diagnostic(request.deviceTicket));
+                        throw std::runtime_error(result.capture->deviceDiagnostic().toStdString());
                     }
                     document.original = t.recipe;
                     document.activeVariation.clear();
@@ -189,26 +216,44 @@ void AudioPlaybackService::produce()
 {
     uint64_t activeEpoch = 0, generation = 0, lastStop = 0, lastEdit = 0, stale = 0;
     int64_t revision = 0;
-    juce::String id, error, structure;
+    juce::String id, error, structure, context;
+    bool immutableReplay = false;
     juce::var latestControls;
     while (!quitting)
     {
         auto stop = stopEpoch.load();
+        std::shared_ptr<TakeCapture> affected;
+        {
+            std::lock_guard lock(captureMutex);
+            affected = retainedCapture;
+        }
+        if (affected && affected->phase <= TakeCapture::finalizing &&
+            deviceLifecycle.failed(affected->deviceTicket))
+        {
+            const auto reason = deviceLifecycle.diagnostic(affected->deviceTicket);
+            if (core.capture() == affected)
+            {
+                core.finishTake(false);
+                core.stop();
+            }
+            affected->deviceFailure(reason);
+            captureRequestActive = false;
+            id.clear();
+            generation = affected->frozen.generation;
+            error = reason;
+        }
         auto finish = captureFinish.exchange(0);
-        if (finish && finish != 3 && captureFinishGeneration.load() != captureRequestGeneration.load())
+        if (finish && captureFinishGeneration.load() != captureRequestGeneration.load())
             finish = 0;
-        if (finish && finish != 3 && core.capture() &&
-            core.capture()->frozen.generation != captureFinishGeneration.load())
+        if (finish && core.capture() && core.capture()->frozen.generation != captureFinishGeneration.load())
             finish = 0;
         if (finish && core.capture())
         {
-            if (finish == 3)
-                core.capture()->failureCode = 1;
             core.finishTake(finish == 1);
             if (finish == 2)
                 core.capture()->phase = TakeCapture::cancelled;
             core.stop();
-            if (finish == 2 || finish == 3)
+            if (finish == 2)
                 captureRequestActive = false;
         }
         else if (finish)
@@ -285,6 +330,12 @@ void AudioPlaybackService::produce()
                                 "Graph preparation missed its clock window; retry the edit");
                         next->stream->discardTo(core.sourceSample());
                     }
+                    if (next->capture && deviceLifecycle.failed(next->capture->deviceTicket))
+                    {
+                        next->capture->deviceFailure(deviceLifecycle.diagnostic(next->capture->deviceTicket));
+                        next->error = next->capture->deviceDiagnostic();
+                        next->stream.reset();
+                    }
                     bool prepared = next->stream && next->error.isEmpty();
                     if (!prepared)
                         captureRequestActive = false;
@@ -295,6 +346,8 @@ void AudioPlaybackService::produce()
                     generation = next->generation;
                     revision = next->revision;
                     structure = next->structure;
+                    context = next->context;
+                    immutableReplay = next->immutableReplay;
                     id = next->error.isEmpty() ? next->id : juce::String();
                     error = next->error;
                     if (latestControls["id"].toString() != id ||
@@ -303,7 +356,9 @@ void AudioPlaybackService::produce()
                     lastEdit = 0;
                 }
             }
-            if (latestControls.isObject() && latestControls["id"].toString() == id &&
+            if (!immutableReplay && latestControls.isObject() && latestControls["id"].toString() == id &&
+                (latestControls["playbackContext"].isVoid() ||
+                 latestControls["playbackContext"].toString() == context) &&
                 latestControls["structure"].toString() == structure &&
                 (uint64_t)(int64_t)latestControls["playGeneration"] == generation && core.designPlaying() &&
                 (uint64_t)(int64_t)latestControls["sequence"] > lastEdit && activeEpoch == epoch.load())
@@ -365,6 +420,12 @@ void AudioPlaybackService::produce()
         object->setProperty("designLayers", core.designLayers());
         object->setProperty("producerMaxMs", core.producerMaxMs());
         object->setProperty("error", error);
+        object->setProperty("playbackContext", context);
+        object->setProperty("immutableReplay", immutableReplay);
+        object->setProperty("deviceFaultEpoch", (juce::int64)deviceLifecycle.epoch());
+        object->setProperty("captureLifecycleFailed", captureLifecycleFailed());
+        object->setProperty("captureDeviceError",
+                            captureLifecycleFailed() ? captureDeviceDiagnostic() : juce::String());
         object->setProperty("callbacks", (juce::int64)core.callbacks.load());
         object->setProperty("frames", (juce::int64)core.framesRendered.load());
         object->setProperty("underruns", (juce::int64)core.underruns.load());
@@ -387,11 +448,10 @@ void AudioPlaybackService::produce()
                 object->setProperty("takeCheckpoint", c->frozen.checkpoint);
                 object->setProperty("takeCheckpointReady", c->checkpointReady.load());
                 object->setProperty("takePeakBacklog", (int)c->peakBacklog.load());
-                object->setProperty("takeError", c->checkpointFailed ? "Checkpoint write failed"
-                                                 : c->overflow       ? "Event capacity exceeded"
-                                                 : c->failureCode == 1
-                                                     ? "Audio device changed during recording"
-                                                     : "");
+                object->setProperty("takeError", c->checkpointFailed   ? "Checkpoint write failed"
+                                                 : c->overflow         ? "Event capacity exceeded"
+                                                 : c->failureCode == 1 ? c->deviceDiagnostic()
+                                                                       : "");
             }
         }
         {
@@ -440,9 +500,19 @@ void AudioPlaybackService::checkpoints()
                 c->checkpointCount = t.events.size();
                 if (t.complete && c->phase == TakeCapture::finalizing)
                 {
-                    c->checkpointReady = true;
-                    c->phase = TakeCapture::ready;
-                    phase = TakeCapture::ready;
+                    if (beforeCheckpointCommit)
+                        beforeCheckpointCommit();
+                    if (deviceLifecycle.commit(c->deviceTicket))
+                    {
+                        int expected = TakeCapture::finalizing;
+                        c->checkpointReady = true;
+                        if (c->phase.compare_exchange_strong(expected, TakeCapture::ready))
+                            phase = TakeCapture::ready;
+                        else
+                            c->checkpointReady = false;
+                    }
+                    else
+                        c->deviceFailure(deviceLifecycle.diagnostic(c->deviceTicket));
                 }
             }
             catch (...)

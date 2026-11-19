@@ -5,6 +5,25 @@
 #include <juce_cryptography/juce_cryptography.h>
 namespace sp
 {
+namespace
+{
+bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
+{
+    if (!t.complete || o.kind != "take-render" || o.recipeHash != t.recipeHash ||
+        o.eventHash != t.eventHash || o.processing != t.processing || o.bodyEnd != t.bodyEnd ||
+        o.capturedFrames != t.outputFrames || o.projectRate != t.sampleRate ||
+        o.captureRate != t.captureRate || o.sha256.length() != 64)
+        return false;
+    auto *sources = o.sourceProvenance.getArray();
+    if (!sources || sources->size() != (int)t.sources.size())
+        return false;
+    for (auto &s : t.sources)
+        if (std::count_if(sources->begin(), sources->end(), [&](const auto &p)
+                          { return p["id"].toString() == s.id && p["sha256"].toString() == s.sha256; }) != 1)
+            return false;
+    return true;
+}
+} // namespace
 const DesignMix &DesignSession::performanceMix() const
 {
     return takeBusy() || document.activeTake.isNotEmpty() ? takeDisplay : document.activeMix();
@@ -124,12 +143,19 @@ void DesignSession::stopTake(bool cancel)
 void DesignSession::selectContextOutput()
 {
     lastOutput = juce::File();
+    auto *take = selectedTake(document);
     for (auto it = document.outputs.rbegin(); it != document.outputs.rend(); ++it)
-        if (it->takeId == document.activeTake && juce::File(it->path).existsAsFile())
+        if (it->takeId == document.activeTake && (!take || matchingTakeOutput(*take, *it)) &&
+            juce::File(it->path).existsAsFile())
         {
             lastOutput = juce::File(it->path);
             break;
         }
+}
+juce::File DesignSession::readyOutput()
+{
+    selectContextOutput();
+    return lastOutput;
 }
 void DesignSession::selectTake(const juce::String &id)
 {
@@ -159,16 +185,18 @@ void DesignSession::nameTake(const juce::String &name, bool keep)
         return;
     auto id = document.activeTake;
     takeMutation = true;
-    edit("Name / keep take",
-         [&](auto &d)
-         {
-             for (auto &t : d.takes)
-                 if (t.id == id)
-                 {
-                     t.name = name.trim().substring(0, 120);
-                     t.kept = keep;
-                 }
-         });
+    edit(
+        "Name / keep take",
+        [&](auto &d)
+        {
+            for (auto &t : d.takes)
+                if (t.id == id)
+                {
+                    t.name = name.trim().substring(0, 120);
+                    t.kept = keep;
+                }
+        },
+        ChangeImpact::metadata);
     takeMutation = false;
 }
 void DesignSession::deleteTake()
@@ -230,6 +258,19 @@ void DesignSession::relinkTakeSource(const juce::String &source, const juce::Fil
 }
 void DesignSession::pollTake(const juce::var &state)
 {
+    if (takeState == TakeState::arming && expectedGeneration == 0 && (bool)state["captureReserved"] &&
+        (bool)state["captureLifecycleFailed"] &&
+        state["deviceReservationId"] == state["captureReservationId"])
+    {
+        stamp(Operation::take); // A held source-verification completion is now stale.
+        services.reserveTake(false);
+        takeState = TakeState::incomplete;
+        takeUndoBase.reset();
+        active = false;
+        message = "Incomplete take before audio start: " + state["captureDeviceError"].toString();
+        notify();
+        return;
+    }
     if (auto *t = selectedTake(document); t && !takeBusy())
     {
         takeDisplay = takeDisplayMix(*t);

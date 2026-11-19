@@ -20,6 +20,8 @@ class DesignGraph
     double rate() const;
 
   private:
+    friend class DesignReader;
+    DesignGraph(const DesignDocument &, const std::function<bool()> &, const DesignDocument *effectiveInput);
     struct Impl;
     std::unique_ptr<Impl> impl;
 };
@@ -36,13 +38,18 @@ class DesignReader
         const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &);
     int64_t length() const;
-    void updatePerformance(const PerformControls &,TakeCapture &);
+    void updatePerformance(const PerformControls &, TakeCapture &);
     int64_t consumed() const;
     int64_t producedFrame() const;
     int64_t endFrame() const;
     int layers() const;
 
   private:
+    friend DesignOutput renderDesign(const DesignDocument &, const juce::File &, const DesignRenderSettings &,
+                                     const std::function<bool()> &, const std::function<void(double)> &);
+    // Only rendering can supply an already verified immutable input snapshot.
+    DesignReader(const DesignDocument &, double, int64_t, int64_t, double, const std::function<bool()> &,
+                 int64_t, const DesignDocument *effectiveInput);
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

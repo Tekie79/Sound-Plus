@@ -80,29 +80,54 @@ struct LibraryReliabilityTestAccess
         auto generation = v.audio.status()["intentGeneration"];
         auto checkRankingAdoption = [&](bool refresh)
         {
-            if(refresh) v.refresh.onClick();
-            else { v.search.setText("z-sound",juce::dontSendNotification);v.search.onTextChange(); }
-            until([&]{v.timerCallback();return v.snapshot.request==v.requested && v.snapshot.results.size()==20;},
-                  "Fresh lexical prefix adopted before delayed semantics");
-            check(v.snapshot.semantic.enabled && v.selectedId==id,"AI-enabled lexical prefix retains selected ID");
-            check(!(bool)v.library.queryDiagnostics()["pinned"],"Programmatic restoration must not re-pin fresh request");
-            auto promoted=v.snapshot.results.back();
-            v.library.publishControlledSemantic(v.requested,{promoted});
-            until([&]{v.timerCallback();return v.snapshot.semanticCompletedRequest==v.requested;},
-                  "Delayed semantic ordering adopted after actual Refresh/typing");
-            check(v.snapshot.results.front().id==promoted.id && !v.snapshot.newResultsAvailable,
+            if (refresh)
+                v.refresh.onClick();
+            else
+            {
+                v.search.setText("z-sound", juce::dontSendNotification);
+                v.search.onTextChange();
+            }
+            until(
+                [&]
+                {
+                    v.timerCallback();
+                    return v.snapshot.request == v.requested && v.snapshot.results.size() == 20;
+                },
+                "Fresh lexical prefix adopted before delayed semantics");
+            check(v.snapshot.semantic.enabled && v.selectedId == id,
+                  "AI-enabled lexical prefix retains selected ID");
+            check(!(bool)v.library.queryDiagnostics()["pinned"],
+                  "Programmatic restoration must not re-pin fresh request");
+            auto promoted = v.snapshot.results.back();
+            v.library.publishControlledSemantic(v.requested, {promoted});
+            until(
+                [&]
+                {
+                    v.timerCallback();
+                    return v.snapshot.semanticCompletedRequest == v.requested;
+                },
+                "Delayed semantic ordering adopted after actual Refresh/typing");
+            check(v.snapshot.results.front().id == promoted.id && !v.snapshot.newResultsAvailable,
                   "Explicit query adopts semantic order instead of re-offering Refresh");
-            check(v.selectedId==id && v.audio.status()["intentId"].toString()==id &&
-                  v.audio.status()["intentGeneration"]==generation,"Semantic restoration cannot retarget audition");
+            check(v.selectedId == id && v.audio.status()["intentId"].toString() == id &&
+                      v.audio.status()["intentGeneration"] == generation,
+                  "Semantic restoration cannot retarget audition");
             v.selectedRowsChanged(v.table.getSelectedRow());
-            check((bool)v.library.queryDiagnostics()["pinned"],"Subsequent deliberate selection pins current request");
+            check((bool)v.library.queryDiagnostics()["pinned"],
+                  "Subsequent deliberate selection pins current request");
         };
         checkRankingAdoption(false);
         checkRankingAdoption(true);
         v.benchmarkSearch("");
-        until([&]{v.timerCallback();return v.snapshot.request==v.requested;},"Restore initial query");
+        until(
+            [&]
+            {
+                v.timerCallback();
+                return v.snapshot.request == v.requested;
+            },
+            "Restore initial query");
         v.selectedRowsChanged(v.table.getSelectedRow());
-        v.setRegion(first,last,false);
+        v.setRegion(first, last, false);
         for (int i = 0; i < 30; ++i)
             check(juce::File(source.path)
                       .copyFileTo(folder.getChildFile("a-earlier-" + juce::String(i) + ".wav")),
@@ -331,12 +356,13 @@ void runWaveformSchedulingTests(const juce::File &parent)
         },
         "Background completes despite continuous foreground replacement");
     check((int)fair->metrics()["fairAdmissions"] > 0, "Fair background reservation is exercised");
-    double pressureClock=0;
-    auto pressure = std::make_shared<sp::WaveformPool>(root.getChildFile("pressure"),std::function<void()>{},[&]{return pressureClock;});
+    double pressureClock = 0;
+    auto pressure = std::make_shared<sp::WaveformPool>(root.getChildFile("pressure"), std::function<void()>{},
+                                                       [&] { return pressureClock; });
     std::vector<sp::Asset> rows, layers;
     for (int i = 0; i < 80; ++i)
     {
-        auto a = shortFile;
+        auto a = longFile; // >2048 full bins: recovery must compact display-only results.
         a.id = "simultaneous-" + juce::String(i);
         (i < 40 ? rows : layers).push_back(a);
     }
@@ -361,32 +387,155 @@ void runWaveformSchedulingTests(const juce::File &parent)
     check((int)pressure->metrics()["retainedSources"] <= 48 &&
               (int)pressure->metrics()["retainedGeometries"] <= 96,
           "Cache retention remains bounded under simultaneous-surface pressure");
-    until([&]{pressure->tick();return !(bool)pressure->metrics()["pending"];},"Unchanged pressure settles without evict/reload churn");
-    auto settledRequests=(int64_t)pressure->metrics()["requests"];
-    for(int i=0;i<1000;++i)pressure->tick();
-    check((int64_t)pressure->metrics()["requests"]==settledRequests,"Steady unchanged demands do not reload evicted display summaries");
-    auto absent=juce::File(other.path).getSiblingFile("offline-owned.wav");
-    check(juce::File(other.path).moveFileTo(absent),"Disconnect retained selected source");
-    pressureClock=6000;
-    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::offline;},
-          "Overdue validation detects Offline under unchanged over-capacity demand");
-    check(absent.moveFileTo(juce::File(other.path)),"Reconnect identical source");
-    pressureClock=12000;
-    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::ready;},
-          "Retained source recovers under sustained pressure");
-    auto original=juce::File(other.path).getSiblingFile("original-owned.wav");
-    check(juce::File(other.path).moveFileTo(original),"Retain exact original inode before replacement");
-    fixture(juce::File(other.path),24000);
-    pressureClock=18000;
-    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::changed;},
-          "Validation detects Changed under sustained pressure");
-    juce::File(other.path).deleteFile();check(original.moveFileTo(juce::File(other.path)),"Restore exact original source");
-    pressureClock=24000;
-    until([&]{pressure->tick();auto d=pressure->get(other);return d && d->status==sp::WaveformData::Status::ready;},"Changed source recovers without reducing demands");
-    until([&]{pressure->tick();return !(bool)pressure->metrics()["pending"];},"Validation sweep settles");
-    settledRequests=(int64_t)pressure->metrics()["requests"];
-    for(int i=0;i<1000;++i)pressure->tick();
-    check((int64_t)pressure->metrics()["requests"]==settledRequests,"Post-validation work counts stable");
+    until(
+        [&]
+        {
+            pressure->tick();
+            return !(bool)pressure->metrics()["pending"];
+        },
+        "Unchanged pressure settles without evict/reload churn");
+    auto settledRequests = (int64_t)pressure->metrics()["requests"];
+    for (int i = 0; i < 1000; ++i)
+        pressure->tick();
+    check((int64_t)pressure->metrics()["requests"] == settledRequests,
+          "Steady unchanged demands do not reload evicted display summaries");
+    auto absent = juce::File(other.path).getSiblingFile("offline-owned.wav");
+    check(juce::File(other.path).moveFileTo(absent), "Disconnect retained selected source");
+    pressureClock = 6000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(other);
+            return d && d->status == sp::WaveformData::Status::offline;
+        },
+        "Overdue validation detects Offline under unchanged over-capacity demand");
+    check(absent.moveFileTo(juce::File(other.path)), "Reconnect identical source");
+    pressureClock = 12000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(other);
+            return d && d->status == sp::WaveformData::Status::ready;
+        },
+        "Retained source recovers under sustained pressure");
+    auto original = juce::File(other.path).getSiblingFile("original-owned.wav");
+    check(juce::File(other.path).moveFileTo(original), "Retain exact original inode before replacement");
+    fixture(juce::File(other.path), 24000);
+    pressureClock = 18000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(other);
+            return d && d->status == sp::WaveformData::Status::changed;
+        },
+        "Validation detects Changed under sustained pressure");
+    juce::File(other.path).deleteFile();
+    check(original.moveFileTo(juce::File(other.path)), "Restore exact original source");
+    pressureClock = 24000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(other);
+            return d && d->status == sp::WaveformData::Status::ready;
+        },
+        "Changed source recovers without reducing demands");
+    until(
+        [&]
+        {
+            pressure->tick();
+            return !(bool)pressure->metrics()["pending"];
+        },
+        "Validation sweep settles");
+    settledRequests = (int64_t)pressure->metrics()["requests"];
+    for (int i = 0; i < 1000; ++i)
+        pressure->tick();
+    check((int64_t)pressure->metrics()["requests"] == settledRequests, "Post-validation work counts stable");
+    auto display =
+        std::find_if(rows.begin(), rows.end(),
+                     [&](auto &a)
+                     {
+                         auto d = pressure->get(a);
+                         return d && d->status == sp::WaveformData::Status::ready && d->peaks.size() == 2048;
+                     });
+    check(display != rows.end(), "Long non-hot demand is genuinely display-only, not a full retained source");
+    auto displayAsset = *display;
+    auto longPath = juce::File(displayAsset.path),
+         savedLong = longPath.getSiblingFile("long-offline-owned.wav");
+    check(longPath.moveFileTo(savedLong), "Disconnect actual long display-only source");
+    pressureClock = 30000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(displayAsset);
+            return d && d->status == sp::WaveformData::Status::offline;
+        },
+        "Long display-only Offline under unchanged over-capacity demand");
+    check(savedLong.moveFileTo(longPath), "Restore exact long-source identity");
+    pressureClock = 36000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(displayAsset);
+            return d && d->status == sp::WaveformData::Status::ready;
+        },
+        "Display-only Offline to Ready recovery");
+    auto bounded = [&]
+    {
+        auto m = pressure->metrics();
+        return pressure->get(displayAsset)->peaks.size() <= 2048 && (int)m["maxDisplayPairs"] <= 2048 &&
+               (int64_t)m["displayPeakBytes"] <= 160 * 2048 * 8 && (int)m["displaySources"] <= 160;
+    };
+    check(bounded(), "Every recovered summary and aggregate obey2048pair/2.5MiB bound");
+    check(longPath.moveFileTo(savedLong), "Keep original long-source inode for Changed test");
+    fixture(longPath, 48000 * 21);
+    pressureClock = 42000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(displayAsset);
+            return d && d->status == sp::WaveformData::Status::changed;
+        },
+        "Long display-only Changed state");
+    longPath.deleteFile();
+    check(savedLong.moveFileTo(longPath), "Restore original long source after replacement");
+    pressureClock = 48000;
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(displayAsset);
+            return d && d->status == sp::WaveformData::Status::ready;
+        },
+        "Display-only Changed to Ready recovery");
+    check(bounded(), "Changed recovery uses the same bounded summary adoption");
+    until(
+        [&]
+        {
+            pressure->tick();
+            return !(bool)pressure->metrics()["pending"];
+        },
+        "Long recovery validation sweep settles");
+    settledRequests = (int64_t)pressure->metrics()["requests"];
+    for (int i = 0; i < 1000; ++i)
+        pressure->tick();
+    check((int64_t)pressure->metrics()["requests"] == settledRequests,
+          "Long recovery settles without validation/reload churn");
+    pressure->demand(0, {displayAsset});
+    until(
+        [&]
+        {
+            pressure->tick();
+            auto d = pressure->get(displayAsset);
+            return d && d->peaks.size() > 2048;
+        },
+        "Selected promotion restores full long-source peaks");
     auto record = pressure->metrics();
     record.getDynamicObject()->setProperty("checks", checks);
     record.getDynamicObject()->setProperty("completedBeyondBoundary", (int)completed.size());

@@ -119,6 +119,7 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
     o->setProperty("capture", capture == juce::File() ? juce::String() : capture.getFullPathName());
     o->setProperty("playGeneration", (juce::int64)generation);
     o->setProperty("mode", mode);
+    o->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);
     enqueue(m);
     return generation;
 }
@@ -127,6 +128,7 @@ uint64_t AudioClient::updateDesign(const DesignDocument &document, uint64_t gene
     auto command = message("design_parameters");
     auto *object = command.getDynamicObject();
     object->setProperty("id", "design:" + document.id);
+    object->setProperty("playbackContext", designPlaybackContext(document));
     object->setProperty("playGeneration", (juce::int64)generation);
     auto sequence = ++parameterSequence;
     object->setProperty("sequence", (juce::int64)sequence);
@@ -188,6 +190,17 @@ void AudioClient::finishTake(bool cancel)
     cmd.getDynamicObject()->setProperty("playGeneration", (juce::int64)playbackGeneration.load());
     enqueue(cmd);
 }
+void AudioClient::reserveTake(bool reserve)
+{
+    captureReserved = reserve;
+    if (reserve)
+        ++captureReservationId;
+    auto cmd = message("reserve_capture");
+    cmd.getDynamicObject()->setProperty("reserve", reserve);
+    cmd.getDynamicObject()->setProperty("reservationId", (juce::int64)captureReservationId.load());
+    cmd.getDynamicObject()->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);
+    enqueue(cmd);
+}
 juce::var AudioClient::status()
 {
     std::lock_guard lock(mutex);
@@ -195,6 +208,8 @@ juce::var AudioClient::status()
     if (auto *object = copy.getDynamicObject())
     {
         object->setProperty("intentId", desiredId);
+        object->setProperty("captureReservationId", (juce::int64)captureReservationId.load());
+        object->setProperty("captureReserved", captureReserved.load());
         object->setProperty("intentGeneration", (juce::int64)playbackGeneration.load());
         if (restartNotice.isNotEmpty() && copy["error"].toString().isEmpty())
             object->setProperty("error", restartNotice);
@@ -362,6 +377,9 @@ void AudioClient::run()
                         }
                         std::lock_guard lock(mutex);
                         latest = state;
+                        if ((bool)state["captureLifecycleFailed"] && captureReserved &&
+                            (uint64_t)(int64_t)state["deviceReservationId"] == captureReservationId.load())
+                            captureOwned = false;
                         if ((uint64_t)(int64_t)state["playGeneration"] == playbackGeneration.load() &&
                             ((state.hasProperty("takePhase") && (int)state["takePhase"] >= 3) ||
                              state["error"].toString().isNotEmpty()))

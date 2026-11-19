@@ -29,10 +29,7 @@ class AudioClient
     void deviceRate(double);
     void bufferSize(int);
     void finishTake(bool cancel = false);
-    void reserveTake(bool reserve)
-    {
-        captureReserved = reserve;
-    }
+    void reserveTake(bool reserve);
     bool captureBusy() const
     {
         return captureOwned.load() || captureReserved.load();
@@ -50,6 +47,7 @@ class AudioClient
     juce::File executable;
     std::atomic<bool> quitting{false}, restartRequested{false};
     std::atomic<bool> captureOwned{false}, captureReserved{false};
+    std::atomic<uint64_t> captureReservationId{0};
     std::atomic<float> targetGain{0.7f};
     std::thread worker;
     std::mutex mutex;

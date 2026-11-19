@@ -53,7 +53,18 @@ class DesignSession final : public juce::Component, private juce::Timer
     {
         return replacing;
     }
-    void edit(const juce::String &, const std::function<void(DesignDocument &)> &);
+    enum class ChangeImpact
+    {
+        audio,
+        metadata
+    };
+    void edit(const juce::String &, const std::function<void(DesignDocument &)> &,
+              ChangeImpact = ChangeImpact::audio);
+    juce::File readyOutput();
+    void editMetadata(const juce::String &label, const std::function<void(DesignDocument &)> &change)
+    {
+        edit(label, change, ChangeImpact::metadata);
+    }
     void beginGesture();
     void endGesture();
     void cancelGesture();
@@ -119,6 +130,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     DesignLayer *selectedLayer();
 
   private:
+    friend struct TakeIntegrityTestAccess;
     enum class Operation
     {
         save,
@@ -147,6 +159,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     std::optional<History> gesture;
     juce::File catalog, directory;
     DesignSessionServices services;
+    juce::String auditionContext;
     std::unique_ptr<SerialWorker> worker;
     std::shared_ptr<DesignRecoveryStore> recovery;
     std::thread renderWorker;
@@ -177,7 +190,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void finishOperation(Stamp);
     void enqueue(Stamp, std::function<std::function<void()>()>);
     void notify();
-    void changed();
+    void changed(ChangeImpact = ChangeImpact::audio);
     void restoreDerivedState();
     void reconcileSelection(const DesignDocument *before = nullptr);
     void transition(const juce::File &, bool recover, std::function<void()> close = {});

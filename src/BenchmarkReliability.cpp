@@ -1,6 +1,7 @@
 #include "Benchmark.h"
 #include "LibraryView.h"
 #include "DesignerView.h"
+#include "DesignLive.h"
 #include "Performance.h"
 #include "LibraryLayout.h"
 #include <cmath>
@@ -20,6 +21,9 @@ struct Benchmark::ReliabilityRun
     int64_t rangeFirst = 0, rangeLast = 0, lastFrame = 0;
     juce::var initialAudio, stopAudio;
     juce::Array<juce::var> queryTimes, selectedTimes, viewportTimes, progress;
+    bool replayOpened = false, replayRender = false;
+    int replayMetadataEdits = 0;
+    juce::String replayRecipeHash, replayEventHash;
 };
 namespace
 {
@@ -64,6 +68,9 @@ juce::var Benchmark::reliabilityReport() const
     o->setProperty("reconnectObserved", r.reconnectObserved);
     o->setProperty("audioAtStart", r.initialAudio);
     o->setProperty("progress", r.progress);
+    o->setProperty("replayMetadataEdits", r.replayMetadataEdits);
+    o->setProperty("replayRecipeHash", r.replayRecipeHash);
+    o->setProperty("replayEventHash", r.replayEventHash);
     return juce::var(o);
 }
 void Benchmark::reliabilityPainted(uint64_t id, double now, double sent, double applied)
@@ -97,6 +104,13 @@ void Benchmark::reliabilityTick(double now)
         return;
     }
     auto state = view.audio.status();
+    const bool replay = plan["replayTake"].toString().isNotEmpty();
+    if (replay && r.stage == 8)
+    {
+        if (!designer->session.working && !designer->session.dirty)
+            save(true);
+        return;
+    }
     if ((bool)plan["recordTake"] && r.stage >= 4)
     {
         auto &session = designer->session;
@@ -161,7 +175,46 @@ void Benchmark::reliabilityTick(double now)
         if (ready < (int)plan["corpusFiles"] || !view.snapshot.semantic.ready ||
             (designer->session.working || designer->session.transitionPending()))
             return;
-        designer->preparePerformanceBenchmark();
+        if (replay)
+        {
+            auto &session = designer->session;
+            auto file = juce::File(plan["replayTake"].toString());
+            if (!r.replayOpened)
+            {
+                session.open(file);
+                r.replayOpened = true;
+                return;
+            }
+            if (session.savedFile != file)
+                return;
+            auto *take = selectedTake(session.document);
+            if (!take || !take->complete)
+            {
+                save(false, "Replay workload requires a complete selected take");
+                return;
+            }
+            auto id = take->id;
+            r.replayRecipeHash = take->recipeHash;
+            r.replayEventHash = take->eventHash;
+            session.selectTake({});
+            session.edit("Prepare deliberately different Live Design",
+                         [](auto &d)
+                         {
+                             auto &m = d.activeMix();
+                             for (auto &l : m.layers)
+                             {
+                                 l.gainDb = -60;
+                                 l.effects.clear();
+                             }
+                             auto extra = m.layers.front();
+                             extra.id = juce::Uuid().toString();
+                             m.layers.push_back(extra);
+                             m.masterEffects.clear();
+                         });
+            session.selectTake(id);
+        }
+        else
+            designer->preparePerformanceBenchmark();
         designer->session.seek(0);
         if ((bool)plan["recordTake"])
             designer->session.recordTake();
@@ -188,11 +241,27 @@ void Benchmark::reliabilityTick(double now)
         r.lastFrame = (int64_t)state["sourceSample"];
         r.stage = 3;
         r.cycleStart = now;
-        if (!(bool)plan["recordTake"])
+        if (!(bool)plan["recordTake"] && !replay)
             designer->benchmarkPerformance(0, .5);
         return;
     }
     const double elapsed = now - r.activeStart;
+    if (replay)
+    {
+        auto *t = selectedTake(designer->session.document);
+        if (!t || t->recipeHash != r.replayRecipeHash || t->eventHash != r.replayEventHash ||
+            !(bool)state["immutableReplay"] ||
+            state["playbackContext"].toString() != designPlaybackContext(designer->session.document))
+        {
+            save(false, "Immutable replay identity changed");
+            return;
+        }
+        if (!r.replayRender && elapsed > 10000)
+        {
+            designer->session.render();
+            r.replayRender = true;
+        }
+    }
     if ((bool)plan["recordTake"] && (int)state["takePhase"] >= 2)
     {
         if ((int)state["takePhase"] >= 4 || (int64_t)state["takeEnd"] < (duration / 1000 - .1) * 48000 ||
@@ -231,9 +300,16 @@ void Benchmark::reliabilityTick(double now)
         save(false, "Audio underrun during active reliability workload");
         return;
     }
-    if (now - r.lastControl >= 25)
+    if (now - r.lastControl >= (replay ? 250 : 25))
     {
-        if ((bool)plan["recordTake"])
+        if (replay)
+        {
+            designer->session.nameTake("Replay integrity QA " + juce::String(++r.replayMetadataEdits));
+            designer->session.editMetadata(
+                "Render settings",
+                [&](auto &d) { d.renderSettings.tailSeconds = r.replayMetadataEdits % 2 ? .5 : 1; });
+        }
+        else if ((bool)plan["recordTake"])
             designer->session.edit("Blend position",
                                    [&](auto &d)
                                    {
@@ -304,7 +380,7 @@ void Benchmark::reliabilityTick(double now)
     }
     if (elapsed >= duration)
     {
-        if (!(bool)plan["recordTake"])
+        if (!(bool)plan["recordTake"] && !replay)
             designer->benchmarkPerformance(2, .5);
         if (r.fullViewports < 5 || r.selectedTimes.size() < 5 || r.nonzeroChecks < r.audioChecks * .95 ||
             !r.offlineObserved || !r.reconnectObserved)
@@ -318,6 +394,22 @@ void Benchmark::reliabilityTick(double now)
             r.stopAudio = state;
             designer->session.stopTake();
             r.stage = 4;
+            return;
+        }
+        if (replay)
+        {
+            if (designer->session.rendering)
+                return;
+            if (r.replayMetadataEdits < 10 || !designer->session.readyOutput().existsAsFile())
+            {
+                save(false, "Replay metadata/render activity incomplete");
+                return;
+            }
+            r.activeEnd = now;
+            r.stopAudio = state;
+            designer->session.stop();
+            designer->session.save(output.getSiblingFile("Replay QA.soundplus"));
+            r.stage = 8;
             return;
         }
         save(true);

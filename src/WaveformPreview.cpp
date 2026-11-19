@@ -75,7 +75,8 @@ WaveformPool::WaveformPool(const juce::File &directory, std::function<void()> be
 }
 void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
 {
-    if (owner < 0 || owner > 3) return;
+    if (owner < 0 || owner > 3)
+        return;
     auto &wanted = owners[owner];
     wanted.clear();
     std::set<juce::String> keys;
@@ -86,6 +87,20 @@ void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
             if (wanted.size() == maxDemand)
                 break;
         }
+}
+void WaveformPool::adoptDisplay(const juce::String &key, Entry entry)
+{
+    auto summary = std::make_shared<WaveformData>(*entry.data);
+    if (summary->peaks.size() > maxSummaryPairs)
+        summary->peaks = compactWaveformColumns(*summary, 0, summary->samples, false, (int)maxSummaryPairs);
+    entry.data = std::move(summary);
+    displays[key] = std::move(entry);
+    while (displays.size() > maxDisplaySources)
+    {
+        auto oldest = std::min_element(displays.begin(), displays.end(),
+                                       [](auto &a, auto &b) { return a.second.used < b.second.used; });
+        displays.erase(oldest);
+    }
 }
 bool WaveformPool::tick()
 {
@@ -110,11 +125,10 @@ bool WaveformPool::tick()
     std::erase_if(serviced, [&](auto &entry) { return !keys.contains(entry.first); });
     std::erase_if(displays, [&](auto &entry) { return !keys.contains(entry.first); });
     bool changed = false;
-    auto missingSource = [&](const Wanted &w) {
-        return !completed.contains(w.key) && (!displays.contains(w.key) || hot.contains(w.key));
-    };
-    auto foreground = std::find_if(wanted.begin(), wanted.end(),
-                                   [&](auto &w) { return w.owner == 0 && missingSource(w); });
+    auto missingSource = [&](const Wanted &w)
+    { return !completed.contains(w.key) && (!displays.contains(w.key) || hot.contains(w.key)); };
+    auto foreground =
+        std::find_if(wanted.begin(), wanted.end(), [&](auto &w) { return w.owner == 0 && missingSource(w); });
     if (pending.isNotEmpty())
     {
         bool abandoned = !keys.contains(pending);
@@ -132,10 +146,12 @@ bool WaveformPool::tick()
     if (auto result = worker.snapshot(); pending.isNotEmpty() && result && result->generation == token)
     {
         auto entry = Entry{result, ++clock, now()};
-        if (pendingValidation && displays.contains(pending) && !completed.contains(pending)) displays[pending]=entry;
-        else completed[pending] = entry;
+        if (pendingValidation && displays.contains(pending) && !completed.contains(pending))
+            adoptDisplay(pending, entry);
+        else
+            completed[pending] = entry;
         // Validation can change availability without changing the catalog key.
-        std::erase_if(geometries,[&](auto &g){return g.first.startsWith(pending+":");});
+        std::erase_if(geometries, [&](auto &g) { return g.first.startsWith(pending + ":"); });
         diskHits += result->cacheHit;
         pending.clear();
         ++changedGeneration;
@@ -152,11 +168,16 @@ bool WaveformPool::tick()
         for (auto &w : wanted)
         {
             auto found = completed.find(w.key);
-            Entry *entry=found!=completed.end()?&found->second:displays.contains(w.key)?&displays.at(w.key):nullptr;
+            Entry *entry = found != completed.end()   ? &found->second
+                           : displays.contains(w.key) ? &displays.at(w.key)
+                                                      : nullptr;
             if (missingSource(w))
                 missing.push_back(&w);
-            if (entry && now()-entry->validated>=5000 &&
-                (!validate || entry->validated < (completed.contains(validate->key)?completed.at(validate->key):displays.at(validate->key)).validated))
+            if (entry && now() - entry->validated >= 5000 &&
+                (!validate ||
+                 entry->validated < (completed.contains(validate->key) ? completed.at(validate->key)
+                                                                       : displays.at(validate->key))
+                                        .validated))
                 validate = &w;
         }
         const Wanted *next = nullptr;
@@ -167,7 +188,10 @@ bool WaveformPool::tick()
         pendingValidation = validate && (missing.empty() || sinceValidation >= 3);
         if (pendingValidation)
         {
-            next=validate;reserved=true;sinceValidation=0;++validationAdmissions;
+            next = validate;
+            reserved = true;
+            sinceValidation = 0;
+            ++validationAdmissions;
         }
         else if (!missing.empty())
         {
@@ -200,9 +224,12 @@ bool WaveformPool::tick()
                 foregroundStreak = 0;
             serviced[pending] = ++clock;
             std::shared_ptr<const WaveformData> validation;
-            if(pendingValidation)validation=completed.contains(pending)?completed.at(pending).data:displays.at(pending).data;
-            else ++sinceValidation;
-            token = worker.request(next->asset,validation);
+            if (pendingValidation)
+                validation =
+                    completed.contains(pending) ? completed.at(pending).data : displays.at(pending).data;
+            else
+                ++sinceValidation;
+            token = worker.request(next->asset, validation);
             submittedMs = now();
             ++requests;
         }
@@ -216,11 +243,9 @@ bool WaveformPool::tick()
                 oldest = it;
         if (oldest == completed.end())
             oldest = completed.begin();
-        if(keys.contains(oldest->first))
+        if (keys.contains(oldest->first))
         {
-            auto summary=std::make_shared<WaveformData>(*oldest->second.data);
-            if(summary->peaks.size()>2048)summary->peaks=compactWaveformColumns(*summary,0,summary->samples,false,2048);
-            displays[oldest->first]={summary,oldest->second.used,oldest->second.validated};
+            adoptDisplay(oldest->first, oldest->second);
         }
         completed.erase(oldest);
     }
@@ -234,7 +259,11 @@ std::shared_ptr<const WaveformData> WaveformPool::get(const Asset &a)
         ++memoryHits;
         return it->second.data;
     }
-    if(auto it=displays.find(waveformSourceKey(a));it!=displays.end()){++memoryHits;return it->second.data;}
+    if (auto it = displays.find(waveformSourceKey(a)); it != displays.end())
+    {
+        ++memoryHits;
+        return it->second.data;
+    }
     return {};
 }
 std::shared_ptr<const PeakColumns> WaveformPool::columns(const Asset &a, int64_t first, int64_t last,
@@ -279,11 +308,16 @@ juce::var WaveformPool::metrics() const
         bytes += entry.data->peaks.size() * sizeof(std::pair<float, float>);
     }
     o->setProperty("requests", (juce::int64)requests);
-    size_t displayBytes=0;
-    for(auto &[key,e]:displays)displayBytes+=e.data->peaks.size()*sizeof(std::pair<float,float>);
-    o->setProperty("displaySources",(int)displays.size());
-    o->setProperty("displayPeakBytes",(juce::int64)displayBytes);
-    o->setProperty("validations",(juce::int64)validationAdmissions);
+    size_t displayBytes = 0, maxPairs = 0;
+    for (auto &[key, e] : displays)
+    {
+        displayBytes += e.data->peaks.size() * sizeof(std::pair<float, float>);
+        maxPairs = std::max(maxPairs, e.data->peaks.size());
+    }
+    o->setProperty("maxDisplayPairs", (int)maxPairs);
+    o->setProperty("displaySources", (int)displays.size());
+    o->setProperty("displayPeakBytes", (juce::int64)displayBytes);
+    o->setProperty("validations", (juce::int64)validationAdmissions);
     o->setProperty("cancellations", (juce::int64)cancellations);
     o->setProperty("priorityPreemptions", (juce::int64)preemptions);
     o->setProperty("fairAdmissions", (juce::int64)fairAdmissions);

@@ -8,7 +8,7 @@ class SourceCard final : public juce::Component, public juce::SettableTooltipCli
   public:
     SourceCard(juce::Label &title, juce::ComboBox &chooser, std::shared_ptr<WaveformPool>);
     void bind(const DesignLayer *, const juce::String &assignmentId, const juce::String &alias, bool selected,
-              double contribution);
+              double contribution, bool readOnly = false);
     void transport(bool owned, int64_t frame, double designRate);
     void refreshPeaks();
     void paint(juce::Graphics &) override;

@@ -45,6 +45,12 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
     }
 }
 } // namespace
+juce::String designPlaybackContext(const DesignDocument &d)
+{
+    if (auto *t = selectedTake(d))
+        return "take:" + d.id + ":" + t->id + ":" + t->recipeHash + ":" + t->eventHash;
+    return "live:" + d.id; // Variations remain editable states of the shared Live Design transport.
+}
 juce::String designStructure(const DesignDocument &document)
 {
     auto mix = designMixToJson(document.activeMix());

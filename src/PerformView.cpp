@@ -521,7 +521,7 @@ void PerformView::refresh()
         const auto weights = blendWeights(s, mix);
         cards[n]->bind(assignedLayer, a.layer, a.name,
                        assignedLayer && session.selectedIds.contains(assignedLayer->id),
-                       s.blendEnabled ? weights[n] : 0);
+                       s.blendEnabled ? weights[n] : 0, session.document.activeTake.isNotEmpty());
         auto *drag = new juce::DynamicObject();
         drag->setProperty("type", "SoundPlus blend assignment");
         drag->setProperty("document", session.document.id);
