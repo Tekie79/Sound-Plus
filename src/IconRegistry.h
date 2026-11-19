@@ -65,6 +65,8 @@ enum class ActionIcon
     inspector,
     processing,
     check,
+    repeat,
+    repeatOne,
     count
 };
 namespace icons

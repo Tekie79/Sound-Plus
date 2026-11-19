@@ -109,6 +109,7 @@ struct LibraryService::Impl
         std::vector<Asset> candidates;
         LibrarySnapshot::SemanticTiming timing;
         bool example=false;
+        double minimumSimilarity = .55;
     } semanticResult;
     std::atomic<bool> stopping{false}, initialized{false}, pauseRequested{false};
     std::atomic<uint64_t> version{1}, workToken{1};
@@ -763,6 +764,7 @@ struct LibraryService::Impl
                 }
                 semanticWorkRequest=id;semanticWorkPhase=1;
                 SemanticResult result; result.request = id;result.example=usingExample;
+                result.minimumSimilarity = example.minimumSimilarity;
                 if (!usingExample && q.length()==32 && q.containsOnly("0123456789abcdefABCDEF"))
                 {
                     std::lock_guard lock(mutex);
@@ -1269,14 +1271,40 @@ struct LibraryService::Impl
                         (root.isNotEmpty() && now.rootId != root)) continue;
                     auto &candidate = candidates[hit.id];
                     now.matches = hit.matches;
-                    now.matchReason = semantic.example ? "Similar to reference" : candidate.lexical ? "Filename + sound similarity" : "Sound similarity";
-                    candidate.asset = now; candidate.rank += 1.0/(60+i+1);
+                    if (semantic.example)
+                    {
+                        std::erase_if(now.matches,
+                                      [&](auto &match) {
+                                          return !std::isfinite(match.similarity) ||
+                                                 match.similarity < (float)semantic.minimumSimilarity;
+                                      });
+                        if (now.matches.empty())
+                        {
+                            candidates.erase(hit.id);
+                            continue;
+                        }
+                        std::sort(now.matches.begin(), now.matches.end(),
+                                  [](auto &a, auto &b) {
+                                      return a.similarity != b.similarity ? a.similarity > b.similarity
+                                                                          : a.startSample < b.startSample;
+                                  });
+                        now.matchReason = "Similarity " + juce::String(now.matches.front().similarity, 3);
+                        candidate.rank = now.matches.front().similarity;
+                    }
+                    else
+                    {
+                        now.matchReason =
+                            candidate.lexical ? "Filename + sound similarity" : "Sound similarity";
+                        candidate.rank += 1.0 / (60 + i + 1);
+                    }
+                    candidate.asset = now;
                     annotations[now.id] = now;
                 }
                 std::vector<Candidate> ranked;
                 for (auto &[id,candidate] : candidates)
                 {
-                    if (candidate.asset.id.equalsIgnoreCase(q) || candidate.asset.name.equalsIgnoreCase(q))
+                    if (!semantic.example &&
+                        (candidate.asset.id.equalsIgnoreCase(q) || candidate.asset.name.equalsIgnoreCase(q)))
                         candidate.rank += 1000;
                     ranked.push_back(std::move(candidate));
                 }
@@ -1440,6 +1468,8 @@ void LibraryService::publishControlledSemantic(uint64_t request, std::vector<Ass
 {
     std::lock_guard lock(impl->mutex);
     impl->semanticResult.request=request;
+    impl->semanticResult.example = impl->exampleMode;
+    impl->semanticResult.minimumSimilarity = impl->reference.minimumSimilarity;
     impl->semanticResult.candidates=std::move(candidates);
     ++impl->semanticResultVersion;
     impl->wake.notify_all();
@@ -1574,6 +1604,9 @@ void LibraryService::prioritizeAnalysis(const juce::String &id)
 void LibraryService::setAuditionActive(bool value) { impl->auditionActive=value; }
 uint64_t LibraryService::findSimilar(const AudioReference &reference,const juce::String &root)
 {
+    if (!std::isfinite(reference.minimumSimilarity) || reference.minimumSimilarity < 0 ||
+        reference.minimumSimilarity > 1)
+        throw std::runtime_error("Minimum similarity must be between 0 and 1");
     std::lock_guard lock(impl->mutex);
     impl->reference=reference;impl->exampleMode=true;impl->current.exampleMode=true;
     impl->text.clear();impl->filter=root;impl->desiredOffset=0;impl->desiredLimit=20;

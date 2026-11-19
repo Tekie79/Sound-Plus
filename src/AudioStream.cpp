@@ -8,8 +8,8 @@ static_assert(std::atomic<PcmStream *>::is_always_lock_free);
 static_assert(std::atomic<int64_t>::is_always_lock_free);
 static_assert(std::atomic<float>::is_always_lock_free);
 PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, int64_t last, int auditionPair,
-                     ChannelLayout interpretation)
-    : rate(outputRate), pair(auditionPair)
+                     ChannelLayout interpretation, bool loop, int64_t initialPosition)
+    : repeating(loop), rate(outputRate), pair(auditionPair)
 {
     pcm.resize(2, std::vector<float>(capacity));
     busLayout = channelLayout("stereo-v1");
@@ -54,6 +54,12 @@ PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, i
         throw std::runtime_error("Invalid source playback range");
     ratio = sourceRate / rate;
     outputLength = (int64_t)std::ceil((double)(sourceEnd - sourceStart) / ratio);
+    if (repeating && initialPosition >= 0)
+    {
+        initialOffset = (uint64_t)std::clamp<int64_t>((int64_t)((initialPosition - sourceStart) / ratio), 0,
+                                                      outputLength - 1);
+        outputFrame = (int64_t)initialOffset;
+    }
 }
 PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, const juce::File &captureFile,
                      const std::function<bool()> &cancelled, int64_t warmup, int64_t last, bool grain)
@@ -95,7 +101,8 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
     auto began = monotonicMs();
     auto write = writeIndex.load(std::memory_order_relaxed);
     auto free = capacity - (write - readIndex.load(std::memory_order_acquire));
-    auto count = std::min<int64_t>({budget, (int64_t)free, outputLength - outputFrame});
+    auto count =
+        std::min<int64_t>({budget, (int64_t)free, repeating ? (int64_t)free : outputLength - outputFrame});
     if (designReader)
     {
         while (count > 0)
@@ -139,6 +146,8 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
     }
     for (int64_t n = 0; n < count; ++n, ++write, ++outputFrame)
     {
+        if (repeating && outputFrame >= outputLength)
+            outputFrame = 0;
         const double pos = sourceStart + (double)outputFrame * ratio;
         const auto i = (int64_t)pos;
         if (cacheStart < 0 || i < cacheStart || i + 1 >= cacheStart + cache.getNumSamples())
@@ -148,6 +157,8 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
             ++reads;
             if (!reader->read(&cache, 0, cache.getNumSamples(), cacheStart, true, true))
             {
+                if (repeating)
+                    throw std::runtime_error("Cannot read the looping recording");
                 outputLength = outputFrame;
                 eof = true;
                 break;
@@ -176,7 +187,7 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
         }
     }
     writeIndex.store(write, std::memory_order_release);
-    if (outputFrame >= outputLength)
+    if (!repeating && outputFrame >= outputLength)
         eof.store(true, std::memory_order_release);
     maxFillMs = std::max(maxFillMs, monotonicMs() - began);
 }

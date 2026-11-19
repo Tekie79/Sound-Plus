@@ -12,7 +12,8 @@ class PcmStream
 {
   public:
     PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1,
-              int auditionPair = 0, ChannelLayout interpretation = {});
+              int auditionPair = 0, ChannelLayout interpretation = {}, bool loop = false,
+              int64_t initialPosition = -1);
     PcmStream(
         const DesignDocument &, double outputRate, int64_t first, const juce::File &capture = {},
         const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1, int64_t last = -1,
@@ -58,10 +59,17 @@ class PcmStream
     std::array<std::atomic<float>, 16> channelPeaks{};
     double seconds() const
     {
+        if (repeating)
+            return sourceSample() / sourceRate;
         return (double)sourceStart / sourceRate + (double)readIndex.load() / rate;
     }
     int64_t sourceSample() const
     {
+        if (repeating)
+            return std::min(sourceEnd - 1,
+                            sourceStart + (int64_t)(((readIndex.load() + initialOffset) %
+                                                     (uint64_t)std::max<int64_t>(1, outputLength)) *
+                                                    ratio));
         return std::min(sourceEnd, sourceStart + (int64_t)(readIndex.load() * ratio));
     }
     int64_t startSample() const
@@ -87,6 +95,11 @@ class PcmStream
     bool ended() const
     {
         return eof.load() && readIndex.load() == writeIndex.load();
+    }
+    uint64_t loopCount() const
+    {
+        return repeating ? (readIndex.load() + initialOffset) / (uint64_t)std::max<int64_t>(1, outputLength)
+                         : 0;
     }
     int available() const
     {
@@ -128,6 +141,8 @@ class PcmStream
     std::unique_ptr<juce::AudioFormatReader> reader;
     juce::AudioBuffer<float> cache{2, 8192};
     int64_t cacheStart = -1, outputFrame = 0, outputLength = 0, reads = 0;
+    bool repeating = false;
+    uint64_t initialOffset = 0;
     double rate = 48000, ratio = 1;
     int64_t sourceStart = 0, sourceEnd = 0;
     double sourceRate = 48000;
@@ -199,6 +214,14 @@ class AuditionCore
     bool playing() const
     {
         return stream && !stream->ended();
+    }
+    bool completed() const
+    {
+        return stream && stream->ended();
+    }
+    uint64_t loopCount() const
+    {
+        return stream ? stream->loopCount() : 0;
     }
     double seconds() const
     {

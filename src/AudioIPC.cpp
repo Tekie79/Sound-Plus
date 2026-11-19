@@ -131,6 +131,7 @@ uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, co
     o->setProperty("positionSample", (juce::int64)region.positionSample);
     o->setProperty("auditionPair", region.auditionPair);
     o->setProperty("sourceLayoutOverride", region.sourceLayoutOverride);
+    o->setProperty("loop", region.loop);
     o->setProperty("size", (juce::int64)region.size);
     o->setProperty("modified", (juce::int64)region.modified);
     o->setProperty("inode", (juce::int64)region.inode);

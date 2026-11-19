@@ -34,7 +34,8 @@ void runIconTests(const juce::File &output)
           "Original 24x24 viewBox maps uniformly, without tight-path normalization");
     for (int scale : {1, 2})
     {
-        juce::Image atlas(juce::Image::ARGB, 640 * scale, 512 * scale, true);
+        juce::Image atlas(juce::Image::ARGB, 640 * scale, ((int)sp::ActionIcon::count + 7) / 8 * 64 * scale,
+                          true);
         juce::Graphics g(atlas);
         g.addTransform(juce::AffineTransform::scale((float)scale));
         g.fillAll(sp::ui::background);

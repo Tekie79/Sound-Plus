@@ -480,7 +480,7 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         graphics.reduceClipRegion(timeline);
         float head = viewport.x(d.playhead, rate);
         graphics.setColour(ui::playhead);
-        graphics.drawVerticalLine((int)head, 25, (float)getHeight());
+        graphics.fillRect(head - .5f, 25.f, 1.f, getHeight() - 25.f);
         juce::Path handle;
         handle.addTriangle(head - 6, 23, head + 6, 23, head, 31);
         graphics.fillPath(handle);

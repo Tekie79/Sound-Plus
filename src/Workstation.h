@@ -12,6 +12,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
           library(db,juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory),
           designer(db,library.audioClient(),preferences,library.waveformProvider()),divider(*this)
     {
+        library.bindPreferences(preferences);
         browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",300);
         addAndMakeVisible(library);addChildComponent(designer);addChildComponent(divider);
         library.onShowDesigner=[this]{showDesigner(true);};library.onBeforeAudition=[this]{designer.session.stop();};

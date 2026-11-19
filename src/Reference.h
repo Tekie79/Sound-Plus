@@ -10,6 +10,7 @@ struct AudioReference
     Asset source;
     int64_t startSample=0,endSample=-1;
     bool external=false,includeSource=false;
+    double minimumSimilarity = .55; // Cosine cutoff, not a probability/confidence percentage.
     juce::String channelPolicy=analysisChannelPolicy;
 };
 struct ReferenceState

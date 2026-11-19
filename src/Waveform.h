@@ -41,7 +41,11 @@ class WaveformView final : public juce::Component
   public:
     WaveformView();
     void setData(std::shared_ptr<const WaveformData>);
-    void setRange(int64_t start, int64_t end, bool zoom = false);
+    void setRange(int64_t start, int64_t end, bool zoom = false, bool selected = true);
+    bool isRangeSelected() const
+    {
+        return rangeSelected;
+    }
     void setCursor(int64_t sample);
     void markAtCursor(bool markIn);
     void showWhole();
@@ -86,6 +90,7 @@ class WaveformView final : public juce::Component
     int64_t first = 0, last = 0, viewFirst = 0, viewLast = 1, cursor = -1, anchor = 0;
     int dragMode = 0;
     bool dragging = false;
+    bool rangeSelected = false;
     IconButton zoom{"Zoom Range", ActionIcon::zoom}, all{"Show All", ActionIcon::fit};
     IconButton in{"Set IN at playhead", ActionIcon::markIn}, out{"Set OUT at playhead", ActionIcon::markOut};
 };

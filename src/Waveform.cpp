@@ -277,7 +277,8 @@ std::pair<int64_t, int64_t> markRangeAtPlayhead(int64_t first, int64_t last, int
 }
 WaveformView::WaveformView()
 {
-    setTitle("Recording waveform. Click to seek; drag brackets to trim; I marks IN, O marks OUT. Right-click "
+    setTitle("Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. "
+             "Right-click "
              "for exact range.");
     setWantsKeyboardFocus(true);
     addAndMakeVisible(zoom);
@@ -307,6 +308,7 @@ void WaveformView::setData(std::shared_ptr<const WaveformData> value)
     waveform = std::move(value);
     if (different)
     {
+        rangeSelected = false;
         cursor = 0;
         showWhole();
     }
@@ -315,8 +317,9 @@ void WaveformView::setData(std::shared_ptr<const WaveformData> value)
         button->setEnabled(available);
     repaint();
 }
-void WaveformView::setRange(int64_t start, int64_t end, bool zoomIn)
+void WaveformView::setRange(int64_t start, int64_t end, bool zoomIn, bool selected)
 {
+    rangeSelected = selected;
     first = start;
     last = end;
     if (zoomIn)
@@ -338,6 +341,7 @@ void WaveformView::markAtCursor(bool markIn)
     auto range = markRangeAtPlayhead(first, last, cursorSample(), waveform->samples, markIn);
     first = range.first;
     last = range.second;
+    rangeSelected = true;
     if (onRange)
         onRange(first, last);
     repaint();
@@ -394,9 +398,12 @@ void WaveformView::paint(juce::Graphics &g)
                    area, juce::Justification::centred);
         return;
     }
-    g.setColour(ui::accent.withAlpha(.2f));
-    g.fillRect(juce::Rectangle<float>(xAt(first), area.getY(), xAt(last) - xAt(first), area.getHeight())
-                   .getIntersection(area));
+    if (rangeSelected)
+    {
+        g.setColour(ui::accent.withAlpha(.2f));
+        g.fillRect(juce::Rectangle<float>(xAt(first), area.getY(), xAt(last) - xAt(first), area.getHeight())
+                       .getIntersection(area));
+    }
     g.setColour(ui::accent.withAlpha(.9f));
     for (int x = 0; x < getWidth(); ++x)
     {
@@ -415,26 +422,15 @@ void WaveformView::paint(juce::Graphics &g)
         g.drawVerticalLine(x, y - std::min(1.0f, maximum) * scale, y - std::max(-1.0f, minimum) * scale + 1);
     }
     g.setColour(ui::accent);
-    for (auto sample : {first, last})
-        if (sample >= viewFirst && sample <= viewLast)
-            g.fillRect(xAt(sample) - 1, area.getY(), 2.0f, area.getHeight());
-    // Bracket handles stay inside the view at the first and final source samples.
-    g.setFont(juce::FontOptions(22.0f));
-    if (first >= viewFirst && first <= viewLast)
-        g.drawText("[",
-                   juce::Rectangle<float>(
-                       std::clamp(xAt(first) - 7, 0.0f, std::max(0.0f, getWidth() - 14.0f)), 25, 14, 24),
-                   juce::Justification::centred);
-    if (last >= viewFirst && last <= viewLast)
-        g.drawText("]",
-                   juce::Rectangle<float>(std::clamp(xAt(last) - 7, 0.0f, std::max(0.0f, getWidth() - 14.0f)),
-                                          25, 14, 24),
-                   juce::Justification::centred);
+    if (rangeSelected)
+        for (auto sample : {first, last})
+            if (sample >= viewFirst && sample <= viewLast)
+                g.fillRect(xAt(sample) - 1, area.getY(), 2.0f, area.getHeight());
     if (cursor >= viewFirst && cursor <= viewLast)
     {
         g.setColour(ui::playhead);
         auto x = xAt(cursor);
-        g.fillRect(x, area.getY(), 1.5f, area.getHeight());
+        g.fillRect(x - .75f, area.getY(), 1.5f, area.getHeight());
         g.fillPath(
             [](float x)
             {
@@ -473,6 +469,7 @@ void WaveformView::mouseDrag(const juce::MouseEvent &e)
     if (!waveform || waveform->peaks.empty() || e.getDistanceFromDragStart() < 3)
         return;
     dragging = true;
+    rangeSelected = true;
     auto sample = sampleAt(e.position.x);
     if (dragMode == 1)
         first = std::min(sample, last - 1);

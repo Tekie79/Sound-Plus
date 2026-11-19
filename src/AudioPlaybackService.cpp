@@ -182,14 +182,16 @@ void AudioPlaybackService::prepare()
                 }
                 auto first = (int64_t)request.command["startSample"],
                      position = (int64_t)request.command["positionSample"];
-                if (position >= 0)
+                bool loop = (bool)request.command["loop"];
+                if (position >= 0 && !loop)
                     first = std::max(first, position);
                 result.stream = std::make_unique<PcmStream>(
                     file, request.rate, first, (int64_t)request.command["endSample"],
                     (int)request.command["auditionPair"],
                     request.command["sourceLayoutOverride"].toString().isEmpty()
                         ? ChannelLayout{}
-                        : channelLayout(request.command["sourceLayoutOverride"].toString()));
+                        : channelLayout(request.command["sourceLayoutOverride"].toString()),
+                    loop, position);
             }
             result.stream->fill(1536, cancelled);
             if (cancelled())
@@ -419,6 +421,8 @@ void AudioPlaybackService::produce()
         object->setProperty("startSample", (juce::int64)core.startSample());
         object->setProperty("endSample", (juce::int64)core.endSample());
         object->setProperty("playing", core.playing());
+        object->setProperty("completed", core.completed());
+        object->setProperty("loopCount", (juce::int64)core.loopCount());
         object->setProperty("seconds", core.seconds());
         object->setProperty("firstCallbackMs", core.firstCallbackMs());
         object->setProperty("peak", core.peak.load());

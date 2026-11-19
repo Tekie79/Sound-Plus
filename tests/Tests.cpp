@@ -28,6 +28,7 @@
 #include <fstream>
 #include <unistd.h>
 #include <sys/wait.h>
+void runPlaybackSearchTests(const juce::File &, const juce::File &);
 namespace
 {
 int checks = 0;
@@ -78,6 +79,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--playback-search")
+        {
+            runPlaybackSearchTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 3 && juce::String(argv[1]) == "--waveform-previews")
         {
             runWaveformPreviewTests(juce::File(argv[2]));

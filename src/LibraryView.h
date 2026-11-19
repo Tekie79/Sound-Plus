@@ -42,6 +42,7 @@ class LibraryView final : public juce::Component,
         return peakPool;
     }
     void setCompact(bool);
+    void bindPreferences(juce::PropertiesFile &);
     void parkPlayback();
     void focusSearch()
     {
@@ -58,6 +59,7 @@ class LibraryView final : public juce::Component,
     friend struct LayoutViewTestAccess;
     friend struct LibraryPreviewTestAccess;
     friend struct LibraryReliabilityTestAccess;
+    friend struct PlaybackSearchTestAccess;
     double dispatchedMs = 0, appliedMs = 0;
     uint64_t appliedPage = 0;
     int requestedPage = -1;
@@ -90,7 +92,7 @@ class LibraryView final : public juce::Component,
     void toggle();
     void playFromPlayhead();
     void playSelected(bool useMatch, int64_t seekSample = -1);
-    void setRegion(int64_t start, int64_t end, bool zoom = false);
+    void setRegion(int64_t start, int64_t end, bool zoom = false, bool selected = true);
     void showRangeEditor(bool forReference = false);
     void installModelMenu();
     void requestSearch();
@@ -99,6 +101,15 @@ class LibraryView final : public juce::Component,
     void submitReference(const AudioReference &);
     void playReference(int64_t seek = -1);
     void navigate(int direction);
+    enum class RepeatMode
+    {
+        off,
+        one,
+        all
+    };
+    void setRepeatMode(RepeatMode);
+    void updateRepeat(const juce::var &);
+    void cancelNavigation();
     void updateReference(const ReferenceState &);
     const Asset *selected() const;
     struct SourceModel : juce::ListBoxModel
@@ -184,6 +195,7 @@ class LibraryView final : public juce::Component,
         cancelInstall{"Cancel Download", ActionIcon::cancel};
     IconButton playMatch{"Play Match", ActionIcon::match}, playWhole{"Play Whole", ActionIcon::whole};
     IconButton previous{"Previous recording", ActionIcon::previous}, next{"Next recording", ActionIcon::next};
+    IconButton repeatOne{"Repeat One", ActionIcon::repeatOne}, repeatAll{"Repeat All", ActionIcon::repeat};
     IconButton findSimilar{"Find Similar", ActionIcon::similar, true},
         externalReference{"Choose reference file", ActionIcon::file};
     IconButton referencePlay{"Play reference", ActionIcon::play},
@@ -202,6 +214,13 @@ class LibraryView final : public juce::Component,
     juce::TextEditor referenceIn, referenceOut;
     juce::Label referenceTitle, referenceStatus, referenceUnits;
     juce::ComboBox auditionChannels;
+    juce::ComboBox similarityCutoff;
+    juce::PropertiesFile *preferences = nullptr;
+    double minimumSimilarity = .55;
+    RepeatMode repeatMode = RepeatMode::off;
+    uint64_t playingRequest = 0, allArmedGeneration = 0;
+    int playingRow = -1, repeatRemaining = 0;
+    bool navigationAuto = false, playingUseMatch = false;
     juce::ToggleButton context{"+/-0.25 s context"};
     juce::ComboBox moments;
     juce::TextEditor rangeIn, rangeOut;
@@ -216,6 +235,7 @@ class LibraryView final : public juce::Component,
     uint64_t requested = 1, appliedVersion = 0, appliedRequest = 0;
     bool updating = false;
     bool updatingRange = false, matchMode = false, rangeEdited = false, waveformNeedsZoom = false;
+    bool regionSelected = false, referenceSelected = false;
     int64_t regionStart = 0, regionEnd = 0, rangeRevision = -1, rangeSamples = 0;
     uint64_t rangeRequest = 0;
     juce::String rangeAssetId;

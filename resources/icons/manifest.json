@@ -65,7 +65,9 @@
     "copyOriginal": "folder-input",
     "inspector": "panel-right",
     "processing": "sliders-horizontal",
-    "check": "check"
+    "check": "check",
+    "repeat": "repeat",
+    "repeatOne": "repeat-1"
   },
   "assets": {
     "arrow-down": {
@@ -307,6 +309,14 @@
     "arrows-to-axis-horizontal": {
       "path": "resources/icons/lucide/lucide_arrows_to_axis_horizontal.svg",
       "sha256": "c2aef6725268c9bfe20c3ae64dfdcae6d0a66c7fe0c3b90f604d64fff28d4011"
+    },
+    "repeat": {
+      "path": "resources/icons/lucide/lucide_repeat.svg",
+      "sha256": "6b67b8707e6a3107a1ccad48716bd93fc5e95e8d91f2bff5eec64f62cc7dfc4b"
+    },
+    "repeat-1": {
+      "path": "resources/icons/lucide/lucide_repeat_1.svg",
+      "sha256": "d74c0581fd9410e52108d74aa07b011162000382238266775aaf7a2d18ba6c68"
     }
   }
 }

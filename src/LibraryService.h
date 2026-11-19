@@ -78,6 +78,7 @@ class LibraryService
 
   private:
     friend struct LibraryReliabilityTestAccess;
+    friend struct PlaybackSearchTestAccess;
     void publishControlledSemantic(uint64_t, std::vector<Asset>);
     struct Impl;
     std::unique_ptr<Impl> impl;
