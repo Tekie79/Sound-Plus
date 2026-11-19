@@ -81,7 +81,9 @@ struct RoutingPanel final : juce::Component, private juce::Timer
     MatrixPicture picture;
     std::vector<ChannelLayout> options;
     bool updating = false, gestureActive = false;
-    juce::String listSignature;
+    juce::String listSignature, boundContext, editorSignature;
+    double loadedTrim = 0, displayedTrim = 0;
+    bool loadedInvert = false, loadedMute = true;
     std::array<juce::Label, 5> labels;
     DesignLayer *layer()
     {
@@ -97,8 +99,106 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                 return &l;
         return nullptr;
     }
+    const DesignLayer *desired() const
+    {
+        auto &mix = view.session.performanceMix();
+        for (auto &l : mix.layers)
+            if (l.id == view.session.document.selectedLayer)
+                return &l;
+        return mix.layers.empty() ? nullptr : &mix.layers.front();
+    }
+    juce::String context(const DesignLayer &l) const
+    {
+        const auto &d = view.session.document;
+        return d.id + ":" + d.activeVariation + ":" + d.activeTake + ":" + l.id + ":" + l.source.id + ":" +
+               juce::String(l.source.revision) + ":" + juce::String(l.source.size) + ":" +
+               juce::String(l.source.modified) + ":" + juce::String(l.source.inode) + ":" +
+               view.session.performanceMix().layout.id;
+    }
+    bool sameContext() const
+    {
+        auto *l = desired();
+        return l && context(*l) == boundContext;
+    }
+    struct RouteState
+    {
+        double gain = 0;
+        bool invert = false, mute = true, valid = false;
+        juce::String signature, kind;
+    };
+    RouteState routeState()
+    {
+        RouteState state;
+        auto *l = display();
+        auto bus = view.session.performanceMix().layout;
+        int i = input.getSelectedId() - 1, o = output.getSelectedId() - 1;
+        if (!l || i < 0 || i >= l->routing.interpretation.size() || o < 0 || o >= bus.size())
+            return state;
+        state.valid = true;
+        state.kind = l->routing.routes.empty() ? "Implicit role route" : "Absent route (zero)";
+        auto found = std::find_if(l->routing.routes.begin(), l->routing.routes.end(),
+                                  [&](auto &r) { return r.input == i && r.output == o; });
+        if (found != l->routing.routes.end())
+        {
+            state.gain = found->gainDb;
+            state.invert = found->invert;
+            state.mute = found->mute;
+            state.kind = "Explicit route";
+        }
+        else if (l->routing.routes.empty())
+        {
+            try
+            {
+                auto coefficient = routingMatrix(l->routing, bus, l->pan)[o][i];
+                if (coefficient != 0)
+                {
+                    state.gain = juce::Decibels::gainToDecibels((double)std::abs(coefficient));
+                    state.invert = coefficient < 0;
+                    state.mute = false;
+                }
+                else
+                    state.kind = "Absent implicit route (zero)";
+            }
+            catch (...)
+            {
+                state.kind = "Unresolved role route (zero)";
+            }
+        }
+        state.signature = boundContext + ":" + l->routing.interpretation.id;
+        for (auto physical : l->routing.inputs)
+            state.signature += ":source" + juce::String(physical);
+        state.signature += ":" + juce::String(i) + ":" + juce::String(o) + ":" +
+                           juce::String((int)l->routing.spatial) + ":" + state.kind + ":" +
+                           juce::String(state.gain, 17) + ":" + juce::String((int)state.invert) + ":" +
+                           juce::String((int)state.mute);
+        return state;
+    }
+    void bindRoute(bool force = false)
+    {
+        auto state = routeState();
+        if (!state.valid || (!force && state.signature == editorSignature))
+            return;
+        // Timer refresh preserves a deliberate draft while its route/model context
+        // is unchanged. Selection, Undo/Redo or an external route edit rebinds it.
+        editorSignature = state.signature;
+        loadedTrim = state.gain;
+        loadedInvert = state.invert;
+        loadedMute = state.mute;
+        trim.setValue(loadedTrim, juce::dontSendNotification);
+        displayedTrim = trim.getValue();
+        invert.setToggleState(loadedInvert, juce::dontSendNotification);
+        muted.setToggleState(loadedMute, juce::dontSendNotification);
+        apply.setTooltip(state.kind + ". Set route applies deliberate edits to this input/output only.");
+        trim.setTooltip("Current route " + juce::String(loadedTrim, 6) +
+                        " dB. Unedited precision is preserved.");
+    }
     void edit(const char *label, std::function<void(DesignLayer &)> f)
     {
+        if (!sameContext())
+        {
+            refresh();
+            return;
+        }
         view.session.edit(label,
                           [&](auto &d)
                           {
@@ -115,21 +215,32 @@ struct RoutingPanel final : juce::Component, private juce::Timer
     void refresh()
     {
         updating = true;
+        auto *wanted = desired();
+        if (wanted && context(*wanted) != boundContext)
+        {
+            id = wanted->id;
+            boundContext = context(*wanted);
+            listSignature.clear();
+            editorSignature.clear();
+        }
         auto *l = display();
         if (!l)
         {
             setEnabled(false);
+            updating = false;
             return;
         }
+        setEnabled(true);
         auto bus = view.session.performanceMix().layout;
         int desiredHeight = std::min(540, 300 + std::max(1, (int)l->routing.inputs.size()) * 28);
         if (getHeight() != desiredHeight)
             setSize(620, desiredHeight);
-        auto signature = l->routing.interpretation.id + ":" + bus.id;
+        auto signature = boundContext + ":" + l->routing.interpretation.id + ":" + bus.id;
         for (auto c : l->routing.inputs)
             signature += ":" + juce::String(c);
         if (signature != listSignature)
         {
+            editorSignature.clear();
             options.clear();
             interpretation.clear(juce::dontSendNotification);
             input.clear(juce::dontSendNotification);
@@ -157,6 +268,7 @@ struct RoutingPanel final : juce::Component, private juce::Timer
             output.setSelectedId(1, juce::dontSendNotification);
             listSignature = signature;
         }
+        bindRoute();
         picture.routing = l->routing;
         picture.bus = bus;
         picture.pan = l->pan;
@@ -363,8 +475,30 @@ struct RoutingPanel final : juce::Component, private juce::Timer
             output.addItem(view.session.document.activeMix().layout.roles[i], i + 1);
         input.setSelectedId(1);
         output.setSelectedId(1);
+        input.onChange = output.onChange = [this]
+        {
+            if (updating)
+                return;
+            if (!sameContext())
+                refresh();
+            else
+                bindRoute(true);
+        };
         apply.onClick = [this]
         {
+            if (!sameContext() || routeState().signature != editorSignature || view.session.takeBusy() ||
+                view.session.document.activeTake.isNotEmpty())
+            {
+                refresh();
+                return;
+            }
+            bool trimEdited = std::abs(trim.getValue() - displayedTrim) > 1e-9;
+            if (!trimEdited && invert.getToggleState() == loadedInvert &&
+                muted.getToggleState() == loadedMute)
+                return; // Inspection never materializes a default unity route.
+            double gain = trimEdited ? trim.getValue() : loadedTrim;
+            ChannelRoute selected{input.getSelectedId() - 1, output.getSelectedId() - 1, gain,
+                                  invert.getToggleState(), muted.getToggleState()};
             edit("Channel route",
                  [&](auto &l)
                  {
@@ -388,11 +522,10 @@ struct RoutingPanel final : juce::Component, private juce::Timer
                      int i = input.getSelectedId() - 1, o = output.getSelectedId() - 1;
                      auto it = std::find_if(l.routing.routes.begin(), l.routing.routes.end(),
                                             [&](auto &r) { return r.input == i && r.output == o; });
-                     ChannelRoute r{i, o, trim.getValue(), invert.getToggleState(), muted.getToggleState()};
                      if (it == l.routing.routes.end())
-                         l.routing.routes.push_back(r);
+                         l.routing.routes.push_back(selected);
                      else
-                         *it = r;
+                         *it = selected;
                  });
         };
         defaults.onClick = [this]

@@ -309,8 +309,8 @@ struct LayoutViewTestAccess
               "Actual subset selector accepts final pair of64");
         auto &input = control<juce::ComboBox>(*p, "Route input");
         auto &output = control<juce::ComboBox>(*p, "Route output");
-        input.setSelectedId(2, juce::dontSendNotification);
-        output.setSelectedId(1, juce::dontSendNotification);
+        input.setSelectedId(2, juce::sendNotificationSync);
+        output.setSelectedId(1, juce::sendNotificationSync);
         control<juce::Slider>(*p, "Route trim (dB)").setValue(-6, juce::dontSendNotification);
         control<juce::ToggleButton>(*p, "Invert polarity").setToggleState(true, juce::dontSendNotification);
         control<juce::TextButton>(*p, "Set route").onClick();

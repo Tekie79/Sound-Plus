@@ -9,6 +9,7 @@
 #include <juce_cryptography/juce_cryptography.h>
 #include <deque>
 #include <iostream>
+#include <CoreFoundation/CoreFoundation.h>
 namespace
 {
 int checks = 0;
@@ -126,6 +127,10 @@ struct CorrectionViewTestAccess
     static std::unique_ptr<juce::Component> renderPanel(DesignerView &v)
     {
         return v.makeRenderPanel();
+    }
+    static std::unique_ptr<juce::Component> routingPanel(DesignerView &v)
+    {
+        return v.makeRoutingPanel();
     }
     static void render(DesignerView &v)
     {
@@ -794,6 +799,153 @@ juce::var spatialCorrection(const juce::File &root, const juce::File &app)
     return evidence;
 }
 
+void routingEditors(const juce::File &root, const juce::File &app)
+{
+    auto file = root.getChildFile("stereo.wav");
+    wave(file, 2);
+    auto d = design(file);
+    d.original.masterDb = 0;
+    sp::setMixLayout(d.original, sp::channelLayout("stereo-v1"));
+    auto first = d.selectedLayer;
+    d.original.layers[0].routing.routes = {{0, 0, -6.043, true, false}, {1, 1, -2.5, false, true}};
+    auto second = sp::makeDesignLayer(sp::inspectDesignSource(file), 0, -1, true);
+    sp::initialiseRouting(second, d.original.layout);
+    second.name = "Other layer";
+    second.mute = true;
+    second.routing.routes = {{0, 1, -12, false, false}};
+    d.original.layers.push_back(second);
+    Worker worker;
+    sp::AudioClient audio(app);
+    juce::PropertiesFile prefs(root.getChildFile("view.settings"), sp::ui::preferenceOptions());
+    sp::DesignerView view(root.getChildFile("library.sqlite"), audio, prefs);
+    sp::CorrectionViewTestAccess::bind(view, d, worker.services());
+    auto &s = sp::CorrectionViewTestAccess::session(view);
+    auto panel = sp::CorrectionViewTestAccess::routingPanel(view);
+    auto ctl = [&]<class T>(const char *name) -> T &
+    { return sp::CorrectionViewTestAccess::control<T>(*panel, name); };
+    auto refresh = []
+    {
+        // Exercise the production timer through the native UI dispatch loop.
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, .25, false);
+    };
+    auto route = [&](int input, int output) -> sp::ChannelRoute &
+    {
+        auto &v = s.document.original.layers[0].routing.routes;
+        auto i =
+            std::find_if(v.begin(), v.end(), [&](auto &r) { return r.input == input && r.output == output; });
+        check(i != v.end(), "Edited route exists");
+        return *i;
+    };
+    check(ctl.operator()<juce::ToggleButton>("Invert polarity").getToggleState() &&
+              !ctl.operator()<juce::ToggleButton>("Mute route").getToggleState() &&
+              std::abs(ctl.operator()<juce::Slider>("Route trim (dB)").getValue() + 6) < .001,
+          "Routing construction loads selected actual trim/polarity/mute");
+    auto &muted = ctl.operator()<juce::ToggleButton>("Mute route");
+    muted.setToggleState(true, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(route(0, 0).gainDb == -6.043 && route(0, 0).invert && route(0, 0).mute,
+          "Mute-only edit preserves full-precision trim and polarity");
+    check(pcm(s.document).getMagnitude(0, 4096) == 0, "Muted routes produce actual silent mix");
+    s.undo();
+    refresh();
+    check(!muted.getToggleState() && ctl.operator()<juce::ToggleButton>("Invert polarity").getToggleState(),
+          ("Undo refreshes actual selected route editors: model=" + juce::String((int)route(0, 0).mute) +
+           " UI=" + juce::String((int)muted.getToggleState()))
+              .toRawUTF8());
+    s.redo();
+    refresh();
+    check(muted.getToggleState(), "Redo refreshes route mute");
+    muted.setToggleState(false, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    auto plain = d;
+    plain.original.layers.resize(1);
+    plain.original.layers[0].routing.routes.clear();
+    auto source = pcm(plain);
+    auto actual = pcm(s.document);
+    for (int n = 0; n < 4096; ++n)
+        check(std::abs(actual.getSample(0, n) + source.getSample(0, n) * std::pow(10., -6.043 / 20)) < 1e-7 &&
+                  actual.getSample(1, n) == 0,
+              "Route trim/polarity/mute state is audible in actual PCM");
+    ctl.operator()<juce::ComboBox>("Route input").setSelectedId(2, juce::sendNotificationSync);
+    ctl.operator()<juce::ComboBox>("Route output").setSelectedId(2, juce::sendNotificationSync);
+    check(std::abs(ctl.operator()<juce::Slider>("Route trim (dB)").getValue() + 2.5) < .001 &&
+              !ctl.operator()<juce::ToggleButton>("Invert polarity").getToggleState() &&
+              muted.getToggleState(),
+          "Input/output reselection loads the second route's distinct values");
+    auto &invert = ctl.operator()<juce::ToggleButton>("Invert polarity");
+    invert.setToggleState(true, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(route(1, 1).gainDb == -2.5 && route(1, 1).invert && route(1, 1).mute,
+          "Polarity-only edit preserves second route trim/mute");
+    muted.setToggleState(false, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    actual = pcm(s.document);
+    for (int n = 0; n < 4096; ++n)
+        check(std::abs(actual.getSample(1, n) + source.getSample(1, n) * std::pow(10., -2.5 / 20)) < 1e-7,
+              "Unmuted second route produces its saved negative gain in PCM");
+    auto &trim = ctl.operator()<juce::Slider>("Route trim (dB)");
+    trim.setValue(-11.2, juce::sendNotificationSync);
+    s.editMetadata("Unrelated rename", [](auto &doc) { doc.name += " renamed"; });
+    refresh();
+    check(std::abs(trim.getValue() + 11.2) < .001,
+          "Uncommitted route draft survives timer/unrelated model refresh");
+    ctl.operator()<juce::ComboBox>("Route output").setSelectedId(1, juce::sendNotificationSync);
+    check(muted.getToggleState() && std::abs(trim.getValue()) < 1e-8,
+          ("Absent explicit route appears as zero/muted: i=" +
+           juce::String(ctl.operator()<juce::ComboBox>("Route input").getSelectedId()) +
+           " o=" + juce::String(ctl.operator()<juce::ComboBox>("Route output").getSelectedId()) + " mute=" +
+           juce::String((int)muted.getToggleState()) + " trim=" + juce::String(trim.getValue(), 12))
+              .toRawUTF8());
+    auto revision = s.document.revision;
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(s.document.revision == revision && s.document.original.layers[0].routing.routes.size() == 2,
+          "Inspecting absent route cannot materialize unity");
+    trim.setValue(-19, juce::sendNotificationSync);
+    s.selectLayer(second.id);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(s.document.original.layers[1].routing.routes[0].gainDb == -12 && route(0, 0).gainDb == -6.043,
+          "Queued stale editor cannot apply draft to newly selected layer");
+    s.selectLayer(first);
+    refresh();
+    panel.reset();
+    panel = sp::CorrectionViewTestAccess::routingPanel(view);
+    check(ctl.operator()<juce::ToggleButton>("Invert polarity").getToggleState() &&
+              std::abs(ctl.operator()<juce::Slider>("Route trim (dB)").getValue() + 6) < .001,
+          "Close/reopen restores actual selected route state");
+    s.edit("Implicit role routing", [](auto &doc) { doc.original.layers[0].routing.routes.clear(); });
+    refresh();
+    revision = s.document.revision;
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(s.document.original.layers[0].routing.routes.empty() && s.document.revision == revision,
+          "Inspecting implicit role route does not materialize it");
+    s.edit("Mono default coefficients",
+           [](auto &doc) { sp::setMixLayout(doc.original, sp::channelLayout("mono-v1")); });
+    refresh();
+    auto &monoMute = ctl.operator()<juce::ToggleButton>("Mute route");
+    monoMute.setToggleState(true, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(std::abs(route(0, 0).gainDb - 20 * std::log10(.5)) < 1e-10 && route(0, 0).mute,
+          "Mute on implicit half-gain preserves coefficient precision");
+    monoMute.setToggleState(false, juce::dontSendNotification);
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    actual = pcm(s.document);
+    for (int n = 0; n < 4096; ++n)
+        check(std::abs(actual.getSample(0, n) - (source.getSample(0, n) + source.getSample(1, n)) * .5) <
+                  2e-7,
+              "Materialized default role routes preserve actual mono PCM");
+    auto &monoTrim = ctl.operator()<juce::Slider>("Route trim (dB)");
+    monoTrim.setValue(-20, juce::sendNotificationSync);
+    auto other = design(file);
+    sp::setMixLayout(other.original, sp::channelLayout("stereo-v1"));
+    auto otherFile = root.getChildFile("Other document.soundplus");
+    sp::saveDesignAtomic(otherFile, other);
+    s.open(otherFile);
+    worker.drain();
+    ctl.operator()<juce::TextButton>("Set route").onClick();
+    check(s.document.id == other.id && s.document.original.layers[0].routing.routes.empty(),
+          "Document adoption safely rebinds and rejects stale route draft");
+}
+
 void preferences(const juce::File &root)
 {
     auto source = root.getChildFile("input.wav");
@@ -922,6 +1074,7 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     preferences(root.getChildFile("R11"));
     legacySplit(root.getChildFile("R17"), app);
     auto spatial = spatialCorrection(root.getChildFile("R12"), app);
+    routingEditors(root.getChildFile("R13"), app);
     auto result = sp::message("multichannel-corrections-results");
     result.getDynamicObject()->setProperty("checks", checks);
     result.getDynamicObject()->setProperty("R12", spatial);
@@ -933,6 +1086,8 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
         "R17 historical legacy panel callbacks, split/interleaved/mono membership, save/reopen/Print");
     scenarios.append("R12 periodicity/oracle, mono/stereo/divergence, parameter adoption, native "
                      "capture/replay, old/new dispatch and corrected-copy provenance");
+    scenarios.append("R13 actual route editors: precision, one-field edits, implicit/absent, drafts, "
+                     "selection/context, Undo/Redo and PCM");
     result.getDynamicObject()->setProperty("scenarios", scenarios);
     result.getDynamicObject()->setProperty("root", root.getFullPathName());
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(result, true));
