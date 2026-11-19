@@ -133,6 +133,7 @@ class Catalog
 
   private:
     sqlite3 *db = nullptr;
+    juce::String columns;
     const std::atomic<uint64_t> *cancellation = nullptr;
     uint64_t expectedGeneration = 0;
     int analysisRootCursor = 0;

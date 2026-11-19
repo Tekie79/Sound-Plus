@@ -677,6 +677,56 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
                   a.layoutOverride.id == "5.1-side-v1" && a.layoutConfidence == "unknown",
               "Catalog reopen preserves unknown detection separately from chosen interpretation");
     }
+    // Hold the writer migration behind startup recovery: read-only source resolution
+    // must work on both pre-layout schemas, then survive the schema commit.
+    for (int schema : {4, 5})
+    {
+        auto migration = root.getChildFile("startup-schema-" + juce::String(schema));
+        migration.createDirectory();
+        auto file = migration.getChildFile("library.sqlite");
+        check(catalogFile.copyFileTo(file), "Copy isolated pre-migration catalog");
+        auto draft = design(unknown, sp::discreteLayout(6));
+        {
+            sp::Catalog db(file);
+            draft.original.layers[0].source = db.asset(catalogId);
+            draft.original.layers[0].external = false;
+            db.exec("ALTER TABLE assets DROP COLUMN layout_override");
+            if (schema == 4)
+                db.exec("ALTER TABLE assets DROP COLUMN channel_layout");
+            db.exec(("PRAGMA user_version=" + juce::String(schema)).toRawUTF8());
+        }
+        draft.revision = 37;
+        sp::DesignRecoveryStore(migration.getChildFile("designer-autosave")).retain(draft, {}, true);
+        std::deque<std::function<void()>> held;
+        sp::DesignSessionServices services;
+        services.timers = false;
+        services.submit = [&](auto job)
+        {
+            held.push_back(std::move(job));
+            return true;
+        };
+        services.post = [](auto job) { job(); };
+        sp::DesignSession startup(file, services);
+        while (!held.empty())
+        {
+            auto job = std::move(held.front());
+            held.pop_front();
+            job();
+        }
+        check(startup.document.id == draft.id && startup.document.revision == 37 && startup.dirty &&
+                  startup.document.original.layers[0].source.error.isEmpty(),
+              "Automatic recovery before schema migration retains the real document and sources");
+        sp::Catalog before(file, true);
+        check(before.asset(catalogId).id == catalogId && before.asset(catalogId).layoutOverride.id.isEmpty(),
+              "Old read-only schema has no invented interpretation override");
+        {
+            sp::Catalog writer(file);
+            check(writer.asset(catalogId).revision == catalogRevision,
+                  "Background schema migration preserves source revisions");
+        }
+        check(before.asset(catalogId).id == catalogId,
+              "Already-open recovery reader remains valid after migration commits");
+    }
     // Real mixed-rate/channel/duration sources through linked operations and selection render.
     auto shortMono = root.getChildFile("mixed-44k-mono.wav"),
          shortStereo = root.getChildFile("mixed-96k-stereo.wav");

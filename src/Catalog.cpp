@@ -98,9 +98,9 @@ Asset readAsset(Statement &s)
         a.layoutOverride = layoutFromJson(juce::JSON::parse(overrideText));
     return a;
 }
-constexpr auto columns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.inode,a.revision,"
-                         "a.duration,a.channels,a.sample_rate,a.state,a.error,(a.online AND "
-                         "r.online),r.path,a.samples,a.channel_layout,a.layout_override";
+constexpr auto currentColumns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.inode,a.revision,"
+                                "a.duration,a.channels,a.sample_rate,a.state,a.error,(a.online AND "
+                                "r.online),r.path,a.samples,a.channel_layout,a.layout_override";
 } // namespace
 
 bool fileStamp(const juce::File &f, FileStamp &out)
@@ -116,7 +116,7 @@ bool supportedExtension(const juce::File &f)
 {
     return f.hasFileExtension("wav;bwf;aif;aiff;flac;ogg;mp3;m4a;mp4;caf;w64");
 }
-Catalog::Catalog(const juce::File &file, bool readOnly)
+Catalog::Catalog(const juce::File &file, bool readOnly) : columns(currentColumns)
 {
     const int flags = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
     if (sqlite3_open_v2(file.getFullPathName().toRawUTF8(), &db, flags | SQLITE_OPEN_NOMUTEX, nullptr) !=
@@ -132,9 +132,6 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
     {
         exec("PRAGMA foreign_keys=ON");
         exec("PRAGMA cache_size=-4096; PRAGMA temp_store=FILE; PRAGMA temp.cache_size=-2048;");
-        if (readOnly)
-            return;
-        exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;");
         int64_t schemaVersion = 0;
         {
             Statement version(db, "PRAGMA user_version");
@@ -143,6 +140,24 @@ Catalog::Catalog(const juce::File &file, bool readOnly)
         }
         if (schemaVersion > 6)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
+        if (readOnly)
+        {
+            // Recovery can open before the Library writer finishes migration.
+            // Read the old schema without writing or waiting on the UI/audio thread.
+            // Keep this connection's projection valid across the writer's commit.
+            juce::StringArray fields;
+            Statement info(db, "PRAGMA table_info(assets)");
+            while (info.step())
+                fields.add(info.str(1));
+            if (!fields.contains("samples"))
+                columns = columns.replace("a.samples", "CAST(round(a.duration*a.sample_rate) AS INTEGER)");
+            if (!fields.contains("channel_layout"))
+                columns = columns.replace("a.channel_layout", "''");
+            if (!fields.contains("layout_override"))
+                columns = columns.replace("a.layout_override", "''");
+            return;
+        }
+        exec("PRAGMA journal_mode=WAL; PRAGMA synchronous=FULL;");
         exec(R"SQL(BEGIN IMMEDIATE;
           CREATE TABLE IF NOT EXISTS roots(id TEXT PRIMARY KEY,path TEXT UNIQUE NOT NULL,volume TEXT NOT NULL,
             volume_relative TEXT NOT NULL,online INTEGER NOT NULL DEFAULT 1,scanning INTEGER NOT NULL DEFAULT 0,error TEXT NOT NULL DEFAULT '');
