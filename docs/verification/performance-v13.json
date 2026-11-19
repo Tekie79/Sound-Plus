@@ -1,0 +1,1922 @@
+{
+  "milestone": "Performance Mixer v1.3 \u2014 Recorded Perform Takes v1",
+  "recordedAt": "2026-11-18T23:44:36.635904-05:00",
+  "startingHead": "0cfa5f6cc303af4abf058513430fe74fe1559134",
+  "correctiveCommit": "817c810",
+  "cleanAtStart": true,
+  "machine": {
+    "chip": "Apple M5 Pro",
+    "model": "MacBook Pro Mac17,8",
+    "memoryGiB": 48,
+    "macOS": "26.3.2 (25D2150)",
+    "physicalScale": 2,
+    "device": "MacBook Pro Speakers",
+    "native": "arm64 Release"
+  },
+  "regressions": {
+    "suites": 18,
+    "seconds": 72.55,
+    "log": "performance-v13-ctest.log",
+    "recordedTakeResults": {
+      "checks": 2820,
+      "projectRates": [
+        {
+          "projectRate": 44100.0,
+          "outputRate": 44100.0,
+          "events": 1,
+          "bodyFrames": 1536,
+          "captureReplayMaxError": 0.0
+        },
+        {
+          "projectRate": 48000.0,
+          "outputRate": 48000.0,
+          "events": 1,
+          "bodyFrames": 1536,
+          "captureReplayMaxError": 0.0
+        },
+        {
+          "projectRate": 96000.0,
+          "outputRate": 96000.0,
+          "events": 1,
+          "bodyFrames": 1536,
+          "captureReplayMaxError": 0.0
+        },
+        {
+          "projectRate": 48000.0,
+          "outputRate": 44100.0,
+          "events": 1,
+          "bodyFrames": 1672,
+          "captureReplayMaxError": 0.0
+        },
+        {
+          "projectRate": 44100.0,
+          "outputRate": 48000.0,
+          "events": 1,
+          "bodyFrames": 1412,
+          "captureReplayMaxError": 0.0
+        }
+      ],
+      "nativeEvents": 16,
+      "nativeBodyFrames": 38400,
+      "nativeCaptureReplayMaxError": 0.0,
+      "nativeAudio": {
+        "version": 5,
+        "command": "status",
+        "id": "design:09e1a19a65194c9b9b2c9c067bf9fa5e",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 81889,
+        "outputRate": 0.0,
+        "sourceSample": 0,
+        "acceptedSourceEnd": 0,
+        "sourceRate": 0.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 0,
+        "playing": false,
+        "seconds": 0.0,
+        "firstCallbackMs": 0.0,
+        "peak": 0.0,
+        "preMonitorPeak": 0.0,
+        "design": false,
+        "designLayers": 0,
+        "producerMaxMs": 0.0,
+        "error": "",
+        "callbacks": 126,
+        "frames": 64512,
+        "underruns": 0,
+        "designRevision": 1,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "takeId": "22ced7e3fa284403b492696b8392d980",
+        "takePhase": 3,
+        "takeEnd": 38400,
+        "takeEvents": 16,
+        "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/b06c8e5849b94609aa034f5c72400ed3/22ced7e3fa284403b492696b8392d980.soundplus",
+        "takeCheckpointReady": true,
+        "takePeakBacklog": 7,
+        "takeError": "",
+        "statusSequence": 50,
+        "statusMs": 122087279.179125,
+        "lastCommandSequence": 24,
+        "lastCommandMs": 122086749.3095833,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 43581440,
+        "cpuSeconds": 0.105618,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "availableBufferFrames": [
+          16,
+          32,
+          64,
+          96,
+          128,
+          160,
+          192,
+          224,
+          256,
+          288,
+          320,
+          352,
+          384,
+          416,
+          448,
+          480,
+          512,
+          544,
+          576,
+          608,
+          640,
+          672,
+          704,
+          736,
+          768,
+          800,
+          832,
+          864,
+          896,
+          928,
+          960,
+          992,
+          1024,
+          1056,
+          1088,
+          1120,
+          1152,
+          1184,
+          1216,
+          1248,
+          1280,
+          1312,
+          1344,
+          1376,
+          1408,
+          1440,
+          1472,
+          1504,
+          1536,
+          1568,
+          1600,
+          1632,
+          1664,
+          1696,
+          1728,
+          1760,
+          1792,
+          1824,
+          1856,
+          1888,
+          1920,
+          1952,
+          1984,
+          2016,
+          2048
+        ],
+        "processGeneration": 1,
+        "intentId": "design:09e1a19a65194c9b9b2c9c067bf9fa5e",
+        "intentGeneration": 1,
+        "helperRestarts": 0,
+        "pendingPlayback": false
+      },
+      "faultAudio": {
+        "version": 5,
+        "command": "status",
+        "id": "",
+        "playGeneration": 11,
+        "graphEpoch": 4,
+        "preparationsRequested": 4,
+        "helperPid": 81892,
+        "outputRate": 0.0,
+        "sourceSample": 0,
+        "acceptedSourceEnd": 0,
+        "sourceRate": 0.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 0,
+        "playing": false,
+        "seconds": 0.0,
+        "firstCallbackMs": 0.0,
+        "peak": 0.0,
+        "preMonitorPeak": 0.0,
+        "design": false,
+        "designLayers": 0,
+        "producerMaxMs": 0.0,
+        "error": "Missing source: source-0.wav",
+        "callbacks": 326,
+        "frames": 166912,
+        "underruns": 0,
+        "designRevision": 0,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "takeId": "8f98da43e9184601932a4744ca73b41c",
+        "takePhase": 4,
+        "takeEnd": 0,
+        "takeEvents": 0,
+        "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/b06c8e5849b94609aa034f5c72400ed3/missing-checkpoint.soundplus",
+        "takeCheckpointReady": false,
+        "takePeakBacklog": 0,
+        "takeError": "",
+        "statusSequence": 129,
+        "statusMs": 122092102.8328333,
+        "lastCommandSequence": 44,
+        "lastCommandMs": 122092091.4078333,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 44285952,
+        "cpuSeconds": 0.228319,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "availableBufferFrames": [
+          16,
+          32,
+          64,
+          96,
+          128,
+          160,
+          192,
+          224,
+          256,
+          288,
+          320,
+          352,
+          384,
+          416,
+          448,
+          480,
+          512,
+          544,
+          576,
+          608,
+          640,
+          672,
+          704,
+          736,
+          768,
+          800,
+          832,
+          864,
+          896,
+          928,
+          960,
+          992,
+          1024,
+          1056,
+          1088,
+          1120,
+          1152,
+          1184,
+          1216,
+          1248,
+          1280,
+          1312,
+          1344,
+          1376,
+          1408,
+          1440,
+          1472,
+          1504,
+          1536,
+          1568,
+          1600,
+          1632,
+          1664,
+          1696,
+          1728,
+          1760,
+          1792,
+          1824,
+          1856,
+          1888,
+          1920,
+          1952,
+          1984,
+          2016,
+          2048
+        ],
+        "processGeneration": 2,
+        "intentId": "design:09e1a19a65194c9b9b2c9c067bf9fa5e",
+        "intentGeneration": 11,
+        "helperRestarts": 1,
+        "pendingPlayback": false
+      },
+      "namedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/b06c8e5849b94609aa034f5c72400ed3/Named QA take.soundplus",
+      "renderPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/b06c8e5849b94609aa034f5c72400ed3/Native renders/Native recorded motion-take-r1-d3c56084.wav",
+      "renderSha256": "9f8459f60d9ae4f05dcb9f3a116cc820f21df0974a6fc550459876f549c8f2ca",
+      "preallocatedEventBytes": 655360
+    },
+    "assertionsIncludeGeneratedFixtureWrites": true
+  },
+  "recording": {
+    "success": true,
+    "error": "",
+    "elapsedMs": 135147.37545832992,
+    "audio": {
+      "version": 5,
+      "command": "status",
+      "id": "design:d653559565ef488b8bf2338b030d18d3",
+      "playGeneration": 1,
+      "graphEpoch": 1,
+      "preparationsRequested": 1,
+      "helperPid": 82132,
+      "outputRate": 0.0,
+      "sourceSample": 0,
+      "acceptedSourceEnd": 0,
+      "sourceRate": 0.0,
+      "auditionPair": 0,
+      "startSample": 0,
+      "endSample": 0,
+      "playing": false,
+      "seconds": 0.0,
+      "firstCallbackMs": 0.0,
+      "peak": 0.0,
+      "preMonitorPeak": 0.0,
+      "design": false,
+      "designLayers": 0,
+      "producerMaxMs": 0.0,
+      "error": "",
+      "callbacks": 12663,
+      "frames": 6483456,
+      "underruns": 0,
+      "designRevision": 2,
+      "heardEdit": 0,
+      "editLatencyMs": 0.0,
+      "stalePreparationsDiscarded": 0,
+      "preparing": false,
+      "takeId": "8f6ad30b0d00435b8964693bcd867de3",
+      "takePhase": 3,
+      "takeEnd": 5760000,
+      "takeEvents": 4504,
+      "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/recording-qualified-512/catalog/designer-takes/8f6ad30b0d00435b8964693bcd867de3.soundplus",
+      "takeCheckpointReady": true,
+      "takePeakBacklog": 30,
+      "takeError": "",
+      "statusSequence": 4917,
+      "statusMs": 122305575.5818333,
+      "lastCommandSequence": 4512,
+      "lastCommandMs": 122294657.1657083,
+      "sampleRate": 48000.0,
+      "outputs": [
+        "MacBook Pro Speakers"
+      ],
+      "peakResidentBytes": 77135872,
+      "cpuSeconds": 45.582639,
+      "bufferFrames": 512,
+      "device": "MacBook Pro Speakers",
+      "availableRates": [
+        44100.0,
+        48000.0,
+        88200.0,
+        96000.0
+      ],
+      "availableBufferFrames": [
+        16,
+        32,
+        64,
+        96,
+        128,
+        160,
+        192,
+        224,
+        256,
+        288,
+        320,
+        352,
+        384,
+        416,
+        448,
+        480,
+        512,
+        544,
+        576,
+        608,
+        640,
+        672,
+        704,
+        736,
+        768,
+        800,
+        832,
+        864,
+        896,
+        928,
+        960,
+        992,
+        1024,
+        1056,
+        1088,
+        1120,
+        1152,
+        1184,
+        1216,
+        1248,
+        1280,
+        1312,
+        1344,
+        1376,
+        1408,
+        1440,
+        1472,
+        1504,
+        1536,
+        1568,
+        1600,
+        1632,
+        1664,
+        1696,
+        1728,
+        1760,
+        1792,
+        1824,
+        1856,
+        1888,
+        1920,
+        1952,
+        1984,
+        2016,
+        2048
+      ],
+      "processGeneration": 1,
+      "intentId": "design:d653559565ef488b8bf2338b030d18d3",
+      "intentGeneration": 1,
+      "helperRestarts": 0,
+      "pendingPlayback": false
+    },
+    "audioHealth": {
+      "helperPid": 82132,
+      "processGeneration": 1,
+      "lastHeartbeatMs": 122305575.707875,
+      "lastCommandMs": 122294654.521,
+      "sentSequence": 4512,
+      "statusesReceived": 4917,
+      "lastStatusSequence": 4917,
+      "lastEchoedCommand": 4512,
+      "events": [],
+      "observedMs": 122305577.4437083
+    },
+    "waveforms": {
+      "requests": 1279,
+      "displaySources": 0,
+      "displayPeakBytes": 0,
+      "validations": 90,
+      "cancellations": 178,
+      "priorityPreemptions": 103,
+      "fairAdmissions": 297,
+      "activeDemands": 14,
+      "decodes": 895,
+      "diskHits": 232,
+      "memoryHits": 87023,
+      "retainedSources": 48,
+      "retainedGeometries": 96,
+      "retainedPeakBytes": 548520,
+      "pending": false,
+      "firstReadyMs": 647.9955833405256,
+      "requestToUiAdoptionMs": {
+        "n": 512,
+        "p50": 14.750624999403954,
+        "p95": 33.84354166686535,
+        "p99": 34.91595833003521
+      }
+    },
+    "counters": {
+      "fileStats": 54668,
+      "directories": 7101,
+      "entries": 33161,
+      "discovered": 30131,
+      "commits": 7379,
+      "scans": 318,
+      "headers": 10065,
+      "queries": 110,
+      "cancelled": 1,
+      "directoryEnumerations": 3044,
+      "peakBatches": 8,
+      "firstEligibleMs": 122170518.4824167,
+      "firstCommitMs": 122170518.8370417,
+      "discoveryFinishedMs": 122264686.0495417,
+      "peakResidentBytes": 194936832,
+      "cpuSeconds": 65.255682
+    },
+    "semantic": {
+      "model": "clap-htsat-unfused-q8-c28f2883575e",
+      "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1",
+      "ready": true,
+      "error": "",
+      "modelLoadMs": 2319.287125006318,
+      "files": 812,
+      "pending": 9253,
+      "failed": 0,
+      "regions": 816,
+      "vectorBytes": 1671168,
+      "sourceSecondsThisSession": 406.1230158730156,
+      "windowsThisSession": 820,
+      "analysisWallMs": 32355.983624905348,
+      "firstWindowStartedMs": 122172775.1203333,
+      "lastWindowPublishedMs": 122305520.6987083,
+      "helperPeakResidentBytes": 462471168,
+      "indexReady": true,
+      "indexReused": false,
+      "indexBuilding": false,
+      "indexRegions": 0,
+      "indexBytes": 0,
+      "indexOpenMs": 0.0,
+      "indexBuildMs": 0.866500005125999,
+      "indexStatus": "Sound index ready"
+    },
+    "reliability": {
+      "activeMs": 120000.68591666222,
+      "audioAtStop": {
+        "version": 5,
+        "command": "status",
+        "id": "design:d653559565ef488b8bf2338b030d18d3",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 82132,
+        "outputRate": 0.0,
+        "sourceSample": 0,
+        "acceptedSourceEnd": 0,
+        "sourceRate": 0.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 0,
+        "playing": false,
+        "seconds": 0.0,
+        "firstCallbackMs": 0.0,
+        "peak": 0.000649581663311,
+        "preMonitorPeak": 0.043304774910212,
+        "design": false,
+        "designLayers": 0,
+        "producerMaxMs": 0.0,
+        "error": "",
+        "callbacks": 11641,
+        "frames": 5960192,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "takeId": "8f6ad30b0d00435b8964693bcd867de3",
+        "takePhase": 2,
+        "takeEnd": 5760000,
+        "takeEvents": 4504,
+        "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/recording-qualified-512/catalog/designer-takes/8f6ad30b0d00435b8964693bcd867de3.soundplus",
+        "takeCheckpointReady": false,
+        "takePeakBacklog": 30,
+        "takeError": "",
+        "statusSequence": 4522,
+        "statusMs": 122294669.3558333,
+        "lastCommandSequence": 4512,
+        "lastCommandMs": 122294657.1657083,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 77053952,
+        "cpuSeconds": 45.218111,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "availableBufferFrames": [
+          16,
+          32,
+          64,
+          96,
+          128,
+          160,
+          192,
+          224,
+          256,
+          288,
+          320,
+          352,
+          384,
+          416,
+          448,
+          480,
+          512,
+          544,
+          576,
+          608,
+          640,
+          672,
+          704,
+          736,
+          768,
+          800,
+          832,
+          864,
+          896,
+          928,
+          960,
+          992,
+          1024,
+          1056,
+          1088,
+          1120,
+          1152,
+          1184,
+          1216,
+          1248,
+          1280,
+          1312,
+          1344,
+          1376,
+          1408,
+          1440,
+          1472,
+          1504,
+          1536,
+          1568,
+          1600,
+          1632,
+          1664,
+          1696,
+          1728,
+          1760,
+          1792,
+          1824,
+          1856,
+          1888,
+          1920,
+          1952,
+          1984,
+          2016,
+          2048
+        ],
+        "processGeneration": 1,
+        "intentId": "design:d653559565ef488b8bf2338b030d18d3",
+        "intentGeneration": 1,
+        "helperRestarts": 0,
+        "pendingPlayback": false
+      },
+      "cycles": 79,
+      "selectedFiles": 80,
+      "semanticPinnedRefreshes": 20,
+      "wholeViewportsPainted": 80,
+      "queryToPaintMs": {
+        "n": 80,
+        "p50": 5.534166678786278,
+        "p95": 9.828499987721443,
+        "p99": 15.528708338737488
+      },
+      "selectedWaveformMs": {
+        "n": 80,
+        "p50": 29.366125002503395,
+        "p95": 50.941624999046326,
+        "p99": 64.7022916674614
+      },
+      "wholeViewportMs": {
+        "n": 80,
+        "p50": 233.85695832967758,
+        "p95": 276.2339583337307,
+        "p99": 332.2427500039339
+      },
+      "audioChecks": 43708,
+      "nonzeroAudioChecks": 43701,
+      "editingSamplesDuringIndexing": 4506,
+      "addedBatches": 4,
+      "offlineObserved": true,
+      "reconnectObserved": true,
+      "audioAtStart": {
+        "version": 5,
+        "command": "status",
+        "id": "design:d653559565ef488b8bf2338b030d18d3",
+        "playGeneration": 1,
+        "graphEpoch": 1,
+        "preparationsRequested": 1,
+        "helperPid": 82132,
+        "outputRate": 48000.0,
+        "sourceSample": 0,
+        "acceptedSourceEnd": 0,
+        "sourceRate": 48000.0,
+        "auditionPair": 0,
+        "startSample": 0,
+        "endSample": 5760000,
+        "playing": true,
+        "seconds": 0.0,
+        "firstCallbackMs": 0.0,
+        "peak": 0.0,
+        "preMonitorPeak": 0.0,
+        "design": true,
+        "designLayers": 8,
+        "producerMaxMs": 1.236958339810371,
+        "error": "",
+        "callbacks": 391,
+        "frames": 200192,
+        "underruns": 0,
+        "designRevision": 2,
+        "heardEdit": 0,
+        "editLatencyMs": 0.0,
+        "stalePreparationsDiscarded": 0,
+        "preparing": false,
+        "takeId": "8f6ad30b0d00435b8964693bcd867de3",
+        "takePhase": 1,
+        "takeEnd": 0,
+        "takeEvents": 0,
+        "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/recording-qualified-512/catalog/designer-takes/8f6ad30b0d00435b8964693bcd867de3.soundplus",
+        "takeCheckpointReady": false,
+        "takePeakBacklog": 0,
+        "takeError": "",
+        "statusSequence": 154,
+        "statusMs": 122174670.6504583,
+        "lastCommandSequence": 6,
+        "lastCommandMs": 122174656.5914167,
+        "sampleRate": 48000.0,
+        "outputs": [
+          "MacBook Pro Speakers"
+        ],
+        "peakResidentBytes": 52346880,
+        "cpuSeconds": 0.08622,
+        "bufferFrames": 512,
+        "device": "MacBook Pro Speakers",
+        "availableRates": [
+          44100.0,
+          48000.0,
+          88200.0,
+          96000.0
+        ],
+        "availableBufferFrames": [
+          16,
+          32,
+          64,
+          96,
+          128,
+          160,
+          192,
+          224,
+          256,
+          288,
+          320,
+          352,
+          384,
+          416,
+          448,
+          480,
+          512,
+          544,
+          576,
+          608,
+          640,
+          672,
+          704,
+          736,
+          768,
+          800,
+          832,
+          864,
+          896,
+          928,
+          960,
+          992,
+          1024,
+          1056,
+          1088,
+          1120,
+          1152,
+          1184,
+          1216,
+          1248,
+          1280,
+          1312,
+          1344,
+          1376,
+          1408,
+          1440,
+          1472,
+          1504,
+          1536,
+          1568,
+          1600,
+          1632,
+          1664,
+          1696,
+          1728,
+          1760,
+          1792,
+          1824,
+          1856,
+          1888,
+          1920,
+          1952,
+          1984,
+          2016,
+          2048
+        ],
+        "processGeneration": 1,
+        "intentId": "design:d653559565ef488b8bf2338b030d18d3",
+        "intentGeneration": 1,
+        "helperRestarts": 0,
+        "pendingPlayback": false
+      }
+    },
+    "appSha256": "9c6209c2780250f3bd701b7cc36b53b287a4f44794fea0de50f1c9f89daf1936",
+    "corpusFiles": 10000,
+    "corpusBytes": 1253073116,
+    "condition": "cold derivative directory; OS file cache uncontrolled",
+    "exitCode": 0,
+    "catalogFilesAtEnd": 10065,
+    "recording": {
+      "take": {
+        "id": "8f6ad30b0d00435b8964693bcd867de3",
+        "name": "Sustained recorded motion",
+        "complete": true,
+        "kept": true,
+        "bodyEnd": 5760000,
+        "outputFrames": 5760000,
+        "captureRate": 48000.0,
+        "recipeHash": "2614768b13334389e8ec51b88f8a778d232bb46517a605f709febd5205238a01",
+        "eventHash": "b36a59be5733331626df098ac440c42a27d159cd60742cdf12c1e149ca0eb937"
+      },
+      "events": 4504,
+      "namedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/recording-qualified-512/Sustained QA Take.soundplus",
+      "outputPath": "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-ee4c299f.wav",
+      "sourceFingerprints": [
+        {
+          "id": "external-1faaf7aed9ef4d33bc8782cc1a9675ab",
+          "sha256": "0bec4b8a707a7d9e5bb47c7ad8b1a0c9fff2b509e238c4c7ce62b5d100801394",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        }
+      ]
+    }
+  },
+  "limits": {
+    "seconds": 120,
+    "events": 8192,
+    "takesPerDocument": 16,
+    "activeEventBytes": 655360,
+    "checkpointOpportunityMs": 250,
+    "documentLoadBytes": 67108864
+  },
+  "nativeUi": {
+    "catalog": "build/performance-v13/native-catalog",
+    "document": "build/performance-v13/native-fixture/workload.soundplus",
+    "revision": 7,
+    "take": {
+      "id": "db051f772f1c4253b9bd39c524723bd4",
+      "name": "Native XY and four macros",
+      "session": "8431f4794bcc4933aa6ce1f9558425b7",
+      "generation": 1,
+      "recipe": {
+        "mix": {
+          "performance": {
+            "version": 2,
+            "blendLaw": 2,
+            "blendEnabled": true,
+            "x": 0.5,
+            "y": 0.5,
+            "assignments": [
+              {
+                "layer": "225ee860a4434e21afc332acfe1e7e47",
+                "name": "Impact"
+              },
+              {
+                "layer": "a66a6067fad74878a2ce95825438e182",
+                "name": "Stepped voice"
+              },
+              {
+                "layer": "0dab2d8888d547058e3ca2b98eb5f572",
+                "name": "Quiet tail"
+              },
+              {
+                "layer": "af5af04b20144da28cca0c918e5d5073",
+                "name": "Ambience"
+              }
+            ],
+            "macros": [
+              {
+                "name": "Macro 1",
+                "value": 0.5,
+                "reset": 0.4,
+                "enabled": true,
+                "mappings": [
+                  {
+                    "layer": "225ee860a4434e21afc332acfe1e7e47",
+                    "effect": "f68570d9cc7643f89122aa58bcfea19a",
+                    "parameter": "delayWet",
+                    "minimum": 0.0,
+                    "maximum": 0.8,
+                    "curve": "linear",
+                    "inverted": false
+                  }
+                ]
+              },
+              {
+                "name": "Macro 2",
+                "value": 0.5,
+                "reset": 0.4,
+                "enabled": true,
+                "mappings": [
+                  {
+                    "layer": "a66a6067fad74878a2ce95825438e182",
+                    "effect": "",
+                    "parameter": "pan",
+                    "minimum": -0.8,
+                    "maximum": 0.8,
+                    "curve": "linear",
+                    "inverted": false
+                  }
+                ]
+              },
+              {
+                "name": "Macro 3",
+                "value": 0.5,
+                "reset": 0.4,
+                "enabled": true,
+                "mappings": [
+                  {
+                    "layer": "0dab2d8888d547058e3ca2b98eb5f572",
+                    "effect": "2d783acb6013407d81bd771a5d981844",
+                    "parameter": "filterLow",
+                    "minimum": 500.0,
+                    "maximum": 15000.0,
+                    "curve": "log",
+                    "inverted": false
+                  }
+                ]
+              },
+              {
+                "name": "Macro 4",
+                "value": 0.5,
+                "reset": 0.4,
+                "enabled": true,
+                "mappings": [
+                  {
+                    "layer": "",
+                    "effect": "c89749cb4d92488ab4f1407ba9ee56db",
+                    "parameter": "reverbWet",
+                    "minimum": 0.05,
+                    "maximum": 0.7,
+                    "curve": "linear",
+                    "inverted": false
+                  }
+                ]
+              }
+            ]
+          },
+          "masterDb": -6.0,
+          "duration": 0,
+          "masterEffects": [
+            {
+              "id": "c89749cb4d92488ab4f1407ba9ee56db",
+              "type": "reverb",
+              "bypass": false,
+              "locked": false,
+              "parameterLocks": 0,
+              "parameters": [
+                0.5,
+                0.5,
+                0.2,
+                1.0
+              ]
+            }
+          ],
+          "layers": [
+            {
+              "id": "225ee860a4434e21afc332acfe1e7e47",
+              "name": "Impact",
+              "external": true,
+              "source": {
+                "id": "external-17b76ed6d71f481792adfde9f98c04ca",
+                "root": "",
+                "relative": "",
+                "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-0.wav",
+                "name": "source-0.wav",
+                "status": "",
+                "revision": 1,
+                "size": 2304104,
+                "modified": 1795062481295473807,
+                "inode": 51930031,
+                "rate": 48000.0,
+                "samples": 384000,
+                "channels": 2
+              },
+              "first": 0,
+              "last": 384000,
+              "channelPair": 0,
+              "placement": 0,
+              "sync": 0,
+              "fadeIn": 0,
+              "fadeOut": 0,
+              "gainDb": -18.0,
+              "pan": 0.0,
+              "rate": 1.0,
+              "reverse": false,
+              "mute": false,
+              "solo": false,
+              "locked": false,
+              "locks": 0,
+              "colour": 0,
+              "effects": [
+                {
+                  "id": "f68570d9cc7643f89122aa58bcfea19a",
+                  "type": "delay",
+                  "bypass": false,
+                  "locked": false,
+                  "parameterLocks": 0,
+                  "parameters": [
+                    150.0,
+                    0.3,
+                    0.2,
+                    0.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "a66a6067fad74878a2ce95825438e182",
+              "name": "Stepped texture",
+              "external": true,
+              "source": {
+                "id": "external-890f8e46c5654afd8ec9a7052050c30b",
+                "root": "",
+                "relative": "",
+                "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-1.wav",
+                "name": "source-1.wav",
+                "status": "",
+                "revision": 1,
+                "size": 8640104,
+                "modified": 1795062481319583729,
+                "inode": 51930033,
+                "rate": 48000.0,
+                "samples": 1440000,
+                "channels": 2
+              },
+              "first": 0,
+              "last": 1440000,
+              "channelPair": 0,
+              "placement": 0,
+              "sync": 0,
+              "fadeIn": 0,
+              "fadeOut": 0,
+              "gainDb": -18.0,
+              "pan": 0.0,
+              "rate": 1.0,
+              "reverse": false,
+              "mute": false,
+              "solo": false,
+              "locked": false,
+              "locks": 0,
+              "colour": 0,
+              "effects": [
+                {
+                  "id": "1e33495c8458449093105c7493aa5967",
+                  "type": "filter",
+                  "bypass": false,
+                  "locked": false,
+                  "parameterLocks": 0,
+                  "parameters": [
+                    20.0,
+                    20000.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "0dab2d8888d547058e3ca2b98eb5f572",
+              "name": "Quiet tail",
+              "external": true,
+              "source": {
+                "id": "external-556d68d738f440e789169d76103e3d2f",
+                "root": "",
+                "relative": "",
+                "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-2.wav",
+                "name": "source-2.wav",
+                "status": "",
+                "revision": 1,
+                "size": 4320104,
+                "modified": 1795062481328241106,
+                "inode": 51930034,
+                "rate": 48000.0,
+                "samples": 720000,
+                "channels": 2
+              },
+              "first": 0,
+              "last": 720000,
+              "channelPair": 0,
+              "placement": 0,
+              "sync": 0,
+              "fadeIn": 0,
+              "fadeOut": 0,
+              "gainDb": -18.0,
+              "pan": 0.0,
+              "rate": 1.0,
+              "reverse": false,
+              "mute": false,
+              "solo": false,
+              "locked": false,
+              "locks": 0,
+              "colour": 0,
+              "effects": [
+                {
+                  "id": "2d783acb6013407d81bd771a5d981844",
+                  "type": "filter",
+                  "bypass": false,
+                  "locked": false,
+                  "parameterLocks": 0,
+                  "parameters": [
+                    20.0,
+                    20000.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            },
+            {
+              "id": "af5af04b20144da28cca0c918e5d5073",
+              "name": "Ambience",
+              "external": true,
+              "source": {
+                "id": "external-4697b1ae15524655b67ac563e6818208",
+                "root": "",
+                "relative": "",
+                "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-3.wav",
+                "name": "source-3.wav",
+                "status": "",
+                "revision": 1,
+                "size": 51840104,
+                "modified": 1795062481432090211,
+                "inode": 51930035,
+                "rate": 48000.0,
+                "samples": 8640000,
+                "channels": 2
+              },
+              "first": 0,
+              "last": 8640000,
+              "channelPair": 0,
+              "placement": 0,
+              "sync": 0,
+              "fadeIn": 0,
+              "fadeOut": 0,
+              "gainDb": -18.0,
+              "pan": 0.0,
+              "rate": 1.0,
+              "reverse": false,
+              "mute": false,
+              "solo": false,
+              "locked": false,
+              "locks": 0,
+              "colour": 0,
+              "effects": [
+                {
+                  "id": "c2c053059e254339b7f67eded27137b9",
+                  "type": "filter",
+                  "bypass": false,
+                  "locked": false,
+                  "parameterLocks": 0,
+                  "parameters": [
+                    20.0,
+                    20000.0,
+                    0.0,
+                    0.0
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        "rate": 48000.0,
+        "processing": "stock-takes-v1",
+        "origin": "frame-zero-fresh-history"
+      },
+      "events": [
+        {
+          "frame": 35840,
+          "sequence": 1,
+          "generation": 1,
+          "controls": {
+            "x": 0.815850794315338,
+            "y": 0.762237787246704,
+            "blend": true,
+            "macros": [
+              0.5,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        {
+          "frame": 85504,
+          "sequence": 2,
+          "generation": 1,
+          "controls": {
+            "x": 0.815850794315338,
+            "y": 0.762237787246704,
+            "blend": true,
+            "macros": [
+              0.2,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        {
+          "frame": 114688,
+          "sequence": 3,
+          "generation": 1,
+          "controls": {
+            "x": 0.815850794315338,
+            "y": 0.762237787246704,
+            "blend": true,
+            "macros": [
+              0.2,
+              0.75,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        {
+          "frame": 144896,
+          "sequence": 4,
+          "generation": 1,
+          "controls": {
+            "x": 0.815850794315338,
+            "y": 0.762237787246704,
+            "blend": true,
+            "macros": [
+              0.2,
+              0.75,
+              0.3,
+              0.5
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        {
+          "frame": 173568,
+          "sequence": 5,
+          "generation": 1,
+          "controls": {
+            "x": 0.815850794315338,
+            "y": 0.762237787246704,
+            "blend": true,
+            "macros": [
+              0.2,
+              0.75,
+              0.3,
+              0.8
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        },
+        {
+          "frame": 194048,
+          "sequence": 6,
+          "generation": 1,
+          "controls": {
+            "x": 0.790850794315338,
+            "y": 0.757237787246704,
+            "blend": true,
+            "macros": [
+              0.2,
+              0.75,
+              0.3,
+              0.8
+            ],
+            "enabled": [
+              true,
+              true,
+              true,
+              true
+            ]
+          }
+        }
+      ],
+      "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+      "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+      "bodyEnd": 244736,
+      "outputFrames": 244736,
+      "captureRate": 48000.0,
+      "complete": true,
+      "kept": true,
+      "reason": "",
+      "checkpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-catalog/designer-takes/db051f772f1c4253b9bd39c524723bd4.soundplus",
+      "sources": [
+        {
+          "id": "external-17b76ed6d71f481792adfde9f98c04ca",
+          "sha256": "1236b9aee0b72f9c37644950dc24980bbd908ae5cd957e71a012958db907d796",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-890f8e46c5654afd8ec9a7052050c30b",
+          "sha256": "1d578c7cfdf830cb85341773c436fdf51fb868ac98f380b49b7095acaa479bfd",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-556d68d738f440e789169d76103e3d2f",
+          "sha256": "575b044f9a96cd3c286fa3c8d18b81c3ab5f13eaf2d05fa306d32a608fb7519d",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-4697b1ae15524655b67ac563e6818208",
+          "sha256": "695daf1226a1bfd19948ab84ce582903a23b0d733d7990a3372dcebe2cf7e64d",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        }
+      ]
+    },
+    "receipt": {
+      "path": "/Users/harvest/Music/SoundPlus/Performance v1.3 QA/Native XY and four macros-take-r4-788c159f.wav",
+      "sha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696",
+      "variation": "",
+      "kind": "take-render",
+      "created": "2026-11-18T23:29:53.478-05:00",
+      "samples": 263936,
+      "revision": 4,
+      "peak": 0.069173529744148,
+      "clipped": 0,
+      "settings": {
+        "rate": 48000.0,
+        "tailSeconds": 0.4,
+        "channels": 2,
+        "bits": 32,
+        "first": 0,
+        "last": -1,
+        "normalize": false,
+        "dither": false
+      },
+      "takeId": "db051f772f1c4253b9bd39c524723bd4",
+      "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+      "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+      "processing": "stock-takes-v1",
+      "sources": [
+        {
+          "id": "external-17b76ed6d71f481792adfde9f98c04ca",
+          "sha256": "1236b9aee0b72f9c37644950dc24980bbd908ae5cd957e71a012958db907d796",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-890f8e46c5654afd8ec9a7052050c30b",
+          "sha256": "1d578c7cfdf830cb85341773c436fdf51fb868ac98f380b49b7095acaa479bfd",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-556d68d738f440e789169d76103e3d2f",
+          "sha256": "575b044f9a96cd3c286fa3c8d18b81c3ab5f13eaf2d05fa306d32a608fb7519d",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        },
+        {
+          "id": "external-4697b1ae15524655b67ac563e6818208",
+          "sha256": "695daf1226a1bfd19948ab84ce582903a23b0d733d7990a3372dcebe2cf7e64d",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        }
+      ],
+      "projectRate": 48000.0,
+      "captureRate": 48000.0,
+      "capturedFrames": 244736,
+      "bodyEnd": 244736,
+      "tailPolicy": "Exact consumed output duration; source end rounds up for interpolation; effect tails once from full history"
+    },
+    "completed": [
+      "Record/Arming/Recording",
+      "Native XY pointer drag and keyboard Left/Shift-Up adjustment",
+      "Four native macro value edits",
+      "Manual Stop/Ready at244736 consumed frames",
+      "Keep/name Native XY and four macros",
+      "Native audition action",
+      "Save/quit/reopen named context and output",
+      "RenderTake finalized263936frame48kstereo32bitfloat WAV",
+      "Print-back adds ordinary fifth layer;Undo restores four",
+      "Normal and configured minimum1040x680 JUCE bounds /1040x712 captured native frame UI inspected",
+      "Final build Open from completed take context opens the native chooser;Cancel preserves take"
+    ],
+    "actualShortcutAttempt": "Space after AX Play did not prove focus/stop; not claimed as a native shortcut pass",
+    "minimumWindowSetting": "1 79 1040 680",
+    "additionalDisplays": "Not tested",
+    "movingReplayControls": "Controlled actual-session status proves accepted event display without live edits; native screenshot not a time-series capture",
+    "minimumConfiguredJuceBounds": [
+      1040,
+      680
+    ],
+    "minimumScreenshotPixels": [
+      1040,
+      712
+    ]
+  },
+  "sourceAndOutputAudit": {
+    "recordedAt": "2026-11-18T23:44:19.178254-05:00",
+    "corpus": {
+      "files": 10000,
+      "uniquePaths": 10000,
+      "bytes": 1253073116,
+      "distinctHashes": 133,
+      "failures": [],
+      "allHashesSizesHeadersMatch": true,
+      "manifest": "performance-v12-corpus-manifest.json.gz"
+    },
+    "oldDurableOutputs": [
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.1 QA/Eight layers - mixed rates and stock inserts-variation-r1920-1fb50c69.wav",
+        "expectedSha256": "cfe46cc9f62f475c5275a576364ec4a63840a3191c0dbdf8ee5dcb642575a4bc",
+        "actualSha256": "cfe46cc9f62f475c5275a576364ec4a63840a3191c0dbdf8ee5dcb642575a4bc",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 2242286,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.1 QA/Eight layers - mixed rates and stock inserts-variation-r1921-0fc39b3c.wav",
+        "expectedSha256": "bdf4b467f54d814849c2b74cff97b82782d560f4f8f3d133d0585f6fc632cd74",
+        "actualSha256": "bdf4b467f54d814849c2b74cff97b82782d560f4f8f3d133d0585f6fc632cd74",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 1968000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1929-307e4ef0.wav",
+        "expectedSha256": "aa21267d61d418f3eaa420157fa7212c028c43e9334ff38aace24d0ee93a0afb",
+        "actualSha256": "aa21267d61d418f3eaa420157fa7212c028c43e9334ff38aace24d0ee93a0afb",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 2242286,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance Mixer QA/Eight layers - mixed rates and stock inserts-variation-r1930-1423357c.wav",
+        "expectedSha256": "5cb6a05d984d00a10ee9bf19a0ad66260baa7f74bc9815d9fa55339bb14896f6",
+        "actualSha256": "5cb6a05d984d00a10ee9bf19a0ad66260baa7f74bc9815d9fa55339bb14896f6",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 1968000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Resolve Delivery QA 20261118/e8574ef3074441ceb8b755346057ea89/Sources/QA-original-48k-stereo.wav",
+        "expectedSha256": "6ef1db20dc41cfbe4b30c3bcbdbb1c60f0c04dd4709ee91d416b904bc052e69b",
+        "actualSha256": "6ef1db20dc41cfbe4b30c3bcbdbb1c60f0c04dd4709ee91d416b904bc052e69b",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 96000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Resolve Delivery QA 20261118/e8574ef3074441ceb8b755346057ea89/Renders/SoundPlus Resolve Delivery QA-r11-96966ae9.wav",
+        "expectedSha256": "888d2c41d602276d4fb5e2b24944b71dcae15c699e890037438bbd2fce1dc727",
+        "actualSha256": "888d2c41d602276d4fb5e2b24944b71dcae15c699e890037438bbd2fce1dc727",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 144000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Resolve Delivery QA 20261118/e8574ef3074441ceb8b755346057ea89/Renders/SoundPlus Resolve Delivery QA-r12-7ac05a3a.wav",
+        "expectedSha256": "8aa31a4a264f6b6510e69c0983d150cc5f6c816e186df2f58351d65bc7114c6f",
+        "actualSha256": "8aa31a4a264f6b6510e69c0983d150cc5f6c816e186df2f58351d65bc7114c6f",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 120000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1937-01be8c2e.wav",
+        "expectedSha256": "cfe46cc9f62f475c5275a576364ec4a63840a3191c0dbdf8ee5dcb642575a4bc",
+        "actualSha256": "cfe46cc9f62f475c5275a576364ec4a63840a3191c0dbdf8ee5dcb642575a4bc",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 2242286,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.2 QA/Eight layers - mixed rates and stock inserts-variation-r1940-6e666281.wav",
+        "expectedSha256": "bdf4b467f54d814849c2b74cff97b82782d560f4f8f3d133d0585f6fc632cd74",
+        "actualSha256": "bdf4b467f54d814849c2b74cff97b82782d560f4f8f3d133d0585f6fc632cd74",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 1968000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav",
+        "expectedSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "actualSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 271553,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav",
+        "expectedSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "actualSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 271553,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav",
+        "expectedSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "actualSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 271553,
+        "bits": 24,
+        "encoding": 1
+      }
+    ],
+    "newOutputs": [
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Performance v1.3 QA/Native XY and four macros-take-r4-788c159f.wav",
+        "expectedSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696",
+        "actualSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 263936,
+        "bits": 32,
+        "encoding": 3
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Renders/Sustained Performance QA-r5-7badd05e.wav",
+        "expectedSha256": "8aac2f02b3d5899cef97a0bbb14b5784d8b864df6bf1cca604c02244ec5efe22",
+        "actualSha256": "8aac2f02b3d5899cef97a0bbb14b5784d8b864df6bf1cca604c02244ec5efe22",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 5808000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-7aac8604.wav",
+        "expectedSha256": "4057ce9bdf1e9d3bd8338a7bfa933d0cf13f9b5c805c3be4d2fcba116ba7dbe4",
+        "actualSha256": "4057ce9bdf1e9d3bd8338a7bfa933d0cf13f9b5c805c3be4d2fcba116ba7dbe4",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 5808000,
+        "bits": 24,
+        "encoding": 1
+      },
+      {
+        "path": "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-ee4c299f.wav",
+        "expectedSha256": "01558723db9d9232554d16fa426b7f3a9639ecae51fa9baf9fc306431d423210",
+        "actualSha256": "01558723db9d9232554d16fa426b7f3a9639ecae51fa9baf9fc306431d423210",
+        "unchanged": true,
+        "rate": 48000,
+        "channels": 2,
+        "frames": 5808000,
+        "bits": 24,
+        "encoding": 1
+      }
+    ],
+    "sourceFingerprints": [
+      {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-0.wav",
+        "sha256": "1236b9aee0b72f9c37644950dc24980bbd908ae5cd957e71a012958db907d796",
+        "expected": "1236b9aee0b72f9c37644950dc24980bbd908ae5cd957e71a012958db907d796",
+        "rate": 48000,
+        "channels": 2,
+        "frames": 384000,
+        "bits": 24,
+        "encoding": 1,
+        "matches": true
+      },
+      {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-1.wav",
+        "sha256": "1d578c7cfdf830cb85341773c436fdf51fb868ac98f380b49b7095acaa479bfd",
+        "expected": "1d578c7cfdf830cb85341773c436fdf51fb868ac98f380b49b7095acaa479bfd",
+        "rate": 48000,
+        "channels": 2,
+        "frames": 1440000,
+        "bits": 24,
+        "encoding": 1,
+        "matches": true
+      },
+      {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-2.wav",
+        "sha256": "575b044f9a96cd3c286fa3c8d18b81c3ab5f13eaf2d05fa306d32a608fb7519d",
+        "expected": "575b044f9a96cd3c286fa3c8d18b81c3ab5f13eaf2d05fa306d32a608fb7519d",
+        "rate": 48000,
+        "channels": 2,
+        "frames": 720000,
+        "bits": 24,
+        "encoding": 1,
+        "matches": true
+      },
+      {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v13/native-fixture/source-3.wav",
+        "sha256": "695daf1226a1bfd19948ab84ce582903a23b0d733d7990a3372dcebe2cf7e64d",
+        "expected": "695daf1226a1bfd19948ab84ce582903a23b0d733d7990a3372dcebe2cf7e64d",
+        "rate": 48000,
+        "channels": 2,
+        "frames": 8640000,
+        "bits": 24,
+        "encoding": 1,
+        "matches": true
+      },
+      {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-v12/fixture-qualified/design/forty-minute-source.wav",
+        "sha256": "0bec4b8a707a7d9e5bb47c7ad8b1a0c9fff2b509e238c4c7ce62b5d100801394",
+        "expected": "0bec4b8a707a7d9e5bb47c7ad8b1a0c9fff2b509e238c4c7ce62b5d100801394",
+        "rate": 48000,
+        "channels": 1,
+        "frames": 115200000,
+        "bits": 16,
+        "encoding": 1,
+        "matches": true
+      }
+    ],
+    "workingProtection": {
+      "path": "build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+      "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+      "revision": 9299,
+      "sha256": "9237774df54065d2a2f1dd497a5ea60e47e9413bd19f16a7c027cc7bdf41334f",
+      "outputs": [
+        {
+          "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav",
+          "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+          "receipt": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+        },
+        {
+          "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav",
+          "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+          "receipt": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+        },
+        {
+          "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav",
+          "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+          "receipt": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+        }
+      ]
+    },
+    "workingCurrent": {
+      "path": "build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+      "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+      "revision": 9299,
+      "sha256": "9237774df54065d2a2f1dd497a5ea60e47e9413bd19f16a7c027cc7bdf41334f",
+      "unchanged": true
+    },
+    "latestCandidates": [
+      {
+        "path": "build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+        "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+        "revision": 9299,
+        "name": "Rain glass design",
+        "sha256": "9237774df54065d2a2f1dd497a5ea60e47e9413bd19f16a7c027cc7bdf41334f"
+      },
+      {
+        "path": "build/gain-hover-native/designer-autosave/recovery.soundplus",
+        "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+        "revision": 2040,
+        "name": "Rain glass design",
+        "sha256": "80d109a1f828b910d6249926637561f3f6ac1c25f5221b76e4cfd815fb56833c"
+      }
+    ],
+    "olderBackupRestored": false
+  },
+  "workingRestoration": {
+    "status": "PASS",
+    "reopenedInNativeApp": true,
+    "latestRevisionBeforeReopen": 9299,
+    "nativeRevision": 9299,
+    "sha256AfterReopen": "9237774df54065d2a2f1dd497a5ea60e47e9413bd19f16a7c027cc7bdf41334f",
+    "protectedMainUnchanged": true,
+    "olderBackupRestored": false,
+    "activeVariation": "Kept: Rain glass - kept B",
+    "blendLaw": "Legacy",
+    "blendEnabled": false,
+    "x": 0.320802003145218,
+    "y": 0.699248135089874,
+    "macrosEnabled": [
+      false,
+      false,
+      false,
+      false
+    ],
+    "macroValues": [
+      0.5,
+      0.5,
+      0.5,
+      0.5
+    ],
+    "monitor": 0.7,
+    "unsavedChangesPreserved": true,
+    "latestActualReopened": true
+  },
+  "humanEvidence": {
+    "status": "UNVERIFIED",
+    "request": "Optional native WAV listening request sent; no response recorded",
+    "physicalHeldEscape": "UNVERIFIED"
+  },
+  "resolve": {
+    "application": "DaVinci Resolve Studio",
+    "version": "21.1.2",
+    "reachable": true,
+    "takeDelivery": "BLOCKED",
+    "originalFullSelectionDelivery": "BLOCKED carried forward",
+    "reason": "App-scoped native pointer automation cannot establish a physical cross-application drop. No receiver import/placement/save/SoundPlus-exit/receiving-project-reopen was established.",
+    "receiverRejectionInferred": false,
+    "copyOrReference": "Not established",
+    "manual": "docs/PERFORMANCE_MIXER_V1_3.md"
+  },
+  "boundaries": {
+    "capture": "Actual source production after coalescing; integer project frames; Stop uses consumed output frames and interpolation dependency",
+    "comparison": "Original pre-monitor body vs replay, then full finalized offline WAV vs replay; monitor excluded",
+    "rateConfigurations": "Controlled producer44100/44100,48000/48000,96000/96000,48000/44100,44100/48000; native device48000/512 only",
+    "query": "Dispatch to native paint acknowledgement; semantic completion required for semantic cases",
+    "selectedPreview": "Selection to UI data adoption, not physical paint",
+    "viewport": "Whole actual visible rows painted with Ready waveform geometry; terminal unavailable states separate",
+    "memory": "Separate process peak RSS; waveform retained payload is not full process memory",
+    "cache": "Cold derivative directories; uncontrolled OS cache; copied synthetic templates disclosed",
+    "audioContinuity": "Repeated nonzero status observations and stable generation/underrun/health counters; no inferred listening or DAC latency",
+    "finalStopStatus": "Expected EOF at120-second cap clears active core/source clock. take.outputFrames and captureRate retain authoritative120-second duration"
+  },
+  "failedOrEarlierExperiments": [
+    {
+      "path": "build/performance-v13/recording-soak-512",
+      "status": "PASS earlier build,4527events; superseded by final artifact"
+    },
+    {
+      "path": "build/performance-v13/recording-final-512",
+      "status": "PASS before Arming reservation correction,4532events; superseded by final artifact"
+    },
+    "Earlier conversion interpolation-boundary mismatch corrected; final PCM cases pass",
+    "Floating tail ceil extra-frame corrected using integer project tail",
+    "Preparation failure previously could appear Recording; fixed",
+    "New controlled test initially inherited an unrelated draft; fixed fixture setup",
+    "First native8s fixture reached EOF before manual performance; repeated with180s ambience",
+    "Historical intermittent helper restart cause remains unresolved"
+  ],
+  "commands": {
+    "build": ".tools/cmake/data/bin/cmake --build build --parallel 6",
+    "tests": ".tools/cmake/data/bin/ctest --test-dir build --output-on-failure",
+    "fixture": "build/SoundPlusTests_artefacts/Release/SoundPlusTests --prepare-take-ui \"$PWD/build/my-take-fixture\"",
+    "soak": "python3 scripts/benchmark_reliability.py run --fixture build/performance-v12/fixture-qualified --output build/performance-v13/recording-qualified-512 --seconds 120 --buffer-frames 512 --record-take",
+    "audit": "python3 build/performance-v13/audit.py",
+    "launchWorking": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus --data-dir \"$PWD/build/gain-hover-native\""
+  },
+  "screenshots": [
+    "performance-v13-perform-normal.jpg",
+    "performance-v13-perform-minimum.jpg",
+    "performance-v13-print-back.jpg"
+  ],
+  "artifacts": [
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "sha256": "9c6209c2780250f3bd701b7cc36b53b287a4f44794fea0de50f1c9f89daf1936"
+    },
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio",
+      "sha256": "899807bf5ddcdd1052442a9a450edd32591a94a55f7888cb45237ae7f93e5d93"
+    },
+    {
+      "path": "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI",
+      "sha256": "abdf1df295b24ee4b6a0f38f2be5dc060ff079fb2c3f84235e38a9e4a9f40d4f"
+    },
+    {
+      "path": "build/SoundPlusTests_artefacts/Release/SoundPlusTests",
+      "sha256": "f5a00d96b948a1f6ea04d2f9ccec40ea2e026e4a5c759fb9f4eb14bb56e967a8"
+    },
+    {
+      "path": "docs/verification/performance-v13-recording-native.json.gz",
+      "sha256": "5fb342c3eefdc09ae80f7b42501eddf98698f14790018de1da58d6f32fa5fccb"
+    },
+    {
+      "path": "docs/verification/performance-v13-recording-summary.json.gz",
+      "sha256": "76aac48f53989fbff78b079208c4e8d9eeb3c6c987762c04a89e75ada3b1c0c6"
+    },
+    {
+      "path": "docs/verification/performance-v13-recording-plan.json.gz",
+      "sha256": "cfd8f11d0ef8e16e43f28120f9bad31900f9dd43cac577d8f6efb26439124d5f"
+    },
+    {
+      "path": "docs/verification/performance-v13-sustained-qa.soundplus.json.gz",
+      "sha256": "fb97fc54c11cb79e07e5dd3a5625bbf0a87eb6f21b0e335070642b5151ee6fa6"
+    },
+    {
+      "path": "docs/verification/performance-v13-native-qa.soundplus.json.gz",
+      "sha256": "36a171da1988aef668f779f2ca212153cb358c649ded21e9e1223fdece19157c"
+    },
+    {
+      "path": "docs/verification/performance-v13-source-output-audit.json.gz",
+      "sha256": "7c2c02e8bbd73d0bf31c5f629dcbe0ddb01e97e8b134a9480c7381f8a13607d5"
+    },
+    {
+      "path": "docs/verification/performance-v13-ctest.log",
+      "sha256": "d4600befa740c62a23c19a6f9301bd6c778b2782b560ce187d83a594228fefcc"
+    },
+    {
+      "path": "docs/verification/performance-v13-perform-normal.jpg",
+      "sha256": "d88384390ee106c078a4318035d7b32499c60eccf1e0e573b7f06e06be63d17e"
+    },
+    {
+      "path": "docs/verification/performance-v13-perform-minimum.jpg",
+      "sha256": "3f42916289b8a994b078e4168ce4ab9fcaa5ce2e33d1a225e985987bd7a7ab9a"
+    },
+    {
+      "path": "docs/verification/performance-v13-print-back.jpg",
+      "sha256": "643723bc20db15ebc3e2f83d3db101b8c0f71b12478360fdb95626af2731cadc"
+    }
+  ]
+}

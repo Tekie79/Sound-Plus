@@ -10,6 +10,7 @@ AudioPlaybackService::AudioPlaybackService()
 {
     preparer = std::thread([this] { prepare(); });
     producer = std::thread([this] { produce(); });
+    checkpointer = std::thread([this] { checkpoints(); });
 }
 AudioPlaybackService::~AudioPlaybackService()
 {
@@ -20,15 +21,27 @@ AudioPlaybackService::~AudioPlaybackService()
         preparer.join();
     if (producer.joinable())
         producer.join();
+    if (checkpointer.joinable())
+        checkpointer.join();
 }
 void AudioPlaybackService::request(juce::var command, double rate)
 {
+    if (captureBusy())
+        return;
+    bool recording = command["mode"].toString() == "record";
+    captureRequestGeneration = recording ? (uint64_t)(int64_t)command["playGeneration"] : 0;
+    captureRequestActive = recording;
     auto serial = ++epoch;
     {
         std::lock_guard lock(mutex);
         pending = Request{std::move(command), rate, serial};
     }
     wake.notify_one();
+}
+bool AudioPlaybackService::captureBusy()
+{
+    std::lock_guard lock(captureMutex);
+    return captureRequestActive || (retainedCapture && retainedCapture->phase <= TakeCapture::finalizing);
 }
 void AudioPlaybackService::stop(uint64_t generation)
 {
@@ -78,6 +91,30 @@ void AudioPlaybackService::prepare()
             if (request.command["command"].toString() == "play_design")
             {
                 auto document = loadDesign(juce::File(request.command["path"].toString()));
+                auto requestedStructure = designStructure(document);
+                if (result.mode == "record")
+                {
+                    if (document.takes.empty())
+                        throw std::runtime_error("Missing frozen take draft");
+                    auto t = document.takes.back();
+                    t.generation = result.generation;
+                    t.captureRate = request.rate;
+                    hashTake(t);
+                    result.capture = std::make_shared<TakeCapture>(t);
+                    {
+                        std::lock_guard lock(captureMutex);
+                        retainedCapture = result.capture;
+                    }
+                    document.original = t.recipe;
+                    document.activeVariation.clear();
+                    document.activeTake.clear();
+                    document.takes.clear();
+                    document.sampleRate = t.sampleRate;
+                    document.renderSettings.tailSeconds = 0;
+                    document.takeProcessing = true;
+                    document.original.duration = std::min<int64_t>(mixDuration(t.recipe, t.sampleRate),
+                                                                   (int64_t)(t.sampleRate * maxTakeSeconds));
+                }
                 if (cancelled())
                     throw QueryCancelled();
                 auto frame = (int64_t)request.command["positionSample"];
@@ -96,8 +133,10 @@ void AudioPlaybackService::prepare()
                 result.stream = std::make_unique<PcmStream>(document, request.rate, frame,
                                                             juce::File(request.command["capture"].toString()),
                                                             cancelled, warmup, end, grain);
+                if (result.capture)
+                    result.stream->startTake(result.capture);
                 result.revision = document.revision;
-                result.structure = designStructure(document);
+                result.structure = result.capture ? requestedStructure : designStructure(document);
             }
             else
             {
@@ -124,10 +163,14 @@ void AudioPlaybackService::prepare()
         }
         catch (const QueryCancelled &)
         {
+            if (result.capture && result.capture->phase != TakeCapture::cancelled)
+                result.capture->finish(0, false);
             continue;
         }
         catch (const std::exception &error)
         {
+            if (result.capture)
+                result.capture->finish(0, false);
             result.stream.reset();
             result.error = error.what();
         }
@@ -151,8 +194,44 @@ void AudioPlaybackService::produce()
     while (!quitting)
     {
         auto stop = stopEpoch.load();
+        auto finish = captureFinish.exchange(0);
+        if (finish && finish != 3 && captureFinishGeneration.load() != captureRequestGeneration.load())
+            finish = 0;
+        if (finish && finish != 3 && core.capture() &&
+            core.capture()->frozen.generation != captureFinishGeneration.load())
+            finish = 0;
+        if (finish && core.capture())
+        {
+            if (finish == 3)
+                core.capture()->failureCode = 1;
+            core.finishTake(finish == 1);
+            if (finish == 2)
+                core.capture()->phase = TakeCapture::cancelled;
+            core.stop();
+            if (finish == 2 || finish == 3)
+                captureRequestActive = false;
+        }
+        else if (finish)
+        {
+            ++epoch;
+            {
+                std::lock_guard lock(mutex);
+                pending.reset();
+                ready.reset();
+            }
+            std::lock_guard lock(captureMutex);
+            if (retainedCapture)
+            {
+                retainedCapture->finish(0, false);
+                if (finish == 2)
+                    retainedCapture->phase = TakeCapture::cancelled;
+            }
+            captureRequestActive = false;
+        }
         if (stop > lastStop)
         {
+            if (core.capture() && core.capture()->phase <= TakeCapture::recording)
+                core.finishTake(false);
             core.stop();
             lastStop = stop;
             activeEpoch = stop;
@@ -206,7 +285,12 @@ void AudioPlaybackService::produce()
                                 "Graph preparation missed its clock window; retry the edit");
                         next->stream->discardTo(core.sourceSample());
                     }
+                    bool prepared = next->stream && next->error.isEmpty();
+                    if (!prepared)
+                        captureRequestActive = false;
                     core.adopt(std::move(next->stream));
+                    if (next->capture && prepared)
+                        next->capture->phase = TakeCapture::recording;
                     activeEpoch = next->epoch;
                     generation = next->generation;
                     revision = next->revision;
@@ -224,15 +308,32 @@ void AudioPlaybackService::produce()
                 (uint64_t)(int64_t)latestControls["playGeneration"] == generation && core.designPlaying() &&
                 (uint64_t)(int64_t)latestControls["sequence"] > lastEdit && activeEpoch == epoch.load())
             {
-                core.updateParameters(latestControls["parameters"],
-                                      (uint64_t)(int64_t)latestControls["sequence"],
-                                      (double)latestControls["eventMs"]);
+                if (core.capture())
+                    core.updatePerformance(controlsFromJson(latestControls["performControls"]));
+                else
+                    core.updateParameters(latestControls["parameters"],
+                                          (uint64_t)(int64_t)latestControls["sequence"],
+                                          (double)latestControls["eventMs"]);
                 lastEdit = (uint64_t)(int64_t)latestControls["sequence"];
             }
             core.service(1536);
+            if (auto capture = core.capture();
+                capture && (capture->phase == TakeCapture::recording || capture->checkpointFailed))
+            {
+                capture->acceptedEnd = core.sourceSample();
+                capture->acceptedOutputFrames = core.consumedOutputFrames();
+                if (!core.playing() || capture->checkpointFailed)
+                {
+                    core.finishTake(!capture->checkpointFailed);
+                    core.stop();
+                }
+            }
         }
         catch (const std::exception &failure)
         {
+            captureRequestActive = false;
+            if (core.capture())
+                core.finishTake(false);
             core.stop();
             id.clear();
             error = failure.what();
@@ -250,6 +351,7 @@ void AudioPlaybackService::produce()
         object->setProperty("helperPid", (juce::int64)::getpid());
         object->setProperty("outputRate", core.outputRate());
         object->setProperty("sourceSample", (juce::int64)core.sourceSample());
+        object->setProperty("acceptedSourceEnd", (juce::int64)core.acceptedSourceEnd());
         object->setProperty("sourceRate", core.sourceRate());
         object->setProperty("auditionPair", core.channelPair());
         object->setProperty("startSample", (juce::int64)core.startSample());
@@ -272,12 +374,86 @@ void AudioPlaybackService::produce()
         object->setProperty("stalePreparationsDiscarded", (juce::int64)stale);
         object->setProperty("preparing", epoch.load() > activeEpoch);
         {
+            std::lock_guard lock(captureMutex);
+            if (retainedCapture)
+            {
+                auto c = retainedCapture;
+                if (c->phase >= TakeCapture::ready && c->frozen.generation == captureRequestGeneration.load())
+                    captureRequestActive = false;
+                object->setProperty("takeId", c->frozen.id);
+                object->setProperty("takePhase", (int)c->phase.load());
+                object->setProperty("takeEnd", (juce::int64)c->acceptedEnd.load());
+                object->setProperty("takeEvents", (int)c->count.load());
+                object->setProperty("takeCheckpoint", c->frozen.checkpoint);
+                object->setProperty("takeCheckpointReady", c->checkpointReady.load());
+                object->setProperty("takePeakBacklog", (int)c->peakBacklog.load());
+                object->setProperty("takeError", c->checkpointFailed ? "Checkpoint write failed"
+                                                 : c->overflow       ? "Event capacity exceeded"
+                                                 : c->failureCode == 1
+                                                     ? "Audio device changed during recording"
+                                                     : "");
+            }
+        }
+        {
             std::lock_guard lock(telemetryMutex);
             telemetry = std::move(state);
         }
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     }
+    if (core.capture() && core.capture()->phase <= TakeCapture::recording)
+        core.finishTake(false);
     core.stop();
     core.service(0);
+}
+void AudioPlaybackService::checkpoints()
+{
+    juce::String previous;
+    size_t count = 0;
+    int64_t end = -1;
+    int phase = -1;
+    for (;;)
+    {
+        std::shared_ptr<TakeCapture> c;
+        {
+            std::lock_guard lock(captureMutex);
+            c = retainedCapture;
+        }
+        if (c && c->phase != TakeCapture::cancelled &&
+            (previous != c->frozen.id || count != c->count || end != c->acceptedEnd || phase != c->phase))
+        {
+            try
+            {
+                auto n = c->count.load();
+                auto p = c->phase.load();
+                auto t = c->snapshot();
+                DesignDocument d;
+                d.id = t.session;
+                d.name = "Recoverable take checkpoint";
+                d.original = t.recipe;
+                d.sampleRate = t.sampleRate;
+                d.takes = {t};
+                saveDesignAtomic(juce::File(t.checkpoint), d);
+                previous = t.id;
+                count = n;
+                end = t.bodyEnd;
+                phase = p;
+                c->checkpointCount = t.events.size();
+                if (t.complete && c->phase == TakeCapture::finalizing)
+                {
+                    c->checkpointReady = true;
+                    c->phase = TakeCapture::ready;
+                    phase = TakeCapture::ready;
+                }
+            }
+            catch (...)
+            {
+                c->checkpointFailed = true;
+                c->phase = TakeCapture::incomplete;
+            }
+        }
+        if (quitting)
+            break;
+        std::this_thread::sleep_for(std::chrono::milliseconds(250));
+    }
 }
 } // namespace sp

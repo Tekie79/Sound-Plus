@@ -34,6 +34,8 @@ PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, 
 {
     designReader = std::make_unique<DesignReader>(
         d, outputRate, first, last, grain ? 0 : d.renderSettings.tailSeconds, cancelled, warmup);
+    if (auto *t = selectedTake(d))
+        sourceRate = t->sampleRate;
     previewGrain = grain;
     sourceEnd = designReader->endFrame();
     ratio = sourceRate / rate;
@@ -208,6 +210,19 @@ void AuditionCore::stop()
     active.store(nullptr);
     if (stream)
         retired.push_back(std::move(stream));
+}
+int64_t AuditionCore::finishTake(bool success)
+{
+    if (!stream)
+        return 0;
+    active.store(nullptr);
+    // Producer-side quiescence. Callback only publishes/clears its hazard pointer.
+    while (hazard.load() == stream.get())
+        std::this_thread::yield();
+    auto end = stream ? stream->acceptedFrame() : 0;
+    if (stream && stream->takeCapture)
+        stream->takeCapture->finish(end, success, stream->consumedOutputFrames());
+    return end;
 }
 void AuditionCore::openDesign(const DesignDocument &d, double rate, int64_t first,
                               const juce::File &captureFile)

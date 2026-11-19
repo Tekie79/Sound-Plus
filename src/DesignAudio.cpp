@@ -38,9 +38,12 @@ class StockProcessor final : public EffectProcessor
     double sampleRate;
     juce::SmoothedValue<float> gain, feedback, wet, delayFrames;
     juce::SmoothedValue<double> highFrequency, lowFrequency;
+    bool partitionInvariant = false;
+    int coefficientRemaining = 0;
 
   public:
-    StockProcessor(const StockEffect &e, double rate) : effect(e), sampleRate(rate)
+    StockProcessor(const StockEffect &e, double rate, bool invariant = false)
+        : effect(e), sampleRate(rate), partitionInvariant(invariant)
     {
         for (auto *value : {&gain, &feedback, &wet, &delayFrames})
             value->reset(rate, .01);
@@ -83,6 +86,8 @@ class StockProcessor final : public EffectProcessor
     }
     void update(const StockEffect &e) override
     {
+        if (effect.parameters[0] != e.parameters[0] || effect.parameters[1] != e.parameters[1])
+            coefficientRemaining = 0;
         effect = e;
         gain.setTargetValue(e.type == "gain" ? juce::Decibels::decibelsToGain((float)e.parameters[0]) : 1.f);
         feedback.setTargetValue((float)e.parameters[1]);
@@ -120,6 +125,30 @@ class StockProcessor final : public EffectProcessor
         }
         if (effect.type == "filter")
         {
+            if (partitionInvariant)
+            {
+                for (int n = 0; n < count; ++n)
+                {
+                    if (coefficientRemaining == 0)
+                    {
+                        coefficientRemaining = 32;
+                        auto hp = highFrequency.skip(32), lp = lowFrequency.skip(32);
+                        auto hc = juce::dsp::IIR::Coefficients<float>::makeHighPass(
+                            sampleRate, std::clamp(hp, 10., sampleRate * .45));
+                        auto lc = juce::dsp::IIR::Coefficients<float>::makeLowPass(
+                            sampleRate, std::clamp(lp, 20., sampleRate * .45));
+                        for (int c = 0; c < 2; ++c)
+                        {
+                            *high[c].coefficients = *hc;
+                            *low[c].coefficients = *lc;
+                        }
+                    }
+                    for (int c = 0; c < 2; ++c)
+                        b.setSample(c, n, low[c].processSample(high[c].processSample(b.getSample(c, n))));
+                    --coefficientRemaining;
+                }
+                return;
+            }
             // Producer-worker DSP only: bounded sub-block coefficient updates smooth
             // continuous cutoff motion while preserving filter history and graph identity.
             for (int offset = 0; offset < count; offset += 32)
@@ -168,11 +197,11 @@ class StockProcessor final : public EffectProcessor
     }
 };
 using Rack = std::vector<std::unique_ptr<EffectProcessor>>;
-Rack prepareRack(const std::vector<StockEffect> &effects, double rate)
+Rack prepareRack(const std::vector<StockEffect> &effects, double rate, bool invariant = false)
 {
     Rack rack;
     for (auto &e : effects)
-        rack.push_back(std::make_unique<StockProcessor>(e, rate));
+        rack.push_back(std::make_unique<StockProcessor>(e, rate, invariant));
     return rack;
 }
 void processRack(Rack &rack, juce::AudioBuffer<float> &buffer, int n)
@@ -306,10 +335,11 @@ class Voice
     }
 
   public:
-    Voice(const DesignLayer &l, double rate)
+    Voice(const DesignLayer &l, double rate, bool invariant = false)
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
-          rack(prepareRack(l.effects, rate)), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
-          previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
+          rack(prepareRack(l.effects, rate, invariant)), designRate(rate),
+          previousIn(l.fadeInShape, l.fadeInPoints), previousOut(l.fadeOutShape, l.fadeOutPoints),
+          currentIn(previousIn), currentOut(previousOut)
     {
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
@@ -333,7 +363,7 @@ class Voice
         gainTargets(true);
         buildCoefficients();
     }
-    void add(juce::AudioBuffer<float> &output, int offset, int frames, int64_t frame)
+    void add(juce::AudioBuffer<float> &output, int offset, int frames, int64_t frame, int64_t inputEnd = -1)
     {
         block.clear();
         for (int n = 0; n < frames; ++n)
@@ -342,7 +372,7 @@ class Voice
             auto left = leftGain.getNextValue(), right = rightGain.getNextValue();
             auto fadeIn = inFrames.getNextValue(), fadeOut = outFrames.getNextValue();
             auto inBlend = inShapeMix.getNextValue(), outBlend = outShapeMix.getNextValue();
-            if (local < 0 || local >= duration)
+            if (local < 0 || local >= duration || (inputEnd >= 0 && frame + n >= inputEnd))
                 continue;
             double position = layer.reverse ? layer.region.endSample - 1 - local * ratio
                                             : layer.region.startSample + local * ratio;
@@ -419,32 +449,62 @@ struct DesignGraph::Impl
     int64_t cursor = 0, lastVerified = -1;
     double master;
     DesignDocument document;
+    DesignDocument takeBase;
+    std::vector<TakeEvent> events;
+    size_t nextEvent = 0;
+    int64_t inputEnd = -1;
     juce::SmoothedValue<float> masterGain;
     std::vector<std::unique_ptr<Voice>> voices;
     Rack masterRack;
     juce::AudioBuffer<float> block{2, 512};
     explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled)
-        : sampleRate(d.sampleRate), master(d.activeMix().masterDb), document(d)
+        : sampleRate(d.sampleRate), master(d.activeMix().masterDb), document(resolvePerformance(d))
     {
         validateDesign(d);
-        masterGain.reset(d.sampleRate, .005);
+        if (auto *t = selectedTake(d))
+        {
+            takeBase = takeDocument(d);
+            document = resolvePerformance(takeBase);
+            sampleRate = t->sampleRate;
+            master = document.activeMix().masterDb;
+            events.assign(t->events.begin(), t->events.end());
+            inputEnd = t->bodyEnd;
+        }
+        master = document.activeMix().masterDb;
+        masterGain.reset(sampleRate, .005);
         masterGain.setCurrentAndTargetValue(juce::Decibels::decibelsToGain((float)master));
-        masterRack = prepareRack(d.activeMix().masterEffects, d.sampleRate);
-        bool solo = std::any_of(d.activeMix().layers.begin(), d.activeMix().layers.end(),
+        bool invariant = d.takeProcessing || selectedTake(d);
+        masterRack = prepareRack(document.activeMix().masterEffects, sampleRate, invariant);
+        bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
-        for (auto &l : d.activeMix().layers)
+        for (auto &l : document.activeMix().layers)
             if (!l.mute && (!solo || l.solo))
             {
                 if (cancelled())
                     throw QueryCancelled();
-                voices.push_back(std::make_unique<Voice>(l, d.sampleRate));
+                voices.push_back(std::make_unique<Voice>(l, sampleRate, invariant));
             }
     }
     void render(juce::AudioBuffer<float> &out, int offset, int count)
     {
         for (int done = 0; done < count;)
         {
+            while (nextEvent < events.size() && events[nextEvent].frame == cursor)
+            {
+                applyPerformControls(takeBase.activeMix().performance, events[nextEvent++].controls);
+                auto p = designParameters(takeBase);
+                applyDesignParameters(document, p);
+                for (auto &l : document.activeMix().layers)
+                    for (auto &v : voices)
+                        if (v->id() == l.id)
+                            v->update(l);
+                masterGain.setTargetValue(
+                    juce::Decibels::decibelsToGain((float)document.activeMix().masterDb));
+                updateRack(masterRack, document.activeMix().masterEffects);
+            }
             int n = std::min(512, count - done);
+            if (nextEvent < events.size())
+                n = (int)std::min<int64_t>(n, events[nextEvent].frame - cursor);
             block.clear();
             if (lastVerified < 0 || cursor - lastVerified >= sampleRate)
             {
@@ -453,7 +513,7 @@ struct DesignGraph::Impl
                 lastVerified = cursor;
             }
             for (auto &voice : voices)
-                voice->add(block, 0, n, cursor);
+                voice->add(block, 0, n, cursor, inputEnd);
             processRack(masterRack, block, n);
             for (int i = 0; i < n; ++i)
             {
@@ -474,7 +534,7 @@ struct DesignGraph::Impl
     }
 };
 DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled)
-    : impl(std::make_unique<Impl>(resolvePerformance(d), cancelled))
+    : impl(std::make_unique<Impl>(d, cancelled))
 {
 }
 void DesignGraph::updateParameters(const juce::var &parameters)
@@ -528,21 +588,29 @@ struct DesignReader::Impl : juce::AudioSource
     std::unique_ptr<juce::ResamplingAudioSource> resampler;
     int64_t count = 0, total = 0, end;
     double outputRate;
+    std::optional<PerformControls> pendingPerformance;
+    TakeCapture *capture = nullptr;
     Impl(const DesignDocument &d, double rate, int64_t first, int64_t last, double tail,
          const std::function<bool()> &cancelled, int64_t warmup)
-        : graph(d, cancelled), document(d), firstFrame(first), lastOverride(last), tailSeconds(tail),
-          end((last < 0 ? mixDuration(d.activeMix(), d.sampleRate) : last) +
-              (int64_t)std::llround(tail * d.sampleRate)),
+        : graph(d, cancelled), document(selectedTake(d) ? takeDocument(d) : d), firstFrame(first),
+          lastOverride(last), tailSeconds(tail),
+          end((last < 0 ? mixDuration(document.activeMix(), document.sampleRate) : last) +
+              (int64_t)std::llround(tail * document.sampleRate)),
           outputRate(rate)
     {
         if (first < 0 || end <= first || end > d.sampleRate * 3630 || rate < 8000 || rate > 192000)
             throw std::runtime_error("Invalid design playback/render range");
-        graph.seek(first, cancelled, warmup);
-        total = (int64_t)std::ceil((long double)(end - first) * rate / d.sampleRate);
-        if (rate != d.sampleRate)
+        graph.seek(first, cancelled, selectedTake(d) ? -1 : warmup);
+        total = (int64_t)std::ceil((long double)(end - first) * rate / document.sampleRate);
+        if (auto *t = selectedTake(d))
+            total =
+                (int64_t)std::ceil((long double)t->outputFrames * rate / t->captureRate +
+                                   (long double)std::llround(tail * t->sampleRate) * rate / t->sampleRate) -
+                (int64_t)std::ceil((long double)first * rate / t->sampleRate);
+        if (rate != document.sampleRate)
         {
             resampler = std::make_unique<juce::ResamplingAudioSource>(this, false, 2);
-            resampler->setResamplingRatio(d.sampleRate / rate);
+            resampler->setResamplingRatio(document.sampleRate / rate);
             resampler->prepareToPlay(4096, rate);
         }
     }
@@ -550,6 +618,15 @@ struct DesignReader::Impl : juce::AudioSource
     void releaseResources() override {}
     void getNextAudioBlock(const juce::AudioSourceChannelInfo &b) override
     {
+        if (pendingPerformance && capture && b.numSamples > 0)
+        {
+            auto controls = *pendingPerformance;
+            pendingPerformance.reset();
+            if (!capture->append(graph.position(), controls))
+                throw std::runtime_error("Take event capacity exceeded");
+            applyPerformControls(document.activeMix().performance, controls);
+            graph.updateParameters(designParameters(document));
+        }
         graph.render(*b.buffer, b.startSample, b.numSamples);
     }
 };
@@ -567,6 +644,13 @@ void DesignReader::updateParameters(const juce::var &parameters)
                 (int64_t)std::llround(impl->tailSeconds * impl->document.sampleRate);
     impl->total = std::max<int64_t>(0, (int64_t)std::ceil((long double)(impl->end - impl->firstFrame) *
                                                           impl->outputRate / impl->document.sampleRate));
+}
+void DesignReader::updatePerformance(const PerformControls &controls, TakeCapture &capture)
+{
+    // Latest full typed state wins until the next actual source production.
+    // No event is emitted merely because a command arrived while FIFO is full.
+    impl->pendingPerformance = controls;
+    impl->capture = &capture;
 }
 DesignReader::~DesignReader() = default;
 int DesignReader::read(juce::AudioBuffer<float> &buffer, int frames, const std::function<bool()> &cancelled)
@@ -594,6 +678,10 @@ int64_t DesignReader::consumed() const
 {
     return impl->count;
 }
+int64_t DesignReader::producedFrame() const
+{
+    return impl->graph.position();
+}
 int64_t DesignReader::endFrame() const
 {
     return impl->end;
@@ -611,7 +699,10 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     validateDesign(checked);
     if (!folder.createDirectory())
         throw std::runtime_error("Cannot create output folder");
-    auto name = juce::File::createLegalFileName(d.name) + (d.activeVariation.isEmpty() ? "" : "-variation") +
+    auto name = juce::File::createLegalFileName(selectedTake(d) ? selectedTake(d)->name : d.name) +
+                (selectedTake(d)               ? "-take"
+                 : d.activeVariation.isEmpty() ? ""
+                                               : "-variation") +
                 "-r" + juce::String(d.revision) + "-" + juce::Uuid().toString().substring(0, 8) + ".wav";
     auto target = folder.getNonexistentChildFile(name, {}, false);
     juce::TemporaryFile staging(target, juce::TemporaryFile::useHiddenFile);
@@ -651,6 +742,21 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     result.variation = d.activeVariation;
     result.settings = settings;
     result.created = juce::Time::getCurrentTime().toISO8601(true);
+    if (auto *t = selectedTake(d))
+    {
+        result.kind = "take-render";
+        result.takeId = t->id;
+        result.recipeHash = t->recipeHash;
+        result.eventHash = t->eventHash;
+        result.processing = t->processing;
+        result.sourceProvenance = takeToJson(*t)["sources"];
+        result.projectRate = t->sampleRate;
+        result.bodyEnd = t->bodyEnd;
+        result.captureRate = t->captureRate;
+        result.capturedFrames = t->outputFrames;
+        result.tailPolicy = "Exact consumed output duration; source end rounds up for interpolation; effect "
+                            "tails once from full history";
+    }
     std::mt19937 rng(170526);
     double lsb = std::ldexp(1.0, 1 - settings.bits);
     while (auto n = reader.read(block, 4096, cancelled))

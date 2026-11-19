@@ -428,6 +428,10 @@ DesignDocument resolvePerformance(const DesignDocument &d)
     result.activeMix() = resolvePerformance(d.activeMix());
     return result;
 }
+const double *performanceTargetValue(const DesignMix &mix, const PerformanceTarget &target)
+{
+    return performanceTargetValue(const_cast<DesignMix &>(mix), target);
+}
 void unlinkManuallyEditedTargets(const DesignMix &before, DesignMix &after)
 {
     auto copy = before;

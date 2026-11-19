@@ -77,6 +77,14 @@ class DesignerView final : public juce::Component,
         snapshotButton{"Save Snapshot"};
     bool performMode = false;
     void setPerformMode(bool);
+    juce::ComboBox takeContext;
+    ui::TextActionButton recordTake{"Record"}, renderTake{"Render Take"};
+    IconButton stopTake{"Stop take", ActionIcon::stop}, keepTake{"Keep / rename take", ActionIcon::rename},
+        takeOptions{"Take options", ActionIcon::chevron};
+    juce::Label takeStatus;
+    void nameTakeDialog();
+    void takePopup();
+    void refreshTakes();
     ui::FileDragButton dragOutput{"Drag WAV"}, dragOriginal{"Drag Original"};
     AudioClient &audio;
     ui::LookAndFeel look;

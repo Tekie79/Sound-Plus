@@ -1,3 +1,4 @@
+#include "TakeTests.h"
 #include "Catalog.h"
 #include "LibraryService.h"
 #include "ReliabilityTests.h"
@@ -185,6 +186,8 @@ int main(int argc, char **argv)
         }
         if (argc >= 4 && juce::String(argv[1]) == "--library-stability")
         { runLibraryStabilityTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-take-ui") {prepareTakeUiFixture(juce::File(argv[2]));return 0;}
+        if (argc >= 4 && juce::String(argv[1]) == "--takes") {runTakeTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
         if (argc >= 4 && juce::String(argv[1]) == "--audio-health")
         { runAudioHealthTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
         if (argc >= 3 && juce::String(argv[1]) == "--waveform-scheduling")

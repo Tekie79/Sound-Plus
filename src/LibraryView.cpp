@@ -1148,6 +1148,7 @@ void LibraryView::installModelMenu()
 }
 void LibraryView::playSelected(bool useMatch, int64_t seek)
 {
+    if(audio.captureBusy()){playbackError="Stop recording in Designer before auditioning a Library sound";return;}
     const auto *a = selected();
     if (!a && selectedAsset)
         a = &*selectedAsset;
@@ -1359,15 +1360,18 @@ void LibraryView::timerCallback()
         for (auto &root : snapshot.roots)
             if (root.id == selectedAsset->rootId)
                 canPlay &= root.online && selectedAsset->online;
-    play.setEnabled(canPlay || isPlaying || pending);
-    playMatch.setEnabled(canPlay && regionEnd > regionStart && selectedAsset->samples > 0);
-    playWhole.setEnabled(canPlay);
+    bool captureOwned=audio.captureBusy();
+    output.setEnabled(!captureOwned);restart.setEnabled(!captureOwned);
+    play.setEnabled(!captureOwned && (canPlay || isPlaying || pending));
+    playMatch.setEnabled(!captureOwned && canPlay && regionEnd > regionStart && selectedAsset->samples > 0);
+    playWhole.setEnabled(!captureOwned && canPlay);
     if (navigationToPlay >= 0)
         if (auto *a = rowAsset(navigationToPlay); a && selectedId == a->id)
         {
             navigationToPlay = -1;
             playSelected(matchMode);
         }
+    referencePlay.setEnabled(!captureOwned);addDesigner.setEnabled(!captureOwned && addDesigner.isEnabled());referenceDesigner.setEnabled(!captureOwned && referenceDesigner.isEnabled());
     auto referenceId = "reference-" + pinnedReference.source.id;
     referencePlay.setButtonText(state["id"].toString() == referenceId && (isPlaying || pending)
                                     ? "Stop reference"

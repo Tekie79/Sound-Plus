@@ -1,6 +1,6 @@
-# Next creative slice: recorded Perform takes
+# Recorded Perform takes — original design brief
 
-Prepared during the v1.2 reliability pass. This is a design brief, not an implemented recording feature. Keep the existing Designer/Library document, transport, resolver, processors and durable output pipeline.
+Prepared during the v1.2 reliability pass. Implemented in v1.3: see the [delivery report](PERFORMANCE_MIXER_V1_3.md) and [final clock/model/history contract](PERFORMANCE_TAKES_CONTRACT.md). The following preserves the original brief; it is not the acceptance evidence.
 
 ## User workflow
 

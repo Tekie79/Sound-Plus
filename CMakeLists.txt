@@ -20,7 +20,7 @@ juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAsset
 add_library(soundplus_core STATIC
   src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/PerformanceState.cpp src/DesignModel.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
+  src/PerformanceState.cpp src/DesignModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -42,7 +42,7 @@ target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp src/DesignerView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+target_sources(SoundPlus PRIVATE src/Main.cpp src/LibraryView.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>")
@@ -68,7 +68,9 @@ if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
-  target_sources(SoundPlusTests PRIVATE tests/IconTests.cpp tests/PerformanceStateTests.cpp tests/WaveformPreviewTests.cpp tests/ReliabilityTests.cpp tests/AudioHealthTests.cpp src/LibraryView.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/IconTests.cpp tests/PerformanceStateTests.cpp tests/WaveformPreviewTests.cpp tests/ReliabilityTests.cpp tests/AudioHealthTests.cpp tests/TakeTests.cpp src/LibraryView.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+  add_test(NAME recorded_takes COMMAND SoundPlusTests --takes "${CMAKE_BINARY_DIR}/take-test-output" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(recorded_takes PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
   add_test(NAME library_stability COMMAND SoundPlusTests --library-stability "${CMAKE_BINARY_DIR}/library-stability-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_stability PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME waveform_scheduling COMMAND SoundPlusTests --waveform-scheduling "${CMAKE_BINARY_DIR}/waveform-scheduling-output")
@@ -79,7 +81,7 @@ if(BUILD_TESTING)
   set_tests_properties(waveform_previews PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME performance_state COMMAND SoundPlusTests --performance-state "${CMAKE_BINARY_DIR}/performance-state-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(performance_state PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
-  target_sources(SoundPlusTests PRIVATE tests/ViewCommandTests.cpp src/DesignerView.cpp src/PerformView.cpp src/SourceCard.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/ViewCommandTests.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/PerformView.cpp src/SourceCard.cpp)
   add_test(NAME designer_view_commands COMMAND SoundPlusTests --view-commands
     "${CMAKE_BINARY_DIR}/view-command-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(designer_view_commands PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)

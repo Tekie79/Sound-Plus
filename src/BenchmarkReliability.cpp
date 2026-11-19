@@ -13,12 +13,12 @@ struct Benchmark::ReliabilityRun
     int stage = 0, step = 0, cycles = 0, selections = 0, fullViewports = 0, nonzeroChecks = 0,
         audioChecks = 0, indexOverlaps = 0, batches = 0;
     double activeStart = 0, cycleStart = 0, scrollAt = 0, selectionAt = 0, lastControl = 0, lastLog = 0,
-           lastBatch = 0;
+           lastBatch = 0, activeEnd = 0;
     bool semantic = false, selectedReady = false, cached = false, offlineMoved = false, reconnected = false,
          offlineObserved = false, reconnectObserved = false;
     juce::String expectedSelection;
     int64_t rangeFirst = 0, rangeLast = 0, lastFrame = 0;
-    juce::var initialAudio;
+    juce::var initialAudio, stopAudio;
     juce::Array<juce::var> queryTimes, selectedTimes, viewportTimes, progress;
 };
 namespace
@@ -43,7 +43,9 @@ juce::var Benchmark::reliabilityReport() const
         return {};
     auto &r = *reliability;
     auto *o = new juce::DynamicObject();
-    o->setProperty("activeMs", r.activeStart ? monotonicMs() - r.activeStart : 0);
+    o->setProperty("activeMs",
+                   r.activeStart ? (r.activeEnd ? r.activeEnd : monotonicMs()) - r.activeStart : 0);
+    o->setProperty("audioAtStop", r.stopAudio);
     o->setProperty("cycles", r.cycles);
     o->setProperty("selectedFiles", r.selections);
     o->setProperty("semanticPinnedRefreshes", r.semanticPinUpdates);
@@ -95,6 +97,46 @@ void Benchmark::reliabilityTick(double now)
         return;
     }
     auto state = view.audio.status();
+    if ((bool)plan["recordTake"] && r.stage >= 4)
+    {
+        auto &session = designer->session;
+        if (session.takeState == DesignSession::TakeState::incomplete)
+        {
+            save(false, "Sustained recording became Incomplete: " + session.message);
+            return;
+        }
+        auto path = output.getSiblingFile("Sustained QA Take.soundplus");
+        if (r.stage == 4 && session.takeState == DesignSession::TakeState::ready)
+        {
+            session.nameTake("Sustained recorded motion");
+            session.save(path);
+            r.stage = 5;
+            return;
+        }
+        if (r.stage == 5 && session.savedFile == path && !session.dirty)
+        {
+            session.render();
+            r.stage = 6;
+            return;
+        }
+        if (r.stage == 6 && !session.rendering)
+        {
+            if (!session.lastOutput.existsAsFile())
+            {
+                save(false, "Sustained take render failed");
+                return;
+            }
+            session.save(path);
+            r.stage = 7;
+            return;
+        }
+        if (r.stage == 7 && !session.dirty)
+        {
+            save(true);
+            return;
+        }
+        return;
+    }
     if (view.snapshot.error.isNotEmpty())
     {
         save(false, view.snapshot.error);
@@ -121,12 +163,18 @@ void Benchmark::reliabilityTick(double now)
             return;
         designer->preparePerformanceBenchmark();
         designer->session.seek(0);
-        designer->session.play();
+        if ((bool)plan["recordTake"])
+            designer->session.recordTake();
+        else
+            designer->session.play();
         r.stage = 2;
         return;
     }
     if (r.stage == 2)
     {
+        if ((bool)plan["recordTake"] && (state["takeId"].toString() != designer->session.captureId ||
+                                         designer->session.takeState != DesignSession::TakeState::recording))
+            return;
         if (!(bool)state["playing"] || state["id"].toString() != "design:" + designer->session.document.id)
             return;
         if ((int)state["bufferFrames"] != (plan["bufferFrames"].isVoid() ? 512 : (int)plan["bufferFrames"]) ||
@@ -140,10 +188,25 @@ void Benchmark::reliabilityTick(double now)
         r.lastFrame = (int64_t)state["sourceSample"];
         r.stage = 3;
         r.cycleStart = now;
-        designer->benchmarkPerformance(0, .5);
+        if (!(bool)plan["recordTake"])
+            designer->benchmarkPerformance(0, .5);
         return;
     }
     const double elapsed = now - r.activeStart;
+    if ((bool)plan["recordTake"] && (int)state["takePhase"] >= 2)
+    {
+        if ((int)state["takePhase"] >= 4 || (int64_t)state["takeEnd"] < (duration / 1000 - .1) * 48000 ||
+            r.fullViewports < 5 || !r.offlineObserved || !r.reconnectObserved ||
+            r.nonzeroChecks < r.audioChecks * .95)
+        {
+            save(false, "Unexpected capture end or incomplete sustained activity");
+            return;
+        }
+        r.activeEnd = now;
+        r.stopAudio = state;
+        r.stage = 4;
+        return;
+    }
     ++r.audioChecks;
     if ((double)state["preMonitorPeak"] > 1e-8)
         ++r.nonzeroChecks;
@@ -170,7 +233,21 @@ void Benchmark::reliabilityTick(double now)
     }
     if (now - r.lastControl >= 25)
     {
-        designer->benchmarkPerformance(1, .5 + .3 * std::sin(elapsed * .001));
+        if ((bool)plan["recordTake"])
+            designer->session.edit("Blend position",
+                                   [&](auto &d)
+                                   {
+                                       auto &p = d.activeMix().performance;
+                                       p.x = .5 + .3 * std::sin(elapsed * .001);
+                                       p.y = 1 - p.x;
+                                       for (int i = 0; i < 4; ++i)
+                                       {
+                                           p.macros[(size_t)i].value = .5 + .3 * std::sin(elapsed * .001 + i);
+                                           p.macros[(size_t)i].enabled = ((int)(elapsed / 500) + i) % 4 != 0;
+                                       }
+                                   });
+        else
+            designer->benchmarkPerformance(1, .5 + .3 * std::sin(elapsed * .001));
         r.lastControl = now;
         if (view.snapshot.progress.activeWorkers > 0 || view.snapshot.semantic.coverage.pending > 0)
             ++r.indexOverlaps;
@@ -227,11 +304,20 @@ void Benchmark::reliabilityTick(double now)
     }
     if (elapsed >= duration)
     {
-        designer->benchmarkPerformance(2, .5);
+        if (!(bool)plan["recordTake"])
+            designer->benchmarkPerformance(2, .5);
         if (r.fullViewports < 5 || r.selectedTimes.size() < 5 || r.nonzeroChecks < r.audioChecks * .95 ||
             !r.offlineObserved || !r.reconnectObserved)
         {
             save(false, "Reliability activity/whole-viewport/offline evidence incomplete");
+            return;
+        }
+        if ((bool)plan["recordTake"])
+        {
+            r.activeEnd = now;
+            r.stopAudio = state;
+            designer->session.stopTake();
+            r.stage = 4;
             return;
         }
         save(true);

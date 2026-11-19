@@ -39,4 +39,12 @@ Retention remains 48 peak sources / 96 geometries, 40 demands per surface, and o
 
 Audio supervision now retains bounded lifecycle evidence: heartbeat/command/status timestamps and sequences, helper/process/play/graph generations, last device/resource state, first reason, bounded stderr, exit signal/code and supervisor action. The 5-second watchdog is unchanged. A stopped process is resumed for bounded termination/reaping. Explicit reconnect, signal exit, watchdog failure, ordinary EOF and benchmark/preview waits are reported separately. The original v1.1 restart remains an unresolved historical observation unless its cause is actually reproduced.
 
-Recorded takes remain a [separate planned creative slice](PERFORMANCE_TAKES_NEXT.md); this pass adds no take recorder or decorative future controls.
+The v1.2 pass added no recorder. The v1.3 extension below implements the subsequent creative slice.
+
+## v1.3 applied Perform takes
+
+`PerformTake` holds a shared immutable recipe, bounded copy-on-write event list, source IDs/stamps/content fingerprints, exact consumed output-frame count/rate and exclusive project-frame interpolation dependency. Completed takes do not inherit later live edits. `DesignTakeSession` owns the state machine, worker preparation, intentional Undo and recovery. `TakeCapture` publishes a preallocated 8192-event array from the serial PCM producer to a checkpoint worker. The real-time callback only reads existing PCM and publishes consumption/hazard state.
+
+Capture happens at `DesignReader` source production after input coalescing. Stop removes speculative events beyond consumed audio. `DesignGraph` replays the stored full control states at their integer project frames through the shared resolver and stock DSP, using a take-only partition-independent smoothing contract. Full-history take audition and render share this graph; static recipes preserve their old processing/version behavior. Outputs use the existing permanent WAV/receipt pipeline and ordinary external-layer print-back.
+
+Detailed limits, identities, same-frame behavior, rate conversion, tail policy, recovery and compatibility are specified in [the take contract](PERFORMANCE_TAKES_CONTRACT.md). Actual verification is in [the v1.3 report](PERFORMANCE_MIXER_V1_3.md).

@@ -47,12 +47,7 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
 } // namespace
 juce::String designStructure(const DesignDocument &document)
 {
-    auto value = designToJson(document);
-    auto mix = document.activeVariation.isEmpty() ? value["original"] : juce::var();
-    if (document.activeVariation.isNotEmpty())
-        for (auto &variation : *value["variations"].getArray())
-            if (variation["id"].toString() == document.activeVariation)
-                mix = variation["mix"];
+    auto mix = designMixToJson(document.activeMix());
     mix = mix.clone();
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
@@ -71,7 +66,8 @@ juce::String designStructure(const DesignDocument &document)
 }
 juce::var designParameters(const DesignDocument &base)
 {
-    auto document = resolvePerformance(base);
+    DesignDocument document;
+    document.original = resolvePerformance(base.activeMix());
     auto *object = new juce::DynamicObject();
     object->setProperty("masterDb", document.activeMix().masterDb);
     object->setProperty("masterEffects", rackParameters(document.activeMix().masterEffects));

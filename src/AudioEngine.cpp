@@ -70,6 +70,11 @@ void AudioEngine::command(const juce::var &message)
         playback.parameters(message);
         return;
     }
+    if (name == "finish_take")
+    {
+        playback.finishCapture((uint64_t)(int64_t)message["playGeneration"], (bool)message["cancel"]);
+        return;
+    }
     if (name == "stop")
     {
         auto generation = (uint64_t)(int64_t)message["playGeneration"];
@@ -92,6 +97,11 @@ void AudioEngine::command(const juce::var &message)
     }
     if (name == "device" || name == "device_rate" || name == "device_buffer")
     {
+        if (playback.captureBusy())
+        {
+            deviceError = "Stop recording before changing the audio device";
+            return;
+        }
         auto setup = devices.getAudioDeviceSetup();
         if ((name == "device_rate" && deviceRate.load() == (double)message["rate"]) ||
             (name == "device" && setup.outputDeviceName == message["name"].toString()) ||
@@ -133,6 +143,11 @@ void AudioEngine::timerCallback()
                 outputs.add(name);
         }
         auto state = playback.status();
+        if (playback.captureBusy() && (double)state["outputRate"] != deviceRate.load())
+        {
+            playback.interruptCapture();
+            lastPlay = juce::var();
+        }
         if (lastPlay.isObject() && deviceRate.load() > 0 && (double)state["outputRate"] != deviceRate.load())
         {
             if (lastPlay["command"].toString() == "play_design" && (bool)state["playing"])

@@ -60,7 +60,7 @@ def run(a):
         if dest.execute('pragma foreign_key_check').fetchall():raise RuntimeError('Warm catalog integrity failed')
         dest.commit();dest.close()
         shutil.copytree(previous/'catalog/waveforms',catalog/'waveforms')
-    plan={'mode':'semantic-designer-reliability','durationMs':a.seconds*1000,'bufferFrames':a.buffer_frames,'cycleMs':a.cycle_ms,'designFile':str(root/'design/workload.soundplus'),'corpusFolder':manifest['corpus'],'corpusFiles':manifest['files'],'offlineFolder':manifest['offline'],'indexBatches':manifest['indexBatches']}
+    plan={'recordTake':a.record_take,'mode':'semantic-designer-reliability','durationMs':a.seconds*1000,'bufferFrames':a.buffer_frames,'cycleMs':a.cycle_ms,'designFile':str(root/'design/workload.soundplus'),'corpusFolder':manifest['corpus'],'corpusFiles':manifest['files'],'offlineFolder':manifest['offline'],'indexBatches':manifest['indexBatches']}
     write(out/'plan.json',plan)
     result=None
     try:
@@ -76,10 +76,13 @@ def run(a):
     for key in ['queries','selectedWaveforms','viewports']:summary['reliability'].pop(key,None)
     summary.update({'appSha256':digest(a.app),'corpusFiles':manifest['files'],'corpusBytes':manifest['totalCorpusBytes'],'condition':'warm derivatives, fresh process/catalog copy; OS file cache uncontrolled' if a.warm_from else 'cold derivative directory; OS file cache uncontrolled','exitCode':result.returncode})
     with sqlite3.connect(catalog/'library.sqlite') as db:summary['catalogFilesAtEnd']=db.execute('select count(*) from assets').fetchone()[0]
+    if a.record_take:
+        document=report.get('recordedTakeDocument',{});take=next((t for t in document.get('takes',[]) if t['id']==document.get('activeTake')),None)
+        summary['recording']={'take':{k:take.get(k) for k in ['id','name','complete','kept','bodyEnd','outputFrames','captureRate','recipeHash','eventHash']} if take else None,'events':len(take.get('events',[])) if take else 0,'namedDocument':str(out/'Sustained QA Take.soundplus'),'outputPath':report.get('takeOutput'),'sourceFingerprints':take.get('sources',[]) if take else []}
     write(out/'summary.json',summary);print(json.dumps(summary,indent=2))
     if not report['success']:raise RuntimeError(report['error'])
 
 p=argparse.ArgumentParser();sub=p.add_subparsers(dest='action',required=True)
 q=sub.add_parser('prepare');q.add_argument('--output',type=Path,required=True);q.add_argument('--files',type=int,default=10000);q.add_argument('--tests',type=Path,default=Path('build/SoundPlusTests_artefacts/Release/SoundPlusTests'))
-q=sub.add_parser('run');q.add_argument('--fixture',type=Path,required=True);q.add_argument('--output',type=Path,required=True);q.add_argument('--seconds',type=int,default=120);q.add_argument('--cycle-ms',type=int,default=1500);q.add_argument('--buffer-frames',type=int,choices=[256,512],default=512);q.add_argument('--warm-from',type=Path);q.add_argument('--app',type=Path,default=Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus'))
+q=sub.add_parser('run');q.add_argument('--fixture',type=Path,required=True);q.add_argument('--output',type=Path,required=True);q.add_argument('--seconds',type=int,default=120);q.add_argument('--cycle-ms',type=int,default=1500);q.add_argument('--buffer-frames',type=int,choices=[256,512],default=512);q.add_argument('--warm-from',type=Path);q.add_argument('--record-take',action='store_true');q.add_argument('--app',type=Path,default=Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus'))
 a=p.parse_args();prepare(a) if a.action=='prepare' else run(a)

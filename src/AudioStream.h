@@ -19,6 +19,29 @@ class PcmStream
         bool grain = false);
     void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
+    void startTake(std::shared_ptr<TakeCapture> value)
+    {
+        takeCapture = std::move(value);
+    }
+    void updatePerformance(const PerformControls &c)
+    {
+        if (designReader && takeCapture)
+            designReader->updatePerformance(c, *takeCapture);
+    }
+    std::shared_ptr<TakeCapture> takeCapture;
+    int64_t acceptedFrame() const
+    {
+        auto n = readIndex.load();
+        return n ? (int64_t)std::ceil((long double)(n - 1) * sourceRate / rate) + 1 : 0;
+    }
+    int64_t consumedOutputFrames() const
+    {
+        return (int64_t)readIndex.load();
+    }
+    int64_t producedFrame() const
+    {
+        return designReader ? designReader->producedFrame() : outputFrame;
+    }
     void discardTo(int64_t sourceFrame);
     std::atomic<uint64_t> heardEdit{0};
     std::atomic<double> editLatencyMs{0};
@@ -116,6 +139,24 @@ class AuditionCore
     {
         if (stream)
             stream->updateParameters(p, sequence, event);
+    }
+    void updatePerformance(const PerformControls &c)
+    {
+        if (stream)
+            stream->updatePerformance(c);
+    }
+    std::shared_ptr<TakeCapture> capture() const
+    {
+        return stream ? stream->takeCapture : nullptr;
+    }
+    int64_t finishTake(bool success);
+    int64_t consumedOutputFrames() const
+    {
+        return stream ? stream->consumedOutputFrames() : 0;
+    }
+    int64_t acceptedSourceEnd() const
+    {
+        return stream ? stream->startSample() + stream->acceptedFrame() : 0;
     }
     uint64_t heardEdit() const
     {

@@ -89,6 +89,65 @@ struct DesignRenderSettings
     int64_t first=0,last=-1;
     bool normalize=false,dither=false;
 };
+struct PerformControls
+{
+    double x=.5,y=.5;
+    std::array<double,4> macros{.5,.5,.5,.5};
+    bool blend=false;
+    std::array<bool,4> enabled{};
+    bool operator==(const PerformControls &) const = default;
+};
+struct TakeEvent
+{
+    int64_t frame=0;
+    uint64_t sequence=0,generation=0;
+    PerformControls controls;
+};
+struct TakeSource
+{
+    juce::String id,sha256,overridePath;
+    int64_t overrideSize=0,overrideModified=0,overrideInode=0;
+};
+class TakeEventList
+{
+    std::shared_ptr<std::vector<TakeEvent>> data=std::make_shared<std::vector<TakeEvent>>();
+    void writable(){if(data.use_count()!=1)data=std::make_shared<std::vector<TakeEvent>>(*data);}
+  public:
+    auto begin()const{return data->cbegin();}auto end()const{return data->cend();}
+    size_t size()const{return data->size();}bool empty()const{return data->empty();}
+    const TakeEvent &operator[](size_t n)const{return data->at(n);}
+    const TakeEvent &back()const{return data->back();}
+    void reserve(size_t n){writable();data->reserve(n);}
+    void push_back(TakeEvent e){writable();data->push_back(e);}
+    void clear(){data=std::make_shared<std::vector<TakeEvent>>();}
+    const void *identity()const{return data.get();}
+};
+class FrozenTakeMix
+{
+    std::shared_ptr<const DesignMix> value=std::make_shared<const DesignMix>();
+  public:
+    FrozenTakeMix &operator=(DesignMix mix){value=std::make_shared<const DesignMix>(std::move(mix));return *this;}
+    const DesignMix *operator->()const{return value.get();}
+    operator const DesignMix &()const{return *value;}
+    const void *identity()const{return value.get();}
+};
+struct PerformTake
+{
+    juce::String id=juce::Uuid().toString(),name="Untitled take",session,reason;
+    juce::String recipeHash,eventHash,processing="stock-takes-v1";
+    FrozenTakeMix recipe;
+    double sampleRate=48000;
+    int64_t bodyEnd=0;
+    int64_t outputFrames=0;
+    double captureRate=48000;
+    uint64_t generation=0;
+    bool complete=false,kept=false;
+    TakeEventList events;
+    std::vector<TakeSource> sources;
+    juce::String checkpoint;
+};
+constexpr size_t maxTakeEvents=8192,maxDocumentTakes=16;
+constexpr int maxTakeSeconds=120;
 struct DesignOutput
 {
     juce::String path,sha256,variation,kind="render",created;
@@ -96,17 +155,26 @@ struct DesignOutput
     double peak=0;
     int64_t clipped=0;
     DesignRenderSettings settings;
+    juce::String takeId,recipeHash,eventHash,processing;
+    double projectRate=0;
+    double captureRate=0;
+    int64_t bodyEnd=0;
+    int64_t capturedFrames=0;
+    juce::String tailPolicy;
+    juce::var sourceProvenance;
 };
 struct DesignDocument
 {
-    juce::String id=juce::Uuid().toString(),name="Untitled design",activeVariation,selectedLayer,outputFolder;
+    juce::String id=juce::Uuid().toString(),name="Untitled design",activeVariation,selectedLayer,outputFolder,activeTake;
     int64_t revision=1,playhead=0;
     double sampleRate=48000;
+    bool takeProcessing=false; // Transient partition contract, never a saved static change.
     DesignMix original;
     VariationSettings variationSettings;
     DesignRenderSettings renderSettings;
     std::vector<DesignVariation> variations;
     std::vector<DesignOutput> outputs;
+    std::vector<PerformTake> takes;
     DesignMix &activeMix();
     const DesignMix &activeMix() const;
 };
@@ -128,4 +196,20 @@ DesignDocument loadDesign(const juce::File &);
 std::vector<DesignVariation> generateVariations(const DesignDocument &,uint64_t seed);
 Asset inspectDesignSource(const juce::File &);
 void resolveDesignSources(DesignDocument &,const juce::File &catalog);
+juce::var designMixToJson(const DesignMix &);
+DesignMix designMixFromJson(const juce::var &);
+PerformControls performControls(const PerformanceState &);
+void applyPerformControls(PerformanceState &,const PerformControls &);
+juce::var controlsToJson(const PerformControls &);
+PerformControls controlsFromJson(const juce::var &);
+juce::var takeToJson(const PerformTake &);
+PerformTake takeFromJson(const juce::var &);
+void validateTake(const PerformTake &);
+void hashTake(PerformTake &);
+PerformTake freezeTake(const DesignDocument &,const juce::String &name);
+const PerformTake *selectedTake(const DesignDocument &);
+DesignDocument takeDocument(const DesignDocument &);
+DesignMix takeDisplayMix(const PerformTake &);
+void verifyTakeSources(const PerformTake &);
+bool recoverTakeDrafts(DesignDocument &);
 }

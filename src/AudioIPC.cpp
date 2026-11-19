@@ -76,6 +76,8 @@ void AudioClient::play(const juce::String &id, const juce::File &f)
 }
 uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, const PlaybackRegion &region)
 {
+    if (captureBusy())
+        return playbackGeneration.load();
     auto m = message("play");
     m.getDynamicObject()->setProperty("id", id);
     m.getDynamicObject()->setProperty("path", f.getFullPathName());
@@ -95,6 +97,8 @@ uint64_t AudioClient::playRegion(const juce::String &id, const juce::File &f, co
 }
 void AudioClient::stop()
 {
+    if (captureBusy())
+        return; // Only the explicit Designer take Stop/Cancel owns capture.
     auto m = message("stop");
     m.getDynamicObject()->setProperty("playGeneration", (juce::int64)++playbackGeneration);
     enqueue(m);
@@ -102,6 +106,10 @@ void AudioClient::stop()
 uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
                                  const juce::File &capture, const juce::String &mode)
 {
+    if (captureOwned || (captureReserved && mode != "record"))
+        return 0;
+    if (mode == "record")
+        captureOwned = true;
     auto m = message("play_design");
     auto *o = m.getDynamicObject();
     auto generation = ++playbackGeneration;
@@ -124,12 +132,15 @@ uint64_t AudioClient::updateDesign(const DesignDocument &document, uint64_t gene
     object->setProperty("sequence", (juce::int64)sequence);
     object->setProperty("eventMs", eventMs);
     object->setProperty("parameters", designParameters(document));
+    object->setProperty("performControls", controlsToJson(performControls(document.activeMix().performance)));
     object->setProperty("structure", designStructure(document));
     enqueue(command);
     return sequence;
 }
 void AudioClient::deviceRate(double rate)
 {
+    if (captureBusy())
+        return;
     auto m = message("device_rate");
     m.getDynamicObject()->setProperty("rate", rate);
     enqueue(m);
@@ -143,6 +154,8 @@ void AudioClient::gain(float g)
 }
 void AudioClient::restart()
 {
+    if (captureBusy())
+        return;
     {
         std::lock_guard lock(mutex);
         desiredPlaying = false;
@@ -152,15 +165,28 @@ void AudioClient::restart()
 }
 void AudioClient::device(const juce::String &name)
 {
+    if (captureBusy())
+        return;
     auto m = message("device");
     m.getDynamicObject()->setProperty("name", name);
     enqueue(m);
 }
 void AudioClient::bufferSize(int frames)
 {
+    if (captureBusy())
+        return;
     auto command = message("device_buffer");
     command.getDynamicObject()->setProperty("frames", frames);
     enqueue(command);
+}
+void AudioClient::finishTake(bool cancel)
+{
+    if (cancel)
+        captureOwned = false;
+    auto cmd = message("finish_take");
+    cmd.getDynamicObject()->setProperty("cancel", cancel);
+    cmd.getDynamicObject()->setProperty("playGeneration", (juce::int64)playbackGeneration.load());
+    enqueue(cmd);
 }
 juce::var AudioClient::status()
 {
@@ -336,6 +362,10 @@ void AudioClient::run()
                         }
                         std::lock_guard lock(mutex);
                         latest = state;
+                        if ((uint64_t)(int64_t)state["playGeneration"] == playbackGeneration.load() &&
+                            ((state.hasProperty("takePhase") && (int)state["takePhase"] >= 3) ||
+                             state["error"].toString().isNotEmpty()))
+                            captureOwned = false;
                         auto *h = health.getDynamicObject();
                         h->setProperty("helperPid", (int)pid);
                         h->setProperty("processGeneration", generation);
@@ -430,6 +460,7 @@ void AudioClient::run()
             while (healthEvents.size() > 8)
                 healthEvents.remove(0);
             outgoing.clear();
+            captureOwned = false;
             desiredPlaying = false;
             desiredId.clear();
             latest = message("status");

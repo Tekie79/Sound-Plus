@@ -17,6 +17,7 @@ std::array<double, 4> blendWeights(const PerformanceState &, const DesignMix &);
 std::vector<PerformanceTargetInfo> performanceTargets(const DesignMix &);
 juce::String performanceLayerName(const DesignMix &, const DesignLayer &);
 double *performanceTargetValue(DesignMix &, const PerformanceTarget &);
+const double *performanceTargetValue(const DesignMix &, const PerformanceTarget &);
 bool performanceOwns(const DesignMix &, const PerformanceTarget &);
 PerformanceTarget performanceEffectTarget(const juce::String &layer, const StockEffect &, int parameter);
 void unlinkPerformanceTarget(DesignMix &, const PerformanceTarget &);

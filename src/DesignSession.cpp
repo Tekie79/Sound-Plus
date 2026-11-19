@@ -15,6 +15,55 @@ DesignLayer *layerById(DesignDocument &document, const juce::String &id)
             return &layer;
     return nullptr;
 }
+bool sameTakes(const DesignDocument &a, const DesignDocument &b)
+{
+    if (a.takes.size() != b.takes.size() || a.activeTake != b.activeTake)
+        return false;
+    for (size_t i = 0; i < a.takes.size(); ++i)
+    {
+        auto &x = a.takes[i];
+        auto &y = b.takes[i];
+        if (x.recipe.identity() != y.recipe.identity() || x.events.identity() != y.events.identity())
+            return false;
+        // Metadata is small; immutable recipe/events need not be serialized for
+        // every live control edit or copied into every Undo snapshot.
+        auto header = [](const PerformTake &t)
+        {
+            auto o = juce::var(new juce::DynamicObject());
+            auto *v = o.getDynamicObject();
+            v->setProperty("id", t.id);
+            v->setProperty("name", t.name);
+            v->setProperty("session", t.session);
+            v->setProperty("reason", t.reason);
+            v->setProperty("recipeHash", t.recipeHash);
+            v->setProperty("eventHash", t.eventHash);
+            v->setProperty("checkpoint", t.checkpoint);
+            v->setProperty("kept", t.kept);
+            v->setProperty("complete", t.complete);
+            v->setProperty("bodyEnd", (juce::int64)t.bodyEnd);
+            v->setProperty("outputFrames", (juce::int64)t.outputFrames);
+            v->setProperty("generation", (juce::int64)t.generation);
+            v->setProperty("rate", t.sampleRate);
+            v->setProperty("captureRate", t.captureRate);
+            v->setProperty("processing", t.processing);
+            juce::Array<juce::var> s;
+            for (auto &source : t.sources)
+            {
+                s.add(source.id);
+                s.add(source.sha256);
+                s.add(source.overridePath);
+                s.add((juce::int64)source.overrideSize);
+                s.add((juce::int64)source.overrideModified);
+                s.add((juce::int64)source.overrideInode);
+            }
+            v->setProperty("sources", s);
+            return juce::JSON::toString(o, true);
+        };
+        if (header(x) != header(y))
+            return false;
+    }
+    return true;
+}
 DesignSessionServices nativeServices(AudioClient &audio)
 {
     DesignSessionServices services;
@@ -24,6 +73,8 @@ DesignSessionServices nativeServices(AudioClient &audio)
     services.parameters = [&audio](const auto &document, uint64_t generation, double event)
     { audio.updateDesign(document, generation, event); };
     services.stop = [&audio] { audio.stop(); };
+    services.finishTake = [&audio](bool cancel) { audio.finishTake(cancel); };
+    services.reserveTake = [&audio](bool reserve) { audio.reserveTake(reserve); };
     return services;
 }
 } // namespace
@@ -39,6 +90,8 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
 {
     if (!services.now)
         services.now = [] { return monotonicMs(); };
+    if (!services.reserveTake)
+        services.reserveTake = [](bool) {};
     if (!services.post)
         services.post = [](auto callback) { juce::MessageManager::callAsync(std::move(callback)); };
     if (!services.write)
@@ -68,7 +121,10 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
             {
                 auto entries = store->entries();
                 if (!entries.empty())
+                {
                     resolve(entries.front().document);
+                    entries.front().dirty |= recoverTakeDrafts(entries.front().document);
+                }
                 return [safe, entries = std::move(entries), initialId, initialRevision,
                         initialActivity]() mutable
                 {
@@ -97,6 +153,7 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
 DesignSession::~DesignSession()
 {
     stopTimer();
+    services.reserveTake(false);
     // Capture on the owner thread. The worker never reads the mutable document.
     auto snapshot = document;
     auto path = savedFile;
@@ -200,6 +257,13 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                         }
                         if (token.kind == Operation::preview)
                             safe->previewWaiting = false;
+                        if (token.kind == Operation::take)
+                        {
+                            safe->services.reserveTake(false);
+                            safe->takeState = TakeState::incomplete;
+                            safe->takeReadPending = false;
+                            safe->active = false;
+                        }
                         safe->message = "Operation failed; current design retained. " + message;
                         safe->notify();
                     });
@@ -208,6 +272,12 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
     if (!accepted)
     {
         finishOperation(token);
+        if (token.kind == Operation::take)
+        {
+            services.reserveTake(false);
+            takeState = TakeState::incomplete;
+            takeReadPending = false;
+        }
         working = replacing = autoPending = false;
         message = "Background queue is busy; current design retained. Try again.";
         notify();
@@ -227,6 +297,7 @@ void DesignSession::notify()
 }
 void DesignSession::restoreDerivedState()
 {
+    restoreTakeDrafts();
     selectedIds.clear();
     if (layerById(document, document.selectedLayer))
         selectedIds.insert(document.selectedLayer);
@@ -253,6 +324,33 @@ void DesignSession::changed()
 }
 void DesignSession::edit(const juce::String &label, const std::function<void(DesignDocument &)> &edit)
 {
+    if (takeBusy() && !takeMutation)
+    {
+        if (takeState != TakeState::recording)
+            return;
+        if (label != "Macro" && label != "Macro bypass" && label != "Reset macro" &&
+            label != "Blend position" && label != "Blend bypass")
+        {
+            message = "Stop recording before editing the frozen design";
+            notify();
+            return;
+        }
+        auto controls = document;
+        controls.activeMix() = takeDisplay;
+        edit(controls);
+        takeDisplay.performance = controls.activeMix().performance;
+        // Capture controls do not modify the editable recipe or UI undo history.
+        services.parameters(controls, expectedGeneration, services.now());
+        notify();
+        return;
+    }
+    if (document.activeTake.isNotEmpty() && !takeMutation && label != "Record completed output" &&
+        label != "Render settings" && label != "Render output folder")
+    {
+        message = "Choose Live Design before editing";
+        notify();
+        return;
+    }
     if (replacing)
         return;
     protectStartupEdits();
@@ -264,9 +362,22 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         if (before.id == document.id && before.activeVariation == document.activeVariation)
             unlinkManuallyEditedTargets(before.activeMix(), document.activeMix());
         reconcileSelection(&before);
-        validateDesign(document);
-        if (juce::JSON::toString(designToJson(before), true) ==
-            juce::JSON::toString(designToJson(document), true))
+        bool unchangedTakes = sameTakes(before, document);
+        auto validation = document;
+        if (unchangedTakes)
+        {
+            validation.takes.clear();
+            validation.activeTake.clear();
+        }
+        validateDesign(validation);
+        auto comparison = before;
+        if (unchangedTakes)
+        {
+            comparison.takes.clear();
+            comparison.activeTake.clear();
+        }
+        if (unchangedTakes && juce::JSON::toString(designToJson(comparison), true) ==
+                                  juce::JSON::toString(designToJson(validation), true))
             return;
         document.revision = before.revision + 1;
     }
@@ -289,12 +400,22 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
 }
 void DesignSession::beginGesture()
 {
+    if (takeBusy())
+    {
+        takeGestureStart = performControls(takeDisplay.performance);
+        return;
+    }
     protectStartupEdits();
     if (!gesture && !replacing)
         gesture = History{document, selectedIds, "Canvas edit"};
 }
 void DesignSession::endGesture()
 {
+    if (takeBusy())
+    {
+        takeGestureStart.reset();
+        return;
+    }
     if (!gesture)
         return;
     bool committed = document.revision != gesture->document.revision;
@@ -311,6 +432,19 @@ void DesignSession::endGesture()
 }
 void DesignSession::cancelGesture()
 {
+    if (takeBusy())
+    {
+        if (takeGestureStart)
+        {
+            applyPerformControls(takeDisplay.performance, *takeGestureStart);
+            auto d = document;
+            d.activeMix() = takeDisplay;
+            services.parameters(d, expectedGeneration, services.now());
+            takeGestureStart.reset();
+            notify();
+        }
+        return;
+    }
     if (!gesture)
         return;
     if (document.revision == gesture->document.revision)
@@ -330,6 +464,12 @@ void DesignSession::cancelGesture()
 }
 void DesignSession::undo()
 {
+    if (takeBusy())
+    {
+        message = "Stop recording before Undo";
+        notify();
+        return;
+    }
     if (replacing)
         return;
     endGesture();
@@ -342,11 +482,20 @@ void DesignSession::undo()
     undoHistory.pop_back();
     reconcileSelection();
     document.revision = revision;
-    lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
+    if (auto *t = selectedTake(document))
+    {
+        takeDisplay = takeDisplayMix(*t);
+        takeState = t->complete ? TakeState::ready : TakeState::incomplete;
+    }
+    else
+        takeState = TakeState::idle;
+    selectContextOutput();
     changed();
 }
 void DesignSession::redo()
 {
+    if (takeBusy())
+        return;
     if (replacing)
         return;
     endGesture();
@@ -359,7 +508,14 @@ void DesignSession::redo()
     redoHistory.pop_back();
     reconcileSelection();
     document.revision = revision;
-    lastOutput = document.outputs.empty() ? juce::File() : juce::File(document.outputs.back().path);
+    if (auto *t = selectedTake(document))
+    {
+        takeDisplay = takeDisplayMix(*t);
+        takeState = t->complete ? TakeState::ready : TakeState::incomplete;
+    }
+    else
+        takeState = TakeState::idle;
+    selectContextOutput();
     changed();
 }
 DesignLayer *DesignSession::selectedLayer()
@@ -369,6 +525,12 @@ DesignLayer *DesignSession::selectedLayer()
 
 void DesignSession::transition(const juce::File &file, bool recover, std::function<void()> close)
 {
+    if (takeBusy())
+    {
+        message = "Stop or cancel the take before closing or changing designs";
+        notify();
+        return;
+    }
     if (rendering)
     {
         message = "Cancel or finish rendering before changing designs";
@@ -410,6 +572,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                         replacement.dirty = false;
                     }
                     resolve(replacement.document);
+                    replacement.dirty |= recoverTakeDrafts(replacement.document);
                 }
                 else
                 {
@@ -702,7 +865,7 @@ void DesignSession::saveSnapshot(const juce::String &name)
 }
 void DesignSession::schedulePreview(const juce::String &mode)
 {
-    if (document.activeMix().layers.empty())
+    if (performanceMix().layers.empty())
         return;
     auto token = stamp(Operation::preview);
     auto serial = ++*previewSerial;
@@ -743,12 +906,17 @@ void DesignSession::schedulePreview(const juce::String &mode)
 }
 void DesignSession::play()
 {
+    if (takeBusy())
+    {
+        stopTake();
+        return;
+    }
     if (ownsPlayback())
     {
         stop();
         return;
     }
-    if (document.activeMix().layers.empty() || replacing)
+    if (performanceMix().layers.empty() || replacing)
         return;
     document.playhead = designPlayStart(document, document.playhead);
     if (onBeforePlay)
@@ -759,7 +927,9 @@ void DesignSession::play()
 }
 void DesignSession::playAccurate()
 {
-    if (document.activeMix().layers.empty() || replacing)
+    if (takeBusy())
+        return;
+    if (performanceMix().layers.empty() || replacing)
         return;
     auto parked = document.playhead;
     stop();
@@ -773,6 +943,11 @@ void DesignSession::playAccurate()
 }
 void DesignSession::stop()
 {
+    if (takeBusy())
+    {
+        message = "Recording owns transport; use Stop or Cancel Take";
+        return;
+    }
     auto state = services.status();
     if (active && !seekGesture && (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration &&
         state["id"].toString() == "design:" + document.id)
@@ -787,6 +962,11 @@ void DesignSession::stop()
 }
 void DesignSession::seek(int64_t frame)
 {
+    if (takeBusy() || document.activeTake.isNotEmpty())
+    {
+        message = "Take playback starts at frame zero with full history";
+        return;
+    }
     document.playhead =
         std::clamp<int64_t>(frame, 0, mixDuration(document.activeMix(), document.sampleRate) - 1);
     if (active)
@@ -795,6 +975,8 @@ void DesignSession::seek(int64_t frame)
 }
 void DesignSession::beginSeekGesture(bool audible)
 {
+    if (takeBusy() || document.activeTake.isNotEmpty())
+        return;
     seekWasPlaying = active;
     seekGesture = true;
     audibleSeek = audible;
@@ -836,6 +1018,7 @@ void DesignSession::timerCallback()
 {
     auto state = services.status();
     auto now = services.now();
+    pollTake(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;
     if (active && !previewWaiting && owned && !(bool)state["pendingPlayback"])
@@ -964,7 +1147,19 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
 }
 void DesignSession::render(bool selection)
 {
-    auto snapshot = resolvePerformance(document);
+    if (takeBusy())
+        return;
+    if (document.activeTake.isNotEmpty() && selection)
+    {
+        message = "Render Take exports the complete performance";
+        return;
+    }
+    auto snapshot = document.activeTake.isEmpty() ? resolvePerformance(document) : document;
+    if (document.activeTake.isNotEmpty())
+    {
+        snapshot.renderSettings.first = 0;
+        snapshot.renderSettings.last = -1;
+    }
     if (selection)
     {
         auto *layer = layerById(snapshot, document.selectedLayer);
@@ -978,7 +1173,10 @@ void DesignSession::render(bool selection)
         snapshot.renderSettings.first = 0;
         snapshot.renderSettings.last = -1;
     }
-    startOutput(std::move(snapshot), false, outputFolder(), selection ? "layer-render" : "design-render");
+    startOutput(std::move(snapshot), false, outputFolder(),
+                document.activeTake.isNotEmpty() ? "take-render"
+                : selection                      ? "layer-render"
+                                                 : "design-render");
 }
 void DesignSession::copyOriginal(const juce::File &folder)
 {

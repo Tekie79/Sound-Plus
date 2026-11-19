@@ -45,10 +45,36 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
     perform = std::make_unique<PerformView>(session, peakPool);
-    perform->onOpenEdit = [this](const juce::String &) { setPerformMode(false); };
+    perform->onOpenEdit = [this](const juce::String &)
+    {
+        if (!session.takeBusy() && session.document.activeTake.isEmpty())
+            setPerformMode(false);
+    };
     addAndMakeVisible(*perform);
     for (auto *button : {&editWorkspace, &performWorkspace, &snapshotButton})
         addAndMakeVisible(button);
+    for (auto *c : std::initializer_list<juce::Component *>{&takeContext, &recordTake, &stopTake, &keepTake,
+                                                            &renderTake, &takeOptions, &takeStatus})
+        addAndMakeVisible(c);
+    takeContext.setTitle("Live Design or recorded take context");
+    takeContext.onChange = [this]
+    {
+        if (updating)
+            return;
+        auto i = takeContext.getSelectedId() - 2;
+        session.selectTake(i >= 0 && i < (int)session.document.takes.size()
+                               ? session.document.takes[(size_t)i].id
+                               : juce::String());
+    };
+    recordTake.onClick = [this] { session.recordTake(); };
+    stopTake.onClick = [this] { session.stopTake(); };
+    keepTake.onClick = [this] { nameTakeDialog(); };
+    renderTake.onClick = [this] { session.render(); };
+    takeOptions.onClick = [this] { takePopup(); };
+    recordTake.setTooltip("Record Live Design from frame zero with fresh effect history. Maximum 120 seconds "
+                          "/ 8192 applied changes.");
+    takeStatus.setColour(juce::Label::textColourId, ui::muted);
+    takeStatus.setFont(juce::FontOptions(11.f));
     performMode = preferences.getBoolValue("performWorkspace", false);
     editWorkspace.onClick = [this] { setPerformMode(false); };
     performWorkspace.onClick = [this] { setPerformMode(true); };
@@ -306,8 +332,13 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     copyOriginal.onClick = [this] { chooseFile(5); };
     addPrint.onClick = [this]
     {
-        if (session.lastOutput != juce::File())
-            session.addExternal(session.lastOutput);
+        if (session.lastOutput != juce::File() && !session.takeBusy())
+        {
+            auto output = session.lastOutput;
+            if (session.document.activeTake.isNotEmpty())
+                session.selectTake({});
+            session.addExternal(output);
+        }
     };
     dragOriginal.setTooltip("Drag the complete unprocessed original file. The receiving app may reference "
                             "its current location. Layer DSP is not applied.");
@@ -1072,7 +1103,7 @@ void DesignerView::refresh()
 {
     updating = true;
     auto &d = session.document;
-    effectiveDisplay = resolvePerformance(d.activeMix());
+    effectiveDisplay = resolvePerformance(session.performanceMix());
     title.setText(d.name, juce::dontSendNotification);
     info.setText(session.dirty ? "Unsaved changes" : juce::String(), juce::dontSendNotification);
     title.setTooltip("Referenced design | " + juce::String(d.sampleRate, 0) + " Hz timeline | revision " +
@@ -1184,12 +1215,39 @@ void DesignerView::refresh()
     canvas->onRowsChanged();
     canvas->repaint();
     perform->refresh();
+    refreshTakes();
+    bool frozen = session.takeBusy() || d.activeTake.isNotEmpty();
+    newButton.setEnabled(!session.takeBusy() && !session.rendering);
+    openButton.setEnabled(!session.takeBusy() && !session.rendering);
+    for (auto *b : {&recover, &add, &duplicate, &remove, &up, &down, &generate,
+                    &variationSettings, &renderSelection, &copyOriginal})
+        if (frozen)
+            b->setEnabled(false);
+    candidates.setEnabled(!frozen);
+    compare.setEnabled(!frozen && compare.isEnabled());
+    keep.setEnabled(!frozen && keep.isEnabled());
+    rename.setEnabled(!frozen && rename.isEnabled());
+    discard.setEnabled(!frozen && discard.isEnabled());
+    renderSettings.setEnabled(!session.takeBusy());
+    chooseFolder.setEnabled(!session.takeBusy());
+    snapshotButton.setEnabled(!frozen);
+    editWorkspace.setEnabled(!frozen);
+    canvas->setEnabled(!frozen);
+    inspector.setEnabled(!frozen && !session.transitionPending());
+    render.setEnabled(!session.takeBusy() && !session.rendering &&
+                      (selectedTake(d) ? selectedTake(d)->complete : !d.activeMix().layers.empty()));
+    render.setButtonText(d.activeTake.isEmpty() ? "Render Design" : "Render Take");
+    dragOriginal.setEnabled(!frozen && layer && layer->source.error.isEmpty());
+    accurate.setEnabled(!session.takeBusy() && (!selectedTake(d) || selectedTake(d)->complete));
     updating = false;
     repaint();
 }
 void DesignerView::timerCallback()
 {
     auto state = audio.status();
+    refreshTakes();
+    if (session.document.activeTake.isNotEmpty())
+        perform->refresh();
     auto heard = (uint64_t)(int64_t)state["heardEdit"];
     if (heard > lastHeardEdit && state["id"].toString() == "design:" + session.document.id)
     {
@@ -1205,8 +1263,12 @@ void DesignerView::timerCallback()
     bool owned = state["id"].toString() == "design:" + session.document.id;
     bool playing = session.ownsPlayback();
     play.setIcon(playing ? ActionIcon::stop : ActionIcon::play);
-    play.setButtonText(playing ? "Stop design" : "Play design");
-    play.setEnabled(!session.document.activeMix().layers.empty());
+    play.setButtonText(
+        session.document.activeTake.isNotEmpty()
+            ? (playing ? "Stop take audition" : "Audition take: " + selectedTake(session.document)->name)
+            : (playing ? "Stop design" : "Play design"));
+    play.setEnabled(!session.performanceMix().layers.empty() &&
+                    (!selectedTake(session.document) || selectedTake(session.document)->complete));
     peak = std::max(owned && playing ? (float)state["preMonitorPeak"] : 0.f, peak * .88f);
     clipHeld |= peak >= 1;
     meter.setText(clipHeld ? "CLIP" : "", juce::dontSendNotification);
@@ -1233,8 +1295,8 @@ void DesignerView::timerCallback()
     {
         if (performMode)
         {
-            for (auto &assignment : session.document.activeMix().performance.assignments)
-                for (auto &layer : session.document.activeMix().layers)
+            for (auto &assignment : session.performanceMix().performance.assignments)
+                for (auto &layer : session.performanceMix().layers)
                     if (layer.id == assignment.layer)
                         cards.push_back(layer.source);
         }
@@ -1289,7 +1351,25 @@ void DesignerView::resized()
     perform->setVisible(performMode);
     perform->setBounds(12, 136, getWidth() - 24, getHeight() - 296);
     snapshotButton.setVisible(performMode);
-    snapshotButton.setBounds(16, 96, 144, 32);
+    snapshotButton.setBounds(16, 96, 104, 32);
+    int tx = 128;
+    int contextWidth = std::clamp(getWidth() - 540, 140, 240);
+    for (auto *c : std::initializer_list<juce::Component *>{&takeContext, &recordTake, &stopTake, &keepTake,
+                                                            &renderTake, &takeOptions, &takeStatus})
+        c->setVisible(performMode);
+    takeContext.setBounds(tx, 96, contextWidth, 30);
+    tx += contextWidth + 8;
+    recordTake.setBounds(tx, 96, 64, 30);
+    tx += 68;
+    stopTake.setBounds(tx, 96, 28, 30);
+    tx += 32;
+    keepTake.setBounds(tx, 96, 28, 30);
+    tx += 32;
+    renderTake.setBounds(tx, 96, 94, 30);
+    tx += 98;
+    takeOptions.setBounds(tx, 96, 24, 30);
+    tx += 28;
+    takeStatus.setBounds(tx, 96, std::max(0, getWidth() - tx - 12), 30);
     canvasViewport.setVisible(!performMode);
     inspect.setVisible(!performMode);
     for (auto *button :

@@ -8,7 +8,7 @@ namespace
 const char *slotNames[]{"Top left", "Top right", "Bottom left", "Bottom right"};
 juce::String stateIdentity(const DesignSession &s)
 {
-    return s.document.id + ":" + s.document.activeVariation;
+    return s.document.id + ":" + s.document.activeVariation + ":" + s.document.activeTake;
 }
 void label(juce::Label &l, const juce::String &name)
 {
@@ -26,14 +26,14 @@ PerformView::Pad::Pad(PerformView &o) : owner(o)
 void PerformView::Pad::paint(juce::Graphics &g)
 {
     auto b = getLocalBounds().toFloat().reduced(8);
-    auto &s = owner.session.document.activeMix().performance;
+    auto &s = owner.session.performanceMix().performance;
     g.setColour(ui::background);
     g.fillRoundedRectangle(b, 12);
     g.setColour(ui::line);
     g.drawRoundedRectangle(b, 12, 1);
     g.drawLine(b.getCentreX(), b.getY() + 12, b.getCentreX(), b.getBottom() - 12, 1);
     g.drawLine(b.getX() + 12, b.getCentreY(), b.getRight() - 12, b.getCentreY(), 1);
-    auto weights = blendWeights(s, owner.session.document.activeMix());
+    auto weights = blendWeights(s, owner.session.performanceMix());
     for (int i = 0; i < 4; ++i)
     {
         float x = (i % 2) ? b.getRight() - 12 : b.getX() + 12,
@@ -76,7 +76,7 @@ bool PerformView::Pad::keyPressed(const juce::KeyPress &k)
         owner.endControl(true);
         return true;
     }
-    auto s = owner.session.document.activeMix().performance;
+    auto s = owner.session.performanceMix().performance;
     double step = k.getModifiers().isShiftDown() ? .005 : .025;
     if (k.isKeyCode(juce::KeyPress::leftKey))
         s.x -= step;
@@ -156,12 +156,12 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
     xValue.onValueChange = [this]
     {
         if (!updating)
-            setPad(xValue.getValue(), session.document.activeMix().performance.y);
+            setPad(xValue.getValue(), session.performanceMix().performance.y);
     };
     yValue.onValueChange = [this]
     {
         if (!updating)
-            setPad(session.document.activeMix().performance.x, yValue.getValue());
+            setPad(session.performanceMix().performance.x, yValue.getValue());
     };
     label(blendState, "Blend bypassed");
     label(policy, "Mappings own their targets. Editing a mapped base value in Edit unlinks that target. "
@@ -325,7 +325,7 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
     {
         if (!updating)
         {
-            auto &maps = session.document.activeMix().performance.macros[(size_t)selectedMacro].mappings;
+            auto &maps = session.performanceMix().performance.macros[(size_t)selectedMacro].mappings;
             int index = mappingChoice.getSelectedId() - 1;
             if (index >= 0 && index < (int)maps.size())
                 editingTarget = maps[(size_t)index].target;
@@ -404,7 +404,7 @@ void PerformView::endControl(bool cancel)
 }
 void PerformView::restoreControlValues()
 {
-    const auto &s = session.document.activeMix().performance;
+    const auto &s = session.performanceMix().performance;
     for (int i = 0; i < 4; ++i)
         macros[(size_t)i].setValue(s.macros[(size_t)i].value, juce::dontSendNotification);
     xValue.setValue(s.x, juce::dontSendNotification);
@@ -447,7 +447,7 @@ void PerformView::refresh()
 {
     bool wasUpdating = updating;
     updating = true;
-    auto &mix = session.document.activeMix();
+    auto &mix = session.performanceMix();
     auto &s = mix.performance;
     auto id = stateIdentity(session);
     if (identity != id)
@@ -552,6 +552,22 @@ void PerformView::refresh()
                                            (m.enabled ? "Enabled" : "Bypassed"),
                                  juce::dontSendNotification);
     }
+    bool editable = session.document.activeTake.isEmpty() &&
+                    (!session.takeBusy() || session.takeState == DesignSession::TakeState::recording);
+    for (auto *c :
+         std::initializer_list<juce::Component *>{&pad, &xValue, &yValue, &blendEnable, &blendReset})
+        c->setEnabled(editable);
+    for (size_t i = 0; i < 4; ++i)
+    {
+        macros[i].setEnabled(editable);
+        macroEnable[i]->setEnabled(editable);
+        macroReset[i]->setEnabled(editable);
+        macroMap[i]->setEnabled(editable && !session.takeBusy());
+        assignments[i].setEnabled(editable && !session.takeBusy());
+        assignmentNames[i].setEnabled(editable && !session.takeBusy());
+        macroNames[i].setEnabled(editable && !session.takeBusy());
+    }
+    updateBlend.setEnabled(editable && !session.takeBusy());
     blendEnable.setToggleState(s.blendEnabled, juce::dontSendNotification);
     blendEnable.setButtonText(s.blendEnabled ? "Blend on" : "Blend off");
     updateBlend.setVisible(s.blendLaw == 1);
@@ -601,7 +617,7 @@ void PerformView::updateMappingFields()
 {
     bool previous = updating;
     updating = true;
-    auto &mix = session.document.activeMix();
+    auto &mix = session.performanceMix();
     auto &maps = mix.performance.macros[(size_t)selectedMacro].mappings;
     auto it = std::find_if(maps.begin(), maps.end(), [&](auto &m) { return m.target == editingTarget; });
     bool valid = it != maps.end();
@@ -683,7 +699,7 @@ void PerformView::resized()
     blendEnable.setBounds(8, 3, 70, 28);
     blendReset.setBounds(80, 3, 26, 28);
     updateBlend.setBounds(split - 86, 3, 70, 28);
-    blendState.setBounds(112, 3, split - (session.document.activeMix().performance.blendLaw == 1 ? 206 : 126),
+    blendState.setBounds(112, 3, split - (session.performanceMix().performance.blendLaw == 1 ? 206 : 126),
                          28);
     int half = (split - 28) / 2;
     for (int i = 0; i < 4; ++i)
@@ -770,7 +786,7 @@ void PerformView::itemDropped(const SourceDetails &details)
             if (payload["document"].toString() != session.document.id ||
                 payload["variation"].toString() != session.document.activeVariation || from < 0 ||
                 from >= 4 ||
-                session.document.activeMix().performance.assignments[(size_t)from].layer !=
+                session.performanceMix().performance.assignments[(size_t)from].layer !=
                     payload["layer"].toString())
                 throw std::runtime_error("The dragged assignment has changed; drag it again");
             session.edit("Move blend assignment",
@@ -816,7 +832,9 @@ void PerformView::updateTransport(const juce::var &state)
     const auto owned = state["id"].toString() == "design:" + session.document.id;
     const auto frame = (bool)state["playing"] ? (int64_t)state["sourceSample"] : session.document.playhead;
     for (auto &card : cards)
-        card->transport(owned, frame, session.document.sampleRate);
+        card->transport(owned, frame,
+                        selectedTake(session.document) ? selectedTake(session.document)->sampleRate
+                                                       : session.document.sampleRate);
 }
 void PerformView::benchmarkControls(int phase, double value)
 {

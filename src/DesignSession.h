@@ -21,6 +21,8 @@ struct DesignSessionServices
     std::function<uint64_t(const juce::String &, const juce::File &, int64_t, const juce::String &)> play;
     std::function<void(const DesignDocument &, uint64_t, double)> parameters;
     std::function<void()> stop;
+    std::function<void(bool)> finishTake;
+    std::function<void(bool)> reserveTake;
     bool automaticRecovery = true, timers = true;
 };
 
@@ -71,6 +73,29 @@ class DesignSession final : public juce::Component, private juce::Timer
     void seek(int64_t);
     void stop();
     bool ownsPlayback() const;
+    enum class TakeState
+    {
+        idle,
+        arming,
+        recording,
+        finalizing,
+        ready,
+        incomplete
+    };
+    TakeState takeState = TakeState::idle;
+    juce::String captureId;
+    bool takeBusy() const
+    {
+        return takeState == TakeState::arming || takeState == TakeState::recording ||
+               takeState == TakeState::finalizing;
+    }
+    void recordTake();
+    void stopTake(bool cancel = false);
+    void selectTake(const juce::String &);
+    void nameTake(const juce::String &, bool keep = true);
+    void deleteTake();
+    void relinkTakeSource(const juce::String &source, const juce::File &);
+    const DesignMix &performanceMix() const;
     void beginSeekGesture(bool audible);
     void dragSeek(int64_t);
     void endSeekGesture();
@@ -104,6 +129,7 @@ class DesignSession final : public juce::Component, private juce::Timer
         preview,
         output,
         autosave,
+        take,
         count
     };
     struct Stamp
@@ -137,6 +163,15 @@ class DesignSession final : public juce::Component, private juce::Timer
     double lastEdit = 0, previewDue = 0, lastAudioUpdate = -1000, autosaveRetry = 0;
     int64_t autoRevision = 0;
     juce::String autoDocument, publishedStructure;
+    DesignMix takeDisplay;
+    std::optional<PerformControls> takeGestureStart;
+    std::optional<History> takeUndoBase;
+    bool takeMutation = false, takeReadPending = false;
+    double takeStartedAt = 0;
+    juce::File takeCheckpoint;
+    void pollTake(const juce::var &);
+    void restoreTakeDrafts();
+    void selectContextOutput();
     Stamp stamp(Operation);
     bool accepts(Stamp) const;
     void finishOperation(Stamp);

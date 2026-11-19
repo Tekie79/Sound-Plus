@@ -1,5 +1,6 @@
 #pragma once
 #include "DesignModel.h"
+#include "TakeCapture.h"
 #include <juce_audio_utils/juce_audio_utils.h>
 namespace sp
 {
@@ -35,7 +36,9 @@ class DesignReader
         const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &);
     int64_t length() const;
+    void updatePerformance(const PerformControls &,TakeCapture &);
     int64_t consumed() const;
+    int64_t producedFrame() const;
     int64_t endFrame() const;
     int layers() const;
 
