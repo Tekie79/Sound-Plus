@@ -1,0 +1,30 @@
+[
+  {
+    "file": "Legacy.soundplus",
+    "sha256": "1444c2bf069e26577e368a2627b7e9c5a75dc6308cebb954e1b7b68deafb8ebc",
+    "version": 4,
+    "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+    "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+    "recordedOutputSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696"
+  },
+  {
+    "file": "Legacy reopened.soundplus",
+    "sha256": "1444c2bf069e26577e368a2627b7e9c5a75dc6308cebb954e1b7b68deafb8ebc",
+    "version": 4,
+    "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+    "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+    "recordedOutputSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696"
+  },
+  {
+    "file": "Converted legacy.soundplus",
+    "sha256": "6cb9b7c42e73d190b1220c4788dfd8c39f30ca8c450b84cbc415f3323576f49c",
+    "version": 5,
+    "recipeHash": "8ef73e09101cbf8112fe1ed061eb3a709ced050b4f34604328e62067c88994a0",
+    "eventHash": "ecba422317702b2261256e0a5a91f38ce042983e5893e4bd2c796b866af61b23",
+    "recordedOutputSha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696"
+  },
+  {
+    "actualRenderedWav": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-test-output/a1fe2bdf95604ae3882b825cfd7b1f88/legacy-render/Native XY and four macros-take-r7-0143d475.wav",
+    "sha256": "a78b6a7c08b89a443ec5329c33a736734182eeb4352eb03d76009d8ce3678696"
+  }
+]

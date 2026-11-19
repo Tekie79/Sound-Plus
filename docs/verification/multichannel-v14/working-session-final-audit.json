@@ -1,0 +1,74 @@
+{
+  "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+  "revision": 9731,
+  "id": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "sha256": "6df7ba5262574e6e2fba76ca1cd9a8b23b0ebc3a50ba3df65287d8527a63c96c",
+  "sameDocumentBytesBeforeReopen": true,
+  "media": [
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/external/rain.wav",
+      "sha256": "5f15ab2d8f6ef9932909b1b75c8ac254cbea46c93b4b2f0f3542abdf09b9abc0",
+      "unchanged": true,
+      "finalSha256": "5f15ab2d8f6ef9932909b1b75c8ac254cbea46c93b4b2f0f3542abdf09b9abc0"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav",
+      "sha256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849",
+      "unchanged": true,
+      "finalSha256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849"
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav",
+      "sha256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b",
+      "unchanged": true,
+      "finalSha256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b"
+    },
+    {
+      "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav",
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true,
+      "finalSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+    },
+    {
+      "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav",
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true,
+      "finalSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+    },
+    {
+      "path": "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav",
+      "sha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66",
+      "unchanged": true,
+      "finalSha256": "6549fed9f2030864bc4fb1c962b46813f7d821e942d574b37539c9b4f14c3f66"
+    }
+  ],
+  "beforeCatalog": {
+    "assets": 43,
+    "idsSha256": "76db7a93d6e665731345267b8f86bb19ee937c4bffb3970e79c0c4dcecbfc6f2",
+    "integrity": "ok"
+  },
+  "currentCatalog": {
+    "assets": 43,
+    "idsSha256": "76db7a93d6e665731345267b8f86bb19ee937c4bffb3970e79c0c4dcecbfc6f2",
+    "integrity": "ok"
+  },
+  "finalRevision": 9731,
+  "finalId": "f079cfb5d0bd4d3db119805d64b35d0a",
+  "finalDocumentSha256": "6df7ba5262574e6e2fba76ca1cd9a8b23b0ebc3a50ba3df65287d8527a63c96c",
+  "documentStillIdentical": true,
+  "nativeReopened": true,
+  "aiEnabled": true,
+  "activeVariation": "Kept: Rain glass - kept B",
+  "blendEnabled": false,
+  "blendX": 0.321,
+  "blendY": 0.218,
+  "monitorGain": 0.7,
+  "finalCatalog": {
+    "assets": 43,
+    "idsSha256": "76db7a93d6e665731345267b8f86bb19ee937c4bffb3970e79c0c4dcecbfc6f2",
+    "integrity": "ok",
+    "schema": 6
+  },
+  "finalSettingsSha256": "b4ddcfee638c7a17b3549a35aebba22310648f8e8d3f06b47db23221a5cfbda4",
+  "originalSettingsSha256": "b4ddcfee638c7a17b3549a35aebba22310648f8e8d3f06b47db23221a5cfbda4"
+}

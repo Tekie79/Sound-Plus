@@ -1,0 +1,74 @@
+{
+  "first": {
+    "path": "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r6-623730d0.wav",
+    "sha256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d",
+    "bytes": 52723216,
+    "channels": 6,
+    "rate": 48000,
+    "bits": 24,
+    "mask": 1551,
+    "subtype": 1,
+    "align": 18,
+    "frames": 2929024,
+    "layout": {
+      "id": "5.1-side-v1",
+      "roles": [
+        "L",
+        "R",
+        "C",
+        "LFE",
+        "Ls",
+        "Rs"
+      ]
+    },
+    "takeId": "18c0d5b2b8984bfb968d684d6f7a2206",
+    "recipeHash": "e351a6494a70f2aad2cff6aa27421709ddc7b93dc7af447fd5f2180663e10db2",
+    "eventHash": "5d44017287b4d2b243f16778975f997cc50b9e862be6387e1cdee807926d96ac",
+    "events": 2316,
+    "bodyEnd": 2881024,
+    "outputFrames": 2881024
+  },
+  "second": {
+    "path": "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r88-66f720ad.wav",
+    "sha256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d",
+    "bytes": 52723216,
+    "channels": 6,
+    "rate": 48000,
+    "bits": 24,
+    "mask": 1551,
+    "subtype": 1,
+    "align": 18,
+    "frames": 2929024,
+    "layout": {
+      "id": "5.1-side-v1",
+      "roles": [
+        "L",
+        "R",
+        "C",
+        "LFE",
+        "Ls",
+        "Rs"
+      ]
+    },
+    "takeId": "18c0d5b2b8984bfb968d684d6f7a2206",
+    "recipeHash": "e351a6494a70f2aad2cff6aa27421709ddc7b93dc7af447fd5f2180663e10db2",
+    "eventHash": "5d44017287b4d2b243f16778975f997cc50b9e862be6387e1cdee807926d96ac",
+    "events": 2316,
+    "bodyEnd": 2881024,
+    "outputFrames": 2881024
+  },
+  "comparedFrames": 2929024,
+  "comparedSeconds": 61.02133333333333,
+  "perChannelMaximumDifference": {
+    "L": 0.0,
+    "R": 0.0,
+    "C": 0.0,
+    "LFE": 0.0,
+    "Ls": 0.0,
+    "Rs": 0.0
+  },
+  "exactPcmPrefix": true,
+  "interpretation": "Two published interleaved outputs from the same frozen take, with deliberately different Live edits and metadata/tail presets. This is independent WAV byte/PCM verification, not original capture evidence or human listening.",
+  "humanListening": false,
+  "receiverQualification": false
+}

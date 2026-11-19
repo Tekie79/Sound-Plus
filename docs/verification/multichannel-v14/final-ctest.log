@@ -1,0 +1,48 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: multichannel
+ 1/21 Test  #1: multichannel .....................   Passed    5.08 sec
+      Start  2: take_integrity
+ 2/21 Test  #2: take_integrity ...................   Passed    3.96 sec
+      Start  3: capture_device_lifecycle
+ 3/21 Test  #3: capture_device_lifecycle .........   Passed    4.62 sec
+      Start  4: recorded_takes
+ 4/21 Test  #4: recorded_takes ...................   Passed    8.50 sec
+      Start  5: library_stability
+ 5/21 Test  #5: library_stability ................   Passed    1.36 sec
+      Start  6: waveform_scheduling
+ 6/21 Test  #6: waveform_scheduling ..............   Passed    1.91 sec
+      Start  7: audio_health
+ 7/21 Test  #7: audio_health .....................   Passed    7.52 sec
+      Start  8: waveform_previews
+ 8/21 Test  #8: waveform_previews ................   Passed    0.45 sec
+      Start  9: performance_state
+ 9/21 Test  #9: performance_state ................   Passed    1.75 sec
+      Start 10: designer_view_commands
+10/21 Test #10: designer_view_commands ...........   Passed    0.36 sec
+      Start 11: icon_system
+11/21 Test #11: icon_system ......................   Passed    0.10 sec
+      Start 12: library_and_audio
+12/21 Test #12: library_and_audio ................   Passed    8.90 sec
+      Start 13: library_selection_audition
+13/21 Test #13: library_selection_audition .......   Passed    3.73 sec
+      Start 14: library_performance_regression
+14/21 Test #14: library_performance_regression ...   Passed    6.35 sec
+      Start 15: library_semantic_integrity
+15/21 Test #15: library_semantic_integrity .......   Passed    0.36 sec
+      Start 16: library_similar_integrity
+16/21 Test #16: library_similar_integrity ........   Passed    1.25 sec
+      Start 17: designer_transport
+17/21 Test #17: designer_transport ...............   Passed   15.60 sec
+      Start 18: designer_canvas
+18/21 Test #18: designer_canvas ..................   Passed    0.19 sec
+      Start 19: designer_session
+19/21 Test #19: designer_session .................   Passed    0.11 sec
+      Start 20: designer_workflow
+20/21 Test #20: designer_workflow ................   Passed    9.71 sec
+      Start 21: designer_fades
+21/21 Test #21: designer_fades ...................   Passed    2.40 sec
+
+100% tests passed, 0 tests failed out of 21
+
+Total Test time (real) =  84.22 sec

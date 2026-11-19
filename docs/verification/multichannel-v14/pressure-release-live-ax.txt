@@ -1,0 +1,12 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 dialog Secondary Actions: Raise
+	2 container
+	3 container Per-channel source waveforms: Surround bed.wav, 6 ch · 5.1 Side
+	4 text (settable) L · source 1 R · source 2 C · source 3 LFE · source 4 Ls · source 5 Rs · source 6
+	5 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	6 text SoundPlus
+7 menu bar
+	8 SoundPlus
+
+The focused UI element is 2 container

@@ -1,0 +1,136 @@
+{
+  "revision": 17,
+  "documentId": "9ca58301dea84756b03ff007ac2032f2",
+  "liveLayers": 3,
+  "take": {
+    "name": "Native spatial drag",
+    "complete": true,
+    "kept": true,
+    "bodyEnd": 1440000,
+    "recipeHash": "c9951b6567fe938dd0b39d07229811748a373a41380da0754582bbe3db952124",
+    "eventHash": "324fda48e49c4c5af41f30b9d11da87e4ff117fca9fda21fd7409b110868b88e"
+  },
+  "appliedEvents": 1,
+  "events": [
+    {
+      "frame": 1267712,
+      "sequence": 1,
+      "generation": 1,
+      "controls": {
+        "x": 0.5,
+        "y": 0.5,
+        "blend": false,
+        "macros": [
+          0.5,
+          0.5,
+          0.5,
+          0.5
+        ],
+        "enabled": [
+          false,
+          false,
+          false,
+          false
+        ],
+        "eventContract": "source-blend-spatial-v1",
+        "spatial": [
+          {
+            "targetLayerIndex": 1,
+            "azimuth": -142.5,
+            "width": 60.0
+          }
+        ]
+      }
+    }
+  ],
+  "outputs": [
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r5-2f0f3837.wav",
+      "sha256": "5fa27e050648fc755eb26aabb775a24276486b933a874b9d793c3bf6e8c9b558",
+      "kind": "take-render",
+      "export": {
+        "id": "5.1-side-v1",
+        "roles": [
+          "L",
+          "R",
+          "C",
+          "LFE",
+          "Ls",
+          "Rs"
+        ]
+      },
+      "splitFiles": 0
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r7-e764f1be.wav",
+      "sha256": "9728c931d27e02aea3ddb5cd81b7f5e072f145edd8b1e0d87ea102fe6ddb709b",
+      "kind": "take-render",
+      "export": {
+        "id": "stereo-v1",
+        "roles": [
+          "L",
+          "R"
+        ]
+      },
+      "splitFiles": 0
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/Mix.wav",
+      "sha256": "5fa27e050648fc755eb26aabb775a24276486b933a874b9d793c3bf6e8c9b558",
+      "kind": "take-render",
+      "export": {
+        "id": "5.1-side-v1",
+        "roles": [
+          "L",
+          "R",
+          "C",
+          "LFE",
+          "Ls",
+          "Rs"
+        ]
+      },
+      "splitFiles": 6
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav",
+      "sha256": "9ee9d19de61aaadfbeae8f788b157b3efb599d9e4a002e5a376abfbd80660f09",
+      "kind": "layer-render",
+      "export": {
+        "id": "5.1-side-v1",
+        "roles": [
+          "L",
+          "R",
+          "C",
+          "LFE",
+          "Ls",
+          "Rs"
+        ]
+      },
+      "splitFiles": 0
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav",
+      "sha256": "f5fe66c2ed130c7c7fbac7de6bddc19ef53bcedb551ced608caf770b403d00e6",
+      "kind": "design-render",
+      "export": {
+        "id": "5.1-side-v1",
+        "roles": [
+          "L",
+          "R",
+          "C",
+          "LFE",
+          "Ls",
+          "Rs"
+        ]
+      },
+      "splitFiles": 0
+    }
+  ],
+  "sourceOverrides": [
+    {
+      "name": "Unknown six.wav",
+      "detected": "{\"layout\": {\"id\": \"unknown-6-v1\", \"roles\": [\"D1\", \"D2\", \"D3\", \"D4\", \"D5\", \"D6\"]}, \"confidence\": \"unknown\"}",
+      "override": "{\"id\": \"5.1-rear-v1\", \"roles\": [\"L\", \"R\", \"C\", \"LFE\", \"Lb\", \"Rb\"]}"
+    }
+  ]
+}

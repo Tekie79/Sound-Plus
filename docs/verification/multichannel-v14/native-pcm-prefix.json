@@ -1,0 +1,24 @@
+[
+  {
+    "kind": "nativeCapturePath",
+    "originalPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-test-output/a1fe2bdf95604ae3882b825cfd7b1f88/native-original.f32",
+    "originalBytes": 884736,
+    "comparedBytes": 847872,
+    "sha256": "31d6c3f97bebbfc54dd1336474cce749be987695bc1d14999263251e039c132b",
+    "frames": 35328,
+    "channels": 6,
+    "sampleRate": 48000,
+    "format": "little-endian interleaved float32 pre-monitor"
+  },
+  {
+    "kind": "nativeReplayPath",
+    "originalPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-test-output/a1fe2bdf95604ae3882b825cfd7b1f88/native-replay.f32",
+    "originalBytes": 963072,
+    "comparedBytes": 847872,
+    "sha256": "31d6c3f97bebbfc54dd1336474cce749be987695bc1d14999263251e039c132b",
+    "frames": 35328,
+    "channels": 6,
+    "sampleRate": 48000,
+    "format": "little-endian interleaved float32 pre-monitor"
+  }
+]

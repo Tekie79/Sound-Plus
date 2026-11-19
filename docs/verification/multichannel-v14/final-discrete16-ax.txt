@@ -1,0 +1,106 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Add existing sound folders, Help: Add Folder
+	2 text entry area (settable) Search library, Secondary Actions: Delete
+	3 text (settable) All sources
+	4 outline
+		5 row C.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/C.wav
+			6 row C.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/C.wav
+		7 row L.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/L.wav
+			8 row L.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/L.wav
+		9 row LFE.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/LFE.wav
+			10 row LFE.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/LFE.wav
+		11 row Ls.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/Ls.wav
+			12 row Ls.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/Ls.wav
+		13 row Mix.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/Mix.wav
+			14 row Mix.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/Mix.wav
+		15 row Mono point.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Mono point.wav
+			16 row Mono point.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Mono point.wav
+		17 row Native spatial drag-take-r5-2f0f3837.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r5-2f0f3837.wav
+			18 row Native spatial drag-take-r5-2f0f3837.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r5-2f0f3837.wav
+		19 row Native spatial drag-take-r7-e764f1be.wav, 30.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r7-e764f1be.wav
+			20 row Native spatial drag-take-r7-e764f1be.wav, 30.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r7-e764f1be.wav
+		21 row R.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/R.wav
+			22 row R.wav, 30.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Native spatial drag-take-r10-dec3bb83-split/R.wav
+		23 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	24 container Recording waveform. Click to seek; drag brackets to trim; I marks IN, O marks OUT. Right-click for exact range.
+	25 button Per-channel source waveforms
+	26 container Resize sound browser
+	27 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 1, Value: Multichannel QA
+	28 button Render Design, Help: Render Design (Command-R)
+	29 button Render settings
+	30 button Render selected layer
+	31 button Choose permanent output folder
+	32 button Library
+	33 button (settable) Browser, Help: Hide sound browser, Value: On
+	34 button Design · Discrete 16, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	35 text (settable)
+	36 button New design, Help: New design (Command-N)
+	37 button Open design, Help: Open design (Command-O)
+	38 button Save design, Help: Save design (Command-S)
+	39 button Recover autosave
+	40 button Add source
+	41 button Duplicate layer, Help: Duplicate layer (Command-D)
+	42 button Remove layer, Help: Remove layer (Delete / Backspace)
+	43 button (settable) Edit, Value: On
+	44 button (settable) Perform, Value: Off
+	45 button (settable) Hide layer inspector, Value: On
+	46 button Zoom out
+	47 button Zoom in (Command-wheel)
+	48 button Decrease track height
+	49 button Increase track height (Command-Option-wheel)
+	50 button Fit design
+	51 button Fit selected layers
+	52 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	53 button Snap targets and grid
+	54 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	55 text (settable) 0.0000 s
+	56 button (settable) LAYER, Value: On
+	57 text entry area (settable) Value: discrete-16-v1.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-test-output/bef4b95a49814d2f9ae72bbb950ca9c1/discrete-16-v1.wav
+48000 Hz, 16 source channels, revision 1
+external-d31b4068c52842f9a18cee9cf311538e
+	58 button Relink / replace source
+	59 text (settable) 16 ch · Unknown layout
+	60 button Routing / Spatial Panner, Help: Interpretation: 16 ch · Unknown layout · selected 16 of 16
+	61 button Per-channel waveforms
+	62 button (settable) Mute, Value: Off
+	63 button (settable) Solo, Value: Off
+	64 button (settable) Lock entire layer for variations, Value: Off
+	65 button (settable) SOURCE & TIMING, Value: Off
+	66 button (settable) MIX, Value: On
+	67 text (settable) Gain
+	68 slider (settable) Layer gain (dB), Value: 0.0, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	69 button (settable) Lock Gain for variations, Value: Off
+	70 text (settable) Pan / balance Rate / pitch linked
+	71 slider (settable) Linked rate (%); pitch follows rate, Value: 100.0, Secondary Actions: Delete
+	72 button (settable) Lock Rate / pitch linked for variations, Value: Off
+	73 text (settable)
+	74 toggle button (settable, boolean) Reverse, Value: off
+	75 button (settable) Lock Reverse for variations, Value: Off
+	76 button (settable) FADES, Value: Off
+	77 button (settable) STOCK INSERTS, Value: On
+	78 pop up button (settable) Insert rack target, Value: Selected layer inserts
+	79 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	80 container Layer canvas. Double-click a fade curve to add a point; drag to reshape; Option-click removes. Shift addresses OUT when handles or points overlap. Right-click for presets. Option-body slips source. Control is fine; Command bypasses snapping.
+	81 button Select / reorder layer discrete-16-v1.wav, Help: Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize
+	82 button Track colour for discrete-16-v1.wav, Help: Track colour
+	83 button (settable) Mute discrete-16-v1.wav, Value: Off
+	84 button (settable) Solo discrete-16-v1.wav, Value: Off
+	85 button (settable) Lock discrete-16-v1.wav for variations, Value: Off
+	86 button Generate 5
+	87 button Variation bounds and enabled parameters
+	88 pop up button (settable) Original and variation candidates, Value: Original
+	89 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	90 button Copy Original to Project
+	91 text (settable) /Users/harvest/Music/SoundPlus/Renders
+	92 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
+	93 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	94 button Monitor · pair 1/2, Help: Pre-monitor master channels: D1 -100.0 dBFS; D2 -100.0 dBFS; D3 -100.0 dBFS; D4 -100.0 dBFS; D5 -100.0 dBFS; D6 -100.0 dBFS; D7 -100.0 dBFS; D8 -100.0 dBFS; D9 -100.0 dBFS; D10 -100.0 dBFS; D11 -100.0 dBFS; D12 -100.0 dBFS; D13 -100.0 dBFS; D14 -100.0 dBFS; D15 -100.0 dBFS; D16 -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	95 text (settable) Reopened saved design
+	96 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
+	97 close button
+	98 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	99 minimize button
+	100 text SoundPlus
+101 menu bar
+	102 SoundPlus

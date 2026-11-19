@@ -1,0 +1,32 @@
+{
+  "sourceCommit": "b4fac3d0bbac4fa5d53907356a60a215ade40f82",
+  "R10Commit": "4431786",
+  "IPCCommit": "25f6e98",
+  "artifacts": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "a316d811d4136f4d89b853e1362cc47a1a390005b4b98d4e0e8b9cba2e7303c5",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "b0dd03bd2909c0beda18f5f80db677f6774cb2b4f5ea6981505e25d011e348a1",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "841911142b50a931449424534a6d997043cc7e396c189330887d5cc239ab269c",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "904ce5ccac1044f06f3a054ae085ef6ddbc652f7fac83dc4f63efca7e2a6c698"
+  },
+  "platform": {
+    "os": "26.3.2",
+    "osBuild": "25D2150",
+    "machine": "Mac17,8",
+    "chip": "Apple M5 Pro",
+    "memoryBytes": 51539607552,
+    "displayScale": 2,
+    "device": "MacBook Pro Speakers",
+    "rate": 48000,
+    "bufferFrames": 512,
+    "physicalOutputs": 2,
+    "physicalSurroundVerified": false,
+    "humanListening": false
+  },
+  "controlledNativePcmFrames": 35328,
+  "controlledNativePcmMaximumError": 0.0,
+  "r10ActualHelperOwnership": true,
+  "multichannelAssertions": 885231,
+  "assertionMeaning": "Includes per-sample assertions; not a count of separate test scenarios.",
+  "nativeDragQualified": false,
+  "pressureEnvironmentNote": "Final corrected artifact, selected by exact bundle path; no parallel playback/test job. Earlier intermediate pressure records remain in build but are not substituted for these measurements."
+}

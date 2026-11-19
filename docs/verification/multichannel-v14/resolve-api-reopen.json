@@ -1,0 +1,54 @@
+{
+  "saved": true,
+  "closed": true,
+  "reopened": "SoundPlus Multichannel v1.4 QA 20261119",
+  "trackType": "5.1",
+  "timelineItems": [
+    "Surround bed.wav",
+    "Surround motion QA-r16-94cb5488.wav",
+    "Surround motion QA-r15-2e10313c.wav"
+  ],
+  "rows": [
+    {
+      "properties": {
+        "File Name": "Surround bed.wav",
+        "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Surround bed.wav",
+        "Duration": "00:00:30:00",
+        "Audio Ch": "6",
+        "Sample Rate": "48000",
+        "Audio Bit Depth": "32",
+        "Audio Codec": "Linear PCM",
+        "Online Status": "Online"
+      },
+      "audioMapping": "{\"embedded_audio_channels\":6,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2,3,4,5,6],\"mute\":false,\"type\":\"5.1\"}}}"
+    },
+    {
+      "properties": {
+        "File Name": "Surround motion QA-r15-2e10313c.wav",
+        "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav",
+        "Duration": "00:00:30:00",
+        "Audio Ch": "6",
+        "Sample Rate": "48000",
+        "Audio Bit Depth": "32",
+        "Audio Codec": "Linear PCM",
+        "Online Status": "Online"
+      },
+      "audioMapping": "{\"embedded_audio_channels\":6,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2,3,4,5,6],\"mute\":false,\"type\":\"5.1\"}}}"
+    },
+    {
+      "properties": {
+        "File Name": "Surround motion QA-r16-94cb5488.wav",
+        "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav",
+        "Duration": "00:00:30:00",
+        "Audio Ch": "6",
+        "Sample Rate": "48000",
+        "Audio Bit Depth": "32",
+        "Audio Codec": "Linear PCM",
+        "Online Status": "Online"
+      },
+      "audioMapping": "{\"embedded_audio_channels\":6,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2,3,4,5,6],\"mute\":false,\"type\":\"5.1\"}}}"
+    }
+  ],
+  "nativeDragQualified": false,
+  "method": "API import/placement followed by save, source-app exit, project close and reopen"
+}

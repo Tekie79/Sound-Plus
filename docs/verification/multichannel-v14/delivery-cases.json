@@ -1,0 +1,82 @@
+[
+  {
+    "case": "original",
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Surround bed.wav",
+    "expected": "Unprocessed six-channel bed; independent unique tones/impulses in declared WAVE role order.",
+    "header": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Surround bed.wav",
+      "sha256": "86e4a1850715f1767b6b39974fd7f60b6c8e066d2c799313ad61ffbfc69cc91e",
+      "bytes": 34560104,
+      "channels": 6,
+      "rate": 48000,
+      "bits": 32,
+      "mask": 1551,
+      "subtype": 3,
+      "align": 24,
+      "frames": 1440000
+    },
+    "existsAndFinalized": true,
+    "perChannelPeak": [
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929,
+      0.800000011920929
+    ]
+  },
+  {
+    "case": "design-render",
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav",
+    "receiptSha256": "f5fe66c2ed130c7c7fbac7de6bddc19ef53bcedb551ced608caf770b403d00e6",
+    "expected": "All three current Live layers with their routing, recorded Print source and master gain.",
+    "header": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav",
+      "sha256": "f5fe66c2ed130c7c7fbac7de6bddc19ef53bcedb551ced608caf770b403d00e6",
+      "bytes": 34560784,
+      "channels": 6,
+      "rate": 48000,
+      "bits": 32,
+      "mask": 1551,
+      "subtype": 3,
+      "align": 24,
+      "frames": 1440000
+    },
+    "existsAndFinalized": true,
+    "perChannelPeak": [
+      0.2514275014400482,
+      0.2514275014400482,
+      0.2514275014400482,
+      0.2514275014400482,
+      0.2514275014400482,
+      0.2689838111400604
+    ]
+  },
+  {
+    "case": "layer-render",
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav",
+    "receiptSha256": "9ee9d19de61aaadfbeae8f788b157b3efb599d9e4a002e5a376abfbd80660f09",
+    "expected": "Primary Mono point layer, placement reset, mute/solo cleared; routed to Rs with its delay and master gain. Other bus channels should be silent apart from floating-point residuals.",
+    "header": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav",
+      "sha256": "9ee9d19de61aaadfbeae8f788b157b3efb599d9e4a002e5a376abfbd80660f09",
+      "bytes": 34560784,
+      "channels": 6,
+      "rate": 48000,
+      "bits": 32,
+      "mask": 1551,
+      "subtype": 3,
+      "align": 24,
+      "frames": 1440000
+    },
+    "existsAndFinalized": true,
+    "perChannelPeak": [
+      0.0,
+      9.843756173388287e-18,
+      0.0,
+      0.0,
+      0.0,
+      0.16076074540615082
+    ]
+  }
+]

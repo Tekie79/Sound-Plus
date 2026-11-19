@@ -1,0 +1,126 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Add existing sound folders, Help: Add Folder
+	2 text entry area (settable) Search library, Value: Surround, Secondary Actions: Delete
+	3 text (settable) All sources
+	4 outline
+		5 row Surround bed.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Surround bed.wav
+			6 row Surround bed.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Surround bed.wav
+		7 row Surround motion QA-r15-2e10313c.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav
+			8 row Surround motion QA-r15-2e10313c.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r15-2e10313c.wav
+		9 row Surround motion QA-r16-94cb5488.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav
+			10 row Surround motion QA-r16-94cb5488.wav, 30.00 seconds, 6 channels, 5.1 Side, 48000 Hz, ready, Filename, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav
+	11 container Recording waveform. Click to seek; drag brackets to trim; I marks IN, O marks OUT. Right-click for exact range.
+	12 button Zoom Range
+	13 button Show All
+	14 button Play  [Space]
+	15 button Drag complete original file
+	16 button Per-channel source waveforms
+	17 button Add marked region to Designer, Help: Add this marked source range to Designer. Layout-aware designs keep all supported channels; wider sources require an explicit subset. Legacy designs retain pair semantics. I / O mark the range.
+	18 container Resize sound browser
+	19 container
+	20 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 17, Value: Surround motion QA
+	21 button Render Design, Help: Render Design (Command-R)
+	22 button Render settings
+	23 button Render selected layer
+	24 button Choose permanent output folder
+	25 button Library
+	26 button (settable) Browser, Help: Hide sound browser, Value: On
+	27 button Design · 5.1 Side, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	28 text (settable)
+	29 button New design, Help: New design (Command-N)
+	30 button Open design, Help: Open design (Command-O)
+	31 button Save design, Help: Save design (Command-S)
+	32 button Recover autosave
+	33 button Add source
+	34 button Duplicate layer, Help: Duplicate layer (Command-D)
+	35 button Remove layer, Help: Remove layer (Delete / Backspace)
+	36 button Move layer up
+	37 button Move layer down
+	38 button (settable) Edit, Value: On
+	39 button (settable) Perform, Value: Off
+	40 button (settable) Hide layer inspector, Value: On
+	41 button Zoom out
+	42 button Zoom in (Command-wheel)
+	43 button Decrease track height
+	44 button Increase track height (Command-Option-wheel)
+	45 button Fit design
+	46 button Fit selected layers
+	47 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	48 button Snap targets and grid
+	49 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	50 text (settable) 0.0000 s
+	51 button (settable) LAYER, Value: On
+	52 text entry area (settable) Value: Mono point.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Mono point.wav
+48000 Hz, 1 source channels, revision 1
+external-c82a13c11cbd4465af01d333f58c0d69
+	53 button Relink / replace source
+	54 text (settable) 1 ch · MONO
+	55 button Routing / Spatial Panner, Help: Interpretation: 1 ch · MONO · selected 1 of 1
+	56 button Per-channel waveforms
+	57 button (settable) Mute, Value: Off
+	58 button (settable) Solo, Value: Off
+	59 button (settable) Lock entire layer for variations, Value: Off
+	60 button (settable) SOURCE & TIMING, Value: Off
+	61 button (settable) MIX, Value: On
+	62 text (settable) Gain
+	63 slider (settable) Layer gain (dB), Value: 0.0, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	64 button (settable) Lock Gain for variations, Value: Off
+	65 text (settable) Pan / balance Rate / pitch linked
+	66 slider (settable) Linked rate (%); pitch follows rate, Value: 100.0, Secondary Actions: Delete
+	67 button (settable) Lock Rate / pitch linked for variations, Value: Off
+	68 text (settable)
+	69 toggle button (settable, boolean) Reverse, Value: off
+	70 button (settable) Lock Reverse for variations, Value: Off
+	71 button (settable) FADES, Value: Off
+	72 button (settable) STOCK INSERTS, Value: On
+	73 pop up button (settable) Insert rack target, Value: Selected layer inserts
+	74 pop up button (settable) Ordered stock inserts, Value: 1 | delay
+	75 button Add stock insert
+	76 button Remove insert
+	77 toggle button (settable, boolean) Bypass insert, Value: off
+	78 toggle button (settable, boolean) Lock insert for variations, Value: off
+	79 text (settable) Delay (ms)
+	80 slider (settable) Delay (ms), Help: Effective insert value. Editing unlinks this target from its macro., Value: 150, Secondary Actions: Delete
+	81 button (settable) Lock insert parameter 1, Value: Off
+	82 text (settable) Feedback
+	83 slider (settable) Feedback, Help: Effective insert value. Editing unlinks this target from its macro., Value: 0.300, Secondary Actions: Delete
+	84 button (settable) Lock insert parameter 2, Value: Off
+	85 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	86 container Layer canvas. Double-click a fade curve to add a point; drag to reshape; Option-click removes. Shift addresses OUT when handles or points overlap. Right-click for presets. Option-body slips source. Control is fine; Command bypasses snapping.
+	87 button Select / reorder layer Surround bed.wav, Help: Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize
+	88 button Track colour for Surround bed.wav, Help: Track colour
+	89 button (settable) Mute Surround bed.wav, Value: Off
+	90 button (settable) Solo Surround bed.wav, Value: Off
+	91 button (settable) Lock Surround bed.wav for variations, Value: Off
+	92 button Select / reorder layer Mono point.wav, Help: Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize
+	93 button Track colour for Mono point.wav, Help: Track colour
+	94 button (settable) Mute Mono point.wav, Value: Off
+	95 button (settable) Solo Mono point.wav, Value: Off
+	96 button (settable) Lock Mono point.wav for variations, Value: Off
+	97 button Select / reorder layer Mix.wav, Help: Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize
+	98 button Track colour for Mix.wav, Help: Track colour
+	99 button (settable) Mute Mix.wav, Value: Off
+	100 button (settable) Solo Mix.wav, Value: Off
+	101 button (settable) Lock Mix.wav for variations, Value: Off
+	102 button Generate 5
+	103 button Variation bounds and enabled parameters
+	104 pop up button (settable) Original and variation candidates, Value: Original
+	105 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	106 button Copy Original to Project
+	107 button Drag WAV, Help: Drag the actual finalized durable WAV to Finder or another application.
+	108 button Add completed output as layer
+	109 pop up button (settable) Actual finalized Export output / set, Value: Mix 5.1 Side · Surround motion QA-r16-94cb5488.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-v14/native-ui-fixture/Renders/Surround motion QA-r16-94cb5488.wav
+	110 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
+	111 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	112 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; C -100.0 dBFS; LFE -100.0 dBFS; Ls -100.0 dBFS; Rs -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	113 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
+	114 text (settable) Design ready
+	115 close button
+	116 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	117 minimize button
+	118 text SoundPlus
+119 menu bar
+	120 SoundPlus
+
+The focused UI element is 19 container

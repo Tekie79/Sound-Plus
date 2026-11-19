@@ -1,0 +1,17 @@
+[0/2] Re-checking globbed directories...
+[1/16] Building CXX object CMakeFiles/SoundPlus.dir/src/Main.cpp.o
+[2/16] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[3/16] Building CXX object CMakeFiles/SoundPlus.dir/src/Benchmark.cpp.o
+[4/16] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerLayouts.cpp.o
+[5/16] Building CXX object CMakeFiles/SoundPlus.dir/src/LibraryView.cpp.o
+[6/16] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ReliabilityTests.cpp.o
+[7/16] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/WaveformPreviewTests.cpp.o
+[8/16] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerView.cpp.o
+[9/16] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+[10/16] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[11/16] Building CXX object CMakeFiles/SoundPlusTests.dir/src/LibraryView.cpp.o
+[12/16] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[13/16] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[14/16] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[15/16] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[16/16] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests
