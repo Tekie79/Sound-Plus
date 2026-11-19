@@ -72,6 +72,7 @@ void setMixLayout(DesignMix &m, const ChannelLayout &l)
     validateLayout(l);
     bool legacy = m.layout.id.isEmpty();
     m.layout = l;
+    m.routingVersion = 2;
     for (auto &v : m.layers)
     {
         if (legacy || v.routing.inputs.empty())
@@ -82,6 +83,22 @@ void setMixLayout(DesignMix &m, const ChannelLayout &l)
             v.routing.spatial = false;
         }
     }
+}
+bool upgradeLiveSpatial(DesignDocument &d)
+{
+    bool changed = false;
+    auto upgrade = [&](DesignMix &m)
+    {
+        if (!m.layout.id.isEmpty() && m.routingVersion == 1)
+        {
+            m.routingVersion = 2;
+            changed = true;
+        }
+    };
+    upgrade(d.original);
+    for (auto &v : d.variations)
+        upgrade(v.mix);
+    return changed;
 }
 ChannelLayout designLayout(const DesignDocument &d)
 {
@@ -107,6 +124,8 @@ void validateLayoutMix(const DesignMix &m, double rate)
     if (m.layout.id.isEmpty())
         return;
     validateLayout(m.layout);
+    if (m.routingVersion != 1 && m.routingVersion != 2)
+        throw std::runtime_error("Unsupported spatial routing version");
     int work = 0, spatial = 0, matrixWork = 0;
     double delayBytes = 0, preparedBytes = 0;
     for (auto &l : m.layers)

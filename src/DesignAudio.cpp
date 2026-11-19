@@ -257,6 +257,7 @@ class Voice
     juce::AudioBuffer<float> block{2, 512};
     bool mono = false, identity = false, layoutAware = false;
     int inputChannels = 2;
+    int routingVersion = 2;
     ChannelLayout bus;
     ChannelMatrix matrix{};
     std::array<std::array<juce::SmoothedValue<float>, 16>, 16> matrixGains;
@@ -375,12 +376,13 @@ class Voice
     }
 
   public:
-    Voice(const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {})
+    Voice(const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {},
+          int version = 2)
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
           rack(prepareRack(l.effects, rate, invariant, layout.id.isEmpty() ? 2 : (int)l.routing.inputs.size(),
                            !layout.id.isEmpty())),
           layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? (int)l.routing.inputs.size() : 2),
-          bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
+          routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
           previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
         if (l.source.error.isNotEmpty())
@@ -477,7 +479,7 @@ class Voice
                     {
                         auto g = spatialGains(
                             bus, angle + (inputChannels == 2 ? (k == 0 ? -spread : spread) * .5 : 0),
-                            layer.routing.divergence);
+                            layer.routing.divergence, routingVersion);
                         float value = block.getSample(k, n) * (inputChannels == 2 ? .70710678f : 1.f);
                         for (int c = 0; c < bus.size(); ++c)
                             output.addSample(c, offset + n, value * g[c]);
@@ -528,10 +530,22 @@ class Voice
                 for (int k = 0; k < inputChannels; ++k)
                     matrixGains[c][k].setTargetValue(matrix[c][k]);
             double target = updated.routing.azimuth, current = azimuth.getCurrentValue();
-            while (target - current > 180)
-                target -= 360;
-            while (target - current < -180)
-                target += 360;
+            if (routingVersion == 2)
+            {
+                double delta = std::fmod(target - current, 360.);
+                if (delta > 180.)
+                    delta -= 360.;
+                if (delta < -180.)
+                    delta += 360.;
+                target = current + delta;
+            }
+            else
+            {
+                while (target - current > 180)
+                    target -= 360;
+                while (target - current < -180)
+                    target += 360;
+            }
             azimuth.setTargetValue(target);
             width.setTargetValue(updated.routing.width);
         }
@@ -609,7 +623,7 @@ struct DesignGraph::Impl
                                              l.name.toStdString());
                 voices.push_back(std::make_unique<Voice>(
                     l, sampleRate, invariant || !document.activeMix().layout.id.isEmpty(),
-                    document.activeMix().layout));
+                    document.activeMix().layout, document.activeMix().routingVersion));
             }
     }
     void render(juce::AudioBuffer<float> &out, int offset, int count)
@@ -945,6 +959,10 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         p->setProperty("version", 1);
         p->setProperty("design", layoutJson(bus));
         p->setProperty("export", layoutJson(delivery));
+        if (!effectiveInput.activeMix().layout.id.isEmpty())
+            p->setProperty("spatialRoutingVersion", effectiveInput.activeMix().routingVersion);
+        if (auto *take = selectedTake(d); take && take->correctedFrom.isNotEmpty())
+            p->setProperty("correctionOrigin", takeToJson(*take)["correctionOrigin"]);
         p->setProperty("conversion", "role-matrix-v1; shared normalization; LFE excluded from fold-down");
         juce::Array<juce::var> layers;
         for (auto &l : effectiveInput.activeMix().layers)

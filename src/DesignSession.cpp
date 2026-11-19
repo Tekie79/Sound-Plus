@@ -46,6 +46,9 @@ bool sameTakes(const DesignDocument &a, const DesignDocument &b)
             v->setProperty("rate", t.sampleRate);
             v->setProperty("captureRate", t.captureRate);
             v->setProperty("processing", t.processing);
+            v->setProperty("correctedFrom", t.correctedFrom);
+            v->setProperty("originalRecipeHash", t.originalRecipeHash);
+            v->setProperty("originalEventHash", t.originalEventHash);
             juce::Array<juce::var> s;
             for (auto &source : t.sources)
             {
@@ -122,13 +125,20 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
             [store = recovery, resolve = services.resolve, safe, initialId, initialRevision, initialActivity]
             {
                 auto entries = store->entries();
+                bool migrated = false;
                 if (!entries.empty())
                 {
                     resolve(entries.front().document);
+                    migrated = upgradeLiveSpatial(entries.front().document);
+                    if (migrated)
+                    {
+                        ++entries.front().document.revision;
+                        entries.front().dirty = true;
+                    }
                     entries.front().dirty |= recoverTakeDrafts(entries.front().document);
                 }
-                return [safe, entries = std::move(entries), initialId, initialRevision,
-                        initialActivity]() mutable
+                return [safe, entries = std::move(entries), initialId, initialRevision, initialActivity,
+                        migrated]() mutable
                 {
                     if (!safe)
                         return;
@@ -141,9 +151,11 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
                         safe->document = std::move(latest.document);
                         safe->savedFile = latest.savedFile;
                         safe->dirty = latest.dirty;
-                        safe->autoRevision = safe->document.revision;
+                        safe->autoRevision = migrated ? 0 : safe->document.revision;
                         safe->autoDocument = safe->document.id;
                         safe->message = latest.dirty ? "Recovered latest changes" : "Reopened saved design";
+                        if (migrated)
+                            safe->message = "Live spatial processing updated; recorded takes preserved";
                         safe->restoreDerivedState();
                     }
                     safe->notify();
@@ -584,6 +596,11 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                         replacement.dirty = false;
                     }
                     resolve(replacement.document);
+                    if (upgradeLiveSpatial(replacement.document))
+                    {
+                        ++replacement.document.revision;
+                        replacement.dirty = true;
+                    }
                     replacement.dirty |= recoverTakeDrafts(replacement.document);
                 }
                 else

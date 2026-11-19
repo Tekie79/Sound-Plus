@@ -3,6 +3,9 @@
 #include "DesignerView.h"
 #include "LibraryView.h"
 #include "TakeTests.h"
+#include "AudioStream.h"
+#include "DesignLive.h"
+#include "Performance.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <deque>
 #include <iostream>
@@ -128,6 +131,10 @@ struct CorrectionViewTestAccess
     {
         v.render.onClick();
         v.session.renderWorker.join();
+    }
+    static void waitRender(DesignSession &s)
+    {
+        s.renderWorker.join();
     }
     static void chooseOutput(DesignerView &v, const juce::String &path)
     {
@@ -298,6 +305,495 @@ void legacySplit(const juce::File &root, const juce::File &app)
           "Printed legacy design reopens with unchanged take identity");
 }
 
+std::array<double, 16> spatialOracle(const sp::ChannelLayout &layout, double angle, double divergence)
+{
+    std::vector<std::pair<double, int>> ring;
+    for (int c = 0; c < layout.size(); ++c)
+    {
+        auto r = layout.roles[c];
+        if (r == "LFE")
+            continue;
+        double a = r == "L"    ? -30
+                   : r == "R"  ? 30
+                   : r == "C"  ? 0
+                   : r == "Ls" ? -90
+                   : r == "Rs" ? 90
+                   : r == "Lb" ? -150
+                               : 150;
+        ring.emplace_back(a, c);
+    }
+    std::sort(ring.begin(), ring.end());
+    // Independent principal-angle oracle: remainder, literal speaker geometry,
+    // and long-double normalized equal-power coefficients.
+    long double position = std::remainder(angle, 360.0);
+    if (position < ring.front().first)
+        position += 360;
+    std::array<double, 16> g{};
+    for (size_t i = 0; i < ring.size(); ++i)
+    {
+        auto lo = ring[i], hi = ring[(i + 1) % ring.size()];
+        if (i + 1 == ring.size())
+            hi.first += 360;
+        if (position >= lo.first && position <= hi.first)
+        {
+            long double fraction = (position - lo.first) / (hi.first - lo.first);
+            g[(size_t)lo.second] = (double)std::cos(fraction * std::acos(-1.L) / 2);
+            g[(size_t)hi.second] = (double)std::sin(fraction * std::acos(-1.L) / 2);
+            break;
+        }
+    }
+    double energy = 0;
+    for (auto [a, c] : ring)
+    {
+        juce::ignoreUnused(a);
+        g[(size_t)c] = (1 - divergence) * g[(size_t)c] + divergence / std::sqrt((double)ring.size());
+        energy += g[(size_t)c] * g[(size_t)c];
+    }
+    for (auto &v : g)
+        v /= std::sqrt(energy);
+    return g;
+}
+juce::AudioBuffer<float> pcm(const sp::DesignDocument &d)
+{
+    sp::DesignReader r(d, 48000, 0, -1, 0);
+    juce::AudioBuffer<float> all(sp::designChannels(d), (int)r.length()), block(sp::designChannels(d), 4096);
+    int at = 0;
+    while (auto n = r.read(block, 4096))
+    {
+        for (int c = 0; c < all.getNumChannels(); ++c)
+            all.copyFrom(c, at, block, c, 0, n);
+        at += n;
+    }
+    return all;
+}
+double pcmDifference(const juce::AudioBuffer<float> &a, const juce::AudioBuffer<float> &b, int count = -1)
+{
+    check(a.getNumChannels() == b.getNumChannels(), "PCM channel identities");
+    if (count < 0)
+    {
+        check(a.getNumSamples() == b.getNumSamples(), "PCM frame extents");
+        count = a.getNumSamples();
+    }
+    check(a.getNumSamples() >= count && b.getNumSamples() >= count, "PCM prefix exists");
+    double error = 0;
+    for (int c = 0; c < a.getNumChannels(); ++c)
+        for (int n = 0; n < count; ++n)
+        {
+            check(std::isfinite(a.getSample(c, n)) && std::isfinite(b.getSample(c, n)),
+                  "Finite compared PCM");
+            error = std::max(error, (double)std::abs(a.getSample(c, n) - b.getSample(c, n)));
+        }
+    return error;
+}
+void constant(const juce::File &file, const std::vector<float> &levels, int frames = 192000)
+{
+    file.getParentDirectory().createDirectory();
+    juce::WavAudioFormat wav;
+    auto stream = file.createOutputStream();
+    std::unique_ptr<juce::AudioFormatWriter> writer(
+        wav.createWriterFor(stream.release(), 48000, (unsigned)levels.size(), 32, {}, 0));
+    juce::AudioBuffer<float> b((int)levels.size(), frames);
+    for (int c = 0; c < (int)levels.size(); ++c)
+        for (int n = 0; n < frames; ++n)
+            b.setSample(c, n, levels[(size_t)c]);
+    check(writer && writer->writeFromAudioSampleBuffer(b, 0, frames), "Known constant channel fixture");
+}
+template <class F> void until(F f, const char *reason, int ms = 15000)
+{
+    auto end = sp::monotonicMs() + ms;
+    while (!f() && sp::monotonicMs() < end)
+        std::this_thread::sleep_for(std::chrono::milliseconds(4));
+    check(f(), reason);
+}
+juce::AudioBuffer<float> capturePcm(const juce::File &file, int frames)
+{
+    juce::MemoryBlock bytes;
+    until(
+        [&]
+        {
+            file.loadFileAsData(bytes);
+            return bytes.getSize() >= (size_t)frames * 6 * 4;
+        },
+        "Consumed pre-monitor PCM flushed");
+    juce::AudioBuffer<float> b(6, frames);
+    auto *data = (const float *)bytes.getData();
+    for (int n = 0; n < frames; ++n)
+        for (int c = 0; c < 6; ++c)
+            b.setSample(c, n, data[n * 6 + c]);
+    return b;
+}
+juce::var spatialCorrection(const juce::File &root, const juce::File &app)
+{
+    auto repo = app.getParentDirectory();
+    while (!repo.getChildFile("AGENTS.md").existsAsFile() && repo != repo.getParentDirectory())
+        repo = repo.getParentDirectory();
+    auto extract = [&](const char *name, const juce::File &target)
+    {
+        auto f = repo.getChildFile("docs/verification/" + juce::String(name));
+        check(f.existsAsFile(), "Mandatory pre-repair spatial fixture exists");
+        juce::GZIPDecompressorInputStream in(f.createInputStream().release(), true,
+                                             juce::GZIPDecompressorInputStream::gzipFormat);
+        auto out = target.createOutputStream();
+        check(out != nullptr, "Owned spatial fixture output");
+        out->writeFromInputStream(in, -1);
+        out->flush();
+    };
+    root.createDirectory();
+    auto file = root.getChildFile("Old negative wraps.soundplus");
+    extract("multichannel-v141-spatial-v1.soundplus.gz", file);
+    auto old = sp::loadDesign(file);
+    auto source = root.getChildFile("old-constant.wav");
+    extract("multichannel-v141-spatial-source.wav.gz", source);
+    auto &fingerprint = old.takes[0].sources[0];
+    check(hash(source) == fingerprint.sha256, "Historical constant source bytes");
+    sp::FileStamp stamp;
+    sp::fileStamp(source, stamp);
+    fingerprint.overridePath = source.getFullPathName();
+    fingerprint.overrideSize = stamp.size;
+    fingerprint.overrideModified = stamp.modified;
+    fingerprint.overrideInode = stamp.inode;
+    auto originalRecipe = old.takes[0].recipeHash, originalEvent = old.takes[0].eventHash;
+    auto oldPcm = pcm(old);
+    check(old.takes[0].processing == "stock-layout-takes-v1" && old.takes[0].recipe->routingVersion == 1 &&
+              oldPcm.getMagnitude(oldPcm.getNumSamples() - 512, 512) == 0,
+          "Historical version1 retains its declared affected final silence");
+    auto oldRender = sp::renderDesign(
+        old, root.getChildFile("old-render"), old.renderSettings, [] { return false; }, [](double) {});
+    check(oldRender.sha256 == old.outputs[0].sha256,
+          "Historical version1 WAV bytes/receipt remain unchanged after math repair");
+    Worker w;
+    sp::DesignSession session(root.getChildFile("copy-session/library.sqlite"), w.services());
+    session.document = old;
+    session.selectTake(old.activeTake);
+    session.createCorrectedSpatialCopy();
+    w.drain();
+    check(session.document.takes.size() == 2, "Explicit corrected-copy session action retains original");
+    auto corrected = session.document;
+    auto &copy = corrected.takes.back();
+    check(copy.processing == "stock-layout-takes-v2" && copy.recipe->routingVersion == 2 &&
+              copy.id != old.activeTake && copy.correctedFrom == old.activeTake &&
+              copy.originalRecipeHash == originalRecipe && copy.originalEventHash == originalEvent &&
+              copy.recipeHash != originalRecipe && copy.eventHash == originalEvent &&
+              session.readyOutput() == juce::File(),
+          "Corrected copy has explicit new processing/lineage and no inherited Ready render");
+    session.undo();
+    check(session.document.takes.size() == 1 && session.document.activeTake == old.activeTake,
+          "Undo corrected copy restores old take context");
+    session.redo();
+    corrected = session.document;
+    auto fixed = pcm(corrected);
+    double oracleError = 0;
+    std::array<double, 11> targets{0, -90, -180, 90, 0, -90, -180, 90, 0, -90, -130};
+    for (size_t i = 0; i < targets.size(); ++i)
+    {
+        auto expected = spatialOracle(sp::channelLayout("5.1-side-v1"), targets[i], 0);
+        for (int c = 0; c < 6; ++c)
+            for (int n = (int)i * 1200 + 800; n < (int)i * 1200 + 1100; ++n)
+                oracleError =
+                    std::max(oracleError, std::abs(fixed.getSample(c, n) - .2f * expected[(size_t)c]));
+    }
+    check(oracleError < 2e-6,
+          "Corrected historical sequence matches independent per-channel steady-state oracle");
+    auto correctedFile = root.getChildFile("Corrected negative wraps.soundplus");
+    session.document.outputFolder = root.getChildFile("corrected-render").getFullPathName();
+    session.render();
+    sp::CorrectionViewTestAccess::waitRender(session);
+    w.drain();
+    corrected = session.document;
+    check(corrected.outputs.size() == old.outputs.size() + 1 &&
+              corrected.outputs.back().processing == "stock-layout-takes-v2" &&
+              corrected.outputs.back().channelProvenance["correctionOrigin"]["takeId"].toString() ==
+                  old.activeTake &&
+              session.readyOutput() == juce::File(corrected.outputs.back().path),
+          "Corrected copy renders a new context-bound v2 receipt with original lineage");
+    sp::saveDesignAtomic(correctedFile, corrected);
+    check(sp::loadDesign(correctedFile).takes[0].recipeHash == originalRecipe &&
+              sp::loadDesign(correctedFile).takes[1].correctedFrom == old.activeTake,
+          "Both old identity and correction lineage persist");
+    for (auto layout : sp::namedLayouts())
+        if (sp::horizontalLayout(layout))
+            for (double divergence : {0., .25, .8, 1.})
+                for (double base : {-180., -130., -30., 0., 89.9, 180.})
+                    for (int revolution = -1000; revolution <= 1000; revolution += 37)
+                    {
+                        auto angle = base + 360. * revolution;
+                        auto actual = sp::spatialGains(layout, angle, divergence);
+                        auto expected = spatialOracle(layout, angle, divergence);
+                        double energy = 0;
+                        for (int c = 0; c < layout.size(); ++c)
+                        {
+                            check(std::abs(actual[(size_t)c] - expected[(size_t)c]) < 2e-6,
+                                  "Many positive/negative revolutions match periodic independent geometry");
+                            energy += actual[(size_t)c] * actual[(size_t)c];
+                            if (layout.roles[c] == "LFE")
+                                check(actual[(size_t)c] == 0, "Panner excludes LFE at every divergence");
+                        }
+                        check(std::abs(energy - 1) < 2e-6,
+                              "Periodic full-range panner stays nonzero/unit-energy");
+                    }
+    auto bus = sp::channelLayout("5.1-side-v1");
+    for (double a : {-1e100, 1e100, -850., -130.})
+    {
+        auto g = sp::spatialGains(bus, a);
+        double e = 0;
+        for (auto v : g)
+            e += v * v;
+        check(std::abs(e - 1) < 2e-6, "Arbitrary finite accumulated position retains unit energy");
+    }
+    auto boundaryA = sp::spatialGains(bus, 180. - 1e-5), boundaryB = sp::spatialGains(bus, -180. + 1e-5);
+    for (int c = 0; c < 6; ++c)
+        check(std::abs(boundaryA[(size_t)c] - boundaryB[(size_t)c]) < 1e-6, "Principal boundary continuity");
+    auto mono = root.getChildFile("constant-live.wav");
+    constant(mono, {.2f});
+    auto d = design(mono);
+    d.original.masterDb = 0;
+    sp::setMixLayout(d.original, bus);
+    d.original.layers[0].routing.spatial = true;
+    d.renderSettings.layout = "same";
+    sp::DesignGraph graph(d);
+    juce::AudioBuffer<float> block(6, 1536);
+    double adoptionError = 0;
+    for (double target : targets)
+    {
+        auto edited = d;
+        edited.original.layers[0].routing.azimuth = target;
+        graph.updateParameters(sp::designParameters(edited));
+        block.clear();
+        graph.render(block, 0, 1536);
+        auto expected = spatialOracle(bus, target, 0);
+        for (int c = 0; c < 6; ++c)
+            for (int n = 1024; n < 1536; ++n)
+                adoptionError =
+                    std::max(adoptionError, std::abs(block.getSample(c, n) - .2f * expected[(size_t)c]));
+    }
+    check(adoptionError < 2e-6,
+          "Real graph parameter adoption survives the reachable repeated negative-wrap sequence");
+    for (auto levels :
+         {std::vector<float>{.2f, 0.f}, std::vector<float>{0.f, .2f}, std::vector<float>{.2f, -.2f}})
+        for (double divergence : {0., .3})
+        {
+            auto stereo = root.getChildFile("stereo-" + juce::Uuid().toString() + ".wav");
+            constant(stereo, levels, 20000);
+            auto image = design(stereo);
+            image.original.masterDb = 0;
+            sp::setMixLayout(image.original, bus);
+            image.original.layers[0].routing.spatial = true;
+            image.original.layers[0].routing.divergence = divergence;
+            sp::DesignGraph stereoGraph(image);
+            for (size_t i = 0; i < targets.size(); ++i)
+            {
+                double width = i % 2 ? 0 : 120;
+                auto edited = image;
+                auto &r = edited.original.layers[0].routing;
+                r.azimuth = targets[i];
+                r.width = width;
+                stereoGraph.updateParameters(sp::designParameters(edited));
+                block.clear();
+                stereoGraph.render(block, 0, 1536);
+                auto left = spatialOracle(bus, targets[i] - width / 2, r.divergence),
+                     right = spatialOracle(bus, targets[i] + width / 2, r.divergence);
+                for (int c = 0; c < 6; ++c)
+                    check(std::abs(block.getSample(c, 1400) -
+                                   (levels[0] * left[(size_t)c] + levels[1] * right[(size_t)c]) /
+                                       std::sqrt(2.)) < 3e-6,
+                          "Stereo images/width/divergence and anti-phase follow independent channel oracle");
+            }
+        }
+    auto frozen = sp::freezeTake(d, "Controlled repeated wraps");
+    frozen.generation = 7;
+    sp::hashTake(frozen);
+    auto capture = std::make_shared<sp::TakeCapture>(frozen);
+    auto base = d;
+    base.takeProcessing = true;
+    sp::PcmStream producer(base, 48000, 0);
+    producer.startTake(capture);
+    std::array<std::atomic<int>, 16> identity;
+    for (int c = 0; c < 16; ++c)
+        identity[(size_t)c] = c;
+    juce::AudioBuffer<float> consumed(6, (int)targets.size() * 1536), slice(6, 512);
+    float gain = 1;
+    int at = 0;
+    for (double target : targets)
+    {
+        auto controls = sp::mixControls(d.original);
+        controls.spatial[0].azimuth = target;
+        producer.updatePerformance(controls);
+        for (int k = 0; k < 3; ++k)
+        {
+            producer.fill(512);
+            check(producer.read(slice.getArrayOfWritePointers(), 6, 512, gain, 1, &identity) == 512,
+                  "Controlled six-channel consumption");
+            for (int c = 0; c < 6; ++c)
+                consumed.copyFrom(c, at, slice, c, 0, 512);
+            at += 512;
+        }
+    }
+    capture->finish(producer.acceptedFrame(), true, producer.consumedOutputFrames());
+    auto recorded = capture->snapshot();
+    auto controlled = d;
+    controlled.takes = {recorded};
+    controlled.activeTake = recorded.id;
+    check(recorded.complete && recorded.processing == "stock-layout-takes-v2" && recorded.events.size() >= 10,
+          "Repeated applied spatial motion recorded under explicit v2 identity");
+    check(pcmDifference(consumed, pcm(controlled)) < 1e-6,
+          "Controlled capture/replay preserves every intended channel");
+    auto output = sp::renderDesign(
+        controlled, root.getChildFile("controlled-render"), controlled.renderSettings, [] { return false; },
+        [](double) {});
+    controlled.outputs = {output};
+    sp::saveDesignAtomic(root.getChildFile("Controlled wraps.soundplus"), controlled);
+    // Actual helper/device capture. Monitoring is muted; assertions use pre-monitor PCM.
+    sp::AudioClient audio(app);
+    until([&] { return (double)audio.status()["sampleRate"] > 0; },
+          "Native device available for wrap capture");
+    audio.deviceRate(48000);
+    audio.bufferSize(512);
+    audio.gain(0);
+    until(
+        [&]
+        {
+            auto s = audio.status();
+            return (double)s["sampleRate"] == 48000 && (int)s["bufferFrames"] == 512;
+        },
+        "Native wrap capture configured 48k/512");
+    auto draft = d;
+    auto take = sp::freezeTake(draft, "Native repeated negative wraps");
+    take.checkpoint = root.getChildFile("native-checkpoint.soundplus").getFullPathName();
+    draft.takes = {take};
+    auto snapshot = root.getChildFile("Native draft.soundplus");
+    sp::saveDesignAtomic(snapshot, draft);
+    auto raw = root.getChildFile("native-original.f32");
+    audio.reserveTake(true);
+    auto generation = audio.playDesign("design:" + d.id, snapshot, 0, raw, "record");
+    until([&] { return (bool)audio.status()["playing"] && (int)audio.status()["busChannels"] == 6; },
+          "Native v2 six-channel capture starts");
+    for (size_t i = 0; i < targets.size(); ++i)
+    {
+        auto before = audio.status();
+        auto edited = d;
+        edited.original.layers[0].routing.azimuth = targets[i];
+        audio.updateDesign(edited, generation, sp::monotonicMs());
+        if (i > 0)
+            until([&] { return (int)audio.status()["takeEvents"] > (int)before["takeEvents"]; },
+                  "Each negative-wrap target is applied/captured");
+        auto frame = (int64_t)audio.status()["takeEnd"];
+        until([&] { return (int64_t)audio.status()["takeEnd"] >= frame + 2048; },
+              "Each native target settles beyond ten ms");
+    }
+    auto nativeStatus = audio.status();
+    audio.finishTake();
+    until(
+        [&]
+        {
+            auto s = audio.status();
+            return (int)s["takePhase"] == 3 && (bool)s["takeCheckpointReady"];
+        },
+        "Native wrap capture finalizes durably");
+    audio.reserveTake(false);
+    auto native = sp::loadDesign(juce::File(take.checkpoint)).takes[0];
+    auto nativeDoc = d;
+    nativeDoc.takes = {native};
+    nativeDoc.activeTake = native.id;
+    auto nativePcm = capturePcm(raw, (int)native.outputFrames);
+    auto replay = pcm(nativeDoc);
+    double nativeError = pcmDifference(nativePcm, replay, (int)native.outputFrames);
+    auto expectedLast = spatialOracle(bus, -130, 0);
+    double nativeOracleError = 0;
+    for (int c = 0; c < 6; ++c)
+        for (int n = nativePcm.getNumSamples() - 512; n < nativePcm.getNumSamples(); ++n)
+            nativeOracleError = std::max(nativeOracleError,
+                                         std::abs(nativePcm.getSample(c, n) - .2f * expectedLast[(size_t)c]));
+    check(nativeError < 1e-6 && nativeOracleError < 2e-6,
+          "Native capture/replay and final expected channel energy defeat shared-bug parity");
+    auto nativeOutput = sp::renderDesign(
+        nativeDoc, root.getChildFile("native-render"), nativeDoc.renderSettings, [] { return false; },
+        [](double) {});
+    nativeDoc.outputs = {nativeOutput};
+    auto nativeFile = root.getChildFile("Native negative wraps.soundplus");
+    sp::saveDesignAtomic(nativeFile, nativeDoc);
+    auto replayRaw = root.getChildFile("native-replay.f32");
+    audio.playDesign("design:" + nativeDoc.id, nativeFile, 0, replayRaw);
+    until(
+        [&]
+        {
+            auto state = audio.status();
+            return (bool)state["playing"] && (bool)state["immutableReplay"];
+        },
+        "Actual helper adopts immutable v2 replay");
+    until([&] { return !(bool)audio.status()["playing"]; }, "Actual helper completes immutable wrap replay");
+    auto replayCapture = capturePcm(replayRaw, (int)native.outputFrames);
+    check(pcmDifference(nativePcm, replayCapture, (int)native.outputFrames) < 1e-6,
+          "Native pre-monitor replay matches the original consumed capture on every channel");
+    audio.stop();
+    // Adopt a v1 editable document through the actual asynchronous Open command.
+    Worker migration;
+    sp::DesignSession migrated(root.getChildFile("migration/library.sqlite"), migration.services());
+    migrated.open(file);
+    migration.drain();
+    check(migrated.document.original.routingVersion == 2 && migrated.document.revision > old.revision &&
+              migrated.dirty && migrated.document.takes[0].recipeHash == originalRecipe &&
+              migrated.document.takes[0].recipe->routingVersion == 1,
+          "Open migrates editable Live processing with retained revision while preserving frozen v1 take");
+    Worker stale;
+    sp::DesignSession switched(root.getChildFile("stale-copy/library.sqlite"), stale.services());
+    switched.document = old;
+    switched.selectTake(old.activeTake);
+    switched.createCorrectedSpatialCopy();
+    switched.selectTake({});
+    stale.drain();
+    check(switched.document.takes.size() == 1 && switched.document.activeTake.isEmpty() && !switched.working,
+          "Held corrected-copy completion cannot steal a newly selected Live context");
+    auto recoveryRoot = root.getChildFile("startup-migration");
+    sp::DesignRecoveryStore(recoveryRoot.getChildFile("designer-autosave")).retain(old, file, false);
+    Worker startup;
+    auto startupServices = startup.services();
+    startupServices.automaticRecovery = true;
+    sp::DesignSession recovered(recoveryRoot.getChildFile("library.sqlite"), startupServices);
+    startup.drain();
+    check(recovered.document.original.routingVersion == 2 && recovered.dirty &&
+              recovered.document.takes[0].recipeHash == originalRecipe,
+          "Automatic recovery upgrades editable policy while preserving frozen identity");
+    startup.now = 1000;
+    recovered.poll();
+    startup.drain();
+    check(sp::loadDesign(recoveryRoot.getChildFile("designer-autosave/" + old.id + ".soundplus"))
+                  .original.routingVersion == 2,
+          "Migrated startup revision is actually retained in recovery");
+    auto pendingRoot = root.getChildFile("startup-edit-guard");
+    sp::DesignRecoveryStore(pendingRoot.getChildFile("designer-autosave")).retain(old, file, false);
+    auto pendingFile = pendingRoot.getChildFile("designer-autosave/" + old.id + ".soundplus");
+    auto pendingHash = hash(pendingFile);
+    Worker held;
+    auto heldServices = held.services();
+    heldServices.automaticRecovery = true;
+    sp::DesignSession fresh(pendingRoot.getChildFile("library.sqlite"), heldServices);
+    auto freshId = fresh.document.id;
+    fresh.editMetadata("Fresh user edit", [](auto &doc) { doc.name = "Fresh user work"; });
+    held.drain();
+    check(fresh.document.id == freshId && fresh.document.name == "Fresh user work" &&
+              hash(pendingFile) == pendingHash,
+          "Held policy migration cannot overwrite fresh startup edits or the retained original");
+    auto evidence = juce::var(new juce::DynamicObject());
+    auto *e = evidence.getDynamicObject();
+    e->setProperty("oldWavSha256", oldRender.sha256);
+    e->setProperty("oldFinalWindowSilent", true);
+    e->setProperty("correctedOracleMaximumError", oracleError);
+    e->setProperty("graphAdoptionMaximumError", adoptionError);
+    e->setProperty("nativeCaptureReplayMaximumError", nativeError);
+    e->setProperty("nativeOracleMaximumError", nativeOracleError);
+    e->setProperty("nativeConsumedFrames", (juce::int64)native.outputFrames);
+    e->setProperty("nativeTake", sp::takeToJson(native));
+    e->setProperty("nativeStatus", nativeStatus);
+    e->setProperty("nativeRaw", raw.getFullPathName());
+    e->setProperty("nativeReplayRaw", replayRaw.getFullPathName());
+    e->setProperty("nativeDocument", nativeFile.getFullPathName());
+    e->setProperty("correctedDocument", correctedFile.getFullPathName());
+    e->setProperty("oldRender", oldRender.path);
+    e->setProperty("humanListening", false);
+    e->setProperty("physicalSurroundMapping", false);
+    return evidence;
+}
+
 void preferences(const juce::File &root)
 {
     auto source = root.getChildFile("input.wav");
@@ -425,14 +921,18 @@ void runMultichannelCorrectionsTests(const juce::File &parent, const juce::File 
     root.createDirectory();
     preferences(root.getChildFile("R11"));
     legacySplit(root.getChildFile("R17"), app);
+    auto spatial = spatialCorrection(root.getChildFile("R12"), app);
     auto result = sp::message("multichannel-corrections-results");
     result.getDynamicObject()->setProperty("checks", checks);
+    result.getDynamicObject()->setProperty("R12", spatial);
     result.getDynamicObject()->setProperty(
         "scenarios",
         juce::Array<juce::var>{"R11 lifetime preference churn, Delete/Undo/Redo/save/autosave/recovery"});
     auto scenarios = result["scenarios"];
     scenarios.append(
         "R17 historical legacy panel callbacks, split/interleaved/mono membership, save/reopen/Print");
+    scenarios.append("R12 periodicity/oracle, mono/stereo/divergence, parameter adoption, native "
+                     "capture/replay, old/new dispatch and corrected-copy provenance");
     result.getDynamicObject()->setProperty("scenarios", scenarios);
     result.getDynamicObject()->setProperty("root", root.getFullPathName());
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(result, true));
@@ -461,7 +961,10 @@ void prepareSpatialV1Fixture(const juce::File &folder)
     sp::setMixLayout(d.original, sp::channelLayout("5.1-side-v1"));
     d.original.layers[0].routing.spatial = true;
     d.renderSettings.layout = "same";
+    d.original.routingVersion = 1;
     auto t = sp::freezeTake(d, "Repeated negative wraps v1");
+    t.recipe = d.original;
+    t.processing = "stock-layout-takes-v1";
     t.generation = 1;
     std::array<double, 11> targets{0, -90, -180, 90, 0, -90, -180, 90, 0, -90, -130};
     for (size_t i = 0; i < targets.size(); ++i)

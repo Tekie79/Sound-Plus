@@ -17,6 +17,14 @@ bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
     if (!t.recipe->layout.id.isEmpty() &&
         (o.channelProvenance.isVoid() || layoutFromJson(o.channelProvenance["design"]) != t.recipe->layout))
         return false;
+    if (!t.recipe->layout.id.isEmpty())
+    {
+        int policy = o.channelProvenance.hasProperty("spatialRoutingVersion")
+                         ? (int)o.channelProvenance["spatialRoutingVersion"]
+                         : 1;
+        if (policy != t.recipe->routingVersion)
+            return false;
+    }
     auto *sources = o.sourceProvenance.getArray();
     if (!sources || sources->size() != (int)t.sources.size())
         return false;
@@ -51,6 +59,8 @@ void DesignSession::recordTake()
     endGesture();
     document.activeTake.clear();
     stop();
+    if (!document.activeMix().layout.id.isEmpty() && document.activeMix().routingVersion == 1)
+        edit("Update Live spatial processing", [](auto &d) { upgradeLiveSpatial(d); });
     if (onBeforePlay)
         onBeforePlay();
     // Reserve while worker-side source verification is still pending, before
@@ -272,6 +282,59 @@ void DesignSession::deleteTake()
     takeMutation = false;
     takeState = TakeState::idle;
     selectContextOutput();
+}
+void DesignSession::createCorrectedSpatialCopy()
+{
+    auto *original = selectedTake(document);
+    if (!original || !original->complete || original->processing != "stock-layout-takes-v1" || takeBusy() ||
+        working || replacing || rendering)
+        return;
+    if (document.takes.size() >= maxDocumentTakes)
+    {
+        message = "Remove a take before creating a corrected copy (16 maximum)";
+        notify();
+        return;
+    }
+    stop();
+    working = true;
+    auto token = stamp(Operation::take);
+    auto snapshot = *original;
+    auto documentId = document.id;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    enqueue(token,
+            [safe, snapshot, documentId]
+            {
+                auto copy = correctedSpatialCopy(snapshot);
+                return [safe, copy = std::move(copy), snapshot, documentId]
+                {
+                    if (!safe)
+                        return;
+                    safe->working = false;
+                    auto *current = selectedTake(safe->document);
+                    if (safe->document.id != documentId || !current || current->id != snapshot.id ||
+                        current->recipeHash != snapshot.recipeHash ||
+                        current->eventHash != snapshot.eventHash ||
+                        safe->document.takes.size() >= maxDocumentTakes)
+                    {
+                        safe->message = "Corrected copy cancelled: take context changed";
+                        safe->notify();
+                        return;
+                    }
+                    safe->takeMutation = true;
+                    safe->edit("Create corrected spatial copy",
+                               [&](auto &d)
+                               {
+                                   d.takes.push_back(copy);
+                                   d.activeTake = copy.id;
+                               });
+                    safe->takeMutation = false;
+                    safe->takeDisplay = takeDisplayMix(copy);
+                    safe->takeState = TakeState::ready;
+                    safe->selectContextOutput();
+                    safe->message = "Corrected copy created; original take and outputs retained";
+                    safe->notify();
+                };
+            });
 }
 void DesignSession::relinkTakeSource(const juce::String &source, const juce::File &file)
 {

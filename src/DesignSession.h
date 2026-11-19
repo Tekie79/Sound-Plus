@@ -107,6 +107,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void selectTake(const juce::String &);
     void nameTake(const juce::String &, bool keep = true);
     void deleteTake();
+    void createCorrectedSpatialCopy();
     void relinkTakeSource(const juce::String &source, const juce::File &);
     const DesignMix &performanceMix() const;
     void beginSeekGesture(bool audible);

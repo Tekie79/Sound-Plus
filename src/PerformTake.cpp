@@ -156,6 +156,14 @@ juce::var takeToJson(const PerformTake &t)
     put(o, "kept", t.kept);
     put(o, "reason", t.reason);
     put(o, "checkpoint", t.checkpoint);
+    if (t.correctedFrom.isNotEmpty())
+    {
+        auto origin = obj();
+        put(origin, "takeId", t.correctedFrom);
+        put(origin, "recipeHash", t.originalRecipeHash);
+        put(origin, "eventHash", t.originalEventHash);
+        put(o, "correctionOrigin", origin);
+    }
     juce::Array<juce::var> sources;
     for (auto &s : t.sources)
     {
@@ -193,6 +201,15 @@ PerformTake takeFromJson(const juce::var &o)
     t.kept = (bool)o["kept"];
     t.reason = o["reason"].toString();
     t.checkpoint = o["checkpoint"].toString();
+    if (o.hasProperty("correctionOrigin"))
+    {
+        auto origin = o["correctionOrigin"];
+        t.correctedFrom = origin["takeId"].toString();
+        t.originalRecipeHash = origin["recipeHash"].toString();
+        t.originalEventHash = origin["eventHash"].toString();
+        if (!origin.isObject() || t.correctedFrom.isEmpty())
+            throw std::runtime_error("Invalid spatial correction provenance");
+    }
     auto *events = o["events"].getArray();
     if (!events || events->size() > (int)maxTakeEvents)
         throw std::runtime_error("Take event limit exceeded");
@@ -222,7 +239,8 @@ void hashTake(PerformTake &t)
 void validateTake(const PerformTake &t)
 {
     if (t.id.isEmpty() || t.session.isEmpty() ||
-        (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1") ||
+        (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
+         t.processing != "stock-layout-takes-v2") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -233,6 +251,13 @@ void validateTake(const PerformTake &t)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
     if ((t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
         throw std::runtime_error("Take layout processing contract mismatch");
+    if ((t.processing == "stock-layout-takes-v1" && t.recipe->routingVersion != 1) ||
+        (t.processing == "stock-layout-takes-v2" && t.recipe->routingVersion != 2))
+        throw std::runtime_error("Take spatial processing version mismatch");
+    if (t.correctedFrom.isNotEmpty() || t.originalRecipeHash.isNotEmpty() || t.originalEventHash.isNotEmpty())
+        if (t.processing != "stock-layout-takes-v2" || t.correctedFrom.isEmpty() ||
+            t.originalRecipeHash.length() != 64 || t.originalEventHash.length() != 64)
+            throw std::runtime_error("Invalid spatial correction lineage");
     DesignDocument d;
     d.sampleRate = t.sampleRate;
     d.original = t.recipe;
@@ -267,9 +292,12 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     PerformTake t;
     t.name = name;
     t.session = d.id;
-    t.recipe = d.activeMix();
+    auto mix = d.activeMix();
+    if (!mix.layout.id.isEmpty())
+        mix.routingVersion = 2;
+    t.recipe = std::move(mix);
     if (!d.activeMix().layout.id.isEmpty())
-        t.processing = "stock-layout-takes-v1";
+        t.processing = "stock-layout-takes-v2";
     t.sampleRate = d.sampleRate;
     t.captureRate = d.sampleRate;
     t.reason = "Interrupted draft";
@@ -285,6 +313,27 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     hashTake(t);
     validateTake(t);
     return t;
+}
+PerformTake correctedSpatialCopy(const PerformTake &original)
+{
+    validateTake(original);
+    if (!original.complete || original.processing != "stock-layout-takes-v1")
+        throw std::runtime_error("Choose a completed version1 spatial take");
+    auto copy = original;
+    copy.id = juce::Uuid().toString();
+    copy.name = original.name + " (corrected)";
+    copy.correctedFrom = original.id;
+    copy.originalRecipeHash = original.recipeHash;
+    copy.originalEventHash = original.eventHash;
+    auto mix = (const DesignMix &)original.recipe;
+    mix.routingVersion = 2;
+    copy.recipe = std::move(mix);
+    copy.processing = "stock-layout-takes-v2";
+    copy.kept = false;
+    copy.checkpoint.clear();
+    hashTake(copy);
+    validateTake(copy);
+    return copy;
 }
 const PerformTake *selectedTake(const DesignDocument &d)
 {

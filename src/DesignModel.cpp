@@ -31,7 +31,7 @@ juce::var mixJson(const DesignMix &mix)
     if (!mix.layout.id.isEmpty())
     {
         put(o, "busLayout", layoutJson(mix.layout));
-        put(o, "routingVersion", 1);
+        put(o, "routingVersion", mix.routingVersion);
         put(o, "processorPolicy", "independent-linked-v1");
     }
     if (hasPerformance(mix.performance))
@@ -66,7 +66,9 @@ DesignMix mixFrom(const juce::var &o)
     DesignMix mix;
     if (o.hasProperty("busLayout"))
     {
-        if ((int)o["routingVersion"] != 1 || o["processorPolicy"].toString() != "independent-linked-v1")
+        mix.routingVersion = (int)o["routingVersion"];
+        if ((mix.routingVersion != 1 && mix.routingVersion != 2) ||
+            o["processorPolicy"].toString() != "independent-linked-v1")
             throw std::runtime_error("Unsupported layout routing/processor policy");
         mix.layout = layoutFromJson(o["busLayout"]);
     }
@@ -184,8 +186,19 @@ namespace
 {
 int performanceFormat(const DesignDocument &d)
 {
+    auto corrected = [](const DesignMix &m) { return !m.layout.id.isEmpty() && m.routingVersion == 2; };
+    if (corrected(d.original) ||
+        std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return corrected(v.mix); }) ||
+        std::any_of(d.takes.begin(), d.takes.end(),
+                    [](auto &t) { return t.processing == "stock-layout-takes-v2"; }))
+        return 6;
     if ((d.renderSettings.splitMono && d.renderSettings.layout.isEmpty()) ||
-        std::any_of(d.outputs.begin(), d.outputs.end(), [](auto &o) { return o.outputSetVersion > 0; }))
+        std::any_of(d.outputs.begin(), d.outputs.end(),
+                    [](auto &o)
+                    {
+                        return o.outputSetVersion > 0 || o.processing == "stock-layout-takes-v2" ||
+                               (int)o.channelProvenance["spatialRoutingVersion"] == 2;
+                    }))
         return 6;
     auto version=[](const DesignMix &m){
         bool used=hasPerformance(m.performance) || std::any_of(m.layers.begin(),m.layers.end(),[](auto &l){return l.controlGain!=1;});
@@ -355,7 +368,12 @@ DesignDocument designFromJson(const juce::var &o)
                 d.outputSelections[key] = v.value.toString();
         }
     }
-    validateDesign(d);if(performanceFormat(d)>version)throw std::runtime_error("Performance blend law requires a newer document version");if(shapedFades(d) && version==1 && o["dsp"].toString()!="stock-sinc32-v2")throw std::runtime_error("Non-linear fades require stock DSP version 2");return d;
+    validateDesign(d);
+    if (performanceFormat(d) > version)
+        throw std::runtime_error("Document processing/metadata requires a newer version");
+    if (shapedFades(d) && version == 1 && o["dsp"].toString() != "stock-sinc32-v2")
+        throw std::runtime_error("Non-linear fades require stock DSP version 2");
+    return d;
 }
 void validateDesign(const DesignDocument &d, bool verifyTakeContent)
 {
@@ -458,6 +476,12 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
             if ((int)o.channelProvenance["version"] != 1 || o.settings.channels != out.size() ||
                 o.settings.layout != out.id)
                 throw std::runtime_error("Invalid output channel contract");
+            if (o.channelProvenance.hasProperty("spatialRoutingVersion"))
+            {
+                int v = (int)o.channelProvenance["spatialRoutingVersion"];
+                if (v != 1 && v != 2)
+                    throw std::runtime_error("Unsupported output spatial policy");
+            }
         }
         if (!o.files.isVoid())
         {

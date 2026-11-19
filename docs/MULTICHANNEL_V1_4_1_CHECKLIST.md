@@ -5,8 +5,8 @@ Starting HEAD `6364dfd` exactly matches the reviewed artifact; no later applicat
 - ✓ Read AGENTS, complete attached request/review/correction brief, v1.4 contract/report and applicable architecture requirements; inspect HEAD/source tree.
 - ✓ Protected actual r9731 working session/catalog/settings and six source/render hashes; app/helpers closed. Isolated correction suite added.
 - ✓ R11 implementation and focused automated checks:23 lifetime IDs /16 current takes; Live+take preferences; Delete/Undo/Redo/save/autosave/reopen; bounded dangling metadata repair; injected write failure. Native workflow remains in the separate QA gate.
-- ○ R12: periodic spatial processing, explicit version dispatch, immutable old fixtures and corrected-copy path; independent oracle plus native capture/replay/render.
-- ○ R13: route editor context/value binding, implicit/absent routes, one-field edits and Undo/Redo.
+- ✓ R12 implementation/focused verification: routing v2 / stock-layout-takes-v2 and IPC7; archived v1 WAV/hash behavior preserved; corrected-copy lineage/receipt; independent mono/stereo/divergence/revolution oracles; real graph adoption; controlled and native capture/replay/render; startup migration/stale completion guards. Six relevant suites passed. Native UI workflow remains in QA gate.
+- ◉ R13: route editor context/value binding, implicit/absent routes, precise one-field edits and Undo/Redo.
 - ○ R14: revision-aware replacement override invalidation through actual metadata/indexing/Library/Add paths.
 - ○ R15: actual-owner audition specification across reference/candidate mode changes, revisions, pending and stopped states.
 - ○ R16: transactional legacy pair/analysis conversion, actual input indices/PCM, persistence and immutable takes.

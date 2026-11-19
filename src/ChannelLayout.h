@@ -28,7 +28,8 @@ juce::AudioChannelSet juceChannelSet(const ChannelLayout &);
 std::vector<int> wavOrder(const ChannelLayout &);
 using ChannelMatrix = std::array<std::array<float, 16>, 16>; // output,input
 ChannelMatrix conversionMatrix(const ChannelLayout &from, const ChannelLayout &to);
-std::array<float, 16> spatialGains(const ChannelLayout &, double degrees, double divergence = 0);
+std::array<float, 16> spatialGains(const ChannelLayout &, double degrees, double divergence = 0,
+                                   int routingVersion = 2);
 bool horizontalLayout(const ChannelLayout &);
 struct ChannelRoute
 {

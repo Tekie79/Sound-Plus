@@ -80,9 +80,13 @@ void DesignerView::refreshTakes()
                             : "Accurate audition from playhead: rebuild the current recipe's effect history "
                               "from the beginning. Preparation may take longer; Stop cancels. Use this after "
                               "changing long delay or reverb tails.");
-    takeStatus.setTooltip(t && !t->complete ? t->reason
-                                            : "Take capture starts at frame zero; replay and render rebuild "
-                                              "complete history. 120 seconds /8192 applied events maximum.");
+    takeStatus.setTooltip(t && t->processing == "stock-layout-takes-v1"
+                              ? "Original spatial engine, frozen. Take options can create a corrected "
+                                "spatial copy; the original and its outputs remain unchanged."
+                          : t && !t->complete
+                              ? t->reason
+                              : "Take capture starts at frame zero; replay and render rebuild "
+                                "complete history. 120 seconds /8192 applied events maximum.");
     updating = previous;
 }
 void DesignerView::nameTakeDialog()
@@ -117,6 +121,9 @@ void DesignerView::takePopup()
     if (auto *t = selectedTake(session.document))
     {
         menu.addItem(2, "Delete take (Undo available)", !session.takeBusy());
+        if (t->processing == "stock-layout-takes-v1")
+            menu.addItem(3, "Create corrected spatial copy (v2)",
+                         t->complete && !session.takeBusy() && !session.working && !session.rendering);
         juce::PopupMenu sources;
         for (size_t i = 0; i < t->sources.size(); ++i)
         {
@@ -128,7 +135,7 @@ void DesignerView::takePopup()
         }
         menu.addSubMenu("Verified source relink", sources, !session.takeBusy());
     }
-    menu.addSectionHeader("Frame zero · fresh history · stereo");
+    menu.addSectionHeader("Frame zero · fresh history");
     juce::Component::SafePointer<DesignerView> safe(this);
     menu.showMenuAsync(
         juce::PopupMenu::Options().withTargetComponent(&takeOptions),
@@ -140,6 +147,8 @@ void DesignerView::takePopup()
                 safe->session.stopTake(true);
             if (result == 2)
                 safe->session.deleteTake();
+            if (result == 3)
+                safe->session.createCorrectedSpatialCopy();
             if (result >= 100)
             {
                 auto *t = selectedTake(safe->session.document);

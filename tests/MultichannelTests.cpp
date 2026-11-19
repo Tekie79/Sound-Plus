@@ -992,7 +992,7 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
     }
     capture->finish(producer.acceptedFrame(), true, producer.consumedOutputFrames());
     auto take = capture->snapshot();
-    check(take.complete && take.events.size() == 2 && take.processing == "stock-layout-takes-v1",
+    check(take.complete && take.events.size() == 2 && take.processing == "stock-layout-takes-v2",
           "Typed bounded spatial applied events finalized");
     auto replay = spatial;
     replay.takes = {take};

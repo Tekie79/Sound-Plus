@@ -8,7 +8,7 @@
 #include "DesignModel.h"
 namespace sp
 {
-constexpr int protocolVersion = 6;
+constexpr int protocolVersion = 7;
 juce::var message(const juce::String &command);
 // Single-writer, nonblocking socket; bounded250ms completion, never called by audio callbacks.
 bool sendMessage(int fd, const juce::var &);

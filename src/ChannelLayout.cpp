@@ -280,7 +280,8 @@ bool horizontalLayout(const ChannelLayout &l)
 {
     return l.size() >= 4 && !l.id.startsWith("unknown-") && !l.id.startsWith("discrete-");
 }
-std::array<float, 16> spatialGains(const ChannelLayout &l, double degrees, double divergence)
+std::array<float, 16> spatialGains(const ChannelLayout &l, double degrees, double divergence,
+                                   int routingVersion)
 {
     if (!horizontalLayout(l))
         throw std::runtime_error("Spatial Panner requires a horizontal speaker layout");
@@ -290,7 +291,18 @@ std::array<float, 16> spatialGains(const ChannelLayout &l, double degrees, doubl
         if (l.roles[i] != "LFE")
             ring[size++] = {role(l.roles[i])->angle, i};
     std::sort(ring.begin(), ring.begin() + (ptrdiff_t)size);
-    double a = std::fmod(degrees + 540., 360.) - 180.;
+    if (!std::isfinite(degrees) || (routingVersion != 1 && routingVersion != 2))
+        throw std::runtime_error("Invalid spatial position/processing version");
+    // Keep the old equation for immutable v1 recipes. Its negative-wrap defect
+    // cannot be repaired under the same declared processing/hash identity.
+    double a = routingVersion == 1 ? std::fmod(degrees + 540., 360.) - 180. : std::fmod(degrees, 360.);
+    if (routingVersion == 2)
+    {
+        if (a < -180.)
+            a += 360.;
+        if (a >= 180.)
+            a -= 360.;
+    }
     std::array<float, 16> g{};
     for (size_t i = 0; i < size; ++i)
     {

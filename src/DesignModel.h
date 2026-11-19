@@ -66,6 +66,7 @@ struct DesignLayer
 struct DesignMix
 {
     ChannelLayout layout; // Empty retains the legacy stereo contract verbatim.
+    int routingVersion = 2; // Version1 remains immutable in historical layout-aware takes.
     PerformanceState performance;
     std::vector<DesignLayer> layers;
     std::vector<StockEffect> masterEffects;
@@ -158,6 +159,7 @@ struct PerformTake
     TakeEventList events;
     std::vector<TakeSource> sources;
     juce::String checkpoint;
+    juce::String correctedFrom, originalRecipeHash, originalEventHash;
 };
 constexpr size_t maxTakeEvents=8192,maxDocumentTakes=16;
 constexpr int maxTakeSeconds=120;
@@ -196,6 +198,8 @@ struct DesignDocument
 };
 juce::StringArray outputFiles(const DesignOutput &);
 void setMixLayout(DesignMix &, const ChannelLayout &);
+bool upgradeLiveSpatial(DesignDocument &);
+PerformTake correctedSpatialCopy(const PerformTake &);
 bool simplePanAvailable(const DesignMix &, const DesignLayer &);
 void initialiseRouting(DesignLayer &, const ChannelLayout &, bool preserveLegacySelection = false);
 void validateLayoutMix(const DesignMix &, double);
