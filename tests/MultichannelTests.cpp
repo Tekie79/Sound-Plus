@@ -1,4 +1,5 @@
 #include "MultichannelTests.h"
+#include "TakeTests.h"
 #include "DesignSession.h"
 #include "DesignerView.h"
 #include "LibraryView.h"
@@ -1312,8 +1313,30 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
         auto reopened = sp::loadDesign(root.getChildFile("Legacy reopened.soundplus"));
         check(reopened.takes[0].recipeHash == before && reopened.takes[0].eventHash == eventHash,
               "Historical manifest4 hashes survive load/save/reopen unchanged");
+        // Recreate the historical PCM in an owned directory so this regression
+        // does not depend on the original developer machine's absolute paths.
+        auto inputs = root.getChildFile("historical-generated-inputs");
+        prepareTakeUiFixture(inputs);
+        auto renderCopy = legacy;
+        auto &take = renderCopy.takes[0];
+        for (auto &source : take.sources)
+        {
+            auto layer = std::find_if(take.recipe->layers.begin(), take.recipe->layers.end(),
+                                      [&](auto &l) { return l.source.id == source.id; });
+            check(layer != take.recipe->layers.end(), "Historical source target exists");
+            auto file = inputs.getChildFile(juce::File(layer->source.path).getFileName());
+            check(hash(file) == source.sha256, "Regenerated historical source has identical bytes");
+            sp::FileStamp stamp;
+            check(sp::fileStamp(file, stamp), "Owned historical source stamp");
+            source.overridePath = file.getFullPathName();
+            source.overrideSize = stamp.size;
+            source.overrideModified = stamp.modified;
+            source.overrideInode = stamp.inode;
+        }
+        check(take.recipeHash == before && take.eventHash == eventHash,
+              "Explicit same-byte test relink leaves canonical historical identity unchanged");
         auto o = sp::renderDesign(
-            legacy, root.getChildFile("legacy-render"), legacy.renderSettings, [] { return false; },
+            renderCopy, root.getChildFile("legacy-render"), legacy.renderSettings, [] { return false; },
             [](double) {});
         check(o.sha256 == legacy.outputs.back().sha256,
               "Legacy stock-takes-v1 PCM/container parity matches historical delivered WAV");
@@ -1333,6 +1356,7 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
     o->setProperty("controlledCaptureReplayMaxError", replayError);
     o->setProperty("nativeCaptureReplayMaxError", nativeError);
     o->setProperty("nativeR10HelperOwnership", true);
+    o->setProperty("portableHistoricalSources", true);
     o->setProperty("nativeTake", sp::takeToJson(captured));
     o->setProperty("nativeRecordingStatus", nativeRecordingStatus);
     o->setProperty("nativeCapturePath", raw.getFullPathName());
