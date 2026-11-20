@@ -12,7 +12,7 @@ struct LiveInsertSession::Entry
     Capture binding;
     std::unique_ptr<HostedRackClient> client;
     juce::String lastCapture, pendingSettings;
-    bool failed = false;
+    bool failed = false, editorVisible = false;
     int64_t lastNative = 0;
 };
 LiveInsertSession::LiveInsertSession(juce::File directory, Receiver callback,
@@ -62,26 +62,13 @@ bool LiveInsertSession::accepts(const Capture &capture)
 void LiveInsertSession::trace(const juce::var &state)
 {
     auto event = juce::var(new juce::DynamicObject());
-    for (auto key : {"generation",
-                     "binding",
-                     "modelSequence",
-                     "nativeSequence",
-                     "gesture",
-                     "gestureActive",
-                     "eventTicks",
-                     "appliedTicks",
-                     "dspBlockStartTicks",
-                     "dspBlockEndTicks",
-                     "firstDspControlAppliedTicks",
-                     "firstDspEventTicks",
-                     "firstDspStartTicks",
-                     "firstDspEndTicks",
-                     "capturedTicks",
-                     "uiReceivedTicks",
-                     "uiAppliedTicks",
-                     "deferredByGesture",
-                     "processedFrames",
-                     "device"})
+    for (auto key : {"opaqueObservation",  "generation",         "binding",
+                     "modelSequence",      "nativeSequence",     "gesture",
+                     "gestureActive",      "eventTicks",         "appliedTicks",
+                     "dspBlockStartTicks", "dspBlockEndTicks",   "firstDspControlAppliedTicks",
+                     "firstDspEventTicks", "firstDspStartTicks", "firstDspEndTicks",
+                     "capturedTicks",      "uiReceivedTicks",    "uiAppliedTicks",
+                     "deferredByGesture",  "processedFrames",    "device"})
         event.getDynamicObject()->setProperty(key, state[key]);
     event.getDynamicObject()->setProperty("tickFrequency",
                                           (juce::int64)juce::Time::getHighResolutionTicksPerSecond());
@@ -302,16 +289,20 @@ void LiveInsertSession::run()
                     allCaptured = false;
                 auto serial = state["nativeSequence"].toString() + ":" + state["modelSequence"].toString() +
                               ":" + state["captureSequence"].toString();
-                if (e.lastCapture == serial)
+                const bool visible = (bool)state["editorVisible"],
+                           visibilityChanged = visible != e.editorVisible;
+                e.editorVisible = visible;
+                if (e.lastCapture == serial && !visibilityChanged)
                     continue;
                 e.lastCapture = serial;
+                const bool nativeChanged = (juce::int64)state["nativeSequence"] > e.lastNative;
+                e.lastNative = (juce::int64)state["nativeSequence"];
                 auto settings = juce::JSON::toString(state["slots"][0]["settings"], true);
-                if (settings == e.binding.expected)
+                if (settings == e.binding.expected && !visibilityChanged)
                     continue;
                 auto capture = e.binding;
                 capture.settings = settings;
-                capture.native = (juce::int64)state["nativeSequence"] > e.lastNative;
-                e.lastNative = (juce::int64)state["nativeSequence"];
+                capture.native = nativeChanged;
                 capture.gesture = e.binding.generation + ":" + state["gesture"].toString();
                 capture.evidence = state;
                 e.pendingSettings = settings;

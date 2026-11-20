@@ -68,11 +68,13 @@ class HostedRackView final : public juce::Component
         };
         savePreset.onClick = [this]
         {
+            const auto target = owner;
+            const auto id = selected;
             session.withLiveState(
-                [safe = juce::Component::SafePointer<HostedRackView>(this)]
+                [safe = juce::Component::SafePointer<HostedRackView>(this), target, id]
                 {
-                    if (safe)
-                        safe->preset(true);
+                    if (safe && safe->find(target))
+                        safe->preset(true, target, id);
                 });
         };
         openPreset.onClick = [this] { preset(false); };
@@ -1159,8 +1161,10 @@ class HostedRackView final : public juce::Component
     }
     void preset(bool writing)
     {
-        auto target = owner;
-        auto id = selected;
+        preset(writing, owner, selected);
+    }
+    void preset(bool writing, Owner target, juce::String id)
+    {
         auto *rack = find(target);
         if (!rack)
             return;

@@ -377,7 +377,7 @@ bool DesignSession::openLiveEditor(const juce::String &slot)
         return false;
     syncLive();
     liveInserts->editor(slot, liveInserts->rootFor(document, lifetime), owner);
-    message = "Opening editor…";
+    message = "Opening editor...";
     return true;
 }
 void DesignSession::receiveLive(LiveInsertSession::Capture capture)
@@ -395,6 +395,11 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
                 return &l.hosted;
         return nullptr;
     };
+    if ((bool)capture.evidence["editorVisible"] && message == "Opening editor...")
+    {
+        message = "Live";
+        notify();
+    }
     auto *r = rack(document);
     if (!r)
         return;
@@ -420,9 +425,12 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
         deferredNativeCaptures[capture.slot] = std::move(capture);
         return;
     }
+    const bool observedOnly = (bool)capture.evidence["opaqueObservation"],
+               historyNative = capture.native && !observedOnly;
+    const auto historyRevision = document.revision;
     const auto count = undoHistory.size();
     bool merge =
-        capture.native && liveHistoryKey == capture.gesture && liveHistoryRevision == document.revision;
+        historyNative && liveHistoryKey == capture.gesture && liveHistoryRevision == document.revision;
     liveApplying = true;
     edit("Plugin edit",
          [&](auto &d)
@@ -433,10 +441,18 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
                      slot.settings = capture.settings;
          });
     liveApplying = false;
-    if (undoHistory.size() > count && (!capture.native || merge))
+    if (undoHistory.size() > count && (!historyNative || merge))
         undoHistory.pop_back();
-    liveHistoryKey = capture.native ? capture.gesture : juce::String();
-    liveHistoryRevision = document.revision;
+    if (observedOnly)
+    {
+        if (liveHistoryRevision == historyRevision)
+            liveHistoryRevision = document.revision;
+    }
+    else
+    {
+        liveHistoryKey = historyNative ? capture.gesture : juce::String();
+        liveHistoryRevision = document.revision;
+    }
     capture.evidence.getDynamicObject()->setProperty("uiAppliedTicks",
                                                      (juce::int64)juce::Time::getHighResolutionTicks());
     liveInserts->trace(capture.evidence);

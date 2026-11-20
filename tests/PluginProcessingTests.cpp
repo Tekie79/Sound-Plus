@@ -1,5 +1,6 @@
 #include "PluginProcessPanel.h"
 #include "DesignSession.h"
+#include "DesignerView.h"
 #include "LibraryService.h"
 #include "LibraryView.h"
 #include "StockRackView.h"
@@ -1381,7 +1382,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 require(false, "Actual editor command exists: " + name);
             };
             editView.bind(firstId);
-            press("Editor (apply state when closed)");
+            press("Open or focus live editor");
             for (int i = 0; i < 100 && !started; ++i)
                 pump(5);
             require(started == 1, "R29 actual editor action starts controlled worker");
@@ -1397,7 +1398,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     "R29 A state applies after unrelated B removal");
             releaseEditor = false;
             editView.bind(firstId);
-            press("Editor (apply state when closed)");
+            press("Open or focus live editor");
             for (int i = 0; i < 100 && started < 2; ++i)
                 pump(5);
             press("Remove external insert");
@@ -1466,7 +1467,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         unified.refresh();
         require(unified.slots.getNumItems() == 1 && unified.slots.isVisible() &&
                     !visibleButtons(unified).contains("Remove external insert") &&
-                    visibleButtons(unified).contains("Editor (apply state when closed)"),
+                    visibleButtons(unified).contains("Open or focus live editor"),
                 "Loaded external effect shares the main selector and reveals only primary tools");
         unified.append(unified.owner, "gain");
         unified.refresh();

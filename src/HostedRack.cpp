@@ -354,6 +354,7 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
     for (int c = 0; c < e->channels; ++c)
         std::copy_n(buffer.getReadPointer(c), frames, e->input[c]);
     e->frames = frames;
+    e->lastRequestTicks.store(juce::Time::getHighResolutionTicks(), std::memory_order_release);
     e->request.store(++impl->sequence, std::memory_order_release);
     // Producer-thread wait only. The device callback never touches this mapping.
     try

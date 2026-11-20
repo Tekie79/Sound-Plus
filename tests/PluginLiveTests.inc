@@ -92,6 +92,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
     process(.24f);
     Thread::sleep(40);
     auto inlineCapture = owner.liveState();
+    auto actualUi = loadProcessingJson(root.getChildFile(pid + ".ui.json"));
+    require(std::abs((double)actualUi["value"] - .6) < 1e-6,
+            "Inline edit updates the actual native fixture slider before closing its editor");
     require((uint64_t)(int64)inlineCapture["modelSequence"] == owner.modelSequence(),
             "Inline update acknowledged by exact model sequence");
     auto coherent = inlineCapture["slots"][0]["settings"];
@@ -121,17 +124,42 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
     owner.update(rapid);
     Thread::sleep(60);
     process(.44f);
+    auto staleIntent = single;
+    staleIntent.runtimeControlTicks = Time::getHighResolutionTicks();
+    auto staleSettings = JSON::parse(staleIntent.slots[0].settings);
+    parameter(staleSettings, 0, .4);
+    parameter(staleSettings, 6, .7);
+    staleIntent.slots[0].settings = JSON::toString(staleSettings, true);
+    put(native, "sequence", 2);
+    put(native, "index", 0);
+    put(native, "value", .25);
+    saveProcessingJson(root.getChildFile(pid + ".json"), native);
+    Thread::sleep(80);
+    process(.3f); // Earlier bias is still active before restoration below.
+    owner.update(staleIntent);
+    Thread::sleep(60);
+    process(.5f);
+    owner.capture(2);
+    Thread::sleep(50);
+    process(.5f);
+    Thread::sleep(50);
+    auto composed = owner.liveState();
+    require(std::abs((double)composed["slots"][0]["settings"]["parameters"][0]["value"] - .25) < 1e-6 &&
+                std::abs((double)composed["slots"][0]["settings"]["parameters"][6]["value"] - .7) < 1e-6,
+            "Older Main command preserves newer native Gain while composing its unrelated Bias delta");
+    require(composed["skippedControls"].isArray() && composed["skippedControls"].getArray()->contains(var(0)),
+            "Rejected stale parameter identity is exposed in control evidence");
     // Undo is a deliberate opaque restore, not per-slider state replay.
     single.slots[0].settings = JSON::toString(capture["slots"][0]["settings"], true);
     owner.update(single);
     Thread::sleep(60);
     process(.1f);
-    put(native, "sequence", 2);
+    put(native, "sequence", 3);
     put(native, "program", 1);
     saveProcessingJson(root.getChildFile(pid + ".json"), native);
     Thread::sleep(60);
     process(.3f);
-    owner.capture(2);
+    owner.capture(3);
     Thread::sleep(40);
     process(.3f);
     Thread::sleep(40);
@@ -139,9 +167,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
     require((int)programmed["slots"][0]["settings"]["program"] == 1,
             "Native program selection is coherently captured");
     borrower.reset();
-    owner.capture(3);
+    owner.capture(4);
     Thread::sleep(80);
-    require((int)owner.liveState()["captureSequence"] == 3,
+    require((int)owner.liveState()["captureSequence"] == 4,
             "Stopped capture completes without a new audio generation");
     owner.checkHealth();
     // Regression for the actual instrumented native JUCE UI bad-free observed
@@ -181,7 +209,13 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
             Catalog initialize(work.getChildFile("catalog.sqlite"));
         }
         AudioClient device(app);
-        DesignSession session(work.getChildFile("catalog.sqlite"), device);
+        PropertiesFile::Options options;
+        options.applicationName = "SoundPlus owned live QA";
+        options.filenameSuffix = "settings";
+        PropertiesFile preferences(work.getChildFile("interface.settings"), options);
+        DesignerView actualView(work.getChildFile("catalog.sqlite"), device, preferences);
+        actualView.setSize(1040, 680);
+        auto &session = actualView.session;
         session.protectStartupEdits();
         session.document = DesignDocument{};
         session.document.name = "Owned live state";
@@ -312,7 +346,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
             JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"].toString();
         auto opaqueCommand = obj();
         put(opaqueCommand, "sequence", 3);
-        put(opaqueCommand, "silentOpaque", .5);
+        put(opaqueCommand, "opaque", .5);
         saveProcessingJson(root.getChildFile(trackEndpoint["pid"].toString() + ".json"), opaqueCommand);
         wait(
             [&]
@@ -320,7 +354,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                 return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
                            .toString() != beforeOpaque;
             },
-            "Unnotified native opaque state is discovered by bounded periodic coherent capture");
+            "Notified opaque-only native state reaches coherent capture");
         {
             DesignGraph opaqueGraph(session.document);
             AudioBuffer<float> out(1, 288000);
@@ -335,6 +369,46 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                            .toString() == beforeOpaque;
             },
             "Opaque-only native edit has its own Undo state");
+        wait(
+            [&]
+            {
+                auto state = loadProcessingJson(
+                    File(trackEndpoint["exchange"].toString()).getSiblingFile("state.json"));
+                return state["slots"][0]["settings"]["stateHash"].toString() == beforeOpaque;
+            },
+            "Opaque Undo has settled in the retained processor before the next native action");
+        put(opaqueCommand, "sequence", 4);
+        opaqueCommand.getDynamicObject()->removeProperty("opaque");
+        put(opaqueCommand, "silentOpaque", .8);
+        saveProcessingJson(root.getChildFile(trackEndpoint["pid"].toString() + ".json"), opaqueCommand);
+        wait(
+            [&]
+            {
+                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                           .toString() != beforeOpaque;
+            },
+            "Silent opaque changes are retained by periodic observation without inventing a gesture");
+        auto silentSave = work.getChildFile("Silent opaque capture.soundplus");
+        session.save(silentSave);
+        wait([&] { return silentSave.existsAsFile() && !session.working; },
+             "Save includes unnotified opaque changes while editor remains open");
+        {
+            DesignGraph g(loadDesign(silentSave));
+            AudioBuffer<float> out(1, 288000);
+            g.render(out, 0, 288000);
+            compare(read(File(source.source.path)), out, 1.2);
+        }
+        put(opaqueCommand, "sequence", 5);
+        opaqueCommand.getDynamicObject()->removeProperty("silentOpaque");
+        put(opaqueCommand, "opaque", 1.);
+        saveProcessingJson(root.getChildFile(trackEndpoint["pid"].toString() + ".json"), opaqueCommand);
+        wait(
+            [&]
+            {
+                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                           .toString() == beforeOpaque;
+            },
+            "Notified opaque reset restores the control recipe");
         if (SystemStats::getEnvironmentVariable("SOUNDPLUS_LIVE_DEVICE_QUALIFICATION", {}) == "1")
         {
             auto captureFolder = work.getChildFile("audition-captures");
@@ -388,6 +462,36 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                 },
                 "Continuous inline controls are not starved by replacement requests");
             saveProcessingJson(work.getChildFile("device-observation.json"), device.status());
+            wait([&]
+                 { return !(bool)device.status()["playing"] && !(bool)device.status()["pendingPlayback"]; },
+                 "Audition reaches natural EOF without an explicit Stop", 10000);
+            // The periodic state file may predate EOF; obtain a current barrier
+            // before comparing history counters across stopped control captures.
+            bool eofBarrier = false;
+            session.withLiveState([&] { eofBarrier = true; });
+            wait([&] { return eofBarrier; },
+                 "Fresh coherent capture establishes the actual EOF frame counter");
+            auto framesAtEof = (int64)actualState()["processedFrames"];
+            gesture(trackEndpoint, 200, .6);
+            wait(
+                [&]
+                {
+                    return std::abs((double)actualState()["slots"][0]["settings"]["parameters"][0]["value"] -
+                                    .6) < 1e-6 &&
+                           std::abs(value(false) - .6) < 1e-6;
+                },
+                "Native controls settle coherently while EOF graph retains its lease");
+            auto eofSave = work.getChildFile("Edited after natural EOF.soundplus");
+            session.save(eofSave);
+            wait([&] { return eofSave.existsAsFile() && !session.working; },
+                 "Save while native editor remains open after natural EOF");
+            require((int64)actualState()["processedFrames"] == framesAtEof,
+                    "Stopped zero-frame control flush does not advance DSP history");
+            auto eofRecipe = loadDesign(eofSave);
+            DesignGraph eofGraph(eofRecipe);
+            AudioBuffer<float> eofPcm(1, 288000);
+            eofGraph.render(eofPcm, 0, 288000);
+            compare(read(File(source.source.path)), eofPcm, 1.8);
             session.stop();
             wait([&] { return !(bool)device.status()["playing"]; },
                  "Device audition stops after measured edit workload");
@@ -419,19 +523,39 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         bool done = false;
         session.withLiveState([&] { done = true; });
         wait([&] { return done; }, "Coherent gate completes before copy/move commands");
-        auto duplicate = layer;
-        duplicate.id = Uuid().toString();
-        duplicate.hosted.id = Uuid().toString();
-        duplicate.hosted.slots[0].id = Uuid().toString();
-        duplicate.hosted.slots[0].settings = session.document.original.layers[0].hosted.slots[0].settings;
-        auto duplicateId = duplicate.hosted.slots[0].id;
-        session.edit("Duplicate owned track", [&](auto &d) { d.original.layers.push_back(duplicate); });
+        auto other = layer;
+        other.id = Uuid().toString();
+        other.name = "Different selected layer";
+        other.hosted = HostedRack();
+        other.mute = true;
+        session.edit("Add other layer", [&](auto &d) { d.original.layers.push_back(other); });
+        session.selectLayer(layer.id);
+        std::function<Button *(Component &)> findDuplicate = [&](Component &c) -> Button *
+        {
+            if (auto *button = dynamic_cast<Button *>(&c);
+                button && button->getButtonText() == "Duplicate layer")
+                return button;
+            for (auto *child : c.getChildren())
+                if (auto *found = findDuplicate(*child))
+                    return found;
+            return nullptr;
+        };
+        auto *duplicateButton = findDuplicate(actualView);
+        require(duplicateButton != nullptr, "Actual Designer Duplicate command exists");
+        duplicateButton->onClick();
+        session.selectLayer(other.id);
+        wait([&] { return session.document.original.layers.size() == 3; },
+             "Actual Duplicate completes after asynchronous live-state capture");
+        auto copy = session.document.original.layers.back();
+        require(copy.name == layer.name + " copy" && copy.hosted.slots.size() == 1,
+                "Duplicate retains its clicked owner when selection changes before capture completes");
+        const auto duplicateId = copy.hosted.slots[0].id;
         wait([&] { return endpointFor(duplicateId).isObject(); },
              "Duplicate creates an independently owned processor");
         auto duplicateEndpoint = endpointFor(duplicateId);
         require(duplicateEndpoint["generation"] != trackEndpoint["generation"],
                 "Copied slot never shares processor generation");
-        session.edit("Remove unrelated duplicate", [&](auto &d) { d.original.layers.pop_back(); });
+        session.edit("Remove unrelated duplicate", [&](auto &d) { d.original.layers.resize(1); });
         wait([&] { return !endpointFor(duplicateId).isObject(); },
              "Removing actual copied owner closes only its service");
         require(endpointFor(trackId)["generation"] == trackEndpoint["generation"],

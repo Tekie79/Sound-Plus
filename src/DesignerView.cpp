@@ -248,27 +248,37 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     redoButton.onClick = [this] { session.redo(); };
     duplicate.onClick = [this]
     {
+        session.protectStartupEdits();
+        const auto selected = session.document.selectedLayer, document = session.document.id,
+                   variation = session.document.activeVariation;
+        const auto generation = session.documentGeneration();
         session.withLiveState(
-            [safe = juce::Component::SafePointer<DesignerView>(this)]
+            [safe = juce::Component::SafePointer<DesignerView>(this), selected, document, variation,
+             generation]
             {
                 if (!safe)
                     return;
                 auto &session = safe->session;
-                if (auto *l = session.selectedLayer())
-                {
-                    auto copy = *l;
-                    copy.id = juce::Uuid().toString();
-                    copy.name += " copy";
-                    copy.hosted.id = juce::Uuid().toString();
-                    for (auto &slot : copy.hosted.slots)
-                        slot.id = juce::Uuid().toString();
-                    session.edit("Duplicate layer",
-                                 [&](auto &d)
-                                 {
-                                     d.selectedLayer = copy.id;
-                                     d.activeMix().layers.push_back(copy);
-                                 });
-                }
+                if (session.documentGeneration() != generation || session.document.id != document ||
+                    session.document.activeVariation != variation)
+                    return;
+                for (auto &layer : session.document.activeMix().layers)
+                    if (layer.id == selected)
+                    {
+                        auto copy = layer;
+                        copy.id = juce::Uuid().toString();
+                        copy.name += " copy";
+                        copy.hosted.id = juce::Uuid().toString();
+                        for (auto &slot : copy.hosted.slots)
+                            slot.id = juce::Uuid().toString();
+                        session.edit("Duplicate layer",
+                                     [&](auto &d)
+                                     {
+                                         d.selectedLayer = copy.id;
+                                         d.activeMix().layers.push_back(copy);
+                                     });
+                        return;
+                    }
             });
     };
     remove.onClick = [this]

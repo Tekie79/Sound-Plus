@@ -175,6 +175,7 @@ class Fixture final : public juce::AudioProcessor
     {
         Fixture &fixture;
         int last = 0;
+        double lastUi = std::numeric_limits<double>::quiet_NaN();
         juce::Slider gainControl;
         explicit Editor(Fixture &f) : AudioProcessorEditor(f), fixture(f)
         {
@@ -194,12 +195,33 @@ class Fixture final : public juce::AudioProcessor
             auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA");
             if (!dir)
                 return;
+            auto value = fixture.getParameters()[0]->getValue();
+            if (!gainControl.isMouseButtonDown())
+                gainControl.setValue(value, juce::dontSendNotification);
+            if (gainControl.getValue() != lastUi)
+            {
+                lastUi = gainControl.getValue();
+                auto record = juce::var(new juce::DynamicObject());
+                auto *o = record.getDynamicObject();
+                o->setProperty("value", lastUi);
+                o->setProperty("showing", isShowing());
+                o->setProperty("ticks", (juce::int64)juce::Time::getHighResolutionTicks());
+                auto destination = juce::File(dir).getChildFile(juce::String((int)::getpid()) + ".ui.json");
+                juce::TemporaryFile temporary(destination);
+                temporary.getFile().replaceWithText(juce::JSON::toString(record, true));
+                temporary.overwriteTargetFileWithTemporary();
+            }
             auto file = juce::File(dir).getChildFile(juce::String((int)::getpid()) + ".json");
             auto v = juce::JSON::parse(file.loadFileAsString());
             if (!v.isObject() || (int)v["sequence"] <= last)
                 return;
             last = (int)v["sequence"];
-            if (v.hasProperty("silentOpaque"))
+            if (v.hasProperty("opaque"))
+            {
+                fixture.opaqueGain = (float)v["opaque"];
+                fixture.updateHostDisplay(ChangeDetails().withNonParameterStateChanged(true));
+            }
+            else if (v.hasProperty("silentOpaque"))
                 fixture.opaqueGain = (float)v["silentOpaque"];
             else if (v.hasProperty("program"))
                 fixture.setCurrentProgram((int)v["program"]);

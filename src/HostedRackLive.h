@@ -30,27 +30,72 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     std::atomic<int64_t> gestureSequence{0};
     std::atomic<int> activeGestures{0};
     bool pendingCapture = false;
+    struct WriteScope
+    {
+        std::atomic<bool> &flag;
+        bool prior;
+        explicit WriteScope(std::atomic<bool> &f) : flag(f), prior(f.exchange(true)) {}
+        ~WriteScope()
+        {
+            flag = prior;
+        }
+    };
     std::vector<std::vector<float>> lastValues;
-    void audioProcessorParameterChanged(AudioProcessor *, int, float) override
+    std::vector<int> observedPrograms;
+    std::atomic<bool> opaqueBoundary{false};
+    std::vector<std::unique_ptr<std::atomic<int64_t>[]>> nativeParameterTicks;
+    std::vector<std::unique_ptr<std::atomic<float>[]>> observedControlValues;
+    std::atomic<int64_t> nativeStateTicks{0}, nativeAnyTicks{0};
+    Array<var> skippedControls;
+    void noteNativeParameter(AudioProcessor *processor, int index, float value)
+    {
+        if (writing.load())
+            return;
+        const auto tick = Time::getHighResolutionTicks();
+        for (size_t i = 0; i < slots.size(); ++i)
+            if (slots[i].effect.get() == processor && isPositiveAndBelow(index, slots[i].parameterIds.size()))
+            {
+                auto before = observedControlValues[i][index].exchange(value);
+                if (before == value && activeGestures.load() == 0)
+                    return;
+                nativeParameterTicks[i][index] = tick;
+                nativeAnyTicks = tick;
+            }
+        nativeEventTicks = tick;
+        nativeDirty = true;
+    }
+    void noteNativeGesture(AudioProcessor *processor, int index)
+    {
+        auto tick = Time::getHighResolutionTicks();
+        nativeAnyTicks = tick;
+        for (size_t i = 0; i < slots.size(); ++i)
+            if (slots[i].effect.get() == processor && isPositiveAndBelow(index, slots[i].parameterIds.size()))
+                nativeParameterTicks[i][index] = tick;
+    }
+    void audioProcessorParameterChanged(AudioProcessor *processor, int index, float value) override
+    {
+        noteNativeParameter(processor, index, value);
+    }
+    void audioProcessorChanged(AudioProcessor *,
+                               const AudioProcessorListener::ChangeDetails &details) override
     {
         if (!writing.load())
         {
+            if (details.nonParameterStateChanged)
+            {
+                opaqueBoundary = true;
+                nativeStateTicks = Time::getHighResolutionTicks();
+                nativeAnyTicks = nativeStateTicks.load();
+            }
             nativeEventTicks = Time::getHighResolutionTicks();
             nativeDirty = true;
         }
     }
-    void audioProcessorChanged(AudioProcessor *, const AudioProcessorListener::ChangeDetails &) override
+    void audioProcessorParameterChangeGestureBegin(AudioProcessor *processor, int index) override
     {
         if (!writing.load())
         {
-            nativeEventTicks = Time::getHighResolutionTicks();
-            nativeDirty = true;
-        }
-    }
-    void audioProcessorParameterChangeGestureBegin(AudioProcessor *, int) override
-    {
-        if (!writing.load())
-        {
+            noteNativeGesture(processor, index);
             ++activeGestures;
             ++gestureSequence;
             {
@@ -59,10 +104,11 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             }
         }
     }
-    void audioProcessorParameterChangeGestureEnd(AudioProcessor *, int) override
+    void audioProcessorParameterChangeGestureEnd(AudioProcessor *processor, int index) override
     {
         if (!writing.load())
         {
+            noteNativeGesture(processor, index);
             activeGestures = std::max(0, activeGestures.load() - 1);
             {
                 nativeEventTicks = Time::getHighResolutionTicks();
@@ -73,29 +119,46 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     void rememberValues()
     {
         lastValues.clear();
+        observedPrograms.clear();
         for (auto &slot : slots)
         {
             std::vector<float> values;
+            const auto i = lastValues.size();
+            int index = 0;
             for (auto *p : slot.effect->getParameters())
+            {
                 values.push_back(p->getValue());
+                observedControlValues[i][index++] = p->getValue();
+            }
             lastValues.push_back(std::move(values));
+            observedPrograms.push_back(slot.effect->getCurrentProgram());
         }
+    }
+    bool idle() const
+    {
+        const auto requested = exchange.lastRequestTicks.load(std::memory_order_acquire);
+        return exchange.lease.load() == 0 || requested == 0 ||
+               Time::highResolutionTicksToSeconds(Time::getHighResolutionTicks() - requested) > .1;
     }
     void settleStopped()
     {
-        // A zero-length block consumes queued SDK controls without advancing tails.
-        // This is control/service work, never the device callback.
-        if (exchange.lease.load() == 0)
+        // A graph may retain its exclusive lease at natural EOF. A zero-length
+        // flush serializes with resumed production but never advances history.
+        if (idle())
+        {
             onPluginMessageThread(
                 [&]
                 {
+                    WriteScope own(writing);
                     for (auto &slot : slots)
                     {
+                        const ScopedLock lock(slot.effect->getCallbackLock());
                         AudioBuffer<float> zero(slot.effect->getTotalNumInputChannels(), 0);
                         MidiBuffer midi;
                         slot.effect->processBlock(zero, midi);
                     }
                 });
+        }
     }
     struct Window final : DocumentWindow
     {
@@ -112,6 +175,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     std::map<String, std::unique_ptr<Window>> windows;
     bool publish(bool checkpoint)
     {
+        settleStopped();
         bool coherent = true, opaqueObservation = false;
         std::vector<String> hashes;
         var record = obj();
@@ -119,7 +183,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         onPluginMessageThread(
             [&]
             {
-                if (exchange.lease.load() != 0 &&
+                if (!idle() &&
                     processBegin.load() <= std::max(modelAppliedTicks.load(), nativeEventTicks.load()))
                 {
                     coherent = false;
@@ -129,6 +193,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                 {
                     auto settings = JSON::parse(requested.slots[i].settings);
                     const ScopedLock lock(slots[i].effect->getCallbackLock());
+                    check(slots[i].effect->getParameters().size() == slots[i].parameterIds.size(),
+                          "Live parameter schema changed; reprepare required");
+                    for (int p = 0; p < slots[i].parameterIds.size(); ++p)
+                        check(slots[i].effect->getHostedParameter(p)->getParameterID() ==
+                                  slots[i].parameterIds[p],
+                              "Live parameter identity changed; reprepare required");
                     auto state = describe(*slots[i].effect);
                     for (auto key :
                          {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
@@ -142,8 +212,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         lastModel == publishedModel && nativeSequence == publishedNative)
                     {
                         ++nativeSequence;
-                        ++gestureSequence;
-                        opaqueObservation = true;
+                        opaqueObservation = true; // A snapshot is not a new user gesture.
                     }
                     if (!capturedSeeds.contains(hash))
                         capturedOrder.push_back(hash);
@@ -170,6 +239,10 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         put(record, "capturedTicks", (int64)Time::getHighResolutionTicks());
                     }
                 }
+                bool visible = false;
+                for (auto &[id, window] : windows)
+                    visible |= window->isVisible();
+                put(record, "editorVisible", visible);
                 exchange.heartbeatTicks = Time::getHighResolutionTicks();
             });
         if (!coherent)
@@ -185,6 +258,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         put(record, "dspBlockEndTicks", (int64)processEnd.load());
         put(record, "slots", captures);
         put(record, "opaqueObservation", opaqueObservation);
+        put(record, "skippedControls", skippedControls);
         hasPublished = true;
         publishedHashes = std::move(hashes);
         publishedModel = lastModel;
@@ -201,6 +275,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
           generation(request["generation"].toString()), requested(sp::hostedRackFromJson(request["rack"]))
     {
         restoredSequence.resize(slots.size());
+        for (auto &slot : slots)
+        {
+            auto count = slot.parameterIds.size();
+            nativeParameterTicks.push_back(std::make_unique<std::atomic<int64_t>[]>((size_t)count));
+            observedControlValues.push_back(std::make_unique<std::atomic<float>[]>((size_t)count));
+        }
         var endpoint = obj();
         put(endpoint, "generation", generation);
         put(endpoint, "binding", job["binding"]);
@@ -222,9 +302,9 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         onPluginMessageThread(
             [&]
             {
+                rememberValues();
                 for (auto &slot : slots)
                     slot.effect->addListener(this);
-                rememberValues();
             });
         publish(true);
     }
@@ -327,6 +407,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                             windows[id]->toFront(true);
                         }
                 });
+            pendingCapture = true;
         }
         command = read("baseline.json");
         if (command.isObject() && (int64_t)command["sequence"] > lastBaseline)
@@ -351,10 +432,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             auto next = sp::hostedRackFromJson(command["rack"]);
             check(next.id == requested.id && next.slots.size() == requested.slots.size(),
                   "Live slot topology changed");
-            writing = true;
+            skippedControls.clear();
+            const auto origin = (int64_t)command["eventTicks"];
             onPluginMessageThread(
                 [&]
                 {
+                    WriteScope own(writing);
                     for (size_t i = 0; i < slots.size(); ++i)
                     {
                         check(next.slots[i].id == requested.slots[i].id, "Live slot identity changed");
@@ -366,19 +449,29 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         auto &slot = slots[i];
                         const ScopedLock lock(slot.effect->getCallbackLock());
                         validateRequestedIdentity(*slot.effect, after);
+                        bool restored = false, applied = false;
                         if ((bool)command["changes"][(int)i]["fullState"] &&
                             restoredSequence[i] != (int64_t)command["changes"][(int)i]["restoreSequence"])
                         {
                             restoredSequence[i] = (int64_t)command["changes"][(int)i]["restoreSequence"];
-                            restore(*slot.effect, after, &slot.opaqueValues);
-                            validateRequestedIdentity(*slot.effect, after);
-                            std::fill(slot.baselineRequests.begin(), slot.baselineRequests.end(),
-                                      std::numeric_limits<float>::quiet_NaN());
-                            if (auto *baseline = after["parameterBaseline"].getArray())
-                                for (auto &p : *baseline)
-                                    slot.baselineRequests.at((size_t)(int)p["index"]) = (float)p["value"];
+                            if (nativeAnyTicks.load() > origin)
+                            {
+                                skippedControls.add(-1);
+                            }
+                            else
+                            {
+                                restore(*slot.effect, after, &slot.opaqueValues);
+                                restored = true;
+                                applied = true;
+                                validateRequestedIdentity(*slot.effect, after);
+                                std::fill(slot.baselineRequests.begin(), slot.baselineRequests.end(),
+                                          std::numeric_limits<float>::quiet_NaN());
+                                if (auto *baseline = after["parameterBaseline"].getArray())
+                                    for (auto &p : *baseline)
+                                        slot.baselineRequests.at((size_t)(int)p["index"]) = (float)p["value"];
+                            }
                         }
-                        else
+                        if (!restored)
                         {
                             auto *parameters = after["parameters"].getArray();
                             auto old = before["parameters"];
@@ -393,22 +486,34 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                                     command["changes"][(int)i]["indices"].getArray()->contains(
                                         value["index"]))
                                 {
+                                    if (nativeStateTicks.load() > origin ||
+                                        nativeParameterTicks[i][index].load() > origin)
+                                    {
+                                        skippedControls.add(index);
+                                        continue;
+                                    }
                                     float x = (float)value["value"];
                                     float effective = x == slot.baselineRequests[(size_t)index]
                                                           ? slot.opaqueValues[(size_t)index]
                                                           : x;
                                     slot.effect->getParameters()[index]->setValueNotifyingHost(effective);
+                                    observedControlValues[i][index] =
+                                        slot.effect->getParameters()[index]->getValue();
+                                    applied = true;
                                 }
                             }
                         }
+                        const bool bypassChanged = *slot.bypass != (next.bypass || next.slots[i].bypass);
                         *slot.bypass = next.bypass || next.slots[i].bypass;
-                        modelSourceTicks = (int64_t)command["eventTicks"];
-                        modelAppliedTicks = Time::getHighResolutionTicks();
+                        if (applied || bypassChanged)
+                        {
+                            modelSourceTicks = origin;
+                            modelAppliedTicks = Time::getHighResolutionTicks();
+                        }
                     }
                 });
             settleStopped();
             onPluginMessageThread([&] { rememberValues(); });
-            writing = false;
             appliedFrames = processedFrames.load();
             appliedTicks = Time::getHighResolutionTicks();
             eventTicks = (int64_t)command["eventTicks"];
@@ -423,14 +528,21 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             settleStopped();
             pendingCapture = true;
         }
-        bool changed = false;
+        bool changed = false, programChanged = false;
         onPluginMessageThread(
             [&]
             {
                 for (size_t i = 0; i < slots.size(); ++i)
                 {
                     auto &effect = *slots[i].effect;
-                    check(effect.getParameters().size() == (int)lastValues[i].size(),
+                    const auto program = effect.getCurrentProgram();
+                    if (program != observedPrograms[i])
+                    {
+                        programChanged = true;
+                        observedPrograms[i] = program;
+                    }
+                    check(effect.getParameters().size() == (int)lastValues[i].size() &&
+                              effect.getParameters().size() == slots[i].parameterIds.size(),
                           "Live schema changed; reprepare required");
                     for (int p = 0; p < effect.getParameters().size(); ++p)
                         check(effect.getHostedParameter(p)->getParameterID() == slots[i].parameterIds[p],
@@ -440,6 +552,19 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                             changed = true;
                 }
             });
+        const bool opaqueChanged = opaqueBoundary.exchange(false);
+        if (programChanged || opaqueChanged)
+        {
+            ++gestureSequence;
+            if (!nativeDirty.load())
+                nativeEventTicks = Time::getHighResolutionTicks();
+            if (programChanged)
+            {
+                nativeStateTicks = nativeEventTicks.load();
+                nativeAnyTicks = nativeEventTicks.load();
+            }
+            nativeDirty = true;
+        }
         const bool dirty = nativeDirty.exchange(false);
         if (dirty || (changed && !pendingCapture))
         {
@@ -450,7 +575,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             settleStopped();
             pendingCapture = true;
         }
-        capture = pendingCapture && (exchange.lease.load() == 0 || processBegin.load() > appliedTicks);
+        capture = pendingCapture && (idle() || processBegin.load() > appliedTicks);
         if (((capture && now >= nextCapture) || now >= nextCheckpoint) && publish(true))
         {
             onPluginMessageThread([&] { rememberValues(); });
