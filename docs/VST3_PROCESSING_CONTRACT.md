@@ -25,3 +25,7 @@ The Process panel owns audition by a unique intent ID and exact generation. Its 
 Adopted input selection/scope binds independently of peak-cache content hashes. Raw workload evidence includes per-iteration ticks, search request/publication observations/status, index header operands and bounded waveform-adoption timing records. Percentiles use nearest rank, `sorted[ceil(p*N)-1]`; polling samples are not independent audio experiments.
 
 Process opening now automatically reconciles standard system/user VST3 folders and remembered custom roots. This uses the same transactional incremental scanner: unchanged bundles reuse capabilities/quarantine, changed bundles are rechecked, and Cancel never commits partial snapshots. The chooser groups by plugin-reported category, not filename guesses, with Other effects for unclassified entries. Standard-root inputs are injectable for controlled regression folders; normal production callers use the actual macOS locations. This does not add VST2/AU hosting.
+
+## Saved-job authority (R25)
+
+Open uses the same background raw-first verification policy as operation recovery. A missing/corrupt normalized derivative falls back to verified raw from the same pass while retaining requested normalization; missing/corrupt raw prevents Ready. Saved delivery receipts never restore readiness: a fresh verified atomic copy is required. Historical media are not removed. Cancellation/context epochs gate adoption.

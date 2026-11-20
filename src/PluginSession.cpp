@@ -508,18 +508,30 @@ void PluginSession::open(const juce::File &file)
                 throw std::runtime_error("Processing job version/checksum mismatch");
             if (cancel())
                 throw std::runtime_error("Cancelled");
+            // A saved receipt is a historical delivery record, not current delivery
+            // readiness. A new verified atomic copy is required before Print/index/drag.
+            v.getDynamicObject()->removeProperty("receipt");
             if (v["result"].isObject())
                 try
                 {
-                    if (processingHash(juce::File(v["result"]["path"].toString())) !=
-                        v["result"]["sha256"].toString())
-                        throw std::runtime_error("Completed PCM changed");
+                    auto completed = v["result"];
+                    auto verified = verifiedFallback(completed, cancel);
+                    if ((bool)completed["presentationNormalized"] &&
+                        !(bool)verified["presentationNormalized"])
+                        put(v, "recallNotice",
+                            "Normalized output unavailable - verified raw PCM recovered; "
+                            "normalization may be retried without a new Preview");
+                    put(v, "result", verified);
                 }
-                catch (...)
+                catch (const std::exception &e)
                 {
+                    if (cancel())
+                        throw;
                     v.getDynamicObject()->removeProperty("result");
-                    v.getDynamicObject()->removeProperty("receipt");
+                    put(v, "recallNotice", "Completed raw authority unavailable: " + juce::String(e.what()));
                 }
+            if (cancel())
+                throw std::runtime_error("Cancelled");
             return v;
         },
         [this](auto v)
@@ -535,6 +547,8 @@ void PluginSession::open(const juce::File &file)
             future.clear();
             status = result.isObject() ? "Ready - retained sound; a new Preview requires the matching plugin"
                                        : "Recalled settings - completed PCM unavailable; render Preview";
+            if (v["recallNotice"].toString().isNotEmpty())
+                status = v["recallNotice"].toString();
         });
 }
 } // namespace sp

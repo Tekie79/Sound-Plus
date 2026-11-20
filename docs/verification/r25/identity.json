@@ -1,0 +1,5 @@
+{
+  "src/PluginSession.cpp": "c5f9088a0307ae09d4b56e60108189c045211f81793cc595c2b1c9ff7ba880b1",
+  "tests/PluginProcessingTests.cpp": "897a6d357a6359bf6a5e74d46adb21174e44770447e0d2bfef3894da4591cb71",
+  "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "4f7a775bb6c6bba8595505c7c230878db26df543096a783baf7e1da82232cc27"
+}

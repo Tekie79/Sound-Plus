@@ -219,6 +219,108 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         }
         if (l.id == "mono-v1" || l.id == "stereo-v1" || l.id == "5.1-side-v1" || l.id == "5.1-rear-v1")
         {
+            // R25: create a genuinely normalized, nondeterministic production pass,
+            // save it, and verify recall through fresh sessions without plugin access.
+            {
+                auto work = root.getChildFile("r25-" + l.id);
+                PluginSession producer(helper, work);
+                producer.input = input;
+                producer.settings = result["job"].clone();
+                parameter(producer.settings, 5, 1. / 6.);
+                producer.preview();
+                idle(producer);
+                producer.setNormalization(true);
+                idle(producer);
+                require(producer.result["rawProcessedPcm"].isObject() &&
+                            (bool)producer.result["presentationNormalized"],
+                        "R25 production normalized pass contains raw authority: " + l.id);
+                auto completed = producer.result.clone();
+                auto rawFile = File(completed["rawProcessedPcm"]["path"].toString());
+                auto derivedFile = File(completed["path"].toString());
+                MemoryBlock rawBytes, derivedBytes;
+                require(rawFile.loadFileAsData(rawBytes) && derivedFile.loadFileAsData(derivedBytes),
+                        "R25 both authority and derivative exist before Save");
+                auto rawHash = processingHash(rawFile);
+                auto passGeneration = completed["generation"];
+                auto savedNormalized = work.getChildFile("normalized.soundplus-process");
+                producer.createCopy(work.getChildFile("old-delivery"), false, true);
+                idle(producer);
+                auto obsoleteMaster = File(producer.receipt["path"].toString());
+                producer.save(savedNormalized);
+                require(obsoleteMaster.deleteFile(), "R25 make historical delivery stale");
+                auto count = work.findChildFiles(File::findFiles, false, "*-request.json").size();
+                for (int state = 0; state < 6; ++state)
+                {
+                    require(rawFile.replaceWithData(rawBytes.getData(), rawBytes.getSize()) &&
+                                derivedFile.replaceWithData(derivedBytes.getData(), derivedBytes.getSize()),
+                            "R25 restore only owned fixture PCM");
+                    if (state == 1 || state == 5)
+                        rawFile.deleteFile();
+                    if (state == 2)
+                        rawFile.replaceWithText("owned corrupt raw");
+                    if (state == 3 || state == 5)
+                        derivedFile.deleteFile();
+                    if (state == 4)
+                        derivedFile.replaceWithText("owned corrupt derivative");
+                    PluginSession recalled(work.getChildFile("missing-plugin-helper"),
+                                           work.getChildFile("recall-" + String(state)));
+                    recalled.open(savedNormalized);
+                    idle(recalled);
+                    require(recalled.input["sha256"] == input["sha256"] && recalled.settings.isObject() &&
+                                recalled.deliveryNormalize && !recalled.receipt.isObject(),
+                            "R25 retains settings/request, never trusts a saved delivery receipt");
+                    bool usable = state == 0 || state == 3 || state == 4;
+                    require(recalled.ready() == usable, "R25 saved normalized authority matrix");
+                    if (usable)
+                    {
+                        require(recalled.result["generation"] == passGeneration &&
+                                    recalled.result["job"]["input"]["sha256"] == input["sha256"] &&
+                                    recalled.result["frames"] == completed["frames"] &&
+                                    recalled.result["rate"] == completed["rate"] &&
+                                    JSON::toString(recalled.result["layout"]) ==
+                                        JSON::toString(completed["layout"]),
+                                "R25 recovered pass retains generation/input/dimensions/ordered roles");
+                        require((bool)recalled.result["presentationNormalized"] == (state == 0),
+                                "R25 actual representation independent of requested normalization");
+                        if (state != 0)
+                        {
+                            require(recalled.result["sha256"].toString() == rawHash &&
+                                        recalled.status.containsIgnoreCase("raw"),
+                                    "R25 raw fallback is visible and exact");
+                            recalled.setNormalization(true);
+                            idle(recalled);
+                            require((bool)recalled.result["presentationNormalized"] &&
+                                        recalled.result["rawProcessedPcm"]["sha256"].toString() == rawHash,
+                                    "R25 normalization retry derives from same authority");
+                        }
+                        recalled.createCopy(work.getChildFile("fresh-copy"), false, true);
+                        idle(recalled);
+                        require(recalled.receipt["files"].size() == l.size(),
+                                "R25 reopened copy finalizes exact named splits without plugin");
+                    }
+                    else
+                        require(recalled.status.containsIgnoreCase("authority"),
+                                "R25 missing/corrupt raw has useful reason and no Ready");
+                    require(work.findChildFiles(File::findFiles, false, "*-request.json").size() == count,
+                            "R25 recall/fallback/retry/copy never runs nondeterministic effect again");
+                }
+                rawFile.replaceWithData(rawBytes.getData(), rawBytes.getSize());
+                derivedFile.replaceWithData(derivedBytes.getData(), derivedBytes.getSize());
+                PluginSession raced(helper, work.getChildFile("raced"));
+                raced.open(savedNormalized);
+                raced.cancel();
+                pump(30);
+                require(!raced.ready(), "R25 cancelled Open cannot adopt completed PCM");
+                auto preparedJob = work.getChildFile("prepared.soundplus-process");
+                producer.result = var();
+                producer.receipt = var();
+                producer.save(preparedJob);
+                raced.open(savedNormalized);
+                raced.open(preparedJob);
+                idle(raced);
+                require(!raced.ready() && raced.input["sha256"] == input["sha256"],
+                        "R25 rapid A to B Open adopts only prepared B, never stale completed A");
+            }
             PluginSession recovery(helper, root.getChildFile("recovery-" + l.id));
             recovery.input = input;
             recovery.settings = result["job"];
@@ -801,6 +903,24 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             "Normalization creates no plugin-worker request");
     compare(read(File(rawReady["path"].toString())), read(File(panel.session.result["path"].toString())),
             (double)panel.session.result["normalizationGain"]);
+    auto savedNormalizedPanel = root.getChildFile("normalized-panel.soundplus-process");
+    panel.session.save(savedNormalizedPanel);
+    auto panelDerived = File(panel.session.result["path"].toString());
+    auto keepDerived = panelDerived.getSiblingFile("owned-normalized-backup.wav");
+    require(panelDerived.moveFileTo(keepDerived), "R25 remove only owned derived fixture after Save");
+    panel.session.open(savedNormalizedPanel);
+    idle(panel.session);
+    require(panel.session.ready() && panel.normalize.getToggleState() &&
+                !(bool)panel.session.result["presentationNormalized"] && panel.copy.isEnabled(),
+            "R25 actual panel Open adopts raw fallback with requested normalization visible");
+    panel.transport.onClick();
+    pump(30);
+    panel.stopAudition();
+    panel.session.setNormalization(true);
+    idle(panel.session);
+    panel.session.createCopy(root.getChildFile("r25-panel-copy"), false, true);
+    idle(panel.session);
+    require(panel.session.receipt.isObject(), "R25 actual panel retains final copy readiness");
     panel.session.setNormalization(false);
     idle(panel.session);
     require(panel.session.result["sha256"] == rawReady["sha256"],
