@@ -7,6 +7,7 @@
 #include <juce_cryptography/juce_cryptography.h>
 #include <CoreFoundation/CoreFoundation.h>
 #include <cmath>
+#include <map>
 namespace
 {
 using namespace juce;
@@ -208,8 +209,24 @@ void layout(AudioPluginInstance &p, const sp::ChannelLayout &l)
                         "conversion applied");
     stage("main-bus-ready");
 }
+void validateParameterSchema(AudioPluginInstance &p)
+{
+    stage("parameter-identity");
+    check(p.getParameters().size() <= 16384, "Processor exceeds 16384 declared parameter bound");
+    std::map<String, int> identities;
+    for (int i = 0; i < p.getParameters().size(); ++i)
+        if (auto *parameter = p.getHostedParameter(i))
+        {
+            auto id = parameter->getParameterID();
+            auto [previous, unique] = identities.emplace(id, i);
+            check(id.isNotEmpty() && unique, "Ambiguous native parameter ID " + id + " at indices " +
+                                                 String(previous->second) + " and " + String(i) +
+                                                 "; processor must expose unique native IDs");
+        }
+}
 var describe(AudioPluginInstance &p)
 {
+    validateParameterSchema(p);
     stage("state-description");
     auto result = obj();
     put(result, "buses", busesJson(p));
@@ -244,6 +261,7 @@ var describe(AudioPluginInstance &p)
     check(state.getSize() <= 4 * 1024 * 1024, "Plugin state exceeds 4 MiB");
     put(result, "exposedParameterCount", params.size());
     put(result, "parameters", params);
+    put(result, "parameterBaseline", var(params).clone());
     put(result, "program", p.getCurrentProgram());
     put(result, "programName", p.getNumPrograms() > 0 ? p.getProgramName(p.getCurrentProgram()) : String());
     put(result, "state", state.toBase64Encoding());
@@ -255,6 +273,7 @@ var describe(AudioPluginInstance &p)
 }
 void restore(AudioPluginInstance &p, const var &job)
 {
+    validateParameterSchema(p);
     // Opaque state owns its program. Queuing a redundant VST3 program change
     // before restoring state can reset the restored audio controls at first process.
     if (job["state"].toString().isEmpty() && job.hasProperty("program") && p.getNumPrograms() > 0)
@@ -287,8 +306,18 @@ void restore(AudioPluginInstance &p, const var &job)
             if (v["id"].isString())
                 check(v["id"].toString() == p.getParameterID(n),
                       "Saved parameter ID no longer matches its processor");
+            bool edited = true;
+            if (auto *baseline = job["parameterBaseline"].getArray())
+            {
+                check(baseline->size() == params->size(), "Parameter baseline size mismatch");
+                auto &original = baseline->getReference((int)(&v - params->begin()));
+                check(original["index"] == v["index"] && original["id"] == v["id"] &&
+                          original["stableId"] == v["stableId"],
+                      "Parameter baseline identity mismatch");
+                edited = original["value"] != v["value"];
+            }
             auto *parameter = p.getParameters()[n];
-            if (parameter->getValue() != (float)x)
+            if (edited && parameter->getValue() != (float)x)
                 parameter->setValueNotifyingHost((float)x);
         }
     }
@@ -353,6 +382,7 @@ var execute(const var &job)
                 check(StringArray::fromTokens(architectures, "+", "").contains("arm64"),
                       "Native arm64 required; bundle architecture: " + architectures + "; no bridging");
                 auto effect = instance(formats, p, 48000, 512);
+                validateParameterSchema(*effect);
                 for (auto l : sp::namedLayouts())
                 {
                     try
@@ -418,6 +448,30 @@ var execute(const var &job)
           "Unsupported sample rate/block bound");
     auto identity = job["plugin"];
     auto effect = instance(formats, identity, rate, block);
+    if (mode == "inspect-parameter-schema")
+    {
+        var schema;
+        onPluginMessageThread(
+            [&]
+            {
+                check(effect->getParameters().size() <= 16384, "Declared parameter bound exceeded");
+                Array<var> rows;
+                for (int i = 0; i < effect->getParameters().size(); ++i)
+                {
+                    auto row = obj();
+                    auto *parameter = effect->getParameters()[i];
+                    put(row, "index", i);
+                    put(row, "stableId", effect->getHostedParameter(i)->getParameterID());
+                    put(row, "name", parameter->getName(128));
+                    put(row, "automatable", parameter->isAutomatable());
+                    put(row, "value", parameter->getValue());
+                    rows.add(row);
+                }
+                schema = obj();
+                put(schema, "parameters", rows);
+            });
+        return schema;
+    }
     auto bus = sp::layoutFromJson(job["layout"]);
     var state;
     onPluginMessageThread(
@@ -479,7 +533,8 @@ var execute(const var &job)
             if (now >= nextState && checkpointPath.isNotEmpty())
             {
                 auto settings = job.clone();
-                for (auto key : {"state", "stateHash", "parameters", "program", "programName"})
+                for (auto key :
+                     {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
                     put(settings, key, state[key]);
                 for (auto key : {"reply", "diagnostic", "health", "checkpoint"})
                     settings.getDynamicObject()->removeProperty(key);

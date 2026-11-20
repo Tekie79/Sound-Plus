@@ -1,0 +1,49 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 1, 4, 26, 29-107, 111
++	114 button Designer
++	115 button Choose reference file, Help: Use a local audio file as a temporary search reference. You can also drop one file here.
++	116 text (settable) 7 results  ·  7 indexed  ·  7 ready
++	117 button Rescan, Help: Reconcile all sources. Unchanged audio headers are reused.
++	118 button (settable) Pause Indexing, Value: Off
++	119 button Retry Analysis
++	120 text (settable)
++		121 container
++			122 container RECORDING / LOCATION
++			123 container DURATION
++			124 container CHANNELS
++			125 container RATE
++			126 container STATUS
++			127 container MATCH
++	128 text (settable) Value: Local AI ready, Help: 
+Model: clap-htsat-unfused-q8-c28f2883575e
+Preprocessing: soundplus-clap48k-slaney-repeatpad-sinc32-v1
+Paired CLAP · 512 dimensions · cosine ranking · native CPU inference
+Sound index ready
++	129 outline
++		130 row All recordings
++		131 row /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/waveform-ui/media Online, 6 recordings
++		132 row /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/native-source Online, 1 recordings
++	133 text (settable) Value: Pool Mono.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/waveform-ui/media/Pool Mono.wav
+Asset 135c16284d564937a32ce495dd348927 | Revision 1
++	134 button Process selected source/range with Plug-in
++	135 button Add marked region to Designer, Help: Add this marked source range to Designer. Layout-aware designs keep all supported channels; wider sources require an explicit subset. Legacy designs retain pair semantics. I / O mark the range.
++	136 button Find Similar
++	137 pop up button (settable) Other matching moments
++	138 button Per-channel source waveforms
++	139 text (settable) /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/waveform-ui/media/Pool Mono.wav
+
++	140 button Play Whole
++	141 button Previous recording
++	142 button Next recording
++	143 button Play Match
++	144 button Set IN at playhead, Help: Set IN at playhead (I)
++	145 button Set OUT at playhead, Help: Set OUT at playhead, exclusive (O)
++	146 toggle button (settable, boolean) Add 250 milliseconds of audition context, Value: off, Help: Adds 250 ms before and after the range, clamped to the recording. Stored match boundaries stay unchanged.
++	147 text (settable) Listen
++	148 slider (settable) Audition volume, Value: 15%, Secondary Actions: Delete
++	149 pop up button (settable) Audio output device, Value: MacBook Pro Speakers
++	150 pop up button (settable) Audition channels, Value: Analysis Mix (all channels), Help: Analysis Mix reproduces the encoder's all-channel mono average; opposite polarity can cancel. Select a pair present in the recording to inspect original channels. Changing this switches the current audition.
++	151 button Reconnect Audio
++	152 text (settable)
++	153 text SoundPlus
+The focused UI element is 114 button Designer

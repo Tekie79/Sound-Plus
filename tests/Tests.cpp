@@ -32,6 +32,8 @@ void runPlaybackSearchTests(const juce::File &, const juce::File &);
 void runSourcePoolTests(const juce::File &, const juce::File &);
 void prepareSourcePoolUI(const juce::File &);
 void runPluginProcessingTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
+void runTalCorrectnessBaseline(const juce::File &, const juce::File &);
+void runPluginCorrectnessTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
 namespace
 {
 int checks = 0;
@@ -84,6 +86,8 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--tal-baseline") { runTalCorrectnessBaseline(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        if (argc >= 6 && juce::String(argv[1]) == "--plugin-correctness") { runPluginCorrectnessTests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
         if (argc >= 6 && juce::String(argv[1]) == "--plugin-processing") { runPluginProcessingTests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-pool-correction-ui")
         {

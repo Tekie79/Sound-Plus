@@ -1,0 +1,19 @@
+{
+  "protectedFiles": 191,
+  "unchanged": 191,
+  "changed": [],
+  "restorationPolicy": "Latest working catalog retained in place; no older snapshot copied over user state.",
+  "unchangedAfterRelaunch": 191,
+  "changedAfterRelaunch": [],
+  "nativeRestored": {
+    "name": "Workflow demonstration",
+    "revision": 34,
+    "unsavedChangesRetained": true,
+    "playheadSeconds": 2.112,
+    "monitorVolume": 0.25,
+    "selectedLayer": "clip-005.wav",
+    "status": "Recovered latest changes"
+  },
+  "finalRelaunchUnchanged": 191,
+  "finalNativeRevision": 34
+}

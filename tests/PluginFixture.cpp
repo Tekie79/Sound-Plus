@@ -11,6 +11,16 @@ juce::String topology()
 }
 
 } // namespace
+class AliasParameter final : public juce::AudioParameterFloat
+{
+  public:
+    explicit AliasParameter(int n, bool automatable)
+        : AudioParameterFloat({"alias-" + juce::String(n), 1}, "Alias " + juce::String(n),
+                              juce::NormalisableRange<float>(0, 1), 0,
+                              juce::AudioParameterFloatAttributes().withAutomatable(automatable))
+    {
+    }
+};
 class Fixture final : public juce::AudioProcessor
 {
     static BusesProperties fixtureBuses()
@@ -28,7 +38,7 @@ class Fixture final : public juce::AudioProcessor
     juce::AudioParameterBool *invert;
     juce::AudioParameterChoice *mode;
     std::vector<std::vector<float>> delay;
-    int position = 0, delayFrames = 0, sleepMs = 0;
+    int position = 0, delayFrames = 0, sleepMs = 0, program = 0;
     float randomGain = .5f + juce::Random::getSystemRandom().nextFloat() * .5f;
 
   public:
@@ -49,6 +59,14 @@ class Fixture final : public juce::AudioProcessor
         }
         if (auto *s = std::getenv("SOUNDPLUS_FIXTURE_BLOCK_SLEEP_MS"))
             sleepMs = juce::jlimit(0, 10, juce::String(s).getIntValue());
+        if (auto *schema = std::getenv("SOUNDPLUS_FIXTURE_SCHEMA"))
+        {
+            auto name = juce::String(schema);
+            int count = name == "overflow" ? 16385 : 580;
+            for (int i = 0; i < count; ++i)
+                addParameter(
+                    new AliasParameter(name == "reversed" ? count - i - 1 : i, name == "inline-overflow"));
+        }
         addParameter(gain = new juce::AudioParameterFloat({"gain", 1}, "Gain", 0.f, 2.f, 1.f));
         addParameter(invert = new juce::AudioParameterBool({"invert", 1}, "Invert", false));
         addParameter(latency =
@@ -159,16 +177,23 @@ class Fixture final : public juce::AudioProcessor
     }
     int getNumPrograms() override
     {
-        return 1;
+        return std::getenv("SOUNDPLUS_FIXTURE_PROGRAMS") ? 2 : 1;
     }
     int getCurrentProgram() override
     {
-        return 0;
+        return program;
     }
-    void setCurrentProgram(int) override {}
-    const juce::String getProgramName(int) override
+    void setCurrentProgram(int index) override
     {
-        return "Default";
+        if (std::getenv("SOUNDPLUS_FIXTURE_PROGRAMS"))
+        {
+            program = index;
+            gain->setValueNotifyingHost(index ? .75f : .25f);
+        }
+    }
+    const juce::String getProgramName(int index) override
+    {
+        return index ? "Loud" : "Default";
     }
     void changeProgramName(int, const juce::String &) override {}
     void getStateInformation(juce::MemoryBlock &b) override

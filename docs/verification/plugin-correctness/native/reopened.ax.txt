@@ -1,0 +1,89 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~	88 button Add existing sound folders, Help: Add Folder
++	89 text entry area (settable) Search library, Secondary Actions: Delete
++	90 text (settable) All sources
++	91 outline
++		92 row stereo-v1-48000.wav, 5.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/native-source/stereo-v1-48000.wav
++			93 row stereo-v1-48000.wav, 5.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/native-source/stereo-v1-48000.wav
++	94 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
++	95 button Per-channel source waveforms
++	96 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
++	97 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
++	98 container Resize sound browser
++	99 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 18, Value: Plugin Correctness QA
++	100 button Render Design, Help: Render Design (Command-R)
++	101 button Render settings
++	102 button Render selected layer (pre-master stem)
++	103 button Choose permanent output folder
++	104 button Library
++	105 button (settable) Browser, Help: Hide sound browser, Value: On
++	106 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
++	107 text (settable)
++	108 button New design, Help: New design (Command-N)
++	109 button Open design, Help: Open design (Command-O)
++	110 button Save design, Help: Save design (Command-S)
++	111 button Recover autosave
++	112 button Add source
++	113 button Duplicate layer, Help: Duplicate layer (Command-D)
++	114 button Remove layer, Help: Remove layer (Delete / Backspace)
++	115 button (settable) Edit, Value: On
++	116 button (settable) Perform, Value: Off
++	117 button (settable) Hide layer inspector, Value: On
++	118 button Zoom out
++	119 button Zoom in (Command-wheel)
++	120 button Decrease track height
++	121 button Increase track height (Command-Option-wheel)
++	122 button Fit design
++	123 button Fit selected layers
++	124 button (settable) Enable snapping (Command temporarily bypasses), Value: On
++	125 button Snap targets and grid
++	126 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
++	127 text (settable) 2.0000 s
++	128 button (settable) Layer, Value: Off
++	129 button (settable) Source, Value: Off
++	130 button (settable) Mix, Value: Off
++	131 button (settable) Fades, Value: Off
++	132 button (settable) Track inserts, Value: On
++	133 text (settable) stereo-v1-48000.wav
++	134 pop up button (settable) Track insert slots, Value: SoundPlus QA Effect · bypassed, Help: SoundPlus QA · VST3
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3
+Bypassed
++	135 button Add effect
++	136 button (settable) Effect enabled, Help: Enable effect, Value: Off
++	137 button Editor (apply state when closed)
++	138 button (settable) Show external insert parameters, Value: Off
++	139 button Effect actions
++	140 button (settable) Master inserts, Value: On
++	141 text (settable) Master
++	142 pop up button (settable) Master insert slots, Value: SoundPlus QA Stereo, Help: SoundPlus QA · VST3
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3
++	143 button Add effect
++	144 button (settable) Effect enabled, Help: Bypass effect, Value: On
++	145 button Editor (apply state when closed)
++	146 button (settable) Show external insert parameters, Value: Off
++	147 button Effect actions
++	148 scroll bar (settable) Value: 0, Secondary Actions: Delete
++	149 container Layer canvas. Double-click a fade curve to add a point; drag to reshape; Option-click removes. Shift addresses OUT when handles or points overlap. Right-click for presets. Option-body slips source. Control is fine; Command bypasses snapping.
++	150 button Select / reorder layer stereo-v1-48000.wav, Help: Drag to reorder; Shift-click selects multiple tracks; drag the lower edge to resize
++	151 button Track colour for stereo-v1-48000.wav, Help: Track colour
++	152 button (settable) Mute stereo-v1-48000.wav, Value: Off
++	153 button (settable) Solo stereo-v1-48000.wav, Value: Off
++	154 button (settable) Lock stereo-v1-48000.wav for variations, Value: Off
++	155 button Generate 5
++	156 button Variation bounds and enabled parameters
++	157 pop up button (settable) Original and variation candidates, Value: Original
++	158 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
++	159 button Copy Original to Project
++	160 button Drag WAV, Help: Drag the actual finalized durable WAV to Finder or another application.
++	161 button Add completed output as layer
++	162 button Process finalized output with Plug-in, Help: Process the selected finalized WAV; the editable design/take stays unchanged
++	163 pop up button (settable) Actual finalized Export output / set, Help: /Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r17-8dabd06c.wav, Value: Mix STEREO · Plugin Correctness QA-r17-8dabd06c.wav
++	164 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
++	165 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
++	166 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
++	167 slider (settable) Monitor volume, excluded from render, Value: 0.15, Secondary Actions: Delete
++	168 text (settable) Reopened saved design
++	169 close button
++	83 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
++	170 minimize button
++	171 text SoundPlus

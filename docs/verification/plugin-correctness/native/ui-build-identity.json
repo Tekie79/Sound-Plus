@@ -1,0 +1,6 @@
+{
+  "appSHA256": "0a783679102df77580a417c61f81a5e3faa8fd04674c4e1e4b126a82567ef2e5",
+  "helperSHA256BeforeFinalPreparationGuard": "58571d0563b2c62b00538925a1bb7207b257a0e4c3da82303b1f0faf616a84b9",
+  "uiBinaryUnchangedByFinalGuard": true,
+  "scope": "Recorded native discovery, insertion, ownership, bypass, save/reopen and waveform gestures. Final helper preparation guard is covered by final full gate and post-guard native render."
+}

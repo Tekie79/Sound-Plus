@@ -1,0 +1,3 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~	20 text (settable)
+~	83 text (settable) Saved Native QA.soundplus

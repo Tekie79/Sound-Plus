@@ -327,6 +327,11 @@ void PluginProcessPanel::populatePlugins()
                       pluginEffectGroup(b) + ":" + b["name"].toString() + ":" + b["vendor"].toString();
                   return left.compareIgnoreCase(right) < 0;
               });
+    juce::Array<juce::var> identities;
+    for (auto &p : grouped)
+        identities.add(p);
+    auto names = pluginDisplayNames(identities);
+    int displayIndex = 0;
     juce::String previousGroup;
     for (auto &p : grouped)
     {
@@ -336,7 +341,7 @@ void PluginProcessPanel::populatePlugins()
             plugins.addSectionHeading(group);
             previousGroup = group;
         }
-        auto name = p["name"].toString();
+        auto name = names[displayIndex++];
         choices.push_back(p);
         int id = (int)choices.size();
         plugins.addItem(name, id);
@@ -401,13 +406,15 @@ void PluginProcessPanel::rebuildParameters()
             parameterContent.addAndMakeVisible(s);
             s->onDragStart = [this] { session.beginGesture(); };
             s->onDragEnd = [this] { session.endGesture(); };
-            s->onValueChange = [this, s, i]
+            s->onValueChange = [this, slider = juce::Component::SafePointer<juce::Slider>(s), i,
+                                schema = pluginParameterSchemaSignature(params)]
             {
-                if (!updating)
+                if (!updating && slider &&
+                    schema == pluginParameterSchemaSignature(session.settings["parameters"]))
                 {
                     auto v = session.settings.clone();
                     v["parameters"].getArray()->getReference(i).getDynamicObject()->setProperty(
-                        "value", s->getValue());
+                        "value", slider->getValue());
                     session.change(v);
                 }
             };
@@ -446,7 +453,8 @@ void PluginProcessPanel::refresh()
         bypass.setToggleState((bool)session.settings["bypass"], juce::dontSendNotification);
         normalize.setToggleState(session.deliveryNormalize, juce::dontSendNotification);
     }
-    auto key = session.settings["plugin"]["id"].toString() + session.settings["stateHash"].toString();
+    auto key = session.settings["plugin"]["id"].toString() + session.settings["stateHash"].toString() +
+               pluginParameterSchemaSignature(session.settings["parameters"]);
     if (key != parameterKey)
     {
         parameterKey = key;

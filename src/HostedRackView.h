@@ -15,9 +15,11 @@ class HostedRackView final : public juce::Component
     using EditorInvoker = std::function<juce::var(juce::var, const juce::File &, const juce::File &,
                                                   const std::function<bool()> &)>;
     HostedRackView(DesignSession &s, bool master, juce::File registry, bool embeddedView = false,
-                   EditorInvoker invokeEditor = {})
+                   EditorInvoker invokeEditor = {}, std::vector<juce::File> discoveryRoots = {},
+                   bool discoverAudioUnits = true)
         : session(s), isMaster(master), storage(std::move(registry)), embedded(embeddedView),
-          editorInvoker(std::move(invokeEditor))
+          editorInvoker(std::move(invokeEditor)), scanRoots(std::move(discoveryRoots)),
+          scanAudioUnits(discoverAudioUnits)
     {
         for (auto *c : std::initializer_list<juce::Component *>{
                  &title, &slots, &add, &remove, &up, &down, &bypass, &rackBypass, &transfer, &savePreset,
@@ -131,13 +133,20 @@ class HostedRackView final : public juce::Component
         bool editable = rack && !session.takeBusy() && session.document.activeTake.isEmpty();
         slots.clear(juce::dontSendNotification);
         int index = 0;
+        juce::Array<juce::var> identities;
+        if (rack)
+            for (auto &slot : rack->slots)
+                identities.add(parsedSettings(slot)["plugin"]);
+        auto names = pluginDisplayNames(identities);
         if (rack)
             for (size_t i = 0; i < rack->slots.size(); ++i)
             {
                 auto &slot = rack->slots[i];
                 auto settings = parsedSettings(slot);
                 auto p = settings["plugin"];
-                slots.addItem(p["name"].toString(), (int)i + 1);
+                slots.addItem(names[(int)i] + (slot.bypass ? " · bypassed" : "") +
+                                  (availability[slot.id].isNotEmpty() ? " · unavailable" : ""),
+                              (int)i + 1);
                 if (slot.id == selected)
                     index = (int)i + 1;
             }
@@ -182,7 +191,7 @@ class HostedRackView final : public juce::Component
         auto key = owner.document + owner.variation + owner.layer +
                    juce::String((juce::int64)owner.generation) + selected +
                    settings["plugin"]["id"].toString() + settings["plugin"]["fingerprint"].toString() + ":" +
-                   juce::String(params.size());
+                   pluginParameterSchemaSignature(params);
         if (key != parameterKey)
         {
             sliders.clear();
@@ -210,11 +219,12 @@ class HostedRackView final : public juce::Component
                     parameterContent.addAndMakeVisible(v);
                     v->onDragStart = [this] { session.beginGesture(); };
                     v->onDragEnd = [this] { session.endGesture(); };
-                    v->onValueChange = [this, v, target, id, parameter]
+                    v->onValueChange = [this, slider = juce::Component::SafePointer<juce::Slider>(v), target,
+                                        id, parameter, schema = pluginParameterSchemaSignature(params)]
                     {
-                        if (updating)
+                        if (updating || !slider)
                             return;
-                        double value = v->getValue();
+                        double value = slider->getValue();
                         change(target, "Adjust external insert",
                                [&](auto &rack)
                                {
@@ -222,6 +232,8 @@ class HostedRackView final : public juce::Component
                                        if (slot.id == id)
                                        {
                                            auto s = juce::JSON::parse(slot.settings);
+                                           if (pluginParameterSchemaSignature(s["parameters"]) != schema)
+                                               return;
                                            if (auto *a = s["parameters"].getArray())
                                                for (auto &p : *a)
                                                    if ((int)p["index"] == parameter)
@@ -336,6 +348,8 @@ class HostedRackView final : public juce::Component
         std::erase_if(editors, [](auto &edit) { return edit->done->load(); });
     }
     SerialWorker worker;
+    std::vector<juce::File> scanRoots;
+    bool scanAudioUnits = true;
     std::shared_ptr<std::atomic<uint64_t>> epoch = std::make_shared<std::atomic<uint64_t>>(0);
     juce::Label title, feedback;
     void showFeedback(const Owner &target, const juce::String &message)
@@ -511,6 +525,9 @@ class HostedRackView final : public juce::Component
     }
     juce::File helper()
     {
+        auto override = juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_PLUGIN_HELPER", {});
+        if (override.isNotEmpty())
+            return juce::File(override);
         auto exe = juce::File::getSpecialLocation(juce::File::currentExecutableFile);
         auto file = exe.getSiblingFile("SoundPlusPlugin");
         if (!file.existsAsFile())
@@ -545,7 +562,8 @@ class HostedRackView final : public juce::Component
                     settings = juce::var(o);
                     auto result = PluginWorker(exe).call(settings, folder, 20000,
                                                          [=] { return gate->load() != serial; });
-                    for (auto key : {"state", "stateHash", "parameters", "program", "programName"})
+                    for (auto key :
+                         {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
                         o->setProperty(key, result[key]);
                 }
                 catch (const std::exception &e)
@@ -574,6 +592,8 @@ class HostedRackView final : public juce::Component
                     });
             });
     }
+
+  public:
     struct Chooser final : juce::Component, juce::ListBoxModel
     {
         juce::TextEditor search, details;
@@ -584,6 +604,8 @@ class HostedRackView final : public juce::Component
         juce::Label status, requested;
         juce::Array<juce::var> choices;
         juce::var snapshot;
+        juce::String wantedSelection, wantedFormat, wantedCanonical;
+        bool refreshingRows = false, wantedBundleOnly = false;
         ChannelLayout expected;
         std::function<void(juce::var)> choose;
         ui::LookAndFeel look;
@@ -627,9 +649,10 @@ class HostedRackView final : public juce::Component
             if (!juce::isPositiveAndBelow(row, choices.size()))
                 return {};
             auto p = choices[row];
-            return p["name"].toString() + (p["status"].toString() == "Available"
-                                               ? juce::String()
-                                               : juce::String::fromUTF8(" · ") + p["status"].toString());
+            return p["displayName"].toString() +
+                   (p["status"].toString() == "Available"
+                        ? juce::String()
+                        : juce::String::fromUTF8(" · ") + p["status"].toString());
         }
         void paintListBoxItem(int row, juce::Graphics &g, int width, int height, bool selected) override
         {
@@ -644,7 +667,7 @@ class HostedRackView final : public juce::Component
             g.setColour(ui::text);
             g.setFont(juce::FontOptions(12.f, juce::Font::bold));
             bool needsAttention = p["status"].toString() != "Available";
-            g.drawText(p["name"].toString(), 10, needsAttention ? 2 : 12, width - 20, 20,
+            g.drawText(p["displayName"].toString(), 10, needsAttention ? 2 : 12, width - 20, 20,
                        juce::Justification::centredLeft, true);
             if (needsAttention)
             {
@@ -664,6 +687,13 @@ class HostedRackView final : public juce::Component
                 return;
             }
             auto p = choices[row];
+            if (!refreshingRows)
+            {
+                wantedSelection = pluginCandidateSelectionKey(p);
+                wantedFormat = p["plugin"]["format"].toString();
+                wantedCanonical = p["canonicalIdentity"].toString();
+                wantedBundleOnly = p["plugin"]["id"].toString().isEmpty();
+            }
             insert.setEnabled((bool)p["canInsert"]);
             retry.setEnabled(!(bool)p["canInsert"]);
             juce::StringArray layouts;
@@ -691,7 +721,8 @@ class HostedRackView final : public juce::Component
         void loadSelected()
         {
             int row = available.getSelectedRow();
-            if (juce::isPositiveAndBelow(row, choices.size()) && (bool)choices[row]["canInsert"] && choose)
+            if (juce::isPositiveAndBelow(row, choices.size()) && (bool)choices[row]["canInsert"] &&
+                pluginCandidateSelectionKey(choices[row]) == wantedSelection && choose)
                 choose(choices[row]["plugin"]);
         }
         juce::String selectedPath() const
@@ -717,23 +748,42 @@ class HostedRackView final : public juce::Component
         }
         void populate()
         {
-            auto path = selectedPath();
+            refreshingRows = true;
             choices = pluginCandidateRows(snapshot, expected, search.getText(), attention.getToggleState());
             available.updateContent();
-            int selected = 0;
+            int selected = -1;
             for (int i = 0; i < choices.size(); ++i)
-                if (choices[i]["path"].toString() == path)
+                if (pluginCandidateSelectionKey(choices[i]) == wantedSelection)
                     selected = i;
-            if (!choices.isEmpty())
+            if (selected < 0 && wantedBundleOnly)
+                for (int i = 0; i < choices.size(); ++i)
+                    if (choices[i]["canonicalIdentity"].toString() == wantedCanonical &&
+                        choices[i]["plugin"]["format"].toString() == wantedFormat)
+                    {
+                        selected = i;
+                        break;
+                    }
+            if (wantedSelection.isEmpty() && !choices.isEmpty())
+                selected = 0;
+            if (selected >= 0)
                 available.selectRow(selected);
             else
                 available.deselectAllRows();
-            selectedRowsChanged(available.getSelectedRow());
+            refreshingRows = false;
+            selectedRowsChanged(selected);
             available.repaint();
         }
     };
+    Chooser *openChooser() const
+    {
+        return chooser.getComponent();
+    }
+
+  private:
     juce::Component::SafePointer<Chooser> chooser;
-    void showChooser(const Owner &target, juce::Rectangle<int> anchor = {})
+
+  public:
+    std::unique_ptr<Chooser> createChooserFor(const Owner &target)
     {
         juce::String ownerName = isMaster ? "Master" : "Track";
         if (!isMaster)
@@ -755,7 +805,7 @@ class HostedRackView final : public juce::Component
         content->scan.onClick = [safe, view]
         {
             if (safe && view)
-                safe->scanChooser(false, {}, view->selectedPath());
+                safe->scanChooser(false);
         };
         content->retry.onClick = [safe, view]
         {
@@ -777,7 +827,13 @@ class HostedRackView final : public juce::Component
                                            });
         };
         scanChooser(false);
-        juce::CallOutBox::launchAsynchronously(std::move(content),
+        return content;
+    }
+
+  private:
+    void showChooser(const Owner &target, juce::Rectangle<int> anchor = {})
+    {
+        juce::CallOutBox::launchAsynchronously(createChooserFor(target),
                                                anchor.isEmpty() ? add.getScreenBounds() : anchor, nullptr);
     }
     void scanChooser(bool retryQuarantine, std::vector<juce::File> extraRoots = {},
@@ -791,13 +847,16 @@ class HostedRackView final : public juce::Component
         auto folder = storage.getParentDirectory().getChildFile("insert-work");
         auto serial = ++*epoch;
         auto gate = epoch;
+        auto configuredRoots = scanRoots;
+        bool includeAU = scanAudioUnits;
         juce::Component::SafePointer<HostedRackView> safe(this);
         juce::Component::SafePointer<Chooser> view(panel);
         panel->status.setText(retryQuarantine ? "Retrying failed effects..."
                                               : "Checking installed effects...",
                               juce::dontSendNotification);
         worker.submit(
-            [safe, view, registry, exe, folder, retryQuarantine, extraRoots, targetPath, serial, gate]
+            [safe, view, registry, exe, folder, retryQuarantine, extraRoots, targetPath, serial, gate,
+             configuredRoots, includeAU]
             {
                 juce::var snapshot;
                 juce::String failure;
@@ -819,7 +878,7 @@ class HostedRackView final : public juce::Component
                                 }
                             });
                     {
-                        auto roots = defaultVst3Locations();
+                        auto roots = configuredRoots.empty() ? defaultVst3Locations() : configuredRoots;
                         if (auto *saved = snapshot["roots"].getArray())
                             for (auto &v : *saved)
                             {
@@ -832,8 +891,8 @@ class HostedRackView final : public juce::Component
                                 roots.push_back(root);
                         PluginWorker worker(exe);
                         snapshot = catalog.scan(
-                            worker, roots, retryQuarantine, [=] { return gate->load() != serial; }, {}, true,
-                            targetPath);
+                            worker, roots, retryQuarantine, [=] { return gate->load() != serial; }, {},
+                            includeAU, targetPath);
                     }
                 }
                 catch (const std::exception &e)
@@ -1055,8 +1114,9 @@ class HostedRackView final : public juce::Component
                                              if (slot.id == id && slot.settings == original)
                                              {
                                                  auto s = juce::JSON::parse(original);
-                                                 for (auto key : {"state", "stateHash", "parameters",
-                                                                  "program", "programName"})
+                                                 for (auto key :
+                                                      {"state", "stateHash", "parameters",
+                                                       "parameterBaseline", "program", "programName"})
                                                      s.getDynamicObject()->setProperty(key, edited[key]);
                                                  slot.settings = juce::JSON::toString(s, true);
                                                  applied = true;

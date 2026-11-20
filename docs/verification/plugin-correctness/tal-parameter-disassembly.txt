@@ -1,0 +1,119 @@
+(lldb) target create "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3"
+Current executable set to '/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3' (arm64).
+(lldb) disassemble --start-address 0x363d8 --count 115
+TAL-Reverb-3`juce::JuceVST3Component::processParameterChanges:
+TAL-Reverb-3[0x363d8] <+0>:   sub    sp, sp, #0x70
+TAL-Reverb-3[0x363dc] <+4>:   stp    d9, d8, [sp, #0x10]
+TAL-Reverb-3[0x363e0] <+8>:   stp    x26, x25, [sp, #0x20]
+TAL-Reverb-3[0x363e4] <+12>:  stp    x24, x23, [sp, #0x30]
+TAL-Reverb-3[0x363e8] <+16>:  stp    x22, x21, [sp, #0x40]
+TAL-Reverb-3[0x363ec] <+20>:  stp    x20, x19, [sp, #0x50]
+TAL-Reverb-3[0x363f0] <+24>:  stp    x29, x30, [sp, #0x60]
+TAL-Reverb-3[0x363f4] <+28>:  add    x29, sp, #0x60
+TAL-Reverb-3[0x363f8] <+32>:  mov    x19, x1
+TAL-Reverb-3[0x363fc] <+36>:  mov    x20, x0
+TAL-Reverb-3[0x36400] <+40>:  ldr    x8, [x1]
+TAL-Reverb-3[0x36404] <+44>:  ldr    x8, [x8, #0x18]
+TAL-Reverb-3[0x36408] <+48>:  mov    x0, x1
+TAL-Reverb-3[0x3640c] <+52>:  blr    x8
+TAL-Reverb-3[0x36410] <+56>:  cmp    w0, #0x1
+TAL-Reverb-3[0x36414] <+60>:  b.lt   0x365b4                   ; <+476>
+TAL-Reverb-3[0x36418] <+64>:  mov    x21, x0
+TAL-Reverb-3[0x3641c] <+68>:  mov    w22, #0x0                 ; =0 
+TAL-Reverb-3[0x36420] <+72>:  adrp   x25, 401
+TAL-Reverb-3[0x36424] <+76>:  add    x25, x25, #0xc28          ; _MergedGlobals + 608
+TAL-Reverb-3[0x36428] <+80>:  mov    w26, #0x1                 ; =1 
+TAL-Reverb-3[0x3642c] <+84>:  b      0x3644c                   ; <+116>
+TAL-Reverb-3[0x36430] <+88>:  ldr    w1, [sp, #0xc]
+TAL-Reverb-3[0x36434] <+92>:  ldr    d0, [sp]
+TAL-Reverb-3[0x36438] <+96>:  mov    x0, x20
+TAL-Reverb-3[0x3643c] <+100>: bl     0x37a24                   ; juce::JuceVST3Component::addParameterChangeToMidiBuffer(int, unsigned int, double)
+TAL-Reverb-3[0x36440] <+104>: add    w22, w22, #0x1
+TAL-Reverb-3[0x36444] <+108>: cmp    w22, w21
+TAL-Reverb-3[0x36448] <+112>: b.eq   0x365b4                   ; <+476>
+TAL-Reverb-3[0x3644c] <+116>: ldr    x8, [x19]
+TAL-Reverb-3[0x36450] <+120>: ldr    x8, [x8, #0x20]
+TAL-Reverb-3[0x36454] <+124>: mov    x0, x19
+TAL-Reverb-3[0x36458] <+128>: mov    x1, x22
+TAL-Reverb-3[0x3645c] <+132>: blr    x8
+TAL-Reverb-3[0x36460] <+136>: cbz    x0, 0x36440               ; <+104>
+TAL-Reverb-3[0x36464] <+140>: mov    x23, x0
+TAL-Reverb-3[0x36468] <+144>: ldr    x8, [x0]
+TAL-Reverb-3[0x3646c] <+148>: ldr    x8, [x8, #0x20]
+TAL-Reverb-3[0x36470] <+152>: blr    x8
+TAL-Reverb-3[0x36474] <+156>: str    wzr, [sp, #0xc]
+TAL-Reverb-3[0x36478] <+160>: str    xzr, [sp]
+TAL-Reverb-3[0x3647c] <+164>: sub    w1, w0, #0x1
+TAL-Reverb-3[0x36480] <+168>: ldr    x8, [x23]
+TAL-Reverb-3[0x36484] <+172>: ldr    x8, [x8, #0x28]
+TAL-Reverb-3[0x36488] <+176>: add    x2, sp, #0xc
+TAL-Reverb-3[0x3648c] <+180>: mov    x3, sp
+TAL-Reverb-3[0x36490] <+184>: mov    x0, x23
+TAL-Reverb-3[0x36494] <+188>: blr    x8
+TAL-Reverb-3[0x36498] <+192>: cbnz   w0, 0x36440               ; <+104>
+TAL-Reverb-3[0x3649c] <+196>: ldr    x8, [x23]
+TAL-Reverb-3[0x364a0] <+200>: ldr    x8, [x8, #0x18]
+TAL-Reverb-3[0x364a4] <+204>: mov    x0, x23
+TAL-Reverb-3[0x364a8] <+208>: blr    x8
+TAL-Reverb-3[0x364ac] <+212>: mov    x2, x0
+TAL-Reverb-3[0x364b0] <+216>: ldr    x8, [x20, #0x48]
+TAL-Reverb-3[0x364b4] <+220>: cbz    x8, 0x364cc               ; <+244>
+TAL-Reverb-3[0x364b8] <+224>: ldr    w8, [x8, #0x98]
+TAL-Reverb-3[0x364bc] <+228>: subs   w8, w2, w8
+TAL-Reverb-3[0x364c0] <+232>: b.lo   0x364cc                   ; <+244>
+TAL-Reverb-3[0x364c4] <+236>: cmp    w8, #0x81f
+TAL-Reverb-3[0x364c8] <+240>: b.ls   0x36430                   ; <+88>
+TAL-Reverb-3[0x364cc] <+244>: ldr    x8, [x20, #0x40]
+TAL-Reverb-3[0x364d0] <+248>: ldr    w9, [x8, #0x6c]
+TAL-Reverb-3[0x364d4] <+252>: udiv   w10, w2, w9
+TAL-Reverb-3[0x364d8] <+256>: msub   w9, w10, w9, w2
+TAL-Reverb-3[0x364dc] <+260>: ldr    x8, [x8, #0x60]
+TAL-Reverb-3[0x364e0] <+264>: ldr    x8, [x8, w9, sxtw #3]
+TAL-Reverb-3[0x364e4] <+268>: cbz    x8, 0x36440               ; <+104>
+TAL-Reverb-3[0x364e8] <+272>: ldr    d0, [sp]
+TAL-Reverb-3[0x364ec] <+276>: fcvt   s8, d0
+TAL-Reverb-3[0x364f0] <+280>: ldr    w9, [x8]
+TAL-Reverb-3[0x364f4] <+284>: cmp    w9, w2
+TAL-Reverb-3[0x364f8] <+288>: b.eq   0x36508                   ; <+304>
+TAL-Reverb-3[0x364fc] <+292>: ldr    x8, [x8, #0x10]
+TAL-Reverb-3[0x36500] <+296>: cbnz   x8, 0x364f0               ; <+280>
+TAL-Reverb-3[0x36504] <+300>: b      0x36440                   ; <+104>
+TAL-Reverb-3[0x36508] <+304>: ldr    x23, [x8, #0x8]
+TAL-Reverb-3[0x3650c] <+308>: cbz    x23, 0x36440              ; <+104>
+TAL-Reverb-3[0x36510] <+312>: ldr    x8, [x23]
+TAL-Reverb-3[0x36514] <+316>: ldr    x8, [x8, #0x18]
+TAL-Reverb-3[0x36518] <+320>: mov    x0, x23
+TAL-Reverb-3[0x3651c] <+324>: mov.16b v0, v8
+TAL-Reverb-3[0x36520] <+328>: blr    x8
+TAL-Reverb-3[0x36524] <+332>: bl     0x14e0f8                  ; juce::Thread::getCurrentThreadId()
+TAL-Reverb-3[0x36528] <+336>: mov    x24, x0
+TAL-Reverb-3[0x3652c] <+340>: ldar   x8, [x25]
+TAL-Reverb-3[0x36530] <+344>: cbz    x8, 0x36548               ; <+368>
+TAL-Reverb-3[0x36534] <+348>: ldar   x9, [x8]
+TAL-Reverb-3[0x36538] <+352>: cmp    x24, x9
+TAL-Reverb-3[0x3653c] <+356>: b.eq   0x365a0                   ; <+456>
+TAL-Reverb-3[0x36540] <+360>: ldr    x8, [x8, #0x8]
+TAL-Reverb-3[0x36544] <+364>: cbnz   x8, 0x36534               ; <+348>
+TAL-Reverb-3[0x36548] <+368>: ldar   x8, [x25]
+TAL-Reverb-3[0x3654c] <+372>: cbz    x8, 0x36568               ; <+400>
+TAL-Reverb-3[0x36550] <+376>: mov    x9, #0x0                  ; =0 
+TAL-Reverb-3[0x36554] <+380>: casal  x9, x24, [x8]
+TAL-Reverb-3[0x36558] <+384>: cmp    x9, #0x0
+TAL-Reverb-3[0x3655c] <+388>: b.eq   0x3659c                   ; <+452>
+TAL-Reverb-3[0x36560] <+392>: ldr    x8, [x8, #0x8]
+TAL-Reverb-3[0x36564] <+396>: cbnz   x8, 0x36550               ; <+376>
+TAL-Reverb-3[0x36568] <+400>: mov    w0, #0x18                 ; =24 
+TAL-Reverb-3[0x3656c] <+404>: bl     0x15d02c                  ; symbol stub for: operator new(unsigned long)
+TAL-Reverb-3[0x36570] <+408>: mov    x8, x0
+TAL-Reverb-3[0x36574] <+412>: ldar   x9, [x25]
+TAL-Reverb-3[0x36578] <+416>: stp    x24, x9, [x0]
+TAL-Reverb-3[0x3657c] <+420>: strb   wzr, [x0, #0x10]
+TAL-Reverb-3[0x36580] <+424>: mov    x10, x9
+TAL-Reverb-3[0x36584] <+428>: casal  x10, x8, [x25]
+TAL-Reverb-3[0x36588] <+432>: cmp    x10, x9
+TAL-Reverb-3[0x3658c] <+436>: b.eq   0x365a0                   ; <+456>
+TAL-Reverb-3[0x36590] <+440>: ldar   x9, [x25]
+TAL-Reverb-3[0x36594] <+444>: str    x9, [x8, #0x8]
+TAL-Reverb-3[0x36598] <+448>: b      0x36580                   ; <+424>
+TAL-Reverb-3[0x3659c] <+452>: strb   wzr, [x8, #0x10]
+TAL-Reverb-3[0x365a0] <+456>: strb   w26, [x8, #0x10]

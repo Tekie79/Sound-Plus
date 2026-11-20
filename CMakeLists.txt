@@ -177,6 +177,8 @@ if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp)
   add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusInstrumentFixture_VST3 SoundPlusPlugin)
   add_test(NAME plugin_processing COMMAND SoundPlusTests --plugin-processing "${CMAKE_BINARY_DIR}/plugin-processing-test-output" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
+  add_test(NAME plugin_correctness COMMAND SoundPlusTests --plugin-correctness "${CMAKE_BINARY_DIR}/plugin-correctness/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
+  set_tests_properties(plugin_correctness PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   set_tests_properties(plugin_processing PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE ENVIRONMENT "SOUNDPLUS_QUALIFY_AU=1")
 endif()
 
@@ -196,4 +198,18 @@ if(SOUNDPLUS_BUILD_PLUGIN_ASAN_QA)
   target_compile_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address -g -fno-omit-frame-pointer -O1)
   target_link_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address)
   target_link_libraries(SoundPlusPublicationDebug PRIVATE soundplus_plugin_asan_core)
+endif()
+
+if(BUILD_TESTING)
+  add_library(SoundPlusMultiFixture MODULE tests/PluginMultiFactory.cpp)
+  set_target_properties(SoundPlusMultiFixture PROPERTIES BUNDLE TRUE BUNDLE_EXTENSION vst3
+    PREFIX "" OUTPUT_NAME "SoundPlus QA Multi" MACOSX_BUNDLE_GUI_IDENTIFIER "com.soundplus.qa.multi")
+  target_include_directories(SoundPlusMultiFixture PRIVATE "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
+  target_link_libraries(SoundPlusMultiFixture PRIVATE "-framework CoreFoundation")
+  add_dependencies(SoundPlusMultiFixture SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3)
+  add_custom_command(TARGET SoundPlusMultiFixture POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:SoundPlusMultiFixture>/Contents/Resources"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_BUNDLE_DIR:SoundPlusMultiFixture>/Contents/Resources/A.vst3"
+    COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../.." "$<TARGET_BUNDLE_DIR:SoundPlusMultiFixture>/Contents/Resources/B.vst3")
+  add_dependencies(SoundPlusTests SoundPlusMultiFixture)
 endif()

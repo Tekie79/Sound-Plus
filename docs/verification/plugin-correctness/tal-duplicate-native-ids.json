@@ -1,0 +1,102 @@
+{
+  "48": [
+    {
+      "index": 0,
+      "name": ""
+    },
+    {
+      "index": 48,
+      "name": "MIDI CC 0|36"
+    }
+  ],
+  "49": [
+    {
+      "index": 1,
+      "name": "dry"
+    },
+    {
+      "index": 49,
+      "name": "MIDI CC 0|37"
+    }
+  ],
+  "50": [
+    {
+      "index": 2,
+      "name": "wet"
+    },
+    {
+      "index": 50,
+      "name": "MIDI CC 0|38"
+    }
+  ],
+  "51": [
+    {
+      "index": 3,
+      "name": "room size"
+    },
+    {
+      "index": 51,
+      "name": "MIDI CC 0|39"
+    }
+  ],
+  "52": [
+    {
+      "index": 4,
+      "name": "pre delay"
+    },
+    {
+      "index": 52,
+      "name": "MIDI CC 0|40"
+    }
+  ],
+  "53": [
+    {
+      "index": 5,
+      "name": "low shelf gain"
+    },
+    {
+      "index": 53,
+      "name": "MIDI CC 0|41"
+    }
+  ],
+  "54": [
+    {
+      "index": 6,
+      "name": "high shelf gain"
+    },
+    {
+      "index": 54,
+      "name": "MIDI CC 0|42"
+    }
+  ],
+  "55": [
+    {
+      "index": 7,
+      "name": "stereo"
+    },
+    {
+      "index": 55,
+      "name": "MIDI CC 0|43"
+    }
+  ],
+  "56": [
+    {
+      "index": 8,
+      "name": "stereo input"
+    },
+    {
+      "index": 56,
+      "name": "MIDI CC 0|44"
+    }
+  ],
+  "57": [
+    {
+      "index": 9,
+      "name": "power"
+    },
+    {
+      "index": 57,
+      "name": "MIDI CC 0|45"
+    }
+  ]
+}

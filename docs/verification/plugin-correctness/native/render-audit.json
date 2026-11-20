@@ -1,0 +1,1560 @@
+{
+  "passed": true,
+  "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native/Native QA.soundplus",
+  "revision": 18,
+  "track": {
+    "slot": "3332c63585424e9a9daeadb0833e4039",
+    "plugin": {
+      "name": "SoundPlus QA Effect",
+      "vendor": "SoundPlus QA",
+      "version": "0.1.0",
+      "format": "VST3",
+      "category": "Fx",
+      "architecture": "arm64",
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+      "fingerprint": "6343865bf385eceb56612ebfcc3b67509b1ca9c1c59f636e1bc5ee8a21079a8f",
+      "instrument": false,
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Effect\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3\"\r\n        uniqueId=\"bc722e9a\" isInstrument=\"0\" fileTime=\"1a1f95448f2\" infoUpdateTime=\"1a1f95f8ee5\"\r\n        numInputs=\"2\" numOutputs=\"2\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beab\"/>\r\n",
+      "id": "VST3-SoundPlus QA Effect-98ced2e8-bc722e9a",
+      "layoutAttempts": [
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152023,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "mono-v1",
+            "roles": [
+              "C"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 1,
+                "roles": "Mono",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 1,
+                "roles": "Mono",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152023,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "stereo-v1",
+            "roles": [
+              "L",
+              "R"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152024,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "lcr-v1",
+            "roles": [
+              "L",
+              "R",
+              "C"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 3,
+                "roles": "LCR",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 3,
+                "roles": "LCR",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152025,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "quad-v1",
+            "roles": [
+              "L",
+              "R",
+              "Lb",
+              "Rb"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 4,
+                "roles": "Quadraphonic",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 4,
+                "roles": "Quadraphonic",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152025,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.0-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 5,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 5,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152026,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.1-side-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 6,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 6,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152027,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.1-rear-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Lb",
+              "Rb"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 6,
+                "roles": "5.1 Surround",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 6,
+                "roles": "5.1 Surround",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152027,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "7.1-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Lb",
+              "Rb",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152028,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-4-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 4 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152028,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-8-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 8 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152029,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-16-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8",
+              "D9",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 16 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        }
+      ],
+      "diagnostics": {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+        "format": "VST3",
+        "mode": "scan",
+        "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+        "protocol": 1,
+        "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+        "stage": "main-bus-negotiation",
+        "atMs": 1795185152029,
+        "architecture": "arm64",
+        "declaredBuses": {
+          "inputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ],
+          "outputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ]
+        },
+        "acceptsMidi": true,
+        "producesMidi": true,
+        "requestedLayout": {
+          "id": "discrete-16-v1",
+          "roles": [
+            "D1",
+            "D2",
+            "D3",
+            "D4",
+            "D5",
+            "D6",
+            "D7",
+            "D8",
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16"
+          ]
+        },
+        "activeBuses": {
+          "inputs": [
+            {
+              "name": "Main",
+              "channels": 8,
+              "roles": "Unknown",
+              "enabled": true
+            }
+          ],
+          "outputs": [
+            {
+              "name": "Main",
+              "channels": 8,
+              "roles": "Unknown",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "layouts": [
+        "mono-v1",
+        "stereo-v1",
+        "lcr-v1",
+        "quad-v1",
+        "5.0-v1",
+        "5.1-side-v1",
+        "5.1-rear-v1",
+        "7.1-v1"
+      ],
+      "reason": ""
+    },
+    "bypass": true
+  },
+  "master": {
+    "slot": "f85def0e2a35433596922957ff080a19",
+    "plugin": {
+      "name": "SoundPlus QA Stereo",
+      "vendor": "SoundPlus QA",
+      "version": "0.1.0",
+      "format": "VST3",
+      "category": "Fx",
+      "architecture": "arm64",
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+      "fingerprint": "6343865bf385eceb56612ebfcc3b67509b1ca9c1c59f636e1bc5ee8a21079a8f",
+      "instrument": false,
+      "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Stereo\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3\"\r\n        uniqueId=\"bc722e9b\" isInstrument=\"0\" fileTime=\"1a1f95448f2\" infoUpdateTime=\"1a1f95f8ee6\"\r\n        numInputs=\"2\" numOutputs=\"2\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beac\"/>\r\n",
+      "id": "VST3-SoundPlus QA Stereo-98ced2e8-bc722e9b",
+      "layoutAttempts": [
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152182,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "mono-v1",
+            "roles": [
+              "C"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout MONO or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-ready",
+          "atMs": 1795185152182,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "stereo-v1",
+            "roles": [
+              "L",
+              "R"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": true
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152183,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "lcr-v1",
+            "roles": [
+              "L",
+              "R",
+              "C"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout LCR or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152183,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "quad-v1",
+            "roles": [
+              "L",
+              "R",
+              "Lb",
+              "Rb"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout QUAD or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152183,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.0-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout 5.0 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152184,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.1-side-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout 5.1 Side or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152184,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "5.1-rear-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Lb",
+              "Rb"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout 5.1 Rear or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152184,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "7.1-v1",
+            "roles": [
+              "L",
+              "R",
+              "C",
+              "LFE",
+              "Lb",
+              "Rb",
+              "Ls",
+              "Rs"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout 7.1 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152185,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-4-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 4 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152185,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-8-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 8 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        },
+        {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185152185,
+          "architecture": "arm64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-16-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8",
+              "D9",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "accepted": false,
+          "reason": "Incompatible main layout Discrete 16 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+        }
+      ],
+      "diagnostics": {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/SoundPlus QA Multi.vst3",
+        "format": "VST3",
+        "mode": "scan",
+        "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-diagnostic.json",
+        "protocol": 1,
+        "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/6bcfe5643ac74a54b269e94a0e23152b-reply.json",
+        "stage": "main-bus-negotiation",
+        "atMs": 1795185152185,
+        "architecture": "arm64",
+        "declaredBuses": {
+          "inputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ],
+          "outputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ]
+        },
+        "acceptsMidi": true,
+        "producesMidi": true,
+        "requestedLayout": {
+          "id": "discrete-16-v1",
+          "roles": [
+            "D1",
+            "D2",
+            "D3",
+            "D4",
+            "D5",
+            "D6",
+            "D7",
+            "D8",
+            "D9",
+            "D10",
+            "D11",
+            "D12",
+            "D13",
+            "D14",
+            "D15",
+            "D16"
+          ]
+        },
+        "activeBuses": {
+          "inputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ],
+          "outputs": [
+            {
+              "name": "Main",
+              "channels": 2,
+              "roles": "Stereo",
+              "enabled": true
+            }
+          ]
+        }
+      },
+      "layouts": [
+        "stereo-v1"
+      ],
+      "reason": ""
+    },
+    "bypass": false
+  },
+  "output": "/Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r17-8dabd06c.wav",
+  "dimensions": {
+    "channels": 2,
+    "rate": 48000,
+    "bits": 24,
+    "frames": 96000
+  },
+  "raw": "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/0d106235042f4a468f13d6114ee050bb/Raw.wav",
+  "sha256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868",
+  "rawSha256": "d1b638baa13fa2ace37382867329ffd3e31dabf35cdeb153e7de60a6b8d6e237",
+  "maxQuantizationError": 5.960464477539063e-08,
+  "qualification": "Native save/render plus independent file/PCM authority audit; restart checked separately; no listening/receiver claim",
+  "nativeQuitReopen": "Passed: document r18, select last Track/Master slots; distinct class IDs, A bypass Off and B enabled On, durable output retained"
+}

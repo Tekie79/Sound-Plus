@@ -1,0 +1,9 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~		2 text entry area (settable) Search installed effects, Value: Effect, Secondary Actions: Delete
++			16 row SoundPlus QA Effect · 3
++			17 row SoundPlus QA Effect · 2
++			18 row TAL-Reverb-3 · AUv2
+~			6 row Youlean Loudness Meter 2 · AUv2
+~			7 row Effects/aufx,vois,appl · Failed
++			19 scroll bar (settable) Value: 1144, Secondary Actions: Delete
+The focused UI element is 2 text entry area (settable) Search installed effects, Value: Effect, Secondary Actions: Delete

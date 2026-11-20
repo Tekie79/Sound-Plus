@@ -39,6 +39,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             AudioBuffer<float> dry;
             AudioProcessor::BusesLayout buses;
             StringArray parameterIds;
+            std::vector<float> requestedValues;
         };
         std::vector<Slot> slots;
         int totalLatency = 0;
@@ -67,9 +68,23 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             onPluginMessageThread(
                 [&]
                 {
-                    check(p->getParameters().size() <= 16384, "Hosted parameter bound exceeded");
+                    validateParameterSchema(*p);
                     for (int i = 0; i < p->getParameters().size(); ++i)
                         prepared.parameterIds.add(p->getHostedParameter(i)->getParameterID());
+                    prepared.requestedValues.assign((size_t)p->getParameters().size(),
+                                                    std::numeric_limits<float>::quiet_NaN());
+                    if (auto *parameters = settings["parameters"].getArray())
+                        for (auto &parameter : *parameters)
+                        {
+                            int index = (int)parameter["index"];
+                            check(isPositiveAndBelow(index, prepared.parameterIds.size()) &&
+                                      (!parameter["stableId"].isString() ||
+                                       parameter["stableId"].toString() == prepared.parameterIds[index]) &&
+                                      (!parameter["id"].isString() ||
+                                       parameter["id"].toString() == p->getParameterID(index)),
+                                  "Hosted parameter identity changed during preparation; reprepare graph");
+                            prepared.requestedValues[(size_t)index] = (float)parameter["value"];
+                        }
                 });
             prepared.effect = std::move(p);
             prepared.dry.setSize(bus.size(), std::max(1, latency + 1));
@@ -113,8 +128,11 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                               slot.parameterIds[index],
                                       "Hosted parameter identity changed; reprepare graph");
                                 auto *parameter = slot.effect->getParameters()[index];
-                                if (parameter->getValue() != x)
+                                if (slot.requestedValues[(size_t)index] != x)
+                                {
                                     parameter->setValueNotifyingHost(x);
+                                    slot.requestedValues[(size_t)index] = x;
+                                }
                             }
                         }
                     });

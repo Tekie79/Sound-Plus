@@ -1,0 +1,287 @@
+{
+  "version": "21.1.2.10",
+  "project": "SoundPlus Native Delivery QA 20261118",
+  "effects": [
+    {
+      "id": "Audio FX/Fairlight FX/Chain FX",
+      "category": "audio",
+      "name": "Chain FX"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Chorus",
+      "category": "audio",
+      "name": "Chorus"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/De-Esser",
+      "category": "audio",
+      "name": "De-Esser"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/De-Hummer",
+      "category": "audio",
+      "name": "De-Hummer"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Delay",
+      "category": "audio",
+      "name": "Delay"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Dialogue Processor",
+      "category": "audio",
+      "name": "Dialogue Processor"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Distortion",
+      "category": "audio",
+      "name": "Distortion"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Echo",
+      "category": "audio",
+      "name": "Echo"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Fairlight EQ",
+      "category": "audio",
+      "name": "Fairlight EQ"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Flanger",
+      "category": "audio",
+      "name": "Flanger"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Foley Sampler",
+      "category": "audio",
+      "name": "Foley Sampler"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Frequency Analyzer",
+      "category": "audio",
+      "name": "Frequency Analyzer"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Gain",
+      "category": "audio",
+      "name": "Gain"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/LFE Filter",
+      "category": "audio",
+      "name": "LFE Filter"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Limiter",
+      "category": "audio",
+      "name": "Limiter"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Loudness Meter",
+      "category": "audio",
+      "name": "Loudness Meter"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Meter",
+      "category": "audio",
+      "name": "Meter"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Modulation",
+      "category": "audio",
+      "name": "Modulation"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Multiband Compressor",
+      "category": "audio",
+      "name": "Multiband Compressor"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Noise Reduction",
+      "category": "audio",
+      "name": "Noise Reduction"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Phase Meter",
+      "category": "audio",
+      "name": "Phase Meter"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Pitch",
+      "category": "audio",
+      "name": "Pitch"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Reverb",
+      "category": "audio",
+      "name": "Reverb"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Soft Clipper",
+      "category": "audio",
+      "name": "Soft Clipper"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Stereo Fixer",
+      "category": "audio",
+      "name": "Stereo Fixer"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Stereo Width",
+      "category": "audio",
+      "name": "Stereo Width"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Surround Analyzer",
+      "category": "audio",
+      "name": "Surround Analyzer"
+    },
+    {
+      "id": "Audio FX/Fairlight FX/Vocal Channel",
+      "category": "audio",
+      "name": "Vocal Channel"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUAudioFilePlayer",
+      "category": "audio",
+      "name": "AUAudioFilePlayer"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUBandpass",
+      "category": "audio",
+      "name": "AUBandpass"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUDelay",
+      "category": "audio",
+      "name": "AUDelay"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUDistortion",
+      "category": "audio",
+      "name": "AUDistortion"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUDynamicsProcessor",
+      "category": "audio",
+      "name": "AUDynamicsProcessor"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUFilter",
+      "category": "audio",
+      "name": "AUFilter"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUGraphicEQ",
+      "category": "audio",
+      "name": "AUGraphicEQ"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUHighShelfFilter",
+      "category": "audio",
+      "name": "AUHighShelfFilter"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUHipass",
+      "category": "audio",
+      "name": "AUHipass"
+    },
+    {
+      "id": "Audio FX/AU Effects/AULowpass",
+      "category": "audio",
+      "name": "AULowpass"
+    },
+    {
+      "id": "Audio FX/AU Effects/AULowShelfFilter",
+      "category": "audio",
+      "name": "AULowShelfFilter"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUMatrixReverb",
+      "category": "audio",
+      "name": "AUMatrixReverb"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUMIDISynth",
+      "category": "audio",
+      "name": "AUMIDISynth"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUMultibandCompressor",
+      "category": "audio",
+      "name": "AUMultibandCompressor"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUNBandEQ",
+      "category": "audio",
+      "name": "AUNBandEQ"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUNetReceive",
+      "category": "audio",
+      "name": "AUNetReceive"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUNetSend",
+      "category": "audio",
+      "name": "AUNetSend"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUParametricEQ",
+      "category": "audio",
+      "name": "AUParametricEQ"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUPeakLimiter",
+      "category": "audio",
+      "name": "AUPeakLimiter"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUReverb2",
+      "category": "audio",
+      "name": "AUReverb2"
+    },
+    {
+      "id": "Audio FX/AU Effects/AURogerBeep",
+      "category": "audio",
+      "name": "AURogerBeep"
+    },
+    {
+      "id": "Audio FX/AU Effects/AURoundTripAAC",
+      "category": "audio",
+      "name": "AURoundTripAAC"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUSampleDelay",
+      "category": "audio",
+      "name": "AUSampleDelay"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUSampler",
+      "category": "audio",
+      "name": "AUSampler"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUScheduledSoundPlayer",
+      "category": "audio",
+      "name": "AUScheduledSoundPlayer"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUSoundIsolation",
+      "category": "audio",
+      "name": "AUSoundIsolation"
+    },
+    {
+      "id": "Audio FX/AU Effects/AUSpeechSynthesis",
+      "category": "audio",
+      "name": "AUSpeechSynthesis"
+    },
+    {
+      "id": "Audio FX/AU Effects/DLSMusicDevice",
+      "category": "audio",
+      "name": "DLSMusicDevice"
+    }
+  ],
+  "result": "Not tested: current independent-host catalog exposes no TAL VST3. No AU substitution, reference processing, listening or receiver qualification claimed."
+}

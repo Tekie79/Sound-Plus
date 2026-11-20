@@ -1,0 +1,134 @@
+(lldb) target create "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3"
+Current executable set to '/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3' (arm64).
+(lldb) disassemble --start-address 0x34a08 --count 130
+TAL-Reverb-3`juce::JuceVST3EditController::setupParameters:
+TAL-Reverb-3[0x34a08] <+0>:   sub    sp, sp, #0x70
+TAL-Reverb-3[0x34a0c] <+4>:   stp    x28, x27, [sp, #0x10]
+TAL-Reverb-3[0x34a10] <+8>:   stp    x26, x25, [sp, #0x20]
+TAL-Reverb-3[0x34a14] <+12>:  stp    x24, x23, [sp, #0x30]
+TAL-Reverb-3[0x34a18] <+16>:  stp    x22, x21, [sp, #0x40]
+TAL-Reverb-3[0x34a1c] <+20>:  stp    x20, x19, [sp, #0x50]
+TAL-Reverb-3[0x34a20] <+24>:  stp    x29, x30, [sp, #0x60]
+TAL-Reverb-3[0x34a24] <+28>:  add    x29, sp, #0x60
+TAL-Reverb-3[0x34a28] <+32>:  ldr    x8, [x0, #0x90]
+TAL-Reverb-3[0x34a2c] <+36>:  cbz    x8, 0x34dfc               ; <+1012>
+TAL-Reverb-3[0x34a30] <+40>:  ldr    x20, [x8, #0x28]
+TAL-Reverb-3[0x34a34] <+44>:  cbz    x20, 0x34dfc              ; <+1012>
+TAL-Reverb-3[0x34a38] <+48>:  mov    x19, x0
+TAL-Reverb-3[0x34a3c] <+52>:  add    x1, x0, #0x88
+TAL-Reverb-3[0x34a40] <+56>:  ldr    x8, [x20]
+TAL-Reverb-3[0x34a44] <+60>:  ldr    x8, [x8, #0x128]
+TAL-Reverb-3[0x34a48] <+64>:  mov    x0, x20
+TAL-Reverb-3[0x34a4c] <+68>:  blr    x8
+TAL-Reverb-3[0x34a50] <+72>:  ldr    x23, [x19, #0x90]
+TAL-Reverb-3[0x34a54] <+76>:  ldrb   w8, [x23, #0x1c]
+TAL-Reverb-3[0x34a58] <+80>:  cbnz   w8, 0x34af0               ; <+232>
+TAL-Reverb-3[0x34a5c] <+84>:  ldr    w8, [x23, #0x18]
+TAL-Reverb-3[0x34a60] <+88>:  ldr    w9, [x23, #0x6c]
+TAL-Reverb-3[0x34a64] <+92>:  udiv   w10, w8, w9
+TAL-Reverb-3[0x34a68] <+96>:  msub   w9, w10, w9, w8
+TAL-Reverb-3[0x34a6c] <+100>: ldr    x10, [x23, #0x60]
+TAL-Reverb-3[0x34a70] <+104>: ldr    x9, [x10, w9, sxtw #3]
+TAL-Reverb-3[0x34a74] <+108>: cbz    x9, 0x34a8c               ; <+132>
+TAL-Reverb-3[0x34a78] <+112>: ldr    w10, [x9]
+TAL-Reverb-3[0x34a7c] <+116>: cmp    w10, w8
+TAL-Reverb-3[0x34a80] <+120>: b.eq   0x34a94                   ; <+140>
+TAL-Reverb-3[0x34a84] <+124>: ldr    x9, [x9, #0x10]
+TAL-Reverb-3[0x34a88] <+128>: cbnz   x9, 0x34a78               ; <+112>
+TAL-Reverb-3[0x34a8c] <+132>: mov    x22, #0x0                 ; =0 
+TAL-Reverb-3[0x34a90] <+136>: b      0x34a98                   ; <+144>
+TAL-Reverb-3[0x34a94] <+140>: ldr    x22, [x9, #0x8]
+TAL-Reverb-3[0x34a98] <+144>: mov    w0, #0x18                 ; =24 
+TAL-Reverb-3[0x34a9c] <+148>: bl     0x15d02c                  ; symbol stub for: operator new(unsigned long)
+TAL-Reverb-3[0x34aa0] <+152>: mov    x21, x0
+TAL-Reverb-3[0x34aa4] <+156>: ldr    w8, [x23, #0x18]
+TAL-Reverb-3[0x34aa8] <+160>: adrp   x9, 386
+TAL-Reverb-3[0x34aac] <+164>: add    x9, x9, #0xaf0            ; vtable for juce::JuceVST3EditController::OwnedParameterListener + 16
+TAL-Reverb-3[0x34ab0] <+168>: stp    x9, x19, [x0]
+TAL-Reverb-3[0x34ab4] <+172>: str    w8, [x0, #0x10]
+TAL-Reverb-3[0x34ab8] <+176>: mov    x0, x22
+TAL-Reverb-3[0x34abc] <+180>: mov    x1, x21
+TAL-Reverb-3[0x34ac0] <+184>: bl     0x53d80                   ; juce::AudioProcessorParameter::addListener(juce::AudioProcessorParameter::Listener*)
+TAL-Reverb-3[0x34ac4] <+188>: mov    w8, #0x6220               ; =25120 
+TAL-Reverb-3[0x34ac8] <+192>: add    x0, x19, x8
+TAL-Reverb-3[0x34acc] <+196>: str    x21, [sp]
+TAL-Reverb-3[0x34ad0] <+200>: mov    x1, sp
+TAL-Reverb-3[0x34ad4] <+204>: bl     0x34e74                   ; std::__1::vector<std::__1::unique_ptr<juce::JuceVST3EditController::OwnedParameterListener, std::__1::default_delete<juce::JuceVST3EditController::OwnedParameterListener>>, std::__1::allocator<std::__1::unique_ptr<juce::JuceVST3EditController::OwnedParameterListener, std::__1::default_delete<juce::JuceVST3EditController::OwnedParameterListener>>>>::push_back(std::__1::unique_ptr<juce::JuceVST3EditController::OwnedParameterListener, std::__1::default_delete<juce::JuceVST3EditController::OwnedParameterListener>>&&)
+TAL-Reverb-3[0x34ad8] <+208>: ldr    x0, [sp]
+TAL-Reverb-3[0x34adc] <+212>: str    xzr, [sp]
+TAL-Reverb-3[0x34ae0] <+216>: cbz    x0, 0x34af0               ; <+232>
+TAL-Reverb-3[0x34ae4] <+220>: ldr    x8, [x0]
+TAL-Reverb-3[0x34ae8] <+224>: ldr    x8, [x8, #0x8]
+TAL-Reverb-3[0x34aec] <+228>: blr    x8
+TAL-Reverb-3[0x34af0] <+232>: mov    x21, x19
+TAL-Reverb-3[0x34af4] <+236>: ldr    x8, [x21, #0x50]!
+TAL-Reverb-3[0x34af8] <+240>: cbz    x8, 0x34b10               ; <+264>
+TAL-Reverb-3[0x34afc] <+244>: ldp    x9, x8, [x8]
+TAL-Reverb-3[0x34b00] <+248>: sub    x8, x8, x9
+TAL-Reverb-3[0x34b04] <+252>: lsr    x8, x8, #3
+TAL-Reverb-3[0x34b08] <+256>: cmp    w8, #0x0
+TAL-Reverb-3[0x34b0c] <+260>: b.gt   0x34db0                   ; <+936>
+TAL-Reverb-3[0x34b10] <+264>: mov    w26, #0x7374              ; =29556 
+TAL-Reverb-3[0x34b14] <+268>: movk   w26, #0x7072, lsl #16
+TAL-Reverb-3[0x34b18] <+272>: ldr    x8, [x19, #0x90]
+TAL-Reverb-3[0x34b1c] <+276>: ldr    w27, [x8, #0x14]
+TAL-Reverb-3[0x34b20] <+280>: cmp    w27, #0x1
+TAL-Reverb-3[0x34b24] <+284>: b.lt   0x34c48                   ; <+576>
+TAL-Reverb-3[0x34b28] <+288>: mov    x28, #0x0                 ; =0 
+TAL-Reverb-3[0x34b2c] <+292>: b      0x34b9c                   ; <+404>
+TAL-Reverb-3[0x34b30] <+296>: mov    x8, sp
+TAL-Reverb-3[0x34b34] <+300>: mov    x0, x24
+TAL-Reverb-3[0x34b38] <+304>: bl     0x54030                   ; juce::AudioProcessorParameterGroup::getID() const
+TAL-Reverb-3[0x34b3c] <+308>: mov    x0, sp
+TAL-Reverb-3[0x34b40] <+312>: bl     0x14a87c                  ; juce::String::hashCode() const
+TAL-Reverb-3[0x34b44] <+316>: and    w24, w0, #0x7fffffff
+TAL-Reverb-3[0x34b48] <+320>: mov    x0, sp
+TAL-Reverb-3[0x34b4c] <+324>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x34b50] <+328>: mov    w0, #0x348                ; =840 
+TAL-Reverb-3[0x34b54] <+332>: bl     0x15d02c                  ; symbol stub for: operator new(unsigned long)
+TAL-Reverb-3[0x34b58] <+336>: mov    x25, x0
+TAL-Reverb-3[0x34b5c] <+340>: ldr    x8, [x19, #0x90]
+TAL-Reverb-3[0x34b60] <+344>: ldr    w8, [x8, #0x18]
+TAL-Reverb-3[0x34b64] <+348>: cmp    w22, w8
+TAL-Reverb-3[0x34b68] <+352>: cset   w5, eq
+TAL-Reverb-3[0x34b6c] <+356>: mov    x1, x19
+TAL-Reverb-3[0x34b70] <+360>: mov    x2, x23
+TAL-Reverb-3[0x34b74] <+364>: mov    x3, x22
+TAL-Reverb-3[0x34b78] <+368>: mov    x4, x24
+TAL-Reverb-3[0x34b7c] <+372>: bl     0x353cc                   ; juce::JuceVST3EditController::Param::Param(juce::JuceVST3EditController&, juce::AudioProcessorParameter&, unsigned int, int, bool)
+TAL-Reverb-3[0x34b80] <+376>: mov    x0, x21
+TAL-Reverb-3[0x34b84] <+380>: mov    x1, x25
+TAL-Reverb-3[0x34b88] <+384>: bl     0x24a60                   ; Steinberg::Vst::ParameterContainer::addParameter(Steinberg::Vst::Parameter*)
+TAL-Reverb-3[0x34b8c] <+388>: ldr    x8, [x19, #0x90]
+TAL-Reverb-3[0x34b90] <+392>: add    x28, x28, #0x1
+TAL-Reverb-3[0x34b94] <+396>: cmp    x28, x27
+TAL-Reverb-3[0x34b98] <+400>: b.eq   0x34c48                   ; <+576>
+TAL-Reverb-3[0x34b9c] <+404>: ldr    x9, [x8, #0x8]
+TAL-Reverb-3[0x34ba0] <+408>: ldr    w22, [x9, x28, lsl #2]
+TAL-Reverb-3[0x34ba4] <+412>: cmp    w22, w26
+TAL-Reverb-3[0x34ba8] <+416>: b.eq   0x34b90                   ; <+392>
+TAL-Reverb-3[0x34bac] <+420>: ldr    w9, [x8, #0x6c]
+TAL-Reverb-3[0x34bb0] <+424>: udiv   w10, w22, w9
+TAL-Reverb-3[0x34bb4] <+428>: msub   w9, w10, w9, w22
+TAL-Reverb-3[0x34bb8] <+432>: ldr    x8, [x8, #0x60]
+TAL-Reverb-3[0x34bbc] <+436>: ldr    x8, [x8, w9, sxtw #3]
+TAL-Reverb-3[0x34bc0] <+440>: cbz    x8, 0x34bd8               ; <+464>
+TAL-Reverb-3[0x34bc4] <+444>: ldr    w9, [x8]
+TAL-Reverb-3[0x34bc8] <+448>: cmp    w9, w22
+TAL-Reverb-3[0x34bcc] <+452>: b.eq   0x34be0                   ; <+472>
+TAL-Reverb-3[0x34bd0] <+456>: ldr    x8, [x8, #0x10]
+TAL-Reverb-3[0x34bd4] <+460>: cbnz   x8, 0x34bc4               ; <+444>
+TAL-Reverb-3[0x34bd8] <+464>: mov    x23, #0x0                 ; =0 
+TAL-Reverb-3[0x34bdc] <+468>: b      0x34be4                   ; <+476>
+TAL-Reverb-3[0x34be0] <+472>: ldr    x23, [x8, #0x8]
+TAL-Reverb-3[0x34be4] <+476>: mov    x0, x20
+TAL-Reverb-3[0x34be8] <+480>: bl     0x51be0                   ; juce::AudioProcessor::getParameterTree() const
+TAL-Reverb-3[0x34bec] <+484>: mov    x8, sp
+TAL-Reverb-3[0x34bf0] <+488>: mov    x1, x23
+TAL-Reverb-3[0x34bf4] <+492>: bl     0x54230                   ; juce::AudioProcessorParameterGroup::getGroupsForParameter(juce::AudioProcessorParameter*) const
+TAL-Reverb-3[0x34bf8] <+496>: ldr    w8, [sp, #0xc]
+TAL-Reverb-3[0x34bfc] <+500>: cmp    w8, #0x0
+TAL-Reverb-3[0x34c00] <+504>: b.le   0x34c20                   ; <+536>
+TAL-Reverb-3[0x34c04] <+508>: sub    w8, w8, #0x1
+TAL-Reverb-3[0x34c08] <+512>: ldr    x0, [sp]
+TAL-Reverb-3[0x34c0c] <+516>: ldr    x24, [x0, w8, sxtw #3]

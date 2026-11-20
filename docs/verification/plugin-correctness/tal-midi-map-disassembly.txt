@@ -1,0 +1,104 @@
+(lldb) target create "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3"
+Current executable set to '/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3' (arm64).
+(lldb) disassemble --start-address 0x34fc0 --count 100
+TAL-Reverb-3`juce::JuceVST3EditController::initialiseMidiControllerMappings:
+TAL-Reverb-3[0x34fc0] <+0>:   sub    sp, sp, #0x90
+TAL-Reverb-3[0x34fc4] <+4>:   stp    x28, x27, [sp, #0x30]
+TAL-Reverb-3[0x34fc8] <+8>:   stp    x26, x25, [sp, #0x40]
+TAL-Reverb-3[0x34fcc] <+12>:  stp    x24, x23, [sp, #0x50]
+TAL-Reverb-3[0x34fd0] <+16>:  stp    x22, x21, [sp, #0x60]
+TAL-Reverb-3[0x34fd4] <+20>:  stp    x20, x19, [sp, #0x70]
+TAL-Reverb-3[0x34fd8] <+24>:  stp    x29, x30, [sp, #0x80]
+TAL-Reverb-3[0x34fdc] <+28>:  add    x29, sp, #0x80
+TAL-Reverb-3[0x34fe0] <+32>:  mov    x20, x0
+TAL-Reverb-3[0x34fe4] <+36>:  mov    x21, #0x0                 ; =0 
+TAL-Reverb-3[0x34fe8] <+40>:  mov    x27, #0x0                 ; =0 
+TAL-Reverb-3[0x34fec] <+44>:  add    x22, x0, #0x50
+TAL-Reverb-3[0x34ff0] <+48>:  mov    w28, #0x4                 ; =4 
+TAL-Reverb-3[0x34ff4] <+52>:  adrp   x24, 385
+TAL-Reverb-3[0x34ff8] <+56>:  add    x24, x24, #0x6b8          ; vtable for Steinberg::Vst::Parameter + 16
+TAL-Reverb-3[0x34ffc] <+60>:  mov    x25, #0x0                 ; =0 
+TAL-Reverb-3[0x35000] <+64>:  sxtw   x27, w27
+TAL-Reverb-3[0x35004] <+68>:  ldr    w8, [x20, #0x98]
+TAL-Reverb-3[0x35008] <+72>:  add    w8, w8, w27
+TAL-Reverb-3[0x3500c] <+76>:  mov    w9, #0x208                ; =520 
+TAL-Reverb-3[0x35010] <+80>:  madd   x9, x21, x9, x20
+TAL-Reverb-3[0x35014] <+84>:  add    x9, x9, x25, lsl #2
+TAL-Reverb-3[0x35018] <+88>:  mov    w10, #0x419c              ; =16796 
+TAL-Reverb-3[0x3501c] <+92>:  str    w8, [x9, x10]
+TAL-Reverb-3[0x35020] <+96>:  add    x8, x20, x27, lsl #3
+TAL-Reverb-3[0x35024] <+100>: stp    w21, w25, [x8, #0x9c]
+TAL-Reverb-3[0x35028] <+104>: mov    w0, #0x338                ; =824 
+TAL-Reverb-3[0x3502c] <+108>: bl     0x15d02c                  ; symbol stub for: operator new(unsigned long)
+TAL-Reverb-3[0x35030] <+112>: mov    x19, x0
+TAL-Reverb-3[0x35034] <+116>: add    x0, sp, #0x10
+TAL-Reverb-3[0x35038] <+120>: mov    x1, x21
+TAL-Reverb-3[0x3503c] <+124>: bl     0x14c21c                  ; juce::String::String(int)
+TAL-Reverb-3[0x35040] <+128>: add    x8, sp, #0x18
+TAL-Reverb-3[0x35044] <+132>: add    x1, sp, #0x10
+TAL-Reverb-3[0x35048] <+136>: adrp   x0, 371
+TAL-Reverb-3[0x3504c] <+140>: add    x0, x0, #0x8ac            ; "MIDI CC "
+TAL-Reverb-3[0x35050] <+144>: bl     0x12d418                  ; juce::operator+(char const*, juce::String const&)
+TAL-Reverb-3[0x35054] <+148>: add    x8, sp, #0x20
+TAL-Reverb-3[0x35058] <+152>: add    x0, sp, #0x18
+TAL-Reverb-3[0x3505c] <+156>: adrp   x1, 371
+TAL-Reverb-3[0x35060] <+160>: add    x1, x1, #0x8b5            ; "'|'"
+TAL-Reverb-3[0x35064] <+164>: bl     0x14a930                  ; juce::operator+(juce::String, char const*)
+TAL-Reverb-3[0x35068] <+168>: add    x0, sp, #0x8
+TAL-Reverb-3[0x3506c] <+172>: mov    x1, x25
+TAL-Reverb-3[0x35070] <+176>: bl     0x14c21c                  ; juce::String::String(int)
+TAL-Reverb-3[0x35074] <+180>: add    x8, sp, #0x28
+TAL-Reverb-3[0x35078] <+184>: add    x0, sp, #0x20
+TAL-Reverb-3[0x3507c] <+188>: add    x1, sp, #0x8
+TAL-Reverb-3[0x35080] <+192>: bl     0x14a568                  ; juce::operator+(juce::String, juce::String const&)
+TAL-Reverb-3[0x35084] <+196>: add    x0, sp, #0x28
+TAL-Reverb-3[0x35088] <+200>: bl     0x14df48                  ; juce::String::toUTF16() const
+TAL-Reverb-3[0x3508c] <+204>: mov    x26, x0
+TAL-Reverb-3[0x35090] <+208>: ldr    w23, [x20, #0x98]
+TAL-Reverb-3[0x35094] <+212>: mov    w8, #0x1                  ; =1 
+TAL-Reverb-3[0x35098] <+216>: str    w8, [x19, #0x8]
+TAL-Reverb-3[0x3509c] <+220>: str    x24, [x19]
+TAL-Reverb-3[0x350a0] <+224>: add    x0, x19, #0x10
+TAL-Reverb-3[0x350a4] <+228>: str    w28, [x19, #0x330]
+TAL-Reverb-3[0x350a8] <+232>: mov    w1, #0x318                ; =792 
+TAL-Reverb-3[0x350ac] <+236>: bl     0x15d164                  ; symbol stub for: bzero
+TAL-Reverb-3[0x350b0] <+240>: mov    x8, #0x0                  ; =0 
+TAL-Reverb-3[0x350b4] <+244>: add    x9, x19, #0x14
+TAL-Reverb-3[0x350b8] <+248>: lsl    x10, x8, #1
+TAL-Reverb-3[0x350bc] <+252>: ldrh   w11, [x26, x10]
+TAL-Reverb-3[0x350c0] <+256>: strh   w11, [x9, x10]
+TAL-Reverb-3[0x350c4] <+260>: cmp    x8, #0x7e
+TAL-Reverb-3[0x350c8] <+264>: b.hi   0x350d8                   ; <+280>
+TAL-Reverb-3[0x350cc] <+268>: ldrh   w10, [x26, x10]
+TAL-Reverb-3[0x350d0] <+272>: add    x8, x8, #0x1
+TAL-Reverb-3[0x350d4] <+276>: cbnz   w10, 0x350b8              ; <+248>
+TAL-Reverb-3[0x350d8] <+280>: add    w8, w23, w27
+TAL-Reverb-3[0x350dc] <+284>: strh   wzr, [x19, #0x112]
+TAL-Reverb-3[0x350e0] <+288>: str    wzr, [x19, #0x314]
+TAL-Reverb-3[0x350e4] <+292>: str    xzr, [x19, #0x328]
+TAL-Reverb-3[0x350e8] <+296>: str    xzr, [x19, #0x318]
+TAL-Reverb-3[0x350ec] <+300>: str    w8, [x19, #0x10]
+TAL-Reverb-3[0x350f0] <+304>: movi.2d v0, #0000000000000000
+TAL-Reverb-3[0x350f4] <+308>: str    d0, [x19, #0x320]
+TAL-Reverb-3[0x350f8] <+312>: mov    x0, x22
+TAL-Reverb-3[0x350fc] <+316>: mov    x1, x19
+TAL-Reverb-3[0x35100] <+320>: bl     0x24a60                   ; Steinberg::Vst::ParameterContainer::addParameter(Steinberg::Vst::Parameter*)
+TAL-Reverb-3[0x35104] <+324>: add    x0, sp, #0x28
+TAL-Reverb-3[0x35108] <+328>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x3510c] <+332>: add    x0, sp, #0x8
+TAL-Reverb-3[0x35110] <+336>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x35114] <+340>: add    x0, sp, #0x20
+TAL-Reverb-3[0x35118] <+344>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x3511c] <+348>: add    x0, sp, #0x18
+TAL-Reverb-3[0x35120] <+352>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x35124] <+356>: add    x0, sp, #0x10
+TAL-Reverb-3[0x35128] <+360>: bl     0x1307cc                  ; juce::String::~String()
+TAL-Reverb-3[0x3512c] <+364>: add    x25, x25, #0x1
+TAL-Reverb-3[0x35130] <+368>: add    x27, x27, #0x1
+TAL-Reverb-3[0x35134] <+372>: cmp    x25, #0x82
+TAL-Reverb-3[0x35138] <+376>: b.ne   0x35004                   ; <+68>
+TAL-Reverb-3[0x3513c] <+380>: add    x21, x21, #0x1
+TAL-Reverb-3[0x35140] <+384>: cmp    x21, #0x10
+TAL-Reverb-3[0x35144] <+388>: b.ne   0x34ffc                   ; <+60>
+TAL-Reverb-3[0x35148] <+392>: ldp    x29, x30, [sp, #0x80]
+TAL-Reverb-3[0x3514c] <+396>: ldp    x20, x19, [sp, #0x70]

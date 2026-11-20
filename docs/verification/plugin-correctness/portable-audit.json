@@ -1,0 +1,17 @@
+{
+  "passed": true,
+  "checks": 505,
+  "independentPcmMaxError": 0.0,
+  "expectedPcmMaxError": 0.0,
+  "frames": 4099,
+  "roles": [
+    "L",
+    "R",
+    "C",
+    "LFE",
+    "Ls",
+    "Rs"
+  ],
+  "compiledSourceTreeSha256": "1139d730d1fc56b8f7cd3c0c3df595801cc4ff519eafa57cec2a7a9f2da1eb4f",
+  "qualification": "Generated numerical/state/file evidence. Executable/plugin hashes are recorded; their binary bytes are not redistributed. No vendor, human listening, physical surround or receiver claim."
+}

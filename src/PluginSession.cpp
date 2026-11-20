@@ -274,6 +274,7 @@ void PluginSession::choose(juce::var plugin)
             put(base, "state", v["state"]);
             put(base, "stateHash", v["stateHash"]);
             put(base, "parameters", v["parameters"]);
+            put(base, "parameterBaseline", v["parameterBaseline"]);
             put(base, "defaultState", v["state"]);
             put(base, "defaultStateHash", v["stateHash"]);
             put(base, "tailSeconds", 2.);

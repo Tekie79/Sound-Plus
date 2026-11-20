@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native/Native QA.soundplus",
+  "documentRevision": 19,
+  "output": "/Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r18-b19d7f63.wav",
+  "dimensions": {
+    "channels": 2,
+    "rate": 48000,
+    "bits": 24,
+    "frames": 96000
+  },
+  "sha256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868",
+  "raw": "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/08b7a7723503425f934c1472b37fcb9a/Raw.wav",
+  "rawSha256": "d70cf54eb9b3539afeb9bd0e149a15cb87b0d93dc90ea789406cf4ed363c97b9",
+  "maxQuantizationError": 5.960464477539063e-08,
+  "finalHelperSHA256": "f84d0340e11cb6fd6d3b129f187805b182a57b9e8d634b9e0dce4f5782f2f244",
+  "scope": "Native finalized render using post-preparation identity guard; no listening or receiving-app claim"
+}

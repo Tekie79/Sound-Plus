@@ -2279,3 +2279,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     std::cout << "Plugin processing passed: " << checks << " checks, " << layouts.size() << " exact buses; "
               << root.getFullPathName() << "\n";
 }
+
+#include "PluginCorrectnessTests.inc"

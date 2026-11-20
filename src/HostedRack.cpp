@@ -242,7 +242,7 @@ void HostedRackClient::update(const HostedRack &rack)
         {
             auto value = parameters[n];
             if (n >= oldParameters.size() || value["index"] != oldParameters[n]["index"] ||
-                value["id"] != oldParameters[n]["id"])
+                value["id"] != oldParameters[n]["id"] || value["stableId"] != oldParameters[n]["stableId"])
                 throw std::runtime_error("Hosted parameter ID changed; reprepare graph");
             double x = (double)value["value"];
             if (!std::isfinite(x) || x < 0 || x > 1)

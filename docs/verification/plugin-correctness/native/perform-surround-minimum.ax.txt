@@ -1,0 +1,102 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 21-35
+~19 standard window SoundPlus, Secondary Actions: Raise
+~	20 button Add existing sound folders, Help: Add Folder
++	21 text entry area (settable) Search library, Secondary Actions: Delete
++	22 text (settable) All sources
++	23 outline
++		24 row stereo-v1-48000.wav, 5.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/native-source/stereo-v1-48000.wav
++			25 row stereo-v1-48000.wav, 5.00 seconds, 2 channels, STEREO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/native-source/stereo-v1-48000.wav
++	26 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
++	27 button Per-channel source waveforms
++	28 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
++	29 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
++	30 container Resize sound browser
++	31 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 3, Value: Source Pool QA
++	32 button Render Design, Help: Render Design (Command-R)
++	33 button Render settings
++	34 button Render selected layer
++	35 button Choose permanent output folder
++	36 button Library
++	37 button (settable) Browser, Help: Hide sound browser, Value: On
++	38 button Design · 5.1 Side, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
++	39 text (settable) Unsaved changes
++	40 button New design, Help: New design (Command-N)
++	41 button Open design, Help: Open design (Command-O)
++	42 button Save design, Help: Save design (Command-S)
++	43 button Recover autosave
++	44 button Undo, Help: Undo (Command-Z)
++	45 button Add source
++	46 button Duplicate layer, Help: Duplicate layer (Command-D)
++	47 button Remove layer, Help: Remove layer (Delete / Backspace)
++	48 button (settable) Edit, Value: Off
++	49 button (settable) Perform, Value: On
++	50 button Save Snapshot, Help: Save the current static sound and its control settings as a named snapshot. No control motion is recorded.
++	51 pop up button (settable) Live Design or recorded take context, Help: Live Design
++	52 button Record, Help: Record a performance take
++	53 button Take options
++	54 text (settable) Take capture starts at frame zero; replay and render rebuild complete history. 120 seconds /8192 applied events maximum.
++	55 button (settable) Blend off, Value: Off, Help: Enable equal-power blending explicitly. Assigned layers change level; unassigned layers stay unchanged.
++	56 button Centre blend surface
++	57 text (settable) Help: While Blend is off, movement prepares a position. Enable Blend to hear it., Value: Move to prepare; enable to hear
++	58 text entry area (settable) Help: Macro 1 · double-click to rename, Value: Macro 1
++	59 button (settable) Enable Macro 1, Value: Off
++	60 button Reset Macro 1
++	61 button Edit mappings for Macro 1
++	62 slider (settable) Macro 1 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	63 container Pool Side.wav, 6 ch · 5.1 Side, 5.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready
++	64 text entry area (settable) Value: Pool Side.wav, Help: Pool Side.wav
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/waveform-ui/media/Pool Side.wav
+All-channel source overview before fades, gain and inserts. Double-click waveform or press Return to open in Edit. Drag to assign another corner. Right-click or Shift-Return for Alternatives.
+Double-click title to edit alias.
++	65 pop up button (settable) Assign Top left blend layer, Help: Choose, replace or clear this blend assignment, Value: Pool Side.wav
++	66 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	67 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	68 pop up button (settable) Assign Top right blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	69 text (settable) No mapped targets
++	70 text entry area (settable) Help: Macro 2 · double-click to rename, Value: Macro 2
++	71 button (settable) Enable Macro 2, Value: Off
++	72 button Reset Macro 2
++	73 button Edit mappings for Macro 2
++	74 slider (settable) Macro 2 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	75 container Source Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.
++	76 text (settable) No mapped targets
++	77 text entry area (settable) Help: Macro 3 · double-click to rename, Value: Macro 3
++	78 button (settable) Enable Macro 3, Value: Off
++	79 button Reset Macro 3
++	80 button Edit mappings for Macro 3
++	81 slider (settable) Macro 3 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	82 text (settable) No mapped targets
++	83 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	84 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	85 pop up button (settable) Assign Bottom left blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	86 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	87 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	88 pop up button (settable) Assign Bottom right blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	89 text entry area (settable) Help: Macro 4 · double-click to rename, Value: Macro 4
++	90 button (settable) Enable Macro 4, Value: Off
++	91 button Reset Macro 4
++	92 button Edit mappings for Macro 4
++	93 slider (settable) Macro 4 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	94 text (settable) No mapped targets X · Left–Right Y · Top–Bottom
++	95 slider (settable) Blend X, zero left to one right, Value: 0.500, Secondary Actions: Delete
++	96 slider (settable) Blend Y, zero top to one bottom, Value: 0.500, Secondary Actions: Delete
++	97 button Generate 5
++	98 button Variation bounds and enabled parameters
++	99 pop up button (settable) Original and variation candidates, Value: Original
++	100 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
++	101 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
++	102 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
++	103 button Copy Original to Project
++	104 text (settable) /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/waveform-ui/renders
++	105 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; C -100.0 dBFS; LFE -100.0 dBFS; Ls -100.0 dBFS; Rs -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
++	106 slider (settable) Monitor volume, excluded from render, Value: 0.15, Secondary Actions: Delete
++	107 text (settable) Source selected; press Play to audition the updated design
++	108 close button
++	109 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
++	110 minimize button
++	111 text SoundPlus
+The focused UI element is 63 container Pool Side.wav, 6 ch · 5.1 Side, 5.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready

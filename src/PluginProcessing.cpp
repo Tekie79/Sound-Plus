@@ -9,6 +9,7 @@
 #include <unistd.h>
 #include <set>
 #include <cmath>
+#include <limits.h>
 extern char **environ;
 namespace sp
 {
@@ -23,6 +24,63 @@ juce::String pluginFormatLabel(const juce::var &plugin)
     if (plugin["format"].toString() == "AudioUnit")
         return (int)plugin["auVersion"] == 3 ? "AUv3" : "AUv2";
     return plugin["format"].toString();
+}
+juce::String pluginParameterSchemaSignature(const juce::var &parameters)
+{
+    juce::Array<juce::var> fields;
+    if (auto *list = parameters.getArray())
+        for (auto &p : *list)
+        {
+            auto *o = new juce::DynamicObject();
+            for (auto key : {"index", "id", "stableId", "name", "steps", "automatable"})
+                o->setProperty(key, p[key]);
+            fields.add(juce::var(o));
+        }
+    auto text = juce::JSON::toString(juce::var(fields), true);
+    return juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
+}
+juce::String pluginCandidateSelectionKey(const juce::var &row)
+{
+    auto p = row["plugin"];
+    auto format = p["format"].toString();
+    auto canonical = row["canonicalIdentity"].toString();
+    if (canonical.isEmpty())
+        canonical = row["path"].toString();
+    auto id = p["id"].toString();
+    return (id.isNotEmpty() ? "class:" : "bundle:") + format + "\n" + canonical + "\n" + id;
+}
+juce::StringArray pluginDisplayNames(const juce::Array<juce::var> &plugins)
+{
+    juce::StringArray names;
+    for (auto &p : plugins)
+        names.add(p["name"].toString());
+    for (auto key : {"format", "vendor"})
+    {
+        auto before = names;
+        for (int i = 0; i < names.size(); ++i)
+            if (std::count(before.begin(), before.end(), before[i]) > 1)
+            {
+                auto detail = juce::String(key) == "format" ? pluginFormatLabel(plugins[i])
+                                                            : plugins[i][key].toString();
+                bool differs = false;
+                for (int j = 0; j < names.size(); ++j)
+                    if (before[i] == before[j] && plugins[i][key] != plugins[j][key])
+                        differs = true;
+                if (differs && detail.isNotEmpty())
+                    names.set(i, before[i] + " · " + detail);
+            }
+    }
+    auto before = names;
+    for (int i = 0; i < names.size(); ++i)
+        if (std::count(before.begin(), before.end(), before[i]) > 1)
+        {
+            int ordinal = 1;
+            for (int j = 0; j < i; ++j)
+                if (before[j] == before[i])
+                    ++ordinal;
+            names.set(i, before[i] + " · " + juce::String(ordinal));
+        }
+    return names;
 }
 juce::String pluginEffectGroup(const juce::var &plugin)
 {
@@ -380,7 +438,18 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             candidates.push_back(root);
         else
             for (auto &p : root.findChildFiles(juce::File::findDirectories, true, "*.vst3"))
-                candidates.push_back(p);
+            {
+                // A plug-in bundle is an opaque candidate. Embedded implementation
+                // bundles are not additional user-installed processors.
+                bool embedded = false;
+                for (auto parent = p.getParentDirectory();
+                     parent != root && parent != parent.getParentDirectory();
+                     parent = parent.getParentDirectory())
+                    if (parent.hasFileExtension("vst3"))
+                        embedded = true;
+                if (!embedded)
+                    candidates.push_back(p);
+            }
     }
     std::vector<juce::var> descriptions;
     for (auto &p : candidates)
@@ -390,19 +459,29 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         set(descriptor, "format", "VST3");
         descriptions.push_back(descriptor);
     }
-    if (registeredAudioUnits && targetPath.isEmpty())
+    bool targetedAU = targetPath.startsWith("AudioUnit:");
+    if (targetPath.isNotEmpty())
+        if (auto *old = cache["entries"].getArray())
+            for (auto &v : *old)
+                if (v["path"].toString() == targetPath)
+                    targetedAU = v["format"].toString() == "AudioUnit" || targetedAU;
+    juce::Array<juce::var> registrations;
+    if ((registeredAudioUnits && targetPath.isEmpty()) || targetedAU)
     {
         auto request = object();
         set(request, "mode", "enumerate-au");
         auto registry = worker.call(request, file.getParentDirectory().getChildFile("scan"), 30000, cancel);
         if (auto *units = registry["candidates"].getArray())
-            for (auto &unit : *units)
-                descriptions.push_back(unit);
+            registrations = *units;
     }
+    if (targetPath.isEmpty())
+        for (auto &unit : registrations)
+            descriptions.push_back(unit);
     constexpr int probePolicy = pluginProbePolicy;
     if (targetPath.isNotEmpty())
     {
         descriptions.clear();
+        bool found = false;
         if (auto *old = cache["entries"].getArray())
             for (auto &v : *old)
             {
@@ -410,11 +489,23 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                 if (descriptor["format"].toString().isEmpty())
                     set(descriptor, "format",
                         v["path"].toString().startsWith("AudioUnit:") ? "AudioUnit" : "VST3");
-                if (descriptor["format"].toString() == "AudioUnit" &&
-                    descriptor["bundle"].toString().isEmpty() && v["plugins"].size())
-                    set(descriptor, "bundle", v["plugins"][0]["bundle"]);
+                if (v["path"].toString() == targetPath)
+                {
+                    found = true;
+                    if (targetedAU)
+                    {
+                        descriptor = object();
+                        set(descriptor, "path", targetPath);
+                        set(descriptor, "format", "AudioUnit");
+                        set(descriptor, "error", "Audio Unit is no longer registered");
+                        for (auto &unit : registrations)
+                            if (unit["path"].toString() == targetPath)
+                                descriptor = unit.clone();
+                    }
+                }
                 descriptions.push_back(descriptor);
             }
+        require(found, "Selected plugin is no longer in this registry; run Rescan");
     }
     else
     {
@@ -449,6 +540,28 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             continue;
         }
         auto e = descriptor.clone();
+        // Preserve logs as bounded history, never as the current success/failure.
+        if (auto *old = cache["entries"].getArray())
+            for (auto &v : *old)
+                if (v["path"].toString() == path)
+                {
+                    auto history = v["failureHistory"].isArray() ? *v["failureHistory"].getArray()
+                                                                 : juce::Array<juce::var>();
+                    if (v["error"].toString().isNotEmpty())
+                    {
+                        auto past = object();
+                        set(past, "attempt", v["lastAttempt"]);
+                        set(past, "error", v["error"]);
+                        set(past, "stage", v["failureStage"]);
+                        set(past, "diagnostics", v["diagnostics"]);
+                        history.add(past);
+                        while (history.size() > 8)
+                            history.remove(0);
+                    }
+                    if (!history.isEmpty())
+                        set(e, "failureHistory", history);
+                }
+        juce::String metadataStage = "registration";
         set(e, "path", path);
         set(e, "format", descriptor["format"]);
         try
@@ -463,9 +576,18 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                 entries.add(e);
                 continue;
             }
-            if (targetPath.isEmpty())
+            if (au)
                 require(descriptor["error"].toString().isEmpty(), descriptor["error"].toString());
-            auto hash = au ? descriptor["fingerprint"].toString() : pluginFingerprint(juce::File(path));
+            metadataStage = "bundle-fingerprint";
+            auto bundle = au ? juce::File(descriptor["bundle"].toString()) : juce::File(path);
+            auto hash = pluginFingerprint(bundle);
+            if (au)
+                set(descriptor, "fingerprint", hash); // Fresh expected identity; worker checks it again.
+            char canonical[PATH_MAX]{};
+            auto identity = au ? path.fromLastOccurrenceOf("/", false, false)
+                               : (::realpath(path.toRawUTF8(), canonical) ? juce::String::fromUTF8(canonical)
+                                                                          : bundle.getFullPathName());
+            set(e, "canonicalIdentity", identity);
             require(hash.isNotEmpty(), "Missing plugin bundle fingerprint");
             bool reused = false;
             if (auto *old = cache["entries"].getArray())
@@ -509,6 +631,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                     set(e, "diagnostics", worker.lastDiagnostics);
                     set(e, "quarantined", false);
                     set(e, "error", "");
+                    e.getDynamicObject()->removeProperty("failureStage");
+                    e.getDynamicObject()->removeProperty("failureKind");
                 }
                 catch (const std::exception &x)
                 {
@@ -534,7 +658,9 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             if (cancel())
                 throw QueryCancelled();
             set(e, "error", juce::String(x.what()));
-            set(e, "quarantined", true);
+            set(e, "failureStage", metadataStage);
+            set(e, "lastAttempt", juce::Time::getCurrentTime().toISO8601(true));
+            set(e, "quarantined", false);
         }
         if (auto *plugins = e["plugins"].getArray())
             for (auto &plugin : *plugins)
@@ -555,7 +681,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         savedRoots.add(root.getFullPathName());
     auto result = object();
     set(result, "version", 1);
-    set(result, "registeredAudioUnits", registeredAudioUnits);
+    set(result, "registeredAudioUnits",
+        targetPath.isEmpty() ? juce::var(registeredAudioUnits) : cache["registeredAudioUnits"]);
     set(result, "entries", entries);
     set(result, "roots", targetPath.isEmpty() ? juce::var(savedRoots) : cache["roots"]);
     set(result, "launched", launched);
@@ -694,6 +821,9 @@ juce::Array<juce::var> pluginCandidateRows(const juce::var &snapshot, const Chan
                 auto row = object();
                 set(row, "plugin", p);
                 set(row, "path", entry["path"]);
+                set(row, "canonicalIdentity",
+                    entry["canonicalIdentity"].toString().isNotEmpty() ? entry["canonicalIdentity"]
+                                                                       : entry["path"]);
                 set(row, "name", p["name"]);
                 set(row, "vendor", p["vendor"].toString().isEmpty() ? "Vendor not reported" : p["vendor"]);
                 set(row, "format", pluginFormatLabel(p));
@@ -744,10 +874,20 @@ juce::Array<juce::var> pluginCandidateRows(const juce::var &snapshot, const Chan
                 set(row, "diagnostics", entry["diagnostics"]);
                 auto haystack = p["name"].toString() + p["vendor"].toString() + p["category"].toString() +
                                 p["format"].toString() + state + reason + entry["path"].toString();
-                if (haystack.containsIgnoreCase(query) && (!attentionOnly || state != "Available"))
-                    rows.add(row);
+                set(row, "matchesFilter",
+                    haystack.containsIgnoreCase(query) && (!attentionOnly || state != "Available"));
+                rows.add(row);
             }
         }
+    juce::Array<juce::var> identities;
+    for (auto &row : rows)
+        identities.add(row["plugin"]);
+    auto names = pluginDisplayNames(identities);
+    for (int i = 0; i < rows.size(); ++i)
+        set(rows.getReference(i), "displayName", names[i]);
+    for (int i = rows.size(); --i >= 0;)
+        if (!(bool)rows[i]["matchesFilter"])
+            rows.remove(i);
     std::sort(rows.begin(), rows.end(),
               [](auto &a, auto &b)
               {

@@ -1,0 +1,9 @@
+The following is a diff from the previous accessibility tree for Window: "" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~			6 row SoundPlus QA Effect · 4
+~		13 text Selected effect diagnostics
++		22 button Add effect
+~		18 text (settable) Scan complete. Select a candidate for its exact layout and failure details.
+Selected:
+	6 row SoundPlus QA Effect · 4
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

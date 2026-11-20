@@ -1,0 +1,1183 @@
+{
+  "launched": 1,
+  "rootsPreserved": true,
+  "unrelatedUnchanged": true,
+  "recovered": {
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+    "format": "VST3",
+    "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+    "probePolicy": 3,
+    "lastAttempt": "2026-11-20T09:33:10.164-05:00",
+    "fingerprint": "dddd942672e53def442054bbcd57556122b6aabdb9a30c78cd77375b0ef7f13d",
+    "error": "",
+    "diagnostics": {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+      "format": "VST3",
+      "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+      "probePolicy": 3,
+      "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+      "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+      "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+      "diagnostics": {
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+        "format": "VST3",
+        "mode": "scan",
+        "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+        "protocol": 1,
+        "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+        "stage": "binary-architecture",
+        "atMs": 1795185152741,
+        "architecture": "unknown",
+        "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+        "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+        "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+        "elapsedMs": 21.909833312034607,
+        "exit": 0
+      },
+      "failureStage": "binary-architecture",
+      "architecture": "arm64",
+      "quarantined": false,
+      "mode": "scan",
+      "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+      "protocol": 1,
+      "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+      "stage": "scan-complete",
+      "atMs": 1795185190508,
+      "declaredBuses": {
+        "inputs": [
+          {
+            "name": "Main",
+            "channels": 2,
+            "roles": "Stereo",
+            "enabled": true
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Main",
+            "channels": 2,
+            "roles": "Stereo",
+            "enabled": true
+          }
+        ]
+      },
+      "acceptsMidi": true,
+      "producesMidi": true,
+      "requestedLayout": {
+        "id": "discrete-16-v1",
+        "roles": [
+          "D1",
+          "D2",
+          "D3",
+          "D4",
+          "D5",
+          "D6",
+          "D7",
+          "D8",
+          "D9",
+          "D10",
+          "D11",
+          "D12",
+          "D13",
+          "D14",
+          "D15",
+          "D16"
+        ]
+      },
+      "activeBuses": {
+        "inputs": [
+          {
+            "name": "Main",
+            "channels": 8,
+            "roles": "Unknown",
+            "enabled": true
+          }
+        ],
+        "outputs": [
+          {
+            "name": "Main",
+            "channels": 8,
+            "roles": "Unknown",
+            "enabled": true
+          }
+        ]
+      },
+      "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-request.json",
+      "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-stderr.log",
+      "elapsedMs": 358.58391666412354,
+      "exit": 0
+    },
+    "architecture": "arm64",
+    "quarantined": false,
+    "failureHistory": [
+      {
+        "attempt": "2026-11-20T09:32:32.728-05:00",
+        "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+        "stage": "binary-architecture",
+        "diagnostics": {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+          "stage": "binary-architecture",
+          "atMs": 1795185152741,
+          "architecture": "unknown",
+          "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+          "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+          "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+          "elapsedMs": 21.909833312034607,
+          "exit": 0
+        }
+      }
+    ],
+    "plugins": [
+      {
+        "name": "SoundPlus QA Effect",
+        "vendor": "SoundPlus QA",
+        "version": "0.1.0",
+        "format": "VST3",
+        "category": "Fx",
+        "architecture": "arm64",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+        "fingerprint": "dddd942672e53def442054bbcd57556122b6aabdb9a30c78cd77375b0ef7f13d",
+        "instrument": false,
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Effect\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3\"\r\n        uniqueId=\"bc722e9a\" isInstrument=\"0\" fileTime=\"1a1f60c5d24\" infoUpdateTime=\"1a1f960251c\"\r\n        numInputs=\"0\" numOutputs=\"0\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beab\"/>\r\n",
+        "id": "VST3-SoundPlus QA Effect-36930cae-bc722e9a",
+        "layoutAttempts": [
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190498,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "mono-v1",
+              "roles": [
+                "C"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 1,
+                  "roles": "Mono",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 1,
+                  "roles": "Mono",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190499,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "stereo-v1",
+              "roles": [
+                "L",
+                "R"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190499,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "lcr-v1",
+              "roles": [
+                "L",
+                "R",
+                "C"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 3,
+                  "roles": "LCR",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 3,
+                  "roles": "LCR",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190500,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "quad-v1",
+              "roles": [
+                "L",
+                "R",
+                "Lb",
+                "Rb"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 4,
+                  "roles": "Quadraphonic",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 4,
+                  "roles": "Quadraphonic",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190501,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "5.0-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 5,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 5,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190502,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "5.1-side-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 6,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 6,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190502,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "5.1-rear-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Lb",
+                "Rb"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 6,
+                  "roles": "5.1 Surround",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 6,
+                  "roles": "5.1 Surround",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795185190503,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "7.1-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Lb",
+                "Rb",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795185190503,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "discrete-4-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 4 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795185190504,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "discrete-8-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 8 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "probePolicy": 3,
+            "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+            "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+            "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+            "diagnostics": {
+              "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+              "format": "VST3",
+              "mode": "scan",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+              "protocol": 1,
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+              "stage": "binary-architecture",
+              "atMs": 1795185152741,
+              "architecture": "unknown",
+              "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+              "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+              "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+              "elapsedMs": 21.909833312034607,
+              "exit": 0
+            },
+            "failureStage": "binary-architecture",
+            "architecture": "arm64",
+            "quarantined": false,
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795185190504,
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": true,
+            "requestedLayout": {
+              "id": "discrete-16-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8",
+                "D9",
+                "D10",
+                "D11",
+                "D12",
+                "D13",
+                "D14",
+                "D15",
+                "D16"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Main",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 16 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          }
+        ],
+        "diagnostics": {
+          "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+          "format": "VST3",
+          "canonicalIdentity": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+          "probePolicy": 3,
+          "lastAttempt": "2026-11-20T09:32:32.728-05:00",
+          "fingerprint": "62d3dfdbb92f1dba43f2b72d17d5da40e3e544ec9ded6c65cc1cfde1d5a34f5c",
+          "error": "Native arm64 required; bundle architecture: unknown; no bridging / stage: binary-architecture",
+          "diagnostics": {
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/native-plugins/Recoverable.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-reply.json",
+            "stage": "binary-architecture",
+            "atMs": 1795185152741,
+            "architecture": "unknown",
+            "reason": "Native arm64 required; bundle architecture: unknown; no bridging",
+            "request": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-request.json",
+            "stderr": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/00d868b4b60642778b5f5ce01ac8adee-stderr.log",
+            "elapsedMs": 21.909833312034607,
+            "exit": 0
+          },
+          "failureStage": "binary-architecture",
+          "architecture": "arm64",
+          "quarantined": false,
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/qa/catalog/plugin-processing/scan/ce4795f4b3d24609ba5d205ad789817b-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795185190504,
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": true,
+          "requestedLayout": {
+            "id": "discrete-16-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8",
+              "D9",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Main",
+                "channels": 8,
+                "roles": "Unknown",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "layouts": [
+          "mono-v1",
+          "stereo-v1",
+          "lcr-v1",
+          "quad-v1",
+          "5.0-v1",
+          "5.1-side-v1",
+          "5.1-rear-v1",
+          "7.1-v1"
+        ],
+        "reason": ""
+      }
+    ],
+    "scanMs": 358.8900833129883,
+    "workerPeakBytes": 23658496
+  }
+}
