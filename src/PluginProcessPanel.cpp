@@ -148,7 +148,7 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
     search.setTitle("Search plugin name or vendor");
     search.setTextToShowWhenEmpty("Search plugin / vendor", ui::muted);
     search.onTextChange = [this] { populatePlugins(); };
-    plugins.setTitle("Compatible installed effect / format");
+    plugins.setTitle("Compatible installed effect");
     plugins.setTextWhenNothingSelected("Scan and choose an effect");
     plugins.onChange = [this]
     {
@@ -336,7 +336,7 @@ void PluginProcessPanel::populatePlugins()
             plugins.addSectionHeading(group);
             previousGroup = group;
         }
-        auto name = p["name"].toString() + " / " + p["vendor"].toString() + " / " + pluginFormatLabel(p);
+        auto name = p["name"].toString();
         choices.push_back(p);
         int id = (int)choices.size();
         plugins.addItem(name, id);
@@ -360,8 +360,12 @@ void PluginProcessPanel::populatePlugins()
     if (!session.busy && !unavailable.isEmpty())
         status.setText(session.status + "\n" + unavailable[0], juce::dontSendNotification);
     plugins.setSelectedId(active, juce::dontSendNotification);
-    plugins.setTooltip(unavailable.isEmpty() ? "Choose one compatible native effect"
-                                             : unavailable.joinIntoString("\n"));
+    auto metadata = active > 0 ? choices[(size_t)active - 1] : juce::var();
+    auto selectedDetails = metadata.isObject()
+                               ? metadata["vendor"].toString() + " · " + pluginFormatLabel(metadata) + "\n" +
+                                     metadata["path"].toString()
+                               : "Choose one compatible native effect";
+    plugins.setTooltip(unavailable.isEmpty() ? selectedDetails : unavailable.joinIntoString("\n"));
     retry.setTooltip(unavailable.joinIntoString("\n"));
     if (choices.empty() && session.settings["plugin"].isObject())
     {

@@ -1,0 +1,11 @@
+{
+  "startingHead": "c96ca41",
+  "sha256": {
+    "src/HostedRackView.h": "eb0c3f96717d13d57089ac079bfda83d02bb053da346ed48d1c6c2c10a7ad57d",
+    "src/StockRackView.h": "7c013f1674c76256a68370b892743d278677640d2f7fd7747bf78b08778ba5fe",
+    "src/PluginProcessPanel.cpp": "60adc8deb4b28bac9f80f3dab33c5d350a73f32bb1cc7376ae9a24cdb5087112",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "5b76cf84175381411e26ccfdb5e1b2f1eee4ae7ab544ef12a7d8c4f09ba75097",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "5bf8188323b0c11c48a4ecb150a3e9fe83104b6af365cf7a89a4ec854c98ba8e"
+  },
+  "scope": "Effect display names only; format and saved class/slot identity retained"
+}

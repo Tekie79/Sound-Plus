@@ -279,18 +279,14 @@ class StockRackView final : public juce::Component
             for (size_t i = 0; i < fx->size(); ++i)
             {
                 auto &e = (*fx)[i];
-                slots.addItem(juce::String((int)i + 1) + " | " + e.type + " / Stock" +
-                                  (e.bypass ? " (bypassed)" : ""),
-                              (int)i + 1);
+                slots.addItem(e.type.substring(0, 1).toUpperCase() + e.type.substring(1), (int)i + 1);
                 if (e.id == selectedSlot)
                     picked = (int)i + 1;
             }
         int selectedExternal = -1;
         for (int i = 0; i < externalCount; ++i)
         {
-            slots.addItem(juce::String((fx ? (int)fx->size() : 0) + i + 1) + " | " +
-                              external->slotDescription(i),
-                          100 + i);
+            slots.addItem(external->slotDescription(i), 100 + i);
             if (hosted->slots[(size_t)i].id == selectedExternalSlot)
                 selectedExternal = i;
         }
@@ -314,6 +310,9 @@ class StockRackView final : public juce::Component
         slots.setSelectedId(externalSelected ? 100 + selectedExternal : picked, juce::dontSendNotification);
         if (!externalSelected)
             selectedSlot = slotId();
+        slots.setTooltip(externalSelected && external
+                             ? external->effectTooltip()
+                             : "Effects run top to bottom. Stock effects precede plug-ins.");
         auto *effect = !externalSelected && fx && picked ? &(*fx)[(size_t)picked - 1] : nullptr;
         bool editable = fx && !session.takeBusy() && session.document.activeTake.isEmpty();
         add.setEnabled(editable && (fx->size() < 8 || (external && externalCount < 8)));

@@ -23,7 +23,7 @@ class HostedRackView final : public juce::Component
                  &title, &slots, &add, &remove, &up, &down, &bypass, &rackBypass, &transfer, &savePreset,
                  &openPreset, &editor, &parameters, &more, &feedback})
             addAndMakeVisible(c);
-        title.setText("External / after stock", juce::dontSendNotification);
+        title.setText("Inserts", juce::dontSendNotification);
         title.setFont(juce::FontOptions(12.f));
         title.setColour(juce::Label::textColourId, ui::muted);
         feedback.setFont(juce::FontOptions(11.f));
@@ -86,7 +86,11 @@ class HostedRackView final : public juce::Component
     }
     juce::String slotDescription(int index) const
     {
-        return slots.getItemText(index).fromFirstOccurrenceOf(" | ", false, false);
+        return slots.getItemText(index);
+    }
+    juce::String effectTooltip()
+    {
+        return slots.getTooltip();
     }
     void selectSlot(const juce::String &id)
     {
@@ -133,11 +137,7 @@ class HostedRackView final : public juce::Component
                 auto &slot = rack->slots[i];
                 auto settings = parsedSettings(slot);
                 auto p = settings["plugin"];
-                slots.addItem(juce::String((int)i + 1) + " | " + p["name"].toString() + " / " +
-                                  pluginFormatLabel(p) +
-                                  (availability[slot.id].isNotEmpty() ? " (unavailable)" : "") +
-                                  (slot.bypass ? " (bypassed)" : ""),
-                              (int)i + 1);
+                slots.addItem(p["name"].toString(), (int)i + 1);
                 if (slot.id == selected)
                     index = (int)i + 1;
             }
@@ -174,6 +174,10 @@ class HostedRackView final : public juce::Component
                  feedback.getText().startsWith("Unsupported architecture"))
             feedback.setText({}, juce::dontSendNotification);
         auto settings = has ? parsedSettings(rack->slots[(size_t)index - 1]) : juce::var();
+        auto p = settings["plugin"];
+        slots.setTooltip(p["vendor"].toString() + " · " + pluginFormatLabel(p) + "\n" + p["path"].toString() +
+                         (has && availability[selected].isNotEmpty() ? "\n" + availability[selected] : "") +
+                         (has && rack->slots[(size_t)index - 1].bypass ? "\nBypassed" : ""));
         auto params = settings["parameters"];
         auto key = owner.document + owner.variation + owner.layer +
                    juce::String((juce::int64)owner.generation) + selected +
@@ -253,11 +257,7 @@ class HostedRackView final : public juce::Component
                                           : "Show external insert parameters");
         parameterViewport.setVisible(expanded && !sliders.isEmpty());
         updating = false;
-        title.setText(isMaster ? "External / summed bus"
-                      : session.document.activeMix().layout.id.isEmpty()
-                          ? "External / legacy stereo"
-                          : "External / " + layoutName(bus(owner)) + " source",
-                      juce::dontSendNotification);
+        title.setText("Inserts", juce::dontSendNotification);
         feedback.setTooltip(
             "Persistent external chain follows stock inserts; master processing remains separate. "
             "Hosted take recording is not yet qualified.");
@@ -627,9 +627,9 @@ class HostedRackView final : public juce::Component
             if (!juce::isPositiveAndBelow(row, choices.size()))
                 return {};
             auto p = choices[row];
-            return p["name"].toString() + " / " + p["vendor"].toString() + " / " + p["format"].toString() +
-                   " / " + p["architecture"].toString() + " / " + p["status"].toString() + " / " +
-                   p["reason"].toString();
+            return p["name"].toString() + (p["status"].toString() == "Available"
+                                               ? juce::String()
+                                               : juce::String::fromUTF8(" · ") + p["status"].toString());
         }
         void paintListBoxItem(int row, juce::Graphics &g, int width, int height, bool selected) override
         {
@@ -643,12 +643,16 @@ class HostedRackView final : public juce::Component
             }
             g.setColour(ui::text);
             g.setFont(juce::FontOptions(12.f, juce::Font::bold));
-            g.drawText(p["name"].toString(), 10, 2, width - 20, 20, juce::Justification::centredLeft, true);
-            g.setColour(ui::muted);
-            g.setFont(juce::FontOptions(11.f));
-            g.drawText(p["vendor"].toString() + " · " + p["format"].toString() + " · " +
-                           p["architecture"].toString() + " · " + p["status"].toString(),
-                       10, 22, width - 20, 18, juce::Justification::centredLeft, true);
+            bool needsAttention = p["status"].toString() != "Available";
+            g.drawText(p["name"].toString(), 10, needsAttention ? 2 : 12, width - 20, 20,
+                       juce::Justification::centredLeft, true);
+            if (needsAttention)
+            {
+                g.setColour(ui::muted);
+                g.setFont(juce::FontOptions(11.f));
+                g.drawText(p["status"].toString(), 10, 22, width - 20, 18, juce::Justification::centredLeft,
+                           true);
+            }
         }
         void selectedRowsChanged(int row) override
         {
@@ -666,8 +670,10 @@ class HostedRackView final : public juce::Component
             if (auto *a = p["layouts"].getArray())
                 for (auto &l : *a)
                     layouts.add(l.toString());
-            auto text = p["status"].toString() + " / stage: " + p["stage"].toString() + "\n" +
-                        p["reason"].toString() + "\nRequested: " + layoutName(expected) + " · Supported: " +
+            auto text = p["vendor"].toString() + " · " + p["format"].toString() + " · " +
+                        p["architecture"].toString() + "\n" + p["status"].toString() +
+                        " / stage: " + p["stage"].toString() + "\n" + p["reason"].toString() +
+                        "\nRequested: " + layoutName(expected) + " · Supported: " +
                         (layouts.isEmpty() ? "not established" : layouts.joinIntoString(", ")) +
                         "\nLast attempt: " + p["lastAttempt"].toString() + "\n" + p["path"].toString();
             if (p["diagnostics"]["stderr"].toString().isNotEmpty())
