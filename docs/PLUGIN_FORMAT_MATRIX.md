@@ -1,0 +1,26 @@
+# Plugin qualification matrix — macOS arm64
+
+This is a capability/evidence matrix, not a promise that every installed effect accepts every bus. Exact input/output role negotiation is mandatory. Initial hardware: M5 Pro / macOS 26.3.2 / JUCE 8.0.6, Release arm64.
+
+| Format / path | Discovery | Processing / state | Editor | Status |
+|---|---|---|---|---|
+| Owned QA VST3 | Isolated standard/custom registry | Persistent rack, finite Process, state round-trip; named-layout regression suite | Generic controls and isolated editor path | Implemented; see final report evidence |
+| Apple AUDelay AUv2 | Registered system component, resolved bundle fingerprint | Finite and persistent PCM / JSON state, Mono/Stereo/5.1 Side/Rear | Isolated native editor, apply on close | Implemented; see final report evidence |
+| Other vendor VST3 / AUv2 | Supported discovery adapters | Instance-specific negotiation required | Instance-specific | Not vendor-qualified by owned fixtures |
+| AUv3 extension | Registered enumeration, asynchronous JUCE instantiation path | No available runtime fixture qualified | Unqualified | Open requirement |
+| VST2.x | No adapter compiled | Absent lawful SDK/distribution path in this checkout | Unavailable | Required / blocked |
+| Intel-only / 32-bit / Windows | No bridge | No processing qualification | Unavailable | Unsupported platform combinations |
+
+| Layout | Owned VST3 exact arrangement | Apple AUDelay | Notes |
+|---|---|---|---|
+| Mono | Production regression | Production regression | True mono source-stage bus |
+| Stereo | Production regression | Production regression | True stereo bus |
+| LCR / Quad / 5.0 | Production regression | Not qualified | Never inferred from count |
+| 5.1 Side | Production regression | Production regression | L R C LFE Ls Rs |
+| 5.1 Rear | Production regression | Production regression | L R C LFE Lb Rb |
+| 7.1 | Production regression | Not qualified | Explicit ordered roles |
+| Discrete / other up to 16 channels | Only if adapter accepts exact roles | Not qualified | Pinned JUCE/VST3 restrictions remain; no relabeling |
+
+Per-rack limits: eight slots, 512 parameters per slot, 16-channel fixed exchange, up to one second reported latency. Whole mix: at most 16 populated external racks / 64 slots / 24 MiB serialized settings. These bounds are not a real-time throughput guarantee.
+
+No MIDI/instrument, sidechain, automatic multi-mono, silent surround adapter or cross-format substitution is implemented. A mono insert before a surround panner stays mono. Master processing uses the actual ordered output bus. Physical surround monitoring, human listening and receiving-app save/quit/reopen remain separate evidence.

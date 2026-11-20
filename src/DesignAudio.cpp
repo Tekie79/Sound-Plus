@@ -2,6 +2,7 @@
 #include "SourcePools.h"
 #include "ProcessorBusContract.h"
 #include "DesignLive.h"
+#include "PluginProcessing.h"
 #include "PerformanceState.h"
 #include <random>
 #include <juce_dsp/juce_dsp.h>
@@ -240,6 +241,9 @@ void updateRack(Rack &rack, const std::vector<StockEffect> &effects)
 class Voice
 {
     DesignLayer layer;
+    std::unique_ptr<HostedRackClient> hosted;
+    juce::AudioBuffer<float> alignment;
+    int alignmentPosition = 0, alignmentFrames = 0;
     double ratio;
     int64_t duration;
     juce::AudioFormatManager formats;
@@ -384,8 +388,9 @@ class Voice
     }
 
   public:
-    Voice(const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {},
-          int version = 2)
+    Voice(
+        const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {}, int version = 2,
+        const std::function<bool()> &cancelled = [] { return false; })
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
           rack(prepareRack(l.effects, rate, invariant,
                            layout.id.isEmpty() ? 2 : l.routing.interpretation.size(), !layout.id.isEmpty())),
@@ -393,6 +398,10 @@ class Voice
           routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
           previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
+        if (!l.hosted.slots.empty())
+            hosted = std::make_unique<HostedRackClient>(
+                l.hosted, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
+                cancelled);
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
         sourceUnchanged(l.source);
@@ -472,6 +481,19 @@ class Voice
             }
         }
         processRack(rack, block, frames);
+        if (hosted)
+            hosted->process(block, frames);
+        if (alignmentFrames)
+            for (int n = 0; n < frames; ++n)
+            {
+                for (int c = 0; c < inputChannels; ++c)
+                {
+                    auto sample = block.getSample(c, n);
+                    block.setSample(c, n, alignment.getSample(c, alignmentPosition));
+                    alignment.setSample(c, alignmentPosition, sample);
+                }
+                alignmentPosition = (alignmentPosition + 1) % alignmentFrames;
+            }
         if (!layoutAware)
         {
             for (int c = 0; c < 2; ++c)
@@ -508,6 +530,19 @@ class Voice
                             output.addSample(c, offset + n,
                                              block.getSample(k, n) * matrixGains[c][k].getNextValue());
             }
+    }
+    int latency() const
+    {
+        return hosted ? hosted->latency() : 0;
+    }
+    void compensate(int frames)
+    {
+        alignmentFrames = frames;
+        if (frames)
+        {
+            alignment.setSize(inputChannels, frames);
+            alignment.clear();
+        }
     }
     const juce::String &id() const
     {
@@ -564,6 +599,8 @@ class Voice
             buildCoefficients();
         gainTargets(false);
         updateRack(rack, layer.effects);
+        if (hosted)
+            hosted->update(layer.hosted);
     }
     void verify()
     {
@@ -595,6 +632,9 @@ struct DesignGraph::Impl
     juce::SmoothedValue<float> masterGain;
     std::vector<std::unique_ptr<Voice>> voices;
     Rack masterRack;
+    std::unique_ptr<HostedRackClient> hostedMaster;
+    int pipelineLatency = 0;
+    bool primed = false;
     juce::AudioBuffer<float> block{2, 512};
     explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled,
                   const DesignDocument *effectiveInput)
@@ -620,6 +660,10 @@ struct DesignGraph::Impl
         block.setSize(channels, 512);
         masterRack = prepareRack(mix.masterEffects, sampleRate, invariant || !mix.layout.id.isEmpty(),
                                  channels, !mix.layout.id.isEmpty());
+        if (!mix.hosted.slots.empty())
+            hostedMaster = std::make_unique<HostedRackClient>(
+                mix.hosted, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
+                cancelled);
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -632,8 +676,29 @@ struct DesignGraph::Impl
                                              l.name.toStdString());
                 voices.push_back(std::make_unique<Voice>(
                     l, sampleRate, invariant || !document.activeMix().layout.id.isEmpty(),
-                    document.activeMix().layout, document.activeMix().routingVersion));
+                    document.activeMix().layout, document.activeMix().routingVersion, cancelled));
             }
+        int longest = 0;
+        for (auto &voice : voices)
+            longest = std::max(longest, voice->latency());
+        for (auto &voice : voices)
+            voice->compensate(longest - voice->latency());
+        pipelineLatency = longest + (hostedMaster ? hostedMaster->latency() : 0);
+    }
+    void prime(int64_t first, const std::function<bool()> &cancelled)
+    {
+        if (primed)
+            return;
+        cursor = first;
+        const auto end = first + pipelineLatency;
+        juce::AudioBuffer<float> discard(block.getNumChannels(), 512);
+        while (cursor < end)
+        {
+            if (cancelled())
+                throw QueryCancelled();
+            render(discard, 0, (int)std::min<int64_t>(512, end - cursor));
+        }
+        primed = true;
     }
     void render(juce::AudioBuffer<float> &out, int offset, int count)
     {
@@ -665,6 +730,8 @@ struct DesignGraph::Impl
             for (auto &voice : voices)
                 voice->add(block, 0, n, cursor, inputEnd);
             processRack(masterRack, block, n);
+            if (hostedMaster)
+                hostedMaster->process(block, n);
             for (int i = 0; i < n; ++i)
             {
                 auto gain = masterGain.getNextValue();
@@ -704,16 +771,19 @@ void DesignGraph::updateParameters(const juce::var &parameters)
     impl->masterGain.setTargetValue(
         juce::Decibels::decibelsToGain((float)impl->document.activeMix().masterDb));
     updateRack(impl->masterRack, impl->document.activeMix().masterEffects);
+    if (impl->hostedMaster)
+        impl->hostedMaster->update(impl->document.activeMix().hosted);
 }
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)
 {
+    impl->prime(0, [] { return false; });
     impl->render(out, offset, count);
 }
 void DesignGraph::seek(int64_t frame, const std::function<bool()> &cancelled, int64_t warmup)
 {
-    if (warmup >= 0 && impl->cursor == 0)
-        impl->cursor = std::max<int64_t>(0, frame - warmup);
+    impl->prime(warmup >= 0 ? std::max<int64_t>(0, frame - warmup) : 0, cancelled);
+    frame += impl->pipelineLatency;
     if (frame < impl->cursor)
         throw std::runtime_error("A seek requires fresh processing state");
     juce::AudioBuffer<float> discard(impl->block.getNumChannels(), 512);
@@ -730,7 +800,7 @@ int DesignGraph::layers() const
 }
 int64_t DesignGraph::position() const
 {
-    return impl->cursor;
+    return impl->primed ? impl->cursor - impl->pipelineLatency : 0;
 }
 double DesignGraph::rate() const
 {
@@ -920,7 +990,70 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     std::array<double, 16> channelPeak{};
     std::array<int64_t, 16> channelClips{};
     juce::AudioBuffer<float> ordered(channels, 4096);
-    if (settings.normalize)
+    const bool hostedPass = hasHostedInserts(effectiveInput.activeMix());
+    juce::File rawPass;
+    juce::String rawPassHash;
+    std::unique_ptr<juce::AudioFormatReader> retained;
+    juce::AudioFormatManager retainedFormats;
+    int64_t passFrames = 0, passRead = 0;
+    if (hostedPass)
+    {
+        // Run arbitrary effects exactly once. Meter/normalization/encoding/splits
+        // consume this durable float pass, never another graph instantiation.
+        auto passFolder = folder.getChildFile("Plugin Passes").getChildFile(juce::Uuid().toString());
+        if (!passFolder.createDirectory())
+            throw std::runtime_error("Cannot retain plugin pass");
+        rawPass = passFolder.getChildFile("Raw.wav");
+        juce::TemporaryFile pending(rawPass);
+        juce::WavAudioFormat wav;
+        juce::StringPairArray meta;
+        meta.set(juce::WavAudioFormat::bwavDescription,
+                 "SoundPlus layout:" + delivery.id + "; order:" + delivery.roles.joinIntoString(","));
+        std::unique_ptr<juce::AudioFormatWriter> rawWriter(
+            wav.createWriterFor(pending.getFile().createOutputStream().release(), settings.sampleRate,
+                                juceChannelSet(delivery), 32, meta, 0));
+        if (!rawWriter)
+            throw std::runtime_error("Cannot retain float plugin pass");
+        DesignReader source(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
+                            cancelled, -1, &effectiveInput);
+        double peak = 0;
+        while (auto n = source.read(block, 4096, cancelled))
+        {
+            convert(block, n);
+            for (int c = 0; c < channels; ++c)
+            {
+                ordered.copyFrom(c, 0, converted, order[(size_t)c], 0, n);
+                peak = std::max(peak, (double)converted.getMagnitude(c, 0, n));
+            }
+            if (!rawWriter->writeFromAudioSampleBuffer(ordered, 0, n))
+                throw std::runtime_error("Plugin pass write failed");
+            passFrames += n;
+            progress(.4 * (double)source.consumed() / source.length());
+        }
+        rawWriter.reset();
+        if (cancelled())
+            throw QueryCancelled();
+        if (!pending.overwriteTargetFileWithTemporary())
+            throw std::runtime_error("Cannot finalize retained plugin pass");
+        rawPassHash = processingHash(rawPass);
+        auto record = juce::var(new juce::DynamicObject());
+        auto *r = record.getDynamicObject();
+        r->setProperty("version", 1);
+        r->setProperty("path", rawPass.getFullPathName());
+        r->setProperty("sha256", rawPassHash);
+        r->setProperty("graph", designMixToJson(effectiveInput.activeMix()));
+        r->setProperty("frames", (juce::int64)passFrames);
+        r->setProperty("rate", settings.sampleRate);
+        r->setProperty("layout", layoutJson(delivery));
+        saveProcessingJson(passFolder.getChildFile("pass.json"), record);
+        if (settings.normalize && peak > 0)
+            normalize = std::pow(10., -1. / 20) / peak;
+        retainedFormats.registerBasicFormats();
+        retained.reset(retainedFormats.createReaderFor(rawPass));
+        if (!retained || retained->lengthInSamples != passFrames)
+            throw std::runtime_error("Retained plugin pass unavailable");
+    }
+    if (settings.normalize && !hostedPass)
     {
         DesignReader meter(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
                            cancelled, -1, &effectiveInput);
@@ -936,8 +1069,27 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         if (peak > 0)
             normalize = std::pow(10.0, -1.0 / 20) / peak;
     }
-    DesignReader reader(d, settings.sampleRate, settings.first, settings.last, settings.tailSeconds,
-                        cancelled, -1, &effectiveInput);
+    std::unique_ptr<DesignReader> reader;
+    if (!hostedPass)
+        reader.reset(new DesignReader(d, settings.sampleRate, settings.first, settings.last,
+                                      settings.tailSeconds, cancelled, -1, &effectiveInput));
+    auto totalFrames = hostedPass ? passFrames : reader->length();
+    juce::AudioBuffer<float> retainedBlock(channels, 4096);
+    auto readNext = [&]()
+    {
+        if (!hostedPass)
+            return reader->read(block, 4096, cancelled);
+        if (cancelled())
+            throw QueryCancelled();
+        int n = (int)std::min<int64_t>(4096, passFrames - passRead);
+        if (n && !retained->read(&retainedBlock, 0, n, passRead, true, true))
+            throw std::runtime_error("Retained plugin pass read failed");
+        converted.clear();
+        for (int c = 0; c < channels; ++c)
+            converted.copyFrom(order[(size_t)c], 0, retainedBlock, c, 0, n);
+        passRead += n;
+        return n;
+    };
     juce::WavAudioFormat format;
     auto stream = staging.getFile().createOutputStream();
     if (!stream)
@@ -955,7 +1107,17 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         throw std::runtime_error("Cannot create WAV writer");
     DesignOutput result;
     result.path = target.getFullPathName();
-    result.samples = reader.length();
+    result.samples = totalFrames;
+    if (hostedPass)
+    {
+        result.processing = "hosted-racks-v1";
+        auto *p = new juce::DynamicObject();
+        p->setProperty("rawPass", rawPass.getFullPathName());
+        p->setProperty("rawSha256", rawPassHash);
+        p->setProperty("graph", designMixToJson(effectiveInput.activeMix()));
+        p->setProperty("authority", "single-float-pass-v1");
+        result.sourceProvenance = juce::var(p);
+    }
     result.revision = d.revision;
     result.variation = selectedTake(d) ? juce::String() : d.activeVariation;
     result.settings = settings;
@@ -1025,9 +1187,10 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     for (int c = 0; c < 16; ++c)
         channelRng[c].seed(170526u + 7919u * c);
     double lsb = std::ldexp(1.0, 1 - settings.bits);
-    while (auto n = reader.read(block, 4096, cancelled))
+    while (auto n = readNext())
     {
-        convert(block, n);
+        if (!hostedPass)
+            convert(block, n);
         for (int c = 0; c < channels; ++c)
             for (int i = 0; i < n; ++i)
             {
@@ -1069,10 +1232,13 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
             ordered.copyFrom(c, 0, converted, order[(size_t)c], 0, n);
         if (!writer->writeFromAudioSampleBuffer(ordered, 0, n))
             throw std::runtime_error("Output write failed; no file was published");
-        progress((settings.normalize ? .4 : 0) +
-                 (settings.normalize ? .6 : 1) * (double)reader.consumed() / reader.length());
+        progress((hostedPass || settings.normalize ? .4 : 0) +
+                 (hostedPass || settings.normalize ? .6 : 1) *
+                     (double)(hostedPass ? passRead : reader->consumed()) / totalFrames);
     }
     writer.reset();
+    if (hostedPass && processingHash(rawPass) != rawPassHash)
+        throw std::runtime_error("Retained raw plugin authority changed before publication");
     if (layoutAware)
     {
         juce::Array<juce::var> peaks, clipped;

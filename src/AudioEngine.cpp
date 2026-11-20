@@ -226,7 +226,7 @@ void AudioEngine::timerCallback()
 {
     handleDeviceChanges();
     char bytes[8192];
-    for (int budget = 0; budget < 8; ++budget)
+    for (int budget = 0; budget < 128; ++budget)
     {
         auto count = recv(STDIN_FILENO, bytes, sizeof(bytes), 0);
         if (count == 0)
@@ -237,7 +237,7 @@ void AudioEngine::timerCallback()
         if (count < 0)
             break;
         input += juce::String::fromUTF8(bytes, (int)count);
-        if (input.length() > 131072)
+        if (input.length() > (int)(maxHostedControlBytes * 2))
         {
             juce::JUCEApplicationBase::quit();
             return;
@@ -250,6 +250,13 @@ void AudioEngine::timerCallback()
         auto line = input.upToFirstOccurrenceOf("\n", false, false);
         input = input.fromFirstOccurrenceOf("\n", false, false);
         auto message = juce::JSON::parse(line);
+        bool hosted = message["command"].toString() == "design_parameters" &&
+                      (int)message["parameters"]["hostedControlsVersion"] == 1;
+        if (line.length() > (int)(hosted ? maxHostedControlBytes : 65536))
+        {
+            juce::JUCEApplicationBase::quit();
+            return;
+        }
         commands.add(message);
         auto name = message["command"].toString();
         if (name == "play" || name == "play_design" || name == "stop")

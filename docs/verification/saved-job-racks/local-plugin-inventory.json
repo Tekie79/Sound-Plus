@@ -1,0 +1,119 @@
+{
+  "scope": "Read-only bundle metadata; not a processing qualification. No binary installed or downloaded by this task.",
+  "bundles": [
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/EnveLover.vst3",
+      "kind": "VST3",
+      "identifier": "com.PressPlay.vst3.EnveLover",
+      "version": "1.0.3"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3",
+      "kind": "VST3",
+      "identifier": "com.yourcompany.LV50A",
+      "version": "1.0.0"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3",
+      "kind": "VST3",
+      "identifier": "ch.toguaudioline.talreverb3",
+      "version": "2.3.0"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+      "kind": "VST3",
+      "identifier": "com.Youlean.vst3.Youlean-Loudness-Meter-2",
+      "version": "2.5.15"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST/EnveLover.vst",
+      "kind": "VST",
+      "identifier": "com.PressPlay.vst.EnveLover",
+      "version": "1.0.3"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST/TAL-Reverb-3.vst",
+      "kind": "VST",
+      "identifier": "ch.toguaudioline.talreverb3",
+      "version": "2.3.0"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST/Youlean Loudness Meter 2.vst",
+      "kind": "VST",
+      "identifier": "com.Youlean.vst.Youlean-Loudness-Meter-2",
+      "version": "2.5.15"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Channels Renderer.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFChannelsRenderer",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Channels.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFChannels",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Export.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFExport",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Object Renderer.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFObjectRenderer",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Object to Scene.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFObjectToScene",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Object.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFObject",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Panner.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFPanner",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Scene Renderer.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFSceneRenderer",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/ASAF Scene.component",
+      "kind": "Components",
+      "identifier": "com.Apple.ASAFScene",
+      "version": "2.1.13"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/EnveLover.component",
+      "kind": "Components",
+      "identifier": "com.PressPlay.audiounit.EnveLover",
+      "version": "1.0.3"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/TAL-Reverb-3.component",
+      "kind": "Components",
+      "identifier": "ch.toguaudioline.talreverb3",
+      "version": "2.3.0"
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/Components/Youlean Loudness Meter 2.component",
+      "kind": "Components",
+      "identifier": "com.Youlean.audiounit.Youlean-Loudness-Meter-2",
+      "version": "2.5.15"
+    }
+  ]
+}

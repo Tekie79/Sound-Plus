@@ -204,18 +204,19 @@ void PluginSession::prepare(PluginInput selected)
         [this](auto v)
         {
             input = v;
-            status = "Input ready - choose a compatible VST3 effect";
+            status = "Input ready - choose a compatible effect";
         });
 }
 void PluginSession::recallCatalog(std::vector<juce::File> standardRoots)
 {
+    registeredDiscovery = standardRoots == defaultVst3Locations();
     auto file = directory.getParentDirectory().getChildFile("plugins-v1.json");
     launch(
         "Loading cached plugin registry", [file](auto &) { return PluginCatalog(file).snapshot(); },
         [this, standardRoots](auto v)
         {
             discovery = v;
-            status = "Registry loaded - checking standard VST3 folders in background";
+            status = "Registry loaded - checking VST3 folders and Audio Unit registration";
             auto roots = standardRoots;
             if (auto *saved = v["roots"].getArray())
                 for (auto &path : *saved)
@@ -231,11 +232,11 @@ void PluginSession::scan(std::vector<juce::File> roots, bool retry)
 {
     auto cache = directory.getParentDirectory().getChildFile("plugins-v1.json");
     launch(
-        "Scanning VST3 candidates",
+        "Scanning installed plugin candidates",
         [this, roots, cache, retry](auto &cancel)
         {
             PluginCatalog catalog(cache);
-            return catalog.scan(child, roots, retry, cancel);
+            return catalog.scan(child, roots, retry, cancel, {}, registeredDiscovery);
         },
         [this](auto v)
         {
@@ -245,9 +246,9 @@ void PluginSession::scan(std::vector<juce::File> roots, bool retry)
                 for (auto &e : *entries)
                     if (auto *plugins = e["plugins"].getArray())
                         count += plugins->size();
-            status = count
-                         ? "Scan complete - choose a compatible effect; failures remain quarantined"
-                         : "No native VST3 effects found. Choose a VST3 folder or review quarantine errors.";
+            status = count ? "Scan complete - choose a compatible effect; failures remain quarantined"
+                           : "No compatible native effects found. Choose a VST3 folder or review "
+                             "registration/quarantine errors.";
         });
 }
 void PluginSession::choose(juce::var plugin)

@@ -64,6 +64,42 @@ void runAudioHealthTests(const juce::File &parent, const juce::File &app)
           "Fragmented framed transport preserves Unicode source identities");
     close(pair[0]);
     close(pair[1]);
+    {
+        check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Hosted-control IPC socketpair");
+        auto large = sp::message("design_parameters");
+        auto params = juce::var(new juce::DynamicObject());
+        params.getDynamicObject()->setProperty("hostedControlsVersion", 1);
+        params.getDynamicObject()->setProperty("transportFixture", juce::String::repeatedString("v", 600000));
+        large.getDynamicObject()->setProperty("parameters", params);
+        std::string bytes;
+        std::thread consumer(
+            [&]
+            {
+                char block[8192];
+                for (;;)
+                {
+                    auto n = recv(pair[1], block, sizeof(block), 0);
+                    if (n <= 0)
+                        break;
+                    bytes.append(block, (size_t)n);
+                }
+            });
+        bool complete = sp::sendMessage(pair[0], large);
+        shutdown(pair[0], SHUT_WR);
+        consumer.join();
+        close(pair[0]);
+        close(pair[1]);
+        auto parsed = juce::JSON::parse(juce::String::fromUTF8(bytes.c_str()));
+        check(complete && parsed["parameters"]["transportFixture"].toString().length() == 600000,
+              "Large bounded hosted-control frames arrive intact without relaxing ordinary command bounds");
+        check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Oversized ordinary command socketpair");
+        auto ordinary = sp::message("backpressure");
+        ordinary.getDynamicObject()->setProperty("payload", juce::String::repeatedString("x", 70000));
+        check(!sp::sendMessage(pair[0], ordinary) && errno == EMSGSIZE,
+              "Ordinary commands retain the 64-KiB bound");
+        close(pair[0]);
+        close(pair[1]);
+    }
     check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Blocked IPC socketpair");
     fcntl(pair[0], F_SETFL, fcntl(pair[0], F_GETFL) | O_NONBLOCK);
     setsockopt(pair[0], SOL_SOCKET, SO_SNDBUF, &small, sizeof(small));

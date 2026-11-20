@@ -17,6 +17,12 @@ std::vector<juce::File> defaultVst3Locations()
             juce::File::getSpecialLocation(juce::File::userHomeDirectory)
                 .getChildFile("Library/Audio/Plug-Ins/VST3")};
 }
+juce::String pluginFormatLabel(const juce::var &plugin)
+{
+    if (plugin["format"].toString() == "AudioUnit")
+        return (int)plugin["auVersion"] == 3 ? "AUv3" : "AUv2";
+    return plugin["format"].toString();
+}
 juce::String pluginEffectGroup(const juce::var &plugin)
 {
     if ((bool)plugin["instrument"])
@@ -294,7 +300,7 @@ juce::var PluginCatalog::snapshot() const
 }
 juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File> &roots, bool retry,
                               const std::function<bool()> &cancel,
-                              const std::function<void(juce::var)> &progress)
+                              const std::function<void(juce::var)> &progress, bool registeredAudioUnits)
 {
     auto cache = snapshot();
     juce::Array<juce::var> entries;
@@ -309,12 +315,29 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             for (auto &p : root.findChildFiles(juce::File::findDirectories, true, "*.vst3"))
                 candidates.push_back(p);
     }
-    require(candidates.size() <= 2048, "Too many plugin candidates (limit 2048)");
+    std::vector<juce::var> descriptions;
     for (auto &p : candidates)
+    {
+        auto descriptor = object();
+        set(descriptor, "path", p.getFullPathName());
+        set(descriptor, "format", "VST3");
+        descriptions.push_back(descriptor);
+    }
+    if (registeredAudioUnits)
+    {
+        auto request = object();
+        set(request, "mode", "enumerate-au");
+        auto registry = worker.call(request, file.getParentDirectory().getChildFile("scan"), 30000, cancel);
+        if (auto *units = registry["candidates"].getArray())
+            for (auto &unit : *units)
+                descriptions.push_back(unit);
+    }
+    require(descriptions.size() <= 2048, "Too many plugin candidates (limit 2048)");
+    for (auto &descriptor : descriptions)
     {
         if (cancel())
             throw QueryCancelled();
-        auto path = p.getFullPathName();
+        auto path = descriptor["path"].toString();
         if (seen.contains(path))
             continue;
         seen.add(path);
@@ -322,7 +345,10 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         set(e, "path", path);
         try
         {
-            auto hash = pluginFingerprint(p);
+            bool au = descriptor["format"].toString() == "AudioUnit";
+            require(descriptor["error"].toString().isEmpty(), descriptor["error"].toString());
+            auto hash = au ? descriptor["fingerprint"].toString() : pluginFingerprint(juce::File(path));
+            require(hash.isNotEmpty(), "Missing plugin bundle fingerprint");
             bool reused = false;
             if (auto *old = cache["entries"].getArray())
                 for (auto &v : *old)
@@ -339,7 +365,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             {
                 ++launched;
                 set(e, "fingerprint", hash);
-                auto cmd = object();
+                auto cmd = descriptor.clone();
                 set(cmd, "mode", "scan");
                 set(cmd, "path", path);
                 try
@@ -374,9 +400,14 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         }
         if (auto *plugins = e["plugins"].getArray())
             for (auto &plugin : *plugins)
+            {
+                if (plugin["format"].toString() == "AudioUnit" && !plugin.hasProperty("auVersion"))
+                    set(plugin, "auVersion",
+                        juce::File(plugin["bundle"].toString()).hasFileExtension("appex") ? 3 : 2);
                 if (!plugin.hasProperty("category"))
                     if (auto xml = juce::parseXML(plugin["xml"].toString()))
                         set(plugin, "category", xml->getStringAttribute("category"));
+            }
         entries.add(e);
         if (progress)
             progress(e);
@@ -386,6 +417,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         savedRoots.add(root.getFullPathName());
     auto result = object();
     set(result, "version", 1);
+    set(result, "registeredAudioUnits", registeredAudioUnits);
     set(result, "entries", entries);
     set(result, "roots", savedRoots);
     set(result, "launched", launched);

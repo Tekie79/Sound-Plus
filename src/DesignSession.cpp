@@ -1252,6 +1252,7 @@ void DesignSession::render(bool selection)
         snapshot.renderSettings.first = 0;
         snapshot.renderSettings.last = -1;
     }
+    const bool hostedStem = selection && hasHostedInserts(snapshot.activeMix());
     if (selection)
     {
         auto *layer = layerById(snapshot, document.selectedLayer);
@@ -1262,11 +1263,18 @@ void DesignSession::render(bool selection)
         chosen.mute = chosen.solo = false;
         snapshot.activeMix().layers = {chosen};
         snapshot.activeMix().duration = 0;
+        if (hostedStem)
+        {
+            snapshot.activeMix().masterEffects.clear();
+            snapshot.activeMix().hosted.slots.clear();
+            snapshot.activeMix().masterDb = 0;
+        }
         snapshot.renderSettings.first = 0;
         snapshot.renderSettings.last = -1;
     }
     startOutput(std::move(snapshot), false, outputFolder(),
                 document.activeTake.isNotEmpty() ? "take-render"
+                : hostedStem                     ? "track-stem-pre-master"
                 : selection                      ? "layer-render"
                                                  : "design-render");
 }

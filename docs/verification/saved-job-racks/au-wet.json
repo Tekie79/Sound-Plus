@@ -1,0 +1,79 @@
+{
+  "plugin": {
+    "name": "AUDelay",
+    "vendor": "Apple",
+    "version": "1.6.0",
+    "format": "AudioUnit",
+    "bundle": "/System/Library/Components/CoreAudio.component",
+    "auVersion": 2,
+    "category": "Effect",
+    "architecture": "arm64+x86_64",
+    "path": "AudioUnit:Effects/aufx,dely,appl",
+    "fingerprint": "3eda5d20dcd540eeaa4015267ca67e5bc8838197043125d955f70a95fb83aaa1",
+    "instrument": false,
+    "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"AUDelay\" format=\"AudioUnit\" category=\"Effect\" manufacturer=\"Apple\"\r\n        version=\"1.6.0\" file=\"AudioUnit:Effects/aufx,dely,appl\" uniqueId=\"64607a6d\"\r\n        isInstrument=\"0\" fileTime=\"0\" infoUpdateTime=\"1a1f764be23\" numInputs=\"2\"\r\n        numOutputs=\"2\" isShell=\"0\" hasARAExtension=\"0\" uid=\"64607a6d\"/>\r\n",
+    "id": "AudioUnit-AUDelay-60bc1b50-64607a6d",
+    "layouts": [
+      "mono-v1",
+      "stereo-v1",
+      "lcr-v1",
+      "quad-v1",
+      "5.0-v1",
+      "5.1-side-v1",
+      "5.1-rear-v1",
+      "7.1-v1",
+      "discrete-4-v1",
+      "discrete-8-v1",
+      "discrete-16-v1"
+    ],
+    "reason": ""
+  },
+  "parameters": [
+    {
+      "index": 0,
+      "name": "Dry/Wet Mix",
+      "id": "0",
+      "value": 1.0,
+      "default": 0.5,
+      "text": "50",
+      "steps": 2147483647
+    },
+    {
+      "index": 1,
+      "name": "Delay Time",
+      "id": "1",
+      "value": 0.00995,
+      "default": 0.499974995851517,
+      "text": "1",
+      "steps": 2147483647
+    },
+    {
+      "index": 2,
+      "name": "Feedback",
+      "id": "2",
+      "value": 0.5,
+      "default": 0.750250220298767,
+      "text": "50",
+      "steps": 2147483647
+    },
+    {
+      "index": 3,
+      "name": "Lowpass Cutoff Frequency",
+      "id": "3",
+      "value": 0.680127024650574,
+      "default": 0.680127024650574,
+      "text": "15000",
+      "steps": 2147483647
+    }
+  ],
+  "rate": 48000,
+  "channels": 2,
+  "frames": 8899,
+  "peakFrameLeft": 960,
+  "maxDifferenceFromDry": 0.0625,
+  "wetPeak": 0.05372706800699234,
+  "sha256": "13804332742d897c08ca535d018c21a4d19354c685b11ea2fbdec9cfee7657ac",
+  "passed": true,
+  "scope": "Production finite AUv2 processing with wet delay, generated impulses. Changed/nonzero delayed PCM verified, not a human listening or exact Apple algorithm oracle.",
+  "helperSha256": "9a90bd249ff87be34b32f7b7c46c5e286bb73adc474690a5e7f36b8fa84e4341"
+}

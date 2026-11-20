@@ -5,6 +5,7 @@
 #include "DesignControls.h"
 #include "PerformView.h"
 #include "SourcePoolView.h"
+#include "StockRackView.h"
 #include <map>
 namespace sp
 {
@@ -130,7 +131,33 @@ class DesignerView final : public juce::Component,
     IconButton inspect{"Show layer inspector", ActionIcon::inspector};
     ui::FadeShapeButton fadeInShape{"Fade-in shape", true}, fadeOutShape{"Fade-out shape", false};
     juce::Viewport canvasViewport, inspectorViewport;
-    juce::Component inspector;
+    struct InspectorSurface final : juce::Component
+    {
+        struct Section
+        {
+            juce::Rectangle<int> bounds;
+            bool open = false;
+        };
+        std::vector<Section> sections;
+        void paint(juce::Graphics &g) override
+        {
+            for (auto &section : sections)
+            {
+                auto bounds = section.bounds.toFloat();
+                g.setColour(ui::raised.withAlpha(section.open ? .38f : .18f));
+                g.fillRoundedRectangle(bounds, 8);
+                g.setColour(ui::line.withAlpha(section.open ? .8f : .5f));
+                g.drawRoundedRectangle(bounds.reduced(.5f), 8, 1);
+                g.setColour(ui::accent.withAlpha(section.open ? .7f : .22f));
+                g.fillRoundedRectangle(bounds.getX() + 3, bounds.getY() + 13, 2, 16, 1);
+                if (section.open)
+                {
+                    g.setColour(ui::line.withAlpha(.5f));
+                    g.drawHorizontalLine((int)bounds.getY() + 42, bounds.getX() + 14, bounds.getRight() - 14);
+                }
+            }
+        }
+    } inspector;
     juce::OwnedArray<juce::Component> controls;
     std::vector<std::function<void()>> refreshers;
     int inspectorY = 0;
@@ -156,7 +183,7 @@ class DesignerView final : public juce::Component,
     IconButton recover{"Recover autosave", ActionIcon::history},
         chooseFolder{"Choose permanent output folder", ActionIcon::folder};
     juce::Label title, info, status, position, outputInfo, meter;
-    juce::ComboBox candidates, rackTarget, effectChoice, channelMap, deviceRate, readyOutputs;
+    juce::ComboBox candidates, channelMap, deviceRate, readyOutputs;
     ui::TextActionButton layoutControl{"Design · Legacy stereo"}, routingButton{"Routing / Spatial Panner"},
         monitorControl{"Monitor · Stereo"};
     IconButton channelDetail{"Per-channel waveforms", ActionIcon::layers};
@@ -168,19 +195,10 @@ class DesignerView final : public juce::Component,
     std::unique_ptr<juce::Component> makeRoutingPanel();
     void channelPopup();
     void monitorPopup();
-    IconButton addEffect{"Add stock insert", ActionIcon::processing},
-        removeEffect{"Remove insert", ActionIcon::trash}, effectUp{"Move insert up", ActionIcon::up},
-        effectDown{"Move insert down", ActionIcon::down};
-    juce::ToggleButton effectBypass{"Bypass insert"}, effectLock{"Lock insert for variations"};
-    std::array<juce::Slider, 4> effectValues;
-    std::array<juce::Label, 4> effectLabels;
-    std::array<IconButton, 4> effectParameterLocks{{{"Lock insert parameter 1", ActionIcon::lock},
-                                                    {"Lock insert parameter 2", ActionIcon::lock},
-                                                    {"Lock insert parameter 3", ActionIcon::lock},
-                                                    {"Lock insert parameter 4", ActionIcon::lock}}};
+    std::unique_ptr<StockRackView> trackRack, masterRack;
     juce::Slider monitor;
     juce::Label sourceInfo, layerName, pitchInfo;
-    juce::String candidateSignature, effectSignature, lastComparison, comparisonDocument;
+    juce::String candidateSignature, lastComparison, comparisonDocument;
     bool clipHeld = false;
     float peak = 0;
     std::shared_ptr<WaveformPool> peakPool;
@@ -203,8 +221,6 @@ class DesignerView final : public juce::Component,
     void variationPopup();
     void renderPopup();
     void renameVariation();
-    std::vector<StockEffect> *rack();
-    void changeEffect(const juce::String &, std::function<void(std::vector<StockEffect> &)>);
     void updateEffects();
     juce::String waveformKey(const Asset &) const;
 };

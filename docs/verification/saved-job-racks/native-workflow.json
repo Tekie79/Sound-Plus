@@ -1,0 +1,57 @@
+{
+  "utc": "2026-11-20T05:33:41.548511+00:00",
+  "catalog": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/saved-job-racks/native-qa/catalog-frozen",
+  "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/saved-job-racks/native-qa/Native insert QA.soundplus",
+  "revision": 7,
+  "byteIdenticalBinaries": {
+    "MacOS/SoundPlus": "ad2986ab2c1692fabc17df00ed95703a4de31456e9f30a5f42713f6d6e3a7663",
+    "Helpers/SoundPlusAudio": "6655323772405ef868b6aa02234e9ebc51b52c70ceaf6586949dd569db4e4a27",
+    "Helpers/SoundPlusPlugin": "9a90bd249ff87be34b32f7b7c46c5e286bb73adc474690a5e7f36b8fa84e4341",
+    "Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "42457642c9db4295047ff26deacd3bf109da6bac10e91b3b8a9e6f089e95837c",
+    "Helpers/SoundPlusAI": "481314b956fab836b83757075d8d868f001b3b03d7ae88ed6ffdea1e48a37201"
+  },
+  "windowChecks": {
+    "minimumNativeScreenshot": "1040 x 680",
+    "normalSavedWindowBounds": "184 109 1360 860 (1360 x 892 including native title bar)",
+    "browserVisible": true,
+    "inspectorVisible": true,
+    "observations": [
+      "Toolbar/track/monitor controls fit; inner/outer inspector scrolls, without overlapping cards",
+      "Layer/Mix/Track and stock/external parameter disclosures retain On/Off state and change only their section",
+      "Keyboard focus reaches track header and remains bounded",
+      "Native Play/Stop and live AU normalized parameter edit retain transport",
+      "Saved AU native editor value recalls in editor; editor can remain owned by A while track B is selected",
+      "Native editor close returns focus: Command-S works without another pointer activation"
+    ],
+    "scaling": "Current built-in Retina desktop mode. Alternate display scaling modes were not changed or separately qualified."
+  },
+  "editorChecks": {
+    "AUv2": "Actual Apple Delay native editor, wet value 25 then generic 30 then native 35 percent; original owner retained after selecting Dry reference, no feedback leak. Save/Open and native Undo/Redo observed.",
+    "VST3": "Owned QA effect has no native editor; isolated JUCE generic editor opened, gain normalized .25 to .35 applied on close.",
+    "policy": "Separate state-editing instance, applies on close; not the persistent audible native instance."
+  },
+  "savedTrackValues": [
+    {
+      "name": "AU delay source",
+      "externalSlots": 1
+    },
+    {
+      "name": "Dry reference",
+      "externalSlots": 0
+    }
+  ],
+  "nativePresetFileDialogs": "Not separately exercised; controls implemented, state/JSON behavior covered separately.",
+  "screenshots": {
+    "au-native-editor.jpg": "a076d754a768aa4a74bcd164286a9b238fdcda70a08560e96aae3e7e3d13aa54",
+    "designer-details.jpg": "90c711dc3aa646f964042bd65ae468ee3311f4d0c25eab9da10d5a21437c0070",
+    "designer-minimum.jpg": "790832b7d4348804782e6d31efe3f89eee13f04426260bf177c0a43ad8ade796",
+    "details-expanded.jpg": "c4f7c2edd8d4fc9d32ff4f4af7607c8a4ecd6b8d3d48c9fbdf141ebc001f45d5",
+    "independent-racks.jpg": "54623bf35b28ca73c978fda2af2b1a437d8fc70422da45ef87c28fefc40ac91c",
+    "library-minimum.jpg": "e34c39fdc1b87b9271e9976b21e0cbc4c9c7c6c476a6cc53239b630b594dc64a",
+    "parameters-minimum.jpg": "12267d129b0b4c8b026172587c4caa6e64ebb12d5ea25f7b0446431f5f68ed11",
+    "r25-copy-ready.jpg": "0c0867a9445917d035267329d07ff80fa312a278e74ebb5c620e406e146bc160",
+    "r25-raw-recovered.jpg": "926168a8f9fe27f14b8262afd66a068a42461c41334cbd1f05aaa9100d1eb798",
+    "vst3-generic-editor.jpg": "bd4573b93b101af7dbd62b7311f0905d48f7db158dd38de3f7790689353a741f"
+  },
+  "qualification": "Native pointer/key, visual and finalized-file checks. No human listening, physical surround or receiving-app acceptance."
+}

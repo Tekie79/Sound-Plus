@@ -1,0 +1,18 @@
+[
+  {
+    "mutation": "tick summary",
+    "rejected": true
+  },
+  {
+    "mutation": "search publication",
+    "rejected": true
+  },
+  {
+    "mutation": "header delta",
+    "rejected": true
+  },
+  {
+    "mutation": "waveform summary",
+    "rejected": true
+  }
+]

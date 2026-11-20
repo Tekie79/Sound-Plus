@@ -12,7 +12,7 @@ Normalization and split delivery options are separate from plugin parameter Undo
 
 Processed float PCM is authoritative. Meter/normalization/encoding/split/copy derive from that one stage without executing the plugin again. Copy and receipts publish atomically with unique durable names after verification. A preview's processed artifact/hash, state and receipt preserve lineage, not a promise of identical future arbitrary-plugin runs. Later missing/changed plugin blocks a new run but leaves finalized WAVs usable as ordinary indexed/pool/take sources. Print uses the interleaved multichannel master, preserving masks, role order and LFE. Split member names reflect ordered roles.
 
-Platform qualification is macOS arm64/JUCE8.0.6 only. Fixture compatibility is separate from installed vendor compatibility, human listening, physical surround and native receiving-app persistence. Live racks, chains, vendor editors, MIDI/instruments, sidechains, architecture bridges and plugin automation are deferred.
+Platform qualification is macOS arm64/JUCE8.0.6 only. Fixture compatibility is separate from installed vendor compatibility, human listening, physical surround and native receiving-app persistence. This paragraph describes the original v1.6 boundary. The later [isolated insert foundations](PLUGIN_HOSTING_CONTRACT.md) add VST3/AU processing and separate racks with explicit remaining limits; MIDI/instruments, sidechains and architecture bridges remain unavailable.
 
 ## v1.6.1 reliability refinements
 
@@ -29,3 +29,5 @@ Process opening now automatically reconciles standard system/user VST3 folders a
 ## Saved-job authority (R25)
 
 Open uses the same background raw-first verification policy as operation recovery. A missing/corrupt normalized derivative falls back to verified raw from the same pass while retaining requested normalization; missing/corrupt raw prevents Ready. Saved delivery receipts never restore readiness: a fresh verified atomic copy is required. Historical media are not removed. Cancellation/context epochs gate adoption.
+
+The post-R25 extension also accepts resolved AudioUnit identities in finite jobs. Discovery uses system registration and asynchronous instantiation inside the helper; AUv3 runtime qualification and required VST2 support remain open. See the hosting contract for current scope rather than assuming every discovered class is usable.

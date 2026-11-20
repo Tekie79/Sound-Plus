@@ -2,6 +2,9 @@
 #include "DesignSession.h"
 #include "LibraryService.h"
 #include "LibraryView.h"
+#include "StockRackView.h"
+#include "DesignLive.h"
+#include "Performance.h"
 #include <iostream>
 #include <cmath>
 #include <CoreFoundation/CoreFoundation.h>
@@ -75,6 +78,15 @@ File wave(const File &root, ChannelLayout layout, int frames = 4099, int rate = 
         if (2048 + role < frames)
             b.setSample(physical, 2048 + role, (float)(role + 1) / 64);
     }
+    if (root.getFileName() == "native-source")
+        for (int c = 0; c < layout.size(); ++c)
+            for (int n = 0; n < frames; ++n)
+            {
+                double t = (double)n / rate;
+                b.setSample(c, n,
+                            (float)(.15 * std::sin(2 * MathConstants<double>::pi * (c ? 330 : 220) * t) *
+                                    (.3 + .7 * std::pow(std::sin(MathConstants<double>::pi * t / 5), 2))));
+            }
     require(w->writeFromAudioSampleBuffer(b, 0, frames), "Generated role-tag impulses");
     return file;
 }
@@ -153,6 +165,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     auto root = base.getChildFile(Uuid().toString());
     root.createDirectory();
     auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
+    setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
     PluginWorker child(helper);
     PluginCatalog catalog(root.getChildFile("plugins.json"));
     auto cancelled = [] { return false; };
@@ -224,7 +237,14 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             {
                 auto work = root.getChildFile("r25-" + l.id);
                 PluginSession producer(helper, work);
-                producer.input = input;
+                auto producerInput = input;
+                if (l.id == "stereo-v1")
+                {
+                    auto longSource = selection(wave(work.getChildFile("native-source"), l, 240000));
+                    producerInput =
+                        stagePluginInput(longSource, work.getChildFile("long-input.wav"), cancelled);
+                }
+                producer.input = producerInput;
                 producer.settings = result["job"].clone();
                 parameter(producer.settings, 5, 1. / 6.);
                 producer.preview();
@@ -266,15 +286,16 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                                            work.getChildFile("recall-" + String(state)));
                     recalled.open(savedNormalized);
                     idle(recalled);
-                    require(recalled.input["sha256"] == input["sha256"] && recalled.settings.isObject() &&
-                                recalled.deliveryNormalize && !recalled.receipt.isObject(),
+                    require(recalled.input["sha256"] == producerInput["sha256"] &&
+                                recalled.settings.isObject() && recalled.deliveryNormalize &&
+                                !recalled.receipt.isObject(),
                             "R25 retains settings/request, never trusts a saved delivery receipt");
                     bool usable = state == 0 || state == 3 || state == 4;
                     require(recalled.ready() == usable, "R25 saved normalized authority matrix");
                     if (usable)
                     {
                         require(recalled.result["generation"] == passGeneration &&
-                                    recalled.result["job"]["input"]["sha256"] == input["sha256"] &&
+                                    recalled.result["job"]["input"]["sha256"] == producerInput["sha256"] &&
                                     recalled.result["frames"] == completed["frames"] &&
                                     recalled.result["rate"] == completed["rate"] &&
                                     JSON::toString(recalled.result["layout"]) ==
@@ -318,7 +339,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 raced.open(savedNormalized);
                 raced.open(preparedJob);
                 idle(raced);
-                require(!raced.ready() && raced.input["sha256"] == input["sha256"],
+                require(!raced.ready() && raced.input["sha256"] == producerInput["sha256"],
                         "R25 rapid A to B Open adopts only prepared B, never stale completed A");
             }
             PluginSession recovery(helper, root.getChildFile("recovery-" + l.id));
@@ -346,6 +367,77 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             require(root.findChildFiles(File::findFiles, false, "*-request.json").size() == renderCount,
                     "R21 fail/retry never reruns effect");
         }
+        {
+            HostedRack rack;
+            rack.slots.push_back({Uuid().toString(), JSON::toString(result["job"], true), false});
+            auto dry = read(File(input["path"].toString()));
+            HostedRackClient live(rack, l, 48000, cancelled);
+            require(live.latency() == 37, "Persistent rack reports actual compensatable latency");
+            AudioBuffer<float> delayed(l.size(), dry.getNumSamples() + 37);
+            delayed.clear();
+            for (int at = 0; at < delayed.getNumSamples(); at += 127)
+            {
+                int n = std::min(127, delayed.getNumSamples() - at);
+                AudioBuffer<float> b(l.size(), n);
+                b.clear();
+                for (int c = 0; c < l.size(); ++c)
+                    if (at < dry.getNumSamples())
+                        b.copyFrom(c, 0, dry, c, at, std::min(n, dry.getNumSamples() - at));
+                live.process(b, n);
+                for (int c = 0; c < l.size(); ++c)
+                    delayed.copyFrom(c, at, b, c, 0, n);
+            }
+            compare(dry, delayed, -.5, 37);
+            DesignDocument design;
+            design.original.layout = l;
+            design.renderSettings.layout = "same";
+            design.original.masterDb = 0;
+            auto layer = makeDesignLayer(i.source, 0, -1, true);
+            initialiseRouting(layer, l);
+            design.original.layers = {layer};
+            auto second = layer;
+            second.id = Uuid().toString();
+            design.original.layers.push_back(second);
+            design.selectedLayer = layer.id;
+            DesignGraph baseline(design);
+            AudioBuffer<float> expected(l.size(), 4099);
+            baseline.render(expected, 0, 4099);
+            design.original.layers[0].hosted = rack;
+            auto master = result["job"].clone();
+            parameter(master, 1, 0);
+            parameter(master, 2, 23. / 256.);
+            design.original.hosted.slots.push_back({Uuid().toString(), JSON::toString(master, true), false});
+            auto recalled = designFromJson(designToJson(design));
+            require((int)designToJson(recalled)["version"] == 8 &&
+                        recalled.original.layers[0].hosted.id == rack.id &&
+                        recalled.original.hosted.slots[0].id == design.original.hosted.slots[0].id,
+                    "Hosted graph persists independently owned opaque slots in version 8");
+            DesignGraph compensated(recalled);
+            AudioBuffer<float> actual(l.size(), 4099);
+            compensated.render(actual, 0, 4099);
+            compare(expected, actual, .125);
+            require(compensated.position() == 4099,
+                    "PDC strips common startup including master exactly once");
+            DesignGraph streaming(recalled);
+            AudioBuffer<float> before(l.size(), 1024);
+            streaming.render(before, 0, 1024);
+            auto changed = recalled;
+            auto settings = JSON::parse(changed.original.layers[0].hosted.slots[0].settings);
+            parameter(settings, 0, .5);
+            changed.original.layers[0].hosted.slots[0].settings = JSON::toString(settings, true);
+            require(designStructure(changed) == designStructure(recalled),
+                    "Hosted parameter edits keep the same graph topology");
+            streaming.updateParameters(designParameters(changed));
+            AudioBuffer<float> after(l.size(), 3075);
+            streaming.render(after, 0, 3075);
+            require(after.getMagnitude(0, after.getNumSamples()) < 1e-6,
+                    "Persistent host parameter updates audibly reconcile without replacing the chain");
+
+            recalled.original.layers[0].hosted.bypass = true;
+            DesignGraph bypassed(recalled);
+            bypassed.render(actual, 0, 4099);
+            compare(expected, actual, .5);
+        }
         if (l.id == "5.1-side-v1")
         {
             retainedInput = input;
@@ -354,6 +446,289 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             auto bad = request(stereoPlugin, input, root.getChildFile("incompatible.wav"));
             fails([&] { child.call(bad, root, 10000); }, "Stereo-only plugin refuses 5.1 without downmix");
         }
+    }
+    {
+        auto settings = retainedResult["job"].clone();
+        parameter(settings, 2, 0);
+        parameter(settings, 1, 0);
+        parameter(settings, 0, .25);
+        auto other = settings.clone();
+        parameter(other, 0, .5);
+        parameter(other, 6, .75);
+        HostedRack a;
+        a.slots = {{Uuid().toString(), JSON::toString(settings, true), false},
+                   {Uuid().toString(), JSON::toString(other, true), false}};
+        auto b = hostedRackFromJson(hostedRackJson(a));
+        std::reverse(b.slots.begin(), b.slots.end());
+        HostedRackClient first(a, channelLayout("stereo-v1"), 48000, cancelled),
+            second(b, channelLayout("stereo-v1"), 48000, cancelled);
+        AudioBuffer<float> x(2, 127), y(2, 127);
+        x.clear();
+        y.clear();
+        x.setSample(0, 0, .25);
+        y.setSample(0, 0, .25);
+        first.process(x, 127);
+        second.process(y, 127);
+        require(std::abs(x.getSample(0, 0) - y.getSample(0, 0) - .25f) < 1e-6,
+                "Two noncommuting persistent effects change output on reorder after serialization");
+        for (double behavior : {3. / 6., 4. / 6.})
+        {
+            auto bad = settings.clone();
+            parameter(bad, 5, behavior);
+            HostedRack broken;
+            broken.slots = {{Uuid().toString(), JSON::toString(bad, true), false}};
+            auto start = Time::getMillisecondCounterHiRes();
+            fails(
+                [&]
+                {
+                    HostedRackClient client(broken, channelLayout("stereo-v1"), 48000, cancelled);
+                    AudioBuffer<float> block(2, 127);
+                    block.clear();
+                    client.process(block, 127);
+                },
+                "Persistent crash/hang fails closed rather than replaying stale output");
+            require(Time::getMillisecondCounterHiRes() - start < 3000,
+                    "Persistent crash/hang returns within supervision bound");
+        }
+        {
+            auto log = root.getChildFile("continuous-host-service.log");
+            setenv("SOUNDPLUS_FIXTURE_PREPARE_LOG", log.getFullPathName().toRawUTF8(), 1);
+            HostedRack continuous;
+            continuous.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+            HostedRackClient retained(continuous, channelLayout("stereo-v1"), 48000, cancelled);
+            Array<var> rows;
+            std::vector<double> times;
+            for (int iteration = 0; iteration < 64; ++iteration)
+            {
+                auto next = JSON::parse(continuous.slots[0].settings);
+                double gain = .1 + .005 * iteration;
+                parameter(next, 0, gain);
+                continuous.slots[0].settings = JSON::toString(next, true);
+                auto start = Time::getMillisecondCounterHiRes();
+                retained.update(continuous);
+                AudioBuffer<float> b(2, 127);
+                for (int c = 0; c < 2; ++c)
+                    FloatVectorOperations::fill(b.getWritePointer(c), .25f, 127);
+                retained.process(b, 127);
+                double ms = Time::getMillisecondCounterHiRes() - start;
+                require(std::abs(b.getSample(0, 0) - .5 * gain) < 1e-6,
+                        "Continuous hosted parameter edit reaches actual persistent PCM");
+                auto row = obj();
+                put(row, "iteration", iteration);
+                put(row, "normalizedGain", gain);
+                put(row, "ms", ms);
+                put(row, "processedFrames", (iteration + 1) * 127);
+                rows.add(row);
+                times.push_back(ms);
+            }
+            unsetenv("SOUNDPLUS_FIXTURE_PREPARE_LOG");
+            auto pids = StringArray::fromLines(log.loadFileAsString());
+            pids.removeEmptyStrings();
+            pids.removeDuplicates(false);
+            require(pids.size() == 1,
+                    "Continuous external edits never starve adoption with replacement instances");
+            std::sort(times.begin(), times.end());
+            auto record = obj();
+            put(record, "rows", rows);
+            put(record, "p50Ms", times[31]);
+            put(record, "p95Ms", times[60]);
+            put(record, "p99Ms", times[63]);
+            put(record, "estimator", "nearest-rank");
+            put(record, "serviceInstances", pids.size());
+            saveProcessingJson(root.getChildFile("continuous-host-controls.json"), record);
+        }
+        auto damaged = settings.clone();
+        put(damaged, "stateHash", "not-the-state");
+        HostedRack badState;
+        badState.slots = {{Uuid().toString(), JSON::toString(damaged, true), false}};
+        fails([&] { HostedRackClient client(badState, channelLayout("stereo-v1"), 48000, cancelled); },
+              "Persistent host rejects corrupt opaque state");
+    }
+    {
+        auto source = selection(wave(root.getChildFile("host-render-source"), channelLayout("stereo-v1")));
+        DesignDocument design;
+        design.original.layout = channelLayout("stereo-v1");
+        design.original.masterDb = 0;
+        auto layer = makeDesignLayer(source.source, 0, -1, true);
+        initialiseRouting(layer, design.original.layout);
+        auto settings = retainedResult["job"].clone();
+        parameter(settings, 5, 1. / 6.);
+        parameter(settings, 2, 0);
+        layer.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        design.original.layers = {layer};
+        design.selectedLayer = layer.id;
+        DesignRenderSettings options;
+        options.normalize = true;
+        options.layout = "same";
+        options.bits = 32;
+        options.tailSeconds = 0;
+        auto prepareLog = root.getChildFile("single-hosted-pass.log");
+        setenv("SOUNDPLUS_FIXTURE_PREPARE_LOG", prepareLog.getFullPathName().toRawUTF8(), 1);
+        auto output =
+            renderDesign(design, root.getChildFile("hosted-render"), options, cancelled, [](double) {});
+        unsetenv("SOUNDPLUS_FIXTURE_PREPARE_LOG");
+        auto preparations = StringArray::fromLines(prepareLog.loadFileAsString());
+        preparations.removeEmptyStrings();
+        preparations.removeDuplicates(false);
+        require(preparations.size() == 1, "Nondeterministic normalized Designer render runs exactly one "
+                                          "persistent service (adapter preparation calls may repeat)");
+        auto rawFile = File(output.sourceProvenance["rawPass"].toString());
+        require(rawFile.existsAsFile() &&
+                    processingHash(rawFile) == output.sourceProvenance["rawSha256"].toString(),
+                "Designer retains completed raw float authority and graph provenance");
+        auto raw = read(rawFile);
+        auto presented = read(File(output.path));
+        compare(raw, presented, std::pow(10., -1. / 20) / raw.getMagnitude(0, raw.getNumSamples()));
+        design.outputs.push_back(output);
+        design.original.layers[0].hosted.slots.clear();
+        auto recalled = designFromJson(designToJson(design));
+        require(recalled.outputs[0].sourceProvenance["rawSha256"] == output.sourceProvenance["rawSha256"],
+                "Plugin-aware render authority survives document Save/Open after removing live inserts");
+    }
+    {
+        auto selected = selection(wave(root.getChildFile("host-tail-source"), channelLayout("mono-v1"), 64));
+        DesignDocument d;
+        d.original.layout = channelLayout("mono-v1");
+        d.original.masterDb = 0;
+        auto layer = makeDesignLayer(selected.source, 0, -1, true);
+        initialiseRouting(layer, d.original.layout);
+        d.original.layers = {layer};
+        DesignGraph reference(d);
+        AudioBuffer<float> dry(1, 64);
+        reference.render(dry, 0, 64);
+        auto settings = retainedResult["job"].clone();
+        parameter(settings, 1, 0);
+        parameter(settings, 3, 1);
+        d.original.layers[0].hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        DesignGraph full(d);
+        AudioBuffer<float> tail(1, 1164);
+        full.render(tail, 0, 1164);
+        compare(dry, tail, .5, 1024);
+        DesignGraph accurate(d);
+        accurate.seek(900, cancelled, -1);
+        AudioBuffer<float> replay(1, 264);
+        accurate.render(replay, 0, 264);
+        for (int n = 0; n < 264; ++n)
+            require(std::abs(replay.getSample(0, n) - tail.getSample(0, n + 900)) < 1e-6,
+                    "Accurate hosted seek rebuilds continuous delayed history");
+        DesignGraph reset(d);
+        reset.seek(900, cancelled, 0);
+        reset.render(replay, 0, 264);
+        // VST3 normalized float round-trip can leave sub-1e-7 bias; compare against
+        // that numerical floor, well below the independently verified delayed impulse.
+        require(replay.getMagnitude(0, 264) < 1e-7,
+                "Explicit zero-pre-roll seek starts with zero effect history, not PDC startup residue: " +
+                    String(replay.getMagnitude(0, 264), 12));
+    }
+    {
+        DesignDocument d;
+        d.original.layout = {};
+        auto source = selection(wave(root.getChildFile("large-state-source"), channelLayout("mono-v1")));
+        auto layer = makeDesignLayer(source.source, 0, -1, true);
+        auto settings = retainedResult["job"].clone();
+        put(settings, "state", String::repeatedString("A", 128 * 1024));
+        layer.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        d.original.layers = {layer};
+        auto controls = designParameters(d);
+        auto bytes = JSON::toString(controls, true).getNumBytesAsUTF8();
+        require(bytes < 16384 && !JSON::toString(controls, true).contains(String::repeatedString("A", 128)),
+                "Live control messages omit opaque plugin state and bundle descriptors");
+        auto changed = d;
+        applyDesignParameters(changed, controls);
+        require(changed.original.layers[0].hosted.slots[0].settings ==
+                    d.original.layers[0].hosted.slots[0].settings,
+                "Compact controls retain opaque authority unchanged");
+        auto stale = controls.clone();
+        auto staleSlot = stale["layers"][0]["hostedRack"]["slots"][0];
+        put(staleSlot, "id", "another-slot");
+        fails([&] { applyDesignParameters(changed, stale); },
+              "Compact controls reject stale slot identity transactionally");
+    }
+    if (std::getenv("SOUNDPLUS_QUALIFY_AU"))
+    {
+        auto command = obj();
+        put(command, "mode", "enumerate-au");
+        auto registry = child.call(command, root.getChildFile("au-qualification"), 30000);
+        var candidate;
+        if (auto *entries = registry["candidates"].getArray())
+            for (auto &v : *entries)
+                if (v["path"].toString() == "AudioUnit:Effects/aufx,dely,appl")
+                    candidate = v.clone();
+        require(candidate.isObject() && candidate["error"].toString().isEmpty(),
+                "Registered Apple AUDelay resolves to a verifiable native bundle");
+        put(candidate, "mode", "scan");
+        auto scanned = child.call(candidate, root.getChildFile("au-qualification"), 20000);
+        auto au = scanned["plugins"][0];
+        require(au["reason"].toString().isEmpty(), "Apple AUv2 discovery/instantiation succeeds");
+        for (auto id : {"mono-v1", "stereo-v1", "5.1-side-v1", "5.1-rear-v1"})
+        {
+            auto l = channelLayout(id);
+            auto selected = selection(wave(root.getChildFile("au-qualification/source"), l));
+            auto input = stagePluginInput(
+                selected, root.getChildFile("au-qualification/" + l.id + "-input.wav"), cancelled);
+            auto job = request(au, input, root.getChildFile("au-qualification/" + l.id + "-processed.wav"));
+            auto describe = job.clone();
+            put(describe, "mode", "describe");
+            auto state = child.call(describe, root.getChildFile("au-qualification"), 20000);
+            for (auto key : {"state", "stateHash", "parameters", "program"})
+                put(job, key, state[key]);
+            parameter(job, 0, 0);
+            auto processed = child.call(job, root.getChildFile("au-qualification"), 20000);
+            compare(read(File(input["path"].toString())), read(File(processed["path"].toString())));
+            HostedRack rack;
+            rack.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+            auto recalled = hostedRackFromJson(hostedRackJson(rack));
+            HostedRackClient client(recalled, l, 48000, cancelled);
+            auto original = read(File(input["path"].toString()));
+            AudioBuffer<float> actual(l.size(), 4099);
+            actual.clear();
+            for (int at = 0; at < 4099; at += 127)
+            {
+                int n = std::min(127, 4099 - at);
+                AudioBuffer<float> block(l.size(), n);
+                for (int c = 0; c < l.size(); ++c)
+                    block.copyFrom(c, 0, original, c, at, n);
+                client.process(block, n);
+                for (int c = 0; c < l.size(); ++c)
+                    actual.copyFrom(c, at, block, c, 0, n);
+            }
+            compare(original, actual);
+            if (l.id == "stereo-v1")
+            {
+                DesignDocument d;
+                d.name = "Native insert QA";
+                d.original.layout = l;
+                d.original.masterDb = -12;
+                d.renderSettings.layout = "same";
+                auto nativeSource = selection(wave(root.getChildFile("native-source"), l, 240000));
+                auto layer = makeDesignLayer(nativeSource.source, 0, -1, true);
+                initialiseRouting(layer, l);
+                layer.name = "AU delay source";
+                layer.hosted = recalled;
+                auto dry = layer;
+                dry.id = Uuid().toString();
+                dry.name = "Dry reference";
+                dry.hosted = HostedRack();
+                layer.effects = {makeStockEffect("filter")};
+                d.original.layers = {layer, dry};
+                auto master = retainedResult["job"].clone();
+                parameter(master, 1, 0);
+                parameter(master, 2, 0);
+                d.original.hosted.slots = {{Uuid().toString(), JSON::toString(master, true), false}};
+                d.original.masterEffects = {makeStockEffect("gain")};
+                d.selectedLayer = layer.id;
+                auto file = root.getChildFile("Native insert QA.soundplus");
+                saveDesignAtomic(file, d);
+            }
+        }
+        auto record = obj();
+        put(record, "plugin", au);
+        put(record, "passed", true);
+        put(record, "testedLayouts", var(Array<var>{"mono-v1", "stereo-v1", "5.1-side-v1", "5.1-rear-v1"}));
+        put(record, "scope",
+            "Apple AUv2 registration, exact buses, state/parameters, persistent dry PCM, finite render; not "
+            "AUv3 or human listening");
+        saveProcessingJson(root.getChildFile("au-qualification.json"), record);
     }
     for (int n : {4, 8, 16})
     {
@@ -578,7 +953,136 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 "Automatic discovery retains custom root plus both defaults");
     }
     // Actual production component and session commands, generic slider callbacks and history.
+    setenv("SOUNDPLUS_FIXTURE_RELEASE_SLEEP_MS", "250", 1);
     AudioClient audio(app);
+    audio.gain(0);
+    if (root.getChildFile("Native insert QA.soundplus").existsAsFile())
+    {
+        auto design = loadDesign(root.getChildFile("Native insert QA.soundplus"));
+        auto preview = root.getChildFile("live-host-device.soundplus");
+        saveDesignAtomic(preview, design);
+        auto gen = audio.playDesign("design:" + design.id, preview, 0);
+        auto deadline = Time::getMillisecondCounter() + 10000;
+        while (!((bool)audio.status()["playing"] &&
+                 (uint64_t)(int64_t)audio.status()["playGeneration"] == gen) &&
+               Time::getMillisecondCounter() < deadline)
+            pump(10);
+        auto start = audio.status();
+        require((bool)start["playing"], "Actual device adopts the persistent two-rack design");
+        auto preparations = start["preparationsRequested"];
+        auto before = (int64_t)start["sourceSample"];
+        Array<var> rows;
+        uint64_t sequence = 0;
+        for (int i = 0; i < 12; ++i)
+        {
+            auto state = JSON::parse(design.original.hosted.slots[0].settings);
+            parameter(state, 0, .2 + .01 * i);
+            design.original.hosted.slots[0].settings = JSON::toString(state, true);
+            sequence = audio.updateDesign(design, gen, monotonicMs());
+            pump(35);
+            auto row = audio.status();
+            rows.add(row);
+            require((bool)row["playing"] && row["error"].toString().isEmpty() &&
+                        row["preparationsRequested"] == preparations,
+                    "Sustained live controls retain the actual device graph without replacement requests");
+        }
+        deadline = Time::getMillisecondCounter() + 3000;
+        while ((uint64_t)(int64_t)audio.status()["heardEdit"] < sequence &&
+               Time::getMillisecondCounter() < deadline)
+            pump(10);
+        auto adopted = audio.status();
+        require((int64_t)adopted["sourceSample"] > before &&
+                    (uint64_t)(int64_t)adopted["heardEdit"] >= sequence,
+                "Actual device clock advances and consumes latest hosted controls");
+        auto seek = audio.playDesign("design:" + design.id, preview, 24000, {}, "seek");
+        auto latest = JSON::parse(design.original.hosted.slots[0].settings);
+        parameter(latest, 0, .42);
+        design.original.hosted.slots[0].settings = JSON::toString(latest, true);
+        auto pending = audio.updateDesign(design, seek, monotonicMs());
+        deadline = Time::getMillisecondCounter() + 10000;
+        while (!((uint64_t)(int64_t)audio.status()["playGeneration"] == seek &&
+                 (uint64_t)(int64_t)audio.status()["heardEdit"] >= pending) &&
+               Time::getMillisecondCounter() < deadline)
+            pump(10);
+        auto end = audio.status();
+        require((bool)end["playing"] && end["error"].toString().isEmpty() &&
+                    (uint64_t)(int64_t)end["playGeneration"] == seek &&
+                    (uint64_t)(int64_t)end["heardEdit"] >= pending,
+                "Pending hosted seek reconciles latest compact parameters into the adopted generation");
+        auto evidence = obj();
+        put(evidence, "start", start);
+        put(evidence, "continuousRows", rows);
+        put(evidence, "adopted", adopted);
+        put(evidence, "pendingSeek", end);
+        put(evidence, "lastControlSequence", (int64_t)sequence);
+        put(evidence, "pendingSequence", (int64_t)pending);
+        saveProcessingJson(root.getChildFile("hosted-device.json"), evidence);
+        require((int64_t)end["underruns"] == 0, "Bounded actual hosted playback reports no underruns");
+        audio.stop();
+        pump(80);
+    }
+    unsetenv("SOUNDPLUS_FIXTURE_RELEASE_SLEEP_MS");
+    {
+        DesignSessionServices services;
+        services.automaticRecovery = false;
+        services.timers = false;
+        services.status = [] { return obj(); };
+        services.stop = [] {};
+        services.parameters = [](const auto &, auto, auto) {};
+        DesignSession rackSession(root.getChildFile("racks/catalog.sqlite"), services);
+        auto &mix = rackSession.document.original;
+        mix.layout = {};
+        mix.layers = {makeDesignLayer(
+            selection(wave(root.getChildFile("rack-source"), channelLayout("mono-v1"))).source, 0, -1, true)};
+        auto second = mix.layers.front();
+        second.id = Uuid().toString();
+        mix.layers.push_back(second);
+        auto firstId = mix.layers[0].id, secondId = mix.layers[1].id;
+        StockRackView track(rackSession, false), master(rackSession, true);
+        track.bind(firstId);
+        master.bind({});
+        auto originalOwner = track.owner;
+        track.bind(secondId);
+        track.append(originalOwner, "gain");
+        require(rackSession.document.original.layers[0].effects.size() == 1 &&
+                    rackSession.document.original.layers[1].effects.empty(),
+                "Rack delayed add retains original track owner after selection changes");
+        master.append(master.owner, "delay");
+        require(rackSession.document.original.masterEffects.size() == 1 &&
+                    rackSession.document.original.layers[0].effects.size() == 1,
+                "Dedicated master rack does not follow selected track");
+        track.bind(firstId);
+        track.setParametersExpanded(true);
+        track.values[0].setValue(-12, sendNotificationSync);
+        require(std::abs(rackSession.document.original.layers[0].effects[0].parameters[0] + 12) < 1e-8 &&
+                    rackSession.document.original.masterEffects[0].type == "delay",
+                "Actual track parameter control cannot edit master rack");
+        rackSession.undo();
+        require(rackSession.document.original.layers[0].effects[0].parameters[0] == 0,
+                "Independent rack parameter edit supports Undo");
+        rackSession.redo();
+        require(std::abs(rackSession.document.original.layers[0].effects[0].parameters[0] + 12) < 1e-8,
+                "Independent rack parameter edit supports Redo");
+        auto recalled = designFromJson(designToJson(rackSession.document));
+        require(recalled.original.masterEffects[0].id == rackSession.document.original.masterEffects[0].id &&
+                    recalled.original.layers[0].effects[0].id ==
+                        rackSession.document.original.layers[0].effects[0].id,
+                "Separate rack owner/slot identity survives production serialization");
+        rackSession.newDesign();
+        auto transitionEnd = Time::getMillisecondCounter() + 3000;
+        while (rackSession.transitionPending() && Time::getMillisecondCounter() < transitionEnd)
+            pump(5);
+        require(!rackSession.transitionPending(), "Rack test document transition completes");
+        track.append(originalOwner, "reverb");
+        require(rackSession.document.original.layers.empty() &&
+                    rackSession.document.original.masterEffects.empty(),
+                "Late rack chooser from previous document cannot adopt");
+        track.setSize(306, 280);
+        master.setSize(306, 280);
+        require(track.slots.getRight() <= 306 && master.slots.getRight() <= 306,
+                "Independent compact rack controls remain within inspector width");
+    }
+
     auto pool = std::make_shared<WaveformPool>(root.getChildFile("waves"));
     // R22: identical staged silence, distinct original paths/ranges/physical selections.
     {

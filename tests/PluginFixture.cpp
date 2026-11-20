@@ -1,9 +1,10 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <cstdlib>
 #include <cmath>
+#include <unistd.h>
 class Fixture final : public juce::AudioProcessor
 {
-    juce::AudioParameterFloat *gain, *latency, *creative, *tail;
+    juce::AudioParameterFloat *gain, *latency, *creative, *tail, *bias;
     juce::AudioParameterBool *invert;
     juce::AudioParameterChoice *mode;
     std::vector<std::vector<float>> delay;
@@ -43,6 +44,7 @@ class Fixture final : public juce::AudioProcessor
                                                         {"Normal", "Nondeterministic", "Non-finite", "Crash",
                                                          "Hang", "Changing latency", "Unknown tail"},
                                                         0));
+        addParameter(bias = new juce::AudioParameterFloat({"bias", 1}, "QA bias", -1.f, 1.f, 0.f));
     }
     const juce::String getName() const override
     {
@@ -76,12 +78,19 @@ class Fixture final : public juce::AudioProcessor
     }
     void prepareToPlay(double, int) override
     {
+        if (auto *log = std::getenv("SOUNDPLUS_FIXTURE_PREPARE_LOG"))
+            juce::File(juce::String::fromUTF8(log))
+                .appendText(juce::String((int)::getpid()) + "\n", false, false, "\n");
         setLatencySamples((int)std::lround(latency->get()));
         delayFrames = getLatencySamples() + (int)std::lround(creative->get());
         delay.assign(16, std::vector<float>(2048));
         reset();
     }
-    void releaseResources() override {}
+    void releaseResources() override
+    {
+        if (auto *s = std::getenv("SOUNDPLUS_FIXTURE_RELEASE_SLEEP_MS"))
+            juce::Thread::sleep(juce::jlimit(0, 1000, juce::String(s).getIntValue()));
+    }
     void reset() override
     {
         for (auto &c : delay)
@@ -106,7 +115,7 @@ class Fixture final : public juce::AudioProcessor
             {
                 auto x = b.getSample(c, s);
                 delay[(size_t)c][(size_t)position] = x;
-                auto y = delay[(size_t)c][(size_t)((position + 2048 - delayFrames) % 2048)] * g;
+                auto y = delay[(size_t)c][(size_t)((position + 2048 - delayFrames) % 2048)] * g + bias->get();
                 b.setSample(c, s, mode->getIndex() == 2 ? std::numeric_limits<float>::quiet_NaN() : y);
             }
             position = (position + 1) % 2048;

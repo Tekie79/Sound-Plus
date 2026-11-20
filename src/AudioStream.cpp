@@ -65,6 +65,7 @@ PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, 
                      const std::function<bool()> &cancelled, int64_t warmup, int64_t last, bool grain)
     : rate(outputRate), sourceStart(first), sourceRate(d.sampleRate)
 {
+    hostedServices = hasHostedInserts(d.activeMix());
     designReader = std::make_unique<DesignReader>(
         d, outputRate, first, last, grain ? 0 : d.renderSettings.tailSeconds, cancelled, warmup);
     if (auto *t = selectedTake(d))
@@ -308,7 +309,29 @@ void AuditionCore::service(int ahead)
     if (stream && stream->available() < ahead)
         stream->fill(ahead - stream->available());
     auto *inUse = hazard.load();
-    std::erase_if(retired, [&](const auto &p) { return p.get() != inUse; });
+    for (auto it = retired.begin(); it != retired.end();)
+    {
+        if (it->get() == inUse)
+        {
+            ++it;
+            continue;
+        }
+        if ((*it)->hasHostedServices())
+        {
+            // Reaping an isolated service can wait up to 100 ms per rack. Do not
+            // make the active PCM producer wait while a previous graph shuts down.
+            if (!serviceCleanup)
+                serviceCleanup = std::make_unique<SerialWorker>();
+            auto *old = it->get();
+            if (!serviceCleanup->submit([old] { delete old; }))
+            {
+                ++it; // Bounded worker busy: retain ownership and retry next service.
+                continue;
+            }
+            it->release();
+        }
+        it = retired.erase(it);
+    }
 }
 void AuditionCore::render(float *const *out, int channels, int frames) noexcept
 {

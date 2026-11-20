@@ -49,6 +49,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::File outputFolder() const;
     DialogToken beginDialog();
     bool accepts(DialogToken) const;
+    uint64_t documentGeneration() const { return lifetime; }
     void protectStartupEdits();
     bool transitionPending() const
     {

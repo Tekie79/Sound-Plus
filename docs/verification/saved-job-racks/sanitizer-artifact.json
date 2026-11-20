@@ -1,0 +1,15 @@
+{
+  "sha256": "a6c9263099f6208ee8592413fc5a47e59337ff7cd5de5864245c7c37508fcbce",
+  "sourceTree": "3494da69b7e4c4fd25e2a9e5d9be080c1afd948f0693a86d42e1dd81e16539b0",
+  "scope": "AddressSanitizer dedicated core/JUCE/UI/session test driver; Release helpers and plugins cross process boundaries and are not instrumented. ASAN_OPTIONS=detect_leaks=0; no memory error suppression.",
+  "releaseChildren": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "ad2986ab2c1692fabc17df00ed95703a4de31456e9f30a5f42713f6d6e3a7663",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "6655323772405ef868b6aa02234e9ebc51b52c70ceaf6586949dd569db4e4a27",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "481314b956fab836b83757075d8d868f001b3b03d7ae88ed6ffdea1e48a37201",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": "9a90bd249ff87be34b32f7b7c46c5e286bb73adc474690a5e7f36b8fa84e4341",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "42457642c9db4295047ff26deacd3bf109da6bac10e91b3b8a9e6f089e95837c",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "0e17de75b129a9cf1830c1c550baef429a106e6d70785a5d361d9caa8d3fe13b",
+    "build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/SoundPlus QA Effect": "264e11b0f492708118424361ac372b6372cba6a91e1175ef985ac0e15896ac09",
+    "build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/SoundPlus QA Stereo": "267ecbaf31349b251ce90cd2fd617810364a6c41f7a944083161cf35ef9b828f"
+  }
+}

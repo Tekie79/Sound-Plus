@@ -51,6 +51,12 @@ void DesignSession::recordTake()
 {
     if (takeBusy() || replacing || working || rendering || document.activeMix().layers.empty())
         return;
+    if (hasHostedInserts(document.activeMix()))
+    {
+        message = "Hosted insert take capture is not yet qualified; render a durable pass instead";
+        notify();
+        return;
+    }
     if (document.takes.size() >= maxDocumentTakes)
     {
         message = "Remove a take before recording another (16 maximum)";

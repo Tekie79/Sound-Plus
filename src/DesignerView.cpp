@@ -253,6 +253,9 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
             auto copy = *l;
             copy.id = juce::Uuid().toString();
             copy.name += " copy";
+            copy.hosted.id = juce::Uuid().toString();
+            for (auto &slot : copy.hosted.slots)
+                slot.id = juce::Uuid().toString();
             session.edit("Duplicate layer",
                          [&](auto &d)
                          {
@@ -350,7 +353,12 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     chooseFolder.onClick = [this] { chooseFile(4); };
     copyOriginal.onClick = [this] { chooseFile(5); };
     addAndMakeVisible(processPlugin);
-    processPlugin.onClick = [this] { auto file = session.readyOutput(); if (file != juce::File() && !session.takeBusy() && onProcessOutput) onProcessOutput(file); };
+    processPlugin.onClick = [this]
+    {
+        auto file = session.readyOutput();
+        if (file != juce::File() && !session.takeBusy() && onProcessOutput)
+            onProcessOutput(file);
+    };
     addPrint.onClick = [this]
     {
         auto output = session.readyOutput();
@@ -539,158 +547,20 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     slider(
         "Fade out", "Fade out (seconds)", 0, 5, .001, [](auto &l) { return (double)l.fadeOut; },
         [](auto &l, double v) { l.fadeOut = (int64_t)std::llround(v); }, lockFadeOut);
-    section("STOCK INSERTS");
-    rackTarget.addItem("Selected layer inserts", 1);
-    rackTarget.addItem("Master inserts", 2);
-    rackTarget.setSelectedId(1);
-    rackTarget.setTitle("Insert rack target");
-    rackTarget.onChange = [this]
-    {
-        effectSignature.clear();
-        layoutInspector();
-        updateEffects();
-    };
-    inspector.addAndMakeVisible(rackTarget);
-    rackTarget.setBounds(8, inspectorY, 306, 28);
-    inspectorY += 34;
-    for (auto *c : std::initializer_list<juce::Component *>{
-             &effectChoice, &addEffect, &removeEffect, &effectUp, &effectDown, &effectBypass, &effectLock})
-        inspector.addAndMakeVisible(c);
-    effectChoice.setBounds(8, inspectorY, 178, 28);
-    effectChoice.setTitle("Ordered stock inserts");
-    addEffect.setBounds(190, inspectorY, 28, 28);
-    removeEffect.setBounds(222, inspectorY, 28, 28);
-    effectUp.setBounds(254, inspectorY, 28, 28);
-    effectDown.setBounds(286, inspectorY, 28, 28);
-    inspectorY += 34;
-    effectChoice.onChange = [this]
-    {
-        layoutInspector();
-        updateEffects();
-    };
-    addEffect.onClick = [this]
-    {
-        juce::PopupMenu menu;
-        menu.addItem(1, "Gain");
-        menu.addItem(2, "High-pass / low-pass filter");
-        menu.addItem(3, "Delay");
-        menu.addItem(4, "Reverb");
-        juce::Component::SafePointer<DesignerView> safe(this);
-        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(addEffect),
-                           [safe](int choice)
-                           {
-                               if (safe && choice > 0)
-                                   safe->changeEffect(
-                                       "Add insert",
-                                       [&](auto &fx) {
-                                           fx.push_back(makeStockEffect(juce::StringArray{
-                                               "gain", "filter", "delay", "reverb"}[choice - 1]));
-                                       });
-                           });
-    };
-    removeEffect.onClick = [this]
-    {
-        auto i = effectChoice.getSelectedId() - 1;
-        changeEffect("Remove insert",
-                     [&](auto &fx)
-                     {
-                         if (juce::isPositiveAndBelow(i, (int)fx.size()))
-                             fx.erase(fx.begin() + i);
-                     });
-    };
-    auto moveEffect = [this](int step)
-    {
-        int i = effectChoice.getSelectedId() - 1;
-        changeEffect("Reorder insert",
-                     [&](auto &fx)
-                     {
-                         if (juce::isPositiveAndBelow(i, (int)fx.size()))
-                             std::swap(fx[(size_t)i],
-                                       fx[(size_t)std::clamp(i + step, 0, (int)fx.size() - 1)]);
-                     });
-    };
-    effectUp.onClick = [moveEffect] { moveEffect(-1); };
-    effectDown.onClick = [moveEffect] { moveEffect(1); };
-    effectBypass.setBounds(8, inspectorY, 140, 24);
-    effectLock.setBounds(150, inspectorY, 164, 24);
-    inspectorY += 30;
-    effectBypass.onClick = [this]
-    {
-        int i = effectChoice.getSelectedId() - 1;
-        changeEffect("Bypass insert",
-                     [&](auto &fx)
-                     {
-                         if (juce::isPositiveAndBelow(i, (int)fx.size()))
-                             fx[(size_t)i].bypass = effectBypass.getToggleState();
-                     });
-    };
-    effectLock.onClick = [this]
-    {
-        int i = effectChoice.getSelectedId() - 1;
-        changeEffect("Lock insert",
-                     [&](auto &fx)
-                     {
-                         if (juce::isPositiveAndBelow(i, (int)fx.size()))
-                             fx[(size_t)i].locked = effectLock.getToggleState();
-                     });
-    };
-    for (int i = 0; i < 4; ++i)
-    {
-        auto &v = effectValues[(size_t)i];
-        auto &label = effectLabels[(size_t)i];
-        auto &lock = effectParameterLocks[(size_t)i];
-        lock.setToggleable(true);
-        labelStyle(label);
-        inspector.addAndMakeVisible(label);
-        inspector.addAndMakeVisible(v);
-        inspector.addAndMakeVisible(lock);
-        label.setBounds(8, inspectorY, 270, 18);
-        v.setBounds(8, inspectorY + 18, 272, 28);
-        v.setScrollWheelEnabled(false);
-        v.setSliderStyle(juce::Slider::LinearHorizontal);
-        v.setTextBoxStyle(juce::Slider::TextBoxRight, false, 70, 24);
-        lock.setTitle("Lock insert parameter " + juce::String(i + 1));
-        lock.setBounds(282, inspectorY + 18, 32, 28);
-        inspectorY += 50;
-        v.onDragStart = [this] { session.beginGesture(); };
-        v.onDragEnd = [this] { session.endGesture(); };
-        v.onValueChange = [this, i]
-        {
-            if (updating)
-                return;
-            int index = effectChoice.getSelectedId() - 1;
-            auto layerId = rackTarget.getSelectedId() == 2 ? juce::String() : session.document.selectedLayer;
-            session.edit("Adjust insert",
-                         [&](auto &d)
-                         {
-                             std::vector<StockEffect> *rack = &d.activeMix().masterEffects;
-                             if (layerId.isNotEmpty())
-                             {
-                                 rack = nullptr;
-                                 for (auto &layer : d.activeMix().layers)
-                                     if (layer.id == layerId)
-                                         rack = &layer.effects;
-                             }
-                             if (rack && juce::isPositiveAndBelow(index, (int)rack->size()))
-                             {
-                                 auto &effect = (*rack)[(size_t)index];
-                                 unlinkPerformanceTarget(d.activeMix(),
-                                                         performanceEffectTarget(layerId, effect, i));
-                                 effect.parameters[(size_t)i] = effectValues[(size_t)i].getValue();
-                             }
-                         });
-        };
-        lock.onClick = [this, i]
-        {
-            int index = effectChoice.getSelectedId() - 1;
-            changeEffect("Lock effect parameter",
-                         [&](auto &fx)
-                         {
-                             if (juce::isPositiveAndBelow(index, (int)fx.size()))
-                                 fx[(size_t)index].parameterLocks ^= 1u << i;
-                         });
-        };
-    }
+    section("TRACK INSERTS");
+    trackRack = std::make_unique<StockRackView>(
+        session, false, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
+    inspector.addAndMakeVisible(*trackRack);
+    trackRack->setBounds(8, inspectorY, 306, 280);
+    inspectorY += 288;
+    section("MASTER INSERTS");
+    masterRack = std::make_unique<StockRackView>(
+        session, true, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
+    inspector.addAndMakeVisible(*masterRack);
+    trackRack->onHeightChange = [this] { layoutInspector(); };
+    masterRack->onHeightChange = [this] { layoutInspector(); };
+    masterRack->setBounds(8, inspectorY, 306, 280);
+    inspectorY += 288;
     section("MASTER");
     auto *master = new juce::Slider();
     controls.add(master);
@@ -746,7 +616,21 @@ void DesignerView::section(const juce::String &name)
     group.start = inspectorY;
     group.open = preferences.getBoolValue("inspector." + name,
                                           name != "SOURCE & TIMING" && name != "FADES" && name != "MASTER");
-    group.header = std::make_unique<IconButton>(name, ActionIcon::chevron, true);
+    auto label = name == "SOURCE & TIMING" ? juce::String("Source")
+                 : name == "MASTER"        ? juce::String("Output")
+                                           : name.toLowerCase();
+    if (label == "layer")
+        label = "Layer";
+    else if (label == "mix")
+        label = "Mix";
+    else if (label == "fades")
+        label = "Fades";
+    else if (label == "track inserts")
+        label = "Track inserts";
+    else if (label == "master inserts")
+        label = "Master inserts";
+    group.header = std::make_unique<IconButton>(label, ActionIcon::chevron, true);
+    group.header->setLabelAlignedLeft();
     group.header->setToggleable(true);
     group.header->setToggleState(group.open, juce::dontSendNotification);
     inspector.addAndMakeVisible(*group.header);
@@ -780,12 +664,14 @@ void DesignerView::finishGroups()
 }
 void DesignerView::layoutInspector()
 {
-    int y = 0;
+    int y = 8;
+    inspector.sections.clear();
     for (auto &g : groups)
     {
-        g.header->setBounds(6, y, 308, 28);
+        int top = y;
+        g.header->setBounds(12, y + 4, 302, 34);
         g.header->setToggleState(g.open, juce::dontSendNotification);
-        y += 36;
+        y += 50;
         int height = g.height;
         int poolDelta = g.name == "LAYER" && alternatives ? alternatives->preferredHeight() - 30 : 0;
         int poolY = -1;
@@ -798,40 +684,40 @@ void DesignerView::layoutInspector()
                              session.document.activeMix().layout.id.isEmpty();
         if (noSourceError)
             height -= 28;
-        if (g.name == "STOCK INSERTS")
+        if (g.name == "TRACK INSERTS" || g.name == "MASTER INSERTS")
         {
-            int n = 0;
-            if (auto *fx = rack(); fx && !fx->empty())
-            {
-                int i = std::clamp(effectChoice.getSelectedId() - 1, 0, (int)fx->size() - 1);
-                auto &type = (*fx)[(size_t)i].type;
-                n = type == "gain"                                                         ? 1
-                    : type == "filter"                                                     ? 2
-                    : type == "delay" || !session.document.activeMix().layout.id.isEmpty() ? 3
-                                                                                           : 4;
-            }
-            height -= (4 - n) * 50;
-            if (n == 0)
-                height -= 30;
+            auto *editor = g.name == "TRACK INSERTS" ? trackRack.get() : masterRack.get();
+            if (editor)
+                height = editor->preferredHeight();
         }
         for (auto &[child, bounds] : g.children)
         {
             auto positioned = bounds;
-            if (child == alternatives.get())
+            if (child == trackRack.get() || child == masterRack.get())
+                positioned.setHeight(static_cast<StockRackView *>(child)->preferredHeight());
+            else if (child == alternatives.get())
                 positioned.setHeight(alternatives->preferredHeight());
             else if (poolY >= 0 && bounds.getY() > poolY)
                 positioned.translate(0, poolDelta);
             if (noSourceError && bounds.getY() >= 56)
                 positioned.translate(0, -28);
+            constexpr double scale = 288. / 306.;
+            positioned.setX(18 + (int)std::lround((positioned.getX() - 8) * scale));
+            positioned.setWidth((int)std::lround(positioned.getWidth() * scale));
             child->setBounds(positioned.translated(0, y));
             child->setVisible(g.open && !(noSourceError && child == &sourceInfo) &&
                               (child != &channelMap || session.document.activeMix().layout.id.isEmpty()) &&
                               (child != &routingButton || !session.document.activeMix().layout.id.isEmpty()));
         }
         if (g.open)
-            y += height + 8;
+            y += height + 10;
+        else
+            y = top + 42;
+        inspector.sections.push_back({{6, top, 314, y - top}, g.open});
+        y += 12;
     }
-    inspector.setSize(326, y + 8);
+    inspector.setSize(326, y + 4);
+    inspector.repaint();
 }
 void DesignerView::editLayer(const juce::String &name, std::function<void(DesignLayer &)> edit)
 {
@@ -1039,125 +925,12 @@ void DesignerView::toggle(const juce::String &name, std::function<bool(const Des
             });
     }
 }
-std::vector<StockEffect> *DesignerView::rack()
-{
-    if (rackTarget.getSelectedId() == 2)
-        return &session.document.activeMix().masterEffects;
-    if (auto *l = session.selectedLayer())
-        return &l->effects;
-    return nullptr;
-}
-void DesignerView::changeEffect(const juce::String &name, std::function<void(std::vector<StockEffect> &)> fn)
-{
-    int target = rackTarget.getSelectedId();
-    auto id = session.document.selectedLayer;
-    session.edit(name,
-                 [&](auto &d)
-                 {
-                     if (target == 2)
-                         fn(d.activeMix().masterEffects);
-                     else
-                         for (auto &l : d.activeMix().layers)
-                             if (l.id == id)
-                             {
-                                 fn(l.effects);
-                                 break;
-                             }
-                 });
-}
 void DesignerView::updateEffects()
 {
-    bool previous = updating;
-    updating = true;
-    auto *fx = rack();
-    juce::String signature;
-    if (fx)
-        for (auto &e : *fx)
-            signature += e.id + e.type + (e.bypass ? "b" : "");
-    if (signature != effectSignature)
-    {
-        int selected = effectChoice.getSelectedId();
-        effectChoice.clear(juce::dontSendNotification);
-        if (fx)
-            for (size_t i = 0; i < fx->size(); ++i)
-                effectChoice.addItem(juce::String((int)i + 1) + " | " + (*fx)[i].type +
-                                         ((*fx)[i].bypass ? " (bypassed)" : ""),
-                                     (int)i + 1);
-        effectChoice.setSelectedId(fx && !fx->empty() ? std::clamp(selected, 1, (int)fx->size()) : 0,
-                                   juce::dontSendNotification);
-        effectSignature = signature;
-    }
-    int index = effectChoice.getSelectedId() - 1;
-    StockEffect *effect =
-        fx && juce::isPositiveAndBelow(index, (int)fx->size()) ? &(*fx)[(size_t)index] : nullptr;
-    addEffect.setEnabled(fx && fx->size() < 8);
-    removeEffect.setEnabled(effect != nullptr);
-    effectUp.setEnabled(effect && index > 0);
-    effectDown.setEnabled(effect && index + 1 < (int)fx->size());
-    effectBypass.setVisible(effect != nullptr);
-    effectLock.setVisible(effect != nullptr);
-    effectBypass.setEnabled(effect != nullptr);
-    effectLock.setEnabled(effect != nullptr);
-    effectBypass.setToggleState(effect && effect->bypass, juce::dontSendNotification);
-    effectLock.setToggleState(effect && effect->locked, juce::dontSendNotification);
-    juce::StringArray names;
-    std::array<double, 4> lo{}, hi{1, 1, 1, 1};
-    if (effect)
-    {
-        if (effect->type == "gain")
-        {
-            names = {"Gain (dB)"};
-            lo[0] = -90;
-            hi[0] = 24;
-        }
-        else if (effect->type == "filter")
-        {
-            names = {"High-pass (Hz)", "Low-pass (Hz)"};
-            lo = {10, 20, 0, 0};
-            hi = {20000, 40000, 1, 1};
-        }
-        else if (effect->type == "delay")
-        {
-            names = {"Delay (ms)", "Feedback", "Wet mix"};
-            lo[0] = 1;
-            hi = {2000, .95, 1, 1};
-        }
-        else
-            names = session.document.activeMix().layout.id.isEmpty()
-                        ? juce::StringArray{"Room size", "Damping", "Wet mix", "Stereo width"}
-                        : juce::StringArray{"Room size", "Damping", "Wet mix"};
-    }
-    bool expanded = true;
-    for (auto &g : groups)
-        if (g.name == "STOCK INSERTS")
-            expanded = g.open;
-    for (int i = 0; i < 4; ++i)
-    {
-        bool valid = expanded && effect && i < names.size();
-        effectLabels[(size_t)i].setVisible(valid);
-        effectValues[(size_t)i].setVisible(valid);
-        effectParameterLocks[(size_t)i].setVisible(valid);
-        if (valid)
-        {
-            effectLabels[(size_t)i].setText(names[i], juce::dontSendNotification);
-            auto &v = effectValues[(size_t)i];
-            v.setTitle(names[i]);
-            v.setRange(lo[(size_t)i], hi[(size_t)i], i == 0 && effect->type == "delay" ? 1 : .001);
-            if (!v.isMouseButtonDown())
-            {
-                auto target = performanceEffectTarget(
-                    rackTarget.getSelectedId() == 2 ? juce::String() : session.document.selectedLayer,
-                    *effect, i);
-                auto *effective = performanceTargetValue(effectiveDisplay, target);
-                v.setValue(effective ? *effective : effect->parameters[(size_t)i],
-                           juce::dontSendNotification);
-                v.setTooltip("Effective insert value. Editing unlinks this target from its macro.");
-            }
-            effectParameterLocks[(size_t)i].setToggleState(effect->parameterLocks & (1u << i),
-                                                           juce::dontSendNotification);
-        }
-    }
-    updating = previous;
+    if (trackRack)
+        trackRack->bind(session.document.selectedLayer);
+    if (masterRack)
+        masterRack->bind({});
 }
 juce::String DesignerView::waveformKey(const Asset &a) const
 {
@@ -1225,8 +998,8 @@ void DesignerView::refresh()
         juce::dontSendNotification);
     for (auto &fn : refreshers)
         fn();
-    layoutInspector();
     updateEffects();
+    layoutInspector();
     juce::String signature;
     for (auto &v : d.variations)
         signature += v.id + v.name + (v.kept ? "k" : "");
@@ -1284,6 +1057,10 @@ void DesignerView::refresh()
         up.setEnabled(at != layers.begin());
         down.setEnabled(at != layers.end() && at + 1 != layers.end());
     }
+    renderSelection.setButtonText(hasHostedInserts(d.activeMix())
+                                      ? "Render selected layer (pre-master stem)"
+                                      : "Render selected layer");
+    renderSelection.setTooltip(renderSelection.getButtonText());
     render.setEnabled(!d.activeMix().layers.empty() && !session.rendering);
     accurate.setEnabled(!d.activeMix().layers.empty() && !session.transitionPending());
     cancel.setVisible(session.rendering);
@@ -1298,7 +1075,10 @@ void DesignerView::refresh()
                                                                         : "Drag verified output");
     dragOutput.setEnabled(session.lastOutput != juce::File());
     processPlugin.setEnabled(session.lastOutput != juce::File() && !session.takeBusy());
-    processPlugin.setTooltip(session.lastOutput == juce::File() ? "Render Design/Take first, then process that finalized sound with a VST3 effect" : "Process the selected finalized WAV; the editable design/take stays unchanged");
+    processPlugin.setTooltip(
+        session.lastOutput == juce::File()
+            ? "Render Design/Take first, then process that finalized sound with a VST3 effect"
+            : "Process the selected finalized WAV; the editable design/take stays unchanged");
     addPrint.setEnabled(session.lastOutput != juce::File());
     outputInfo.setText(session.lastOutput == juce::File() ? "" : session.lastOutput.getFileName(),
                        juce::dontSendNotification);
@@ -2270,7 +2050,7 @@ void DesignerView::benchmarkEndGesture()
         canvas->mouseUp(benchmarkPointer(*canvas, benchmarkAnchor, benchmarkAnchor));
     benchmarkPhase = -1;
     if (benchmarkStockPhase >= 0)
-        effectValues[0].onDragEnd();
+        (benchmarkStockPhase >= 3 ? masterRack : trackRack)->values[0].onDragEnd();
     benchmarkStockPhase = -1;
 }
 void DesignerView::benchmarkStockControls(int phase, double value)
@@ -2279,13 +2059,14 @@ void DesignerView::benchmarkStockControls(int phase, double value)
     {
         benchmarkEndGesture();
         session.selectLayer(session.document.activeMix().layers.front().id);
-        rackTarget.setSelectedId(phase >= 3 ? 2 : 1, juce::sendNotificationSync);
-        effectChoice.setSelectedId(phase >= 3 ? phase - 2 : phase + 1, juce::sendNotificationSync);
+        (phase >= 3 ? masterRack : trackRack)
+            ->slots.setSelectedId(phase >= 3 ? phase - 2 : phase + 1, juce::sendNotificationSync);
         benchmarkStockPhase = phase;
-        effectValues[0].onDragStart();
+        (phase >= 3 ? masterRack : trackRack)->setParametersExpanded(true);
+        (phase >= 3 ? masterRack : trackRack)->values[0].onDragStart();
     }
     // Use the real inspector slider's range, notification and edit callback.
-    auto &slider = effectValues[0];
+    auto &slider = (phase >= 3 ? masterRack : trackRack)->values[0];
     double low = slider.getMinimum(), high = slider.getMaximum();
     if (phase == 0 || phase == 3)
     {

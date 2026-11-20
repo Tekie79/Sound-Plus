@@ -2,6 +2,7 @@
 #include "Catalog.h"
 #include "AudioRegion.h"
 #include "FadeCurve.h"
+#include "HostedRack.h"
 #include <array>
 #include <atomic>
 #include <map>
@@ -95,6 +96,7 @@ struct DesignLayer
     uint32_t locks=0;
     uint32_t colour=0; // Optional ARGB track colour. Zero uses the application palette.
     std::vector<StockEffect> effects;
+    HostedRack hosted; // Versioned post-stock, source-channel insert stage.
     std::optional<SourcePool> pool;
 };
 struct DesignMix
@@ -104,6 +106,7 @@ struct DesignMix
     PerformanceState performance;
     std::vector<DesignLayer> layers;
     std::vector<StockEffect> masterEffects;
+    HostedRack hosted; // Summed bus stage, before master gain.
     double masterDb=-6;
     int64_t duration=0; // Zero means the complete audible layer extent.
 };
@@ -232,6 +235,8 @@ struct DesignDocument
     DesignMix &activeMix();
     const DesignMix &activeMix() const;
 };
+bool hasHostedInserts(const DesignMix &);
+bool hasHostedInserts(const DesignDocument &);
 juce::StringArray outputFiles(const DesignOutput &);
 void setMixLayout(DesignMix &, const ChannelLayout &);
 bool upgradeLiveSpatial(DesignDocument &);

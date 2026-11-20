@@ -1,0 +1,28 @@
+{
+  "savedJob": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/536b49a2e3b34fb3af7c6efb8a9b9cf2/r25-stereo-v1/normalized.soundplus-process",
+  "generation": 1,
+  "rawSha256": "f45704739aa9058d2333d838772080b8376beb711ec49236d4e2d78a2740b89c",
+  "presentationNormalized": true,
+  "frames": 240000,
+  "rate": 48000.0,
+  "layout": {
+    "id": "stereo-v1",
+    "roles": [
+      "L",
+      "R"
+    ]
+  },
+  "receiptPath": "/Users/harvest/Music/SoundPlus/Processed/Processed-93166d32ca05471d9d013a7b0b15d899/receipt.json",
+  "durableOutput": "/Users/harvest/Music/SoundPlus/Processed/Processed-93166d32ca05471d9d013a7b0b15d899/Mix.wav",
+  "outputSha256": "b1df36f5800aab7133f7a7b03fb3d4e24cbc0a71c98706dd9c4b4445e645edc4",
+  "processRequestsInNativePanel": 0,
+  "verified": [
+    "Open missing normalized derivative recovers Raw with normalization requested",
+    "Play processed shows Playing, explicit Stop shows Stopped",
+    "Normalization off/on regenerates representation from same raw pass",
+    "Create Copy enables Print/index/drag only after finalized receipt",
+    "Generation/state/raw hashes retained; no process-mode request",
+    "Original generated derivative restored from retained backup"
+  ],
+  "scope": "Native pointer/keyboard and finalized file/hash checks. No human listening, receiving-app delivery, or physical surround claim."
+}

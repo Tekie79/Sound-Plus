@@ -28,7 +28,11 @@ void DesignerView::refreshTakes()
     takeContext.setSelectedId(selected, juce::dontSendNotification);
     takeContext.setTooltip(takeContext.getText());
     takeContext.setEnabled(!session.takeBusy());
-    recordTake.setEnabled(!session.takeBusy() && session.document.activeTake.isEmpty() &&
+    recordTake.setTooltip(hasHostedInserts(session.document.activeMix())
+                              ? "Hosted insert capture is not yet qualified; render a durable pass instead"
+                              : "Record a performance take");
+    recordTake.setEnabled(!hasHostedInserts(session.document.activeMix()) && !session.takeBusy() &&
+                          session.document.activeTake.isEmpty() &&
                           !session.document.activeMix().layers.empty() && !session.rendering &&
                           !session.working && !session.transitionPending());
     stopTake.setEnabled(session.takeBusy());

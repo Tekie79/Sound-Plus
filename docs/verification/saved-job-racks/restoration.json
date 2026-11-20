@@ -1,0 +1,40 @@
+{
+  "protectedCatalogFiles": 178,
+  "changedBeforeUserRelaunch": [],
+  "earlierKnownOriginalMediaHashes": {
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer/external/rain.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r34-07f75f53.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r35-0e5f70f7.wav": true,
+    "/Users/harvest/Music/SoundPlus/Designer QA/Renders/Rain glass design-variation-r40-020db296.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-014.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-030.wav": true,
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-038.wav": true,
+    "/Users/harvest/Music/SoundPlus/Renders/Take 1-take-r27-c6375de9.wav": true,
+    "/Users/harvest/Music/SoundPlus/Renders/Take 2-take-r30-4ffdfa50.wav": true
+  },
+  "latestRecovery": {
+    "document": "Workflow demonstration",
+    "revision": 33,
+    "policy": "Retained in place; no older snapshot restored"
+  },
+  "qaCreatedOutput": "~/Music/SoundPlus/Processed/Processed-93166d32ca05471d9d013a7b0b15d899/Mix.wav",
+  "regularAppRelaunch": {
+    "document": "Workflow demonstration",
+    "revision": 33,
+    "workspace": "Edit",
+    "browserVisible": true,
+    "monitorVolume": 0.25,
+    "playheadSeconds": 2.112,
+    "status": "Recovered latest changes",
+    "unsavedChanges": true,
+    "catalog": "build/gain-hover-native",
+    "olderSnapshotRestored": false
+  },
+  "changedAfterUserRelaunch": [],
+  "catalogCounts": {
+    "assets": 43,
+    "roots": 1
+  }
+}

@@ -5,6 +5,7 @@
 #include <memory>
 #include <vector>
 #include "DesignAudio.h"
+#include "SerialWorker.h"
 namespace sp
 {
 // Single producer / single consumer. All decoding and resampling run in fill().
@@ -119,6 +120,7 @@ class PcmStream
     {
         return designReader ? designReader->layers() : 0;
     }
+    bool hasHostedServices() const { return hostedServices; }
     double producerMaxMs() const
     {
         return maxFillMs;
@@ -152,6 +154,7 @@ class PcmStream
     std::unique_ptr<juce::FileOutputStream> capture;
     std::vector<float> captureData;
     double maxFillMs = 0;
+    bool hostedServices = false;
 };
 class AuditionCore
 {
@@ -274,6 +277,7 @@ class AuditionCore
   private:
     std::unique_ptr<PcmStream> stream;
     std::vector<std::unique_ptr<PcmStream>> retired;
+    std::unique_ptr<SerialWorker> serviceCleanup;
     std::atomic<PcmStream *> active{nullptr}, hazard{nullptr};
     float gain = 0.7f; // Callback-owned, smoothed monitor gain.
     PcmStream *lastRendered = nullptr;

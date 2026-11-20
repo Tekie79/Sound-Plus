@@ -18,7 +18,7 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
-  src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
+  src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
   src/PerformanceState.cpp src/DesignModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
@@ -34,8 +34,16 @@ juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
   BUNDLE_ID "org.soundplus.workstation" MICROPHONE_PERMISSION_ENABLED FALSE)
 juce_add_console_app(SoundPlusPlugin PRODUCT_NAME "SoundPlusPlugin")
 target_sources(SoundPlusPlugin PRIVATE src/PluginWorkerMain.cpp)
-target_compile_definitions(SoundPlusPlugin PRIVATE JUCE_PLUGINHOST_VST3=1)
+target_compile_definitions(SoundPlusPlugin PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=1)
 target_link_libraries(SoundPlusPlugin PRIVATE soundplus_core)
+# Native editor windows belong to an identified GUI helper, never the main app.
+juce_add_gui_app(SoundPlusPluginEditor PRODUCT_NAME "SoundPlusPluginEditor" COMPANY_NAME "SoundPlus"
+  BUNDLE_ID "org.soundplus.plugin-editor" MICROPHONE_PERMISSION_ENABLED FALSE)
+target_sources(SoundPlusPluginEditor PRIVATE src/PluginWorkerMain.cpp)
+target_compile_definitions(SoundPlusPluginEditor PRIVATE SOUNDPLUS_PLUGIN_EDITOR_APP=1)
+target_compile_definitions(SoundPlusPluginEditor PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=1)
+target_link_libraries(SoundPlusPluginEditor PRIVATE soundplus_core)
+
 juce_add_console_app(SoundPlusAudio PRODUCT_NAME "SoundPlusAudio")
 juce_add_console_app(SoundPlusAI PRODUCT_NAME "SoundPlusAI")
 target_sources(SoundPlusAI PRIVATE src/AIHelperMain.cpp src/ClapRuntime.cpp)
@@ -49,13 +57,16 @@ target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
 target_sources(SoundPlus PRIVATE src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
-add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI SoundPlusPlugin)
+add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI SoundPlusPlugin SoundPlusPluginEditor)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>" "$<TARGET_FILE:SoundPlusPlugin>")
-set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAI>")
+set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAI>" "$<TARGET_FILE:SoundPlusPluginEditor>")
 add_custom_command(TARGET SoundPlus POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers"
   COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SoundPlusPlugin>"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers/SoundPlusPlugin"
+  COMMAND ${CMAKE_COMMAND} -E remove_directory "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers/SoundPlusPluginEditor.app"
+  COMMAND ${CMAKE_COMMAND} -E copy_directory "$<TARGET_BUNDLE_DIR:SoundPlusPluginEditor>"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers/SoundPlusPluginEditor.app"
   COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SoundPlusAudio>"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers/SoundPlusAudio"
   COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SoundPlusAI>"
@@ -159,7 +170,7 @@ if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp)
   add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusPlugin)
   add_test(NAME plugin_processing COMMAND SoundPlusTests --plugin-processing "${CMAKE_BINARY_DIR}/plugin-processing-test-output" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
-  set_tests_properties(plugin_processing PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+  set_tests_properties(plugin_processing PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE ENVIRONMENT "SOUNDPLUS_QUALIFY_AU=1")
 endif()
 
 # Optional instrumented production-component/worker QA driver; never bundled in the app.

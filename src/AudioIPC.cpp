@@ -28,7 +28,9 @@ bool sendMessage(int fd, const juce::var &msg)
     auto bytes = line.getNumBytesAsUTF8();
     // Non-real-time workers only. A bounded frame is not guaranteed to fit a
     // nonblocking stream socket in one write, even when the peer is healthy.
-    if (bytes > 65536)
+    const bool hosted = msg["command"].toString() == "design_parameters" &&
+                        (int)msg["parameters"]["hostedControlsVersion"] == 1;
+    if (bytes > (hosted ? maxHostedControlBytes : 65536))
     {
         errno = EMSGSIZE;
         return false;

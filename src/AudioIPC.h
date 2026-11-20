@@ -8,7 +8,8 @@
 #include "DesignModel.h"
 namespace sp
 {
-constexpr int protocolVersion = 9;
+constexpr int protocolVersion = 10;
+constexpr size_t maxHostedControlBytes = 2 * 1024 * 1024;
 juce::var message(const juce::String &command);
 // Single-writer, nonblocking socket; bounded250ms completion, never called by audio callbacks.
 bool sendMessage(int fd, const juce::var &);

@@ -32,6 +32,11 @@ class IconButton : public juce::TextButton
     {
         return icons::forState(kind, getToggleState());
     }
+    void setLabelAlignedLeft(bool value = true)
+    {
+        labelAlignedLeft = value;
+        repaint();
+    }
     void setPrimary(bool value = true)
     {
         primary = value;
@@ -54,7 +59,7 @@ class IconButton : public juce::TextButton
         float labelWidth = showLabel ? std::min(juce::GlyphArrangement::getStringWidth(font, getButtonText()),
                                                 std::max(0.f, getWidth() - size - gap - 16))
                                      : 0;
-        auto start = (getWidth() - size - gap - labelWidth) * .5f;
+        auto start = showLabel && labelAlignedLeft ? 10.f : (getWidth() - size - gap - labelWidth) * .5f;
         auto tone = !isEnabled()                      ? icons::Tone::disabled
                     : primary                         ? icons::Tone::primary
                     : !disclosure && getToggleState() ? icons::Tone::selected
@@ -97,6 +102,6 @@ class IconButton : public juce::TextButton
 
   private:
     ActionIcon kind;
-    bool showLabel, primary = false, keyboardFocus = false;
+    bool showLabel, primary = false, keyboardFocus = false, labelAlignedLeft = false;
 };
 } // namespace sp

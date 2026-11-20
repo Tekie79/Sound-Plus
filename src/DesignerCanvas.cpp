@@ -462,6 +462,13 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         graphics.setFont(juce::FontOptions(12.f, juce::Font::bold));
         graphics.drawText(layer.name, 13, (int)shape.top + 8, (int)left - 52, 21, juce::Justification::left,
                           true);
+        if ((!layer.effects.empty() || !layer.hosted.slots.empty()) && left >= 145)
+        {
+            graphics.setFont(juce::FontOptions(10.f));
+            graphics.setColour(ui::muted);
+            graphics.drawText(juce::String((int)(layer.effects.size() + layer.hosted.slots.size())) + " FX",
+                              (int)left - 49, (int)shape.top + 34, 33, 20, juce::Justification::centred);
+        }
         if (hover.target == CanvasTarget::rowResize && hover.row == (int)row)
         {
             graphics.setColour(ui::accent.withAlpha(.65f));

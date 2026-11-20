@@ -57,6 +57,7 @@ class PluginSession final : public juce::Component
     std::shared_ptr<std::atomic<uint64_t>> epoch = std::make_shared<std::atomic<uint64_t>>(0);
     std::vector<juce::var> past, future;
     juce::var gesture;
+    bool registeredDiscovery = false;
     bool retainingPass = false;
     bool verifyingCancellation = false;
     void invalidate();

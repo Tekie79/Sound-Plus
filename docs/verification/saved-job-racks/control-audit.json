@@ -1,0 +1,8 @@
+{
+  "rows": 64,
+  "serviceInstances": 1,
+  "nearestRankRecomputed": true,
+  "p50Ms": 1.455791652202606,
+  "p95Ms": 2.653541654348373,
+  "p99Ms": 2.781666666269302
+}

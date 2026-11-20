@@ -8,6 +8,7 @@ juce::String pluginFingerprint(const juce::File &);
 juce::String processingHash(const juce::File &);
 std::vector<juce::File> defaultVst3Locations();
 juce::String pluginEffectGroup(const juce::var &);
+juce::String pluginFormatLabel(const juce::var &);
 void saveProcessingJson(const juce::File &, const juce::var &);
 juce::var loadProcessingJson(const juce::File &);
 struct PluginInput
@@ -38,7 +39,7 @@ class PluginCatalog
     explicit PluginCatalog(juce::File storage) : file(std::move(storage)) {}
     // Worker-thread only. One child per changed candidate. Failed unchanged candidates stay quarantined.
     juce::var scan(PluginWorker &, const std::vector<juce::File> &, bool retry, const std::function<bool()> &,
-                   const std::function<void(juce::var)> & = {});
+                   const std::function<void(juce::var)> & = {}, bool registeredAudioUnits = false);
     juce::var snapshot() const;
 
   private:

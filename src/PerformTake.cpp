@@ -243,6 +243,8 @@ void hashTake(PerformTake &t)
 }
 void validateTake(const PerformTake &t)
 {
+    if (hasHostedInserts((const DesignMix &)t.recipe))
+        throw std::runtime_error("Hosted take recipes require an unsupported plugin-aware capture contract");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
          t.processing != "stock-layout-takes-v2") ||
@@ -299,6 +301,10 @@ void validateTake(const PerformTake &t)
 }
 PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
 {
+    if (hasHostedInserts(d.activeMix()))
+        throw std::runtime_error(
+            "Hosted insert capture requires a plugin-aware event contract; render a durable pass instead");
+
     PerformTake t;
     t.name = name;
     t.session = d.id;
