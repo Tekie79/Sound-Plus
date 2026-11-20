@@ -1,0 +1,10 @@
+{
+  "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusPublicationDebug_artefacts/Release/SoundPlusPublicationDebug",
+  "sha256": "96aeeea7a7a0086b0398bcb0c678fadd15ee601fba52390925a824fc07a79d7a",
+  "compiledSourceTreeSha256": "77f9a7ee98afae5119ab48f453df1d849272d820a3a4904a0a254ac3e1a2834b",
+  "instrumentation": "Dedicated core, JUCE and production UI/session: -fsanitize=address -g -fno-omit-frame-pointer -O1",
+  "environment": "ASAN_OPTIONS=detect_leaks=0",
+  "scope": "Instrumented parent components; Release plugin/helper child binaries as separately recorded",
+  "result": "156588 checks passed",
+  "childWorkerSha256": "e2f17de24903a04fe2759dbd4c577a52983ded403794d6134bc8a7d66c1cdc52"
+}

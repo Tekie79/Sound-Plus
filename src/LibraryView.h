@@ -50,10 +50,12 @@ class LibraryView final : public juce::Component,
         search.selectAll();
     }
     std::function<void()> onShowDesigner;
+    std::function<void(const Asset &, int64_t, int64_t)> onProcess;
     std::function<void()> onBeforeAudition;
     std::function<void(const Asset &, int64_t, int64_t, bool, int)> onAddToDesigner;
 
   private:
+    IconButton processPlugin{"Process selected source/range with Plug-in", ActionIcon::processing};
     friend struct CorrectionViewTestAccess;
     friend class Benchmark;
     friend struct LayoutViewTestAccess;

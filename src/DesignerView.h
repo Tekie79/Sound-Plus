@@ -21,6 +21,7 @@ class DesignerView final : public juce::Component,
     ~DesignerView() override;
     DesignSession session;
     std::function<void()> onLibrary;
+    std::function<void(const juce::File &)> onProcessOutput;
     std::function<void()> onToggleBrowser;
     std::function<void()> onSearch;
     void addSource(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0);
@@ -100,6 +101,7 @@ class DesignerView final : public juce::Component,
     void takePopup();
     void refreshTakes();
     std::unique_ptr<juce::Component> makeRenderPanel();
+    IconButton processPlugin{"Process finalized output with Plug-in", ActionIcon::processing};
     ui::FileDragButton dragOutput{"Drag WAV"}, dragOriginal{"Drag Original"};
     AudioClient &audio;
     ui::LookAndFeel look;

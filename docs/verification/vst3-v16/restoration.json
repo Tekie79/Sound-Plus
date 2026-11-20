@@ -1,0 +1,31 @@
+{
+  "beforeRelaunch": true,
+  "mediaCount": 11,
+  "allMediaUnchanged": true,
+  "recoveryFileCount": 9,
+  "allRecoveryUnchanged": true,
+  "settingsUnchanged": true,
+  "catalogCounts": {
+    "assets": 43,
+    "roots": 1
+  },
+  "savedDocumentsUnchanged": {
+    "/Users/harvest/Music/SoundPlus/Workflow demonstration.soundplus": true,
+    "/Users/harvest/Music/SoundPlus/Rain glass design - before walkthrough 19992.soundplus": true
+  },
+  "restoredFromOldSnapshot": false,
+  "nativeRelaunch": {
+    "catalog": "build/gain-hover-native",
+    "name": "Workflow demonstration",
+    "revision": 31,
+    "activeTake": "Take 2",
+    "takeStatus": "Ready",
+    "workspace": "Perform",
+    "browserVisible": true,
+    "monitor": 0.25,
+    "rainSavedRevisionRetained": 19992,
+    "defaultAIEnabled": true
+  },
+  "finalNativeRelaunchVerified": true,
+  "protectedMediaHashesRecheckedAfterFinalQA": 11
+}

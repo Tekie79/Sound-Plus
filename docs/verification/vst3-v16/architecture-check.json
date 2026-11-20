@@ -1,0 +1,108 @@
+{
+  "passed": true,
+  "worker": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin",
+  "workerSha256": "e2f17de24903a04fe2759dbd4c577a52983ded403794d6134bc8a7d66c1cdc52",
+  "fixtureSourceSha256": "bbbba61d325057caa978da23ed105a0edc20d782d584030caea4494f5ad74b1a",
+  "cases": [
+    {
+      "case": "native",
+      "lipoArchitectures": "arm64",
+      "binarySha256": "d8c1f5b4341a1b537229b4db3c8d21569757052bc7fb786a97dc450b811f574b",
+      "response": {
+        "plugins": [
+          {
+            "name": "SoundPlus QA Effect",
+            "vendor": "SoundPlus QA",
+            "version": "0.1.0",
+            "format": "VST3",
+            "architecture": "arm64",
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3",
+            "fingerprint": "12e56dbad5aa51b38ae3dc8f522bd00886c544c0b1eef846b9e17bf932eb7fb9",
+            "instrument": false,
+            "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Effect\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3\"\r\n        uniqueId=\"bc722e9a\" isInstrument=\"0\" fileTime=\"1a1f60c5d24\" infoUpdateTime=\"1a1f652960c\"\r\n        numInputs=\"0\" numOutputs=\"0\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beab\"/>\r\n",
+            "id": "VST3-SoundPlus QA Effect-2382d7c7-bc722e9a",
+            "layouts": [
+              "mono-v1",
+              "stereo-v1",
+              "lcr-v1",
+              "quad-v1",
+              "5.0-v1",
+              "5.1-side-v1",
+              "5.1-rear-v1",
+              "7.1-v1"
+            ],
+            "reason": ""
+          }
+        ],
+        "protocol": 1
+      },
+      "elapsedMs": 182.14570797863416,
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "case": "intel",
+      "lipoArchitectures": "x86_64",
+      "binarySha256": "5d497be3216cb93ad63fa03ebd56cd37ec5bea2efbc2af22da46e6ea1f49bbba",
+      "response": {
+        "plugins": [
+          {
+            "name": "SoundPlus QA Effect",
+            "vendor": "SoundPlus QA",
+            "version": "0.1.0",
+            "format": "VST3",
+            "architecture": "x86_64",
+            "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/vst3-v16/intel-qa/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3",
+            "fingerprint": "080ef6c5e6c51eda76b6b4b80faa305ec6986eb314d85403a0160b506281825c",
+            "instrument": false,
+            "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Effect\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/vst3-v16/intel-qa/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3\"\r\n        uniqueId=\"bc722e9a\" isInstrument=\"0\" fileTime=\"1a1f64f51c1\" infoUpdateTime=\"1a1f65296cc\"\r\n        numInputs=\"0\" numOutputs=\"0\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beab\"/>\r\n",
+            "id": "VST3-SoundPlus QA Effect-ebb644ea-bc722e9a",
+            "layouts": [],
+            "reason": "Native arm64 required; bundle architecture: x86_64; no bridging"
+          }
+        ],
+        "protocol": 1
+      },
+      "elapsedMs": 105.79700002563186,
+      "stderr": "",
+      "passed": true
+    },
+    {
+      "case": "universal",
+      "lipoArchitectures": "x86_64 arm64",
+      "binarySha256": "851204b503de7c83bf6a37d1c9496557ba54c9971c8b970f3c5f990fb63b3dd9",
+      "response": {
+        "plugins": [
+          {
+            "name": "SoundPlus QA Effect",
+            "vendor": "SoundPlus QA",
+            "version": "0.1.0",
+            "format": "VST3",
+            "architecture": "arm64+x86_64",
+            "path": "/private/var/folders/m1/1nz5w6lj6j783bxv38qmspww0000gn/T/soundplus-architecture-_mbcwcvk/Universal.vst3",
+            "fingerprint": "9e4178e2a619762976d531f71be82550fbc3e887e34f772fc60a082723a8f260",
+            "instrument": false,
+            "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"SoundPlus QA Effect\" format=\"VST3\" category=\"Fx\" manufacturer=\"SoundPlus QA\"\r\n        version=\"0.1.0\" file=\"/private/var/folders/m1/1nz5w6lj6j783bxv38qmspww0000gn/T/soundplus-architecture-_mbcwcvk/Universal.vst3\"\r\n        uniqueId=\"bc722e9a\" isInstrument=\"0\" fileTime=\"1a1f60c5d24\" infoUpdateTime=\"1a1f652973f\"\r\n        numInputs=\"0\" numOutputs=\"0\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"166beab\"/>\r\n",
+            "id": "VST3-SoundPlus QA Effect-d6c7d298-bc722e9a",
+            "layouts": [
+              "mono-v1",
+              "stereo-v1",
+              "lcr-v1",
+              "quad-v1",
+              "5.0-v1",
+              "5.1-side-v1",
+              "5.1-rear-v1",
+              "7.1-v1"
+            ],
+            "reason": ""
+          }
+        ],
+        "protocol": 1
+      },
+      "elapsedMs": 581.2359999981709,
+      "stderr": "",
+      "passed": true
+    }
+  ],
+  "qualification": "Actual owned VST3 bundles; Intel rejected without bridging, native and universal slices accepted. No vendor qualification."
+}

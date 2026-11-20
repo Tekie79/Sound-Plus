@@ -56,6 +56,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     look.setColour(juce::Slider::thumbColourId, accent);
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
+    addAndMakeVisible(processPlugin);
+    processPlugin.onClick = [this] { if (selectedAsset && onProcess && !audio.captureBusy()) onProcess(*selectedAsset, regionStart, regionEnd); };
     addAndMakeVisible(scopeLabel);
     addAndMakeVisible(clearScope);
     scopeLabel.setFont(juce::FontOptions(12.f));
@@ -652,6 +654,7 @@ void LibraryView::resized()
         play.setBounds(getWidth() / 2 - 20, getHeight() - 71, 40, 40);
         repeatOne.setBounds(getWidth() / 2 + 26, getHeight() - 67, 24, 30);
         repeatAll.setBounds(getWidth() / 2 + 52, getHeight() - 67, 24, 30);
+        processPlugin.setBounds(getWidth() - 82, 12, 30, 28);
         addDesigner.setBounds(getWidth() - 46, getHeight() - 67, 30, 30);
         dragOriginal.setBounds(16, getHeight() - 67, 30, 30);
         channelDetails.setBounds(52, getHeight() - 67, 30, 30);
@@ -712,6 +715,7 @@ void LibraryView::resized()
     table.getHeader().setColumnWidth(1, std::max(200, table.getWidth() - fixed - 18));
     int y = layout.selection.getY(), left = 264, right = getWidth() - 28, centre = (left + right) / 2;
     detail.setBounds(left, y, std::max(80, right - left - 410), 26);
+    processPlugin.setBounds(right - 226, y, 30, 30);
     findSimilar.setBounds(right - 148, y, 148, 30);
     addDesigner.setBounds(right - 188, y, 32, 30);
     moments.setBounds(right - 390, y + 2, 190, 26);
@@ -745,7 +749,7 @@ void LibraryView::compactVisibility()
         if (dynamic_cast<juce::CallOutBox *>(c))
             continue;
         c->setVisible(c == &search || c == &add || c == &table || c == &waveform || c == &play ||
-                      c == &addDesigner || c == &channelDetails || c == &dragOriginal || c == &scopeLabel ||
+                      c == &addDesigner || c == &processPlugin || c == &channelDetails || c == &dragOriginal || c == &scopeLabel ||
                       c == &clearScope || c == &repeatOne || c == &repeatAll ||
                       (c == &transport && transport.getText().isNotEmpty()));
     }
@@ -1657,6 +1661,7 @@ void LibraryView::timerCallback()
     play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
     play.setIcon(navigationAuto || (libraryOwned && (isPlaying || pending)) ? ActionIcon::stop
                                                                             : ActionIcon::play);
+    processPlugin.setEnabled(selectedAsset && selectedAsset->samples > 0 && !audio.captureBusy());
     addDesigner.setEnabled(selectedAsset && selectedAsset->samples > 0);
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
     dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples > 0 &&

@@ -78,7 +78,7 @@ WaveformPool::WaveformPool(const juce::File &directory, std::function<void()> be
 }
 void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
 {
-    if (owner < 0 || owner > 7)
+    if (owner < 0 || owner > 8)
         return;
     auto &wanted = owners[owner];
     wanted.clear();
@@ -87,7 +87,7 @@ void WaveformPool::demand(int owner, const std::vector<Asset> &assets)
         if (a.samples > 0 && a.id.isNotEmpty() && keys.insert(waveformSourceKey(a)).second)
         {
             wanted.push_back(a);
-            if (wanted.size() == (owner >= 4 ? 16 : maxDemand))
+            if (wanted.size() == (owner == 8 ? 2 : owner >= 4 ? 16 : maxDemand))
                 break;
         }
 }

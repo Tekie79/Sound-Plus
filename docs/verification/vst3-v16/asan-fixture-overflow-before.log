@@ -1,0 +1,50 @@
+=================================================================
+==20028==ERROR: AddressSanitizer: heap-buffer-overflow on address 0x61d000037c90 at pc 0x000100f8a728 bp 0x00016ef86490 sp 0x00016ef86488
+WRITE of size 4 at 0x61d000037c90 thread T0
+    #0 0x000100f8a724 in (anonymous namespace)::wave(juce::File const&, sp::ChannelLayout, int, int) PluginProcessingTests.cpp:74
+    #1 0x000100f7afa8 in runPluginProcessingTests(juce::File const&, juce::File const&, juce::File const&, juce::File const&) PluginProcessingTests.cpp:239
+    #2 0x000100f76264 in main DebugMain.cpp:4
+    #3 0x000189fe9d50 in start+0x1c0c (dyld:arm64e+0x8d50)
+
+0x61d000037c90 is located 6108 bytes after 2100-byte region [0x61d000035c80,0x61d0000364b4)
+allocated by thread T0 here:
+    #0 0x000103835164 in malloc+0x78 (libclang_rt.asan_osx_dynamic.dylib:arm64e+0x41164)
+    #1 0x000100f8d958 in juce::AudioBuffer<float>::allocateData() juce_AudioSampleBuffer.h:1169
+    #2 0x000100f8a358 in (anonymous namespace)::wave(juce::File const&, sp::ChannelLayout, int, int) PluginProcessingTests.cpp:67
+    #3 0x000100f7afa8 in runPluginProcessingTests(juce::File const&, juce::File const&, juce::File const&, juce::File const&) PluginProcessingTests.cpp:239
+    #4 0x000100f76264 in main DebugMain.cpp:4
+    #5 0x000189fe9d50 in start+0x1c0c (dyld:arm64e+0x8d50)
+
+SUMMARY: AddressSanitizer: heap-buffer-overflow PluginProcessingTests.cpp:74 in (anonymous namespace)::wave(juce::File const&, sp::ChannelLayout, int, int)
+Shadow bytes around the buggy address:
+  0x61d000037a00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037a80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037b00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037b80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037c00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+=>0x61d000037c80: fa fa[fa]fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037d00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037d80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037e00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037e80: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+  0x61d000037f00: fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa fa
+Shadow byte legend (one shadow byte represents 8 application bytes):
+  Addressable:           00
+  Partially addressable: 01 02 03 04 05 06 07
+  Heap left redzone:       fa
+  Freed heap region:       fd
+  Stack left redzone:      f1
+  Stack mid redzone:       f2
+  Stack right redzone:     f3
+  Stack after return:      f5
+  Stack use after scope:   f8
+  Global redzone:          f9
+  Global init order:       f6
+  Poisoned by user:        f7
+  Container overflow:      fc
+  Array cookie:            ac
+  Intra object redzone:    bb
+  ASan internal:           fe
+  Left alloca redzone:     ca
+  Right alloca redzone:    cb
+==20028==ABORTING

@@ -349,6 +349,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     cancel.onClick = [this] { session.cancelRender(); };
     chooseFolder.onClick = [this] { chooseFile(4); };
     copyOriginal.onClick = [this] { chooseFile(5); };
+    addAndMakeVisible(processPlugin);
+    processPlugin.onClick = [this] { auto file = session.readyOutput(); if (file != juce::File() && !session.takeBusy() && onProcessOutput) onProcessOutput(file); };
     addPrint.onClick = [this]
     {
         auto output = session.readyOutput();
@@ -1295,6 +1297,8 @@ void DesignerView::refresh()
     dragOutput.setButtonText(session.lastOutput.hasFileExtension("wav") ? "Drag WAV"
                                                                         : "Drag verified output");
     dragOutput.setEnabled(session.lastOutput != juce::File());
+    processPlugin.setEnabled(session.lastOutput != juce::File() && !session.takeBusy());
+    processPlugin.setTooltip(session.lastOutput == juce::File() ? "Render Design/Take first, then process that finalized sound with a VST3 effect" : "Process the selected finalized WAV; the editable design/take stays unchanged");
     addPrint.setEnabled(session.lastOutput != juce::File());
     outputInfo.setText(session.lastOutput == juce::File() ? "" : session.lastOutput.getFileName(),
                        juce::dontSendNotification);
@@ -1594,7 +1598,8 @@ void DesignerView::resized()
     copyOriginal.setBounds(52, y + 42, 32, 32);
     dragOutput.setBounds(100, y + 42, 32, 32);
     addPrint.setBounds(136, y + 42, 32, 32);
-    outputInfo.setBounds(180, y + 42, std::max(60, creative - (performMode ? 400 : 198)), 30);
+    processPlugin.setBounds(172, y + 42, 32, 32);
+    outputInfo.setBounds(216, y + 42, std::max(40, creative - (performMode ? 436 : 234)), 30);
     readyOutputs.setBounds(outputInfo.getBounds());
     play.setBounds(performMode ? creative - 170 : creative / 2 - 20, getHeight() - (performMode ? 118 : 92),
                    40, 40);

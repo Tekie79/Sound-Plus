@@ -1,6 +1,7 @@
 #pragma once
 #include "LibraryView.h"
 #include "DesignerView.h"
+#include "PluginProcessPanel.h"
 class Workstation final : public juce::Component,public juce::DragAndDropContainer
 {
   public:
@@ -12,6 +13,8 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
           library(db,juce::File::getSpecialLocation(juce::File::currentExecutableFile),enableAI,modelDirectory),
           designer(db,library.audioClient(),preferences,library.waveformProvider()),divider(*this)
     {
+        library.onProcess=[this,db](const sp::Asset &a,int64_t first,int64_t last) { sp::PluginInput input; input.source=a;input.first=first;input.last=last;input.layout=a.layoutOverride.id.isNotEmpty()?a.layoutOverride:a.detectedChannels; if(a.channels<=16)for(int c=0;c<a.channels;++c)input.inputs.push_back(c); showProcessing(input,db); };
+        designer.onProcessOutput=[this,db](const juce::File &file) { try { sp::PluginInput input;input.source=sp::inspectDesignSource(file);input.last=input.source.samples;input.layout=input.source.detectedChannels;input.scope="Finalized design/take output";for(int c=0;c<input.source.channels;++c)input.inputs.push_back(c);showProcessing(input,db); } catch(const std::exception &e) { designer.session.message=e.what(); } };
         library.bindPreferences(preferences);
         browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",300);
         addAndMakeVisible(library);addChildComponent(designer);addChildComponent(divider);
@@ -54,6 +57,26 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         try{auto d=sp::designFromJson(juce::JSON::parse(details.description.toString()));if(d.original.layers.size()!=1)return false;auto &l=d.original.layers.front();if(l.region.startSample!=0 || l.region.endSample!=l.source.samples || l.source.error.isNotEmpty() || !juce::File(l.source.path).existsAsFile())return false;files.add(l.source.path);canMove=false;return true;}catch(...){return false;}
     }
   private:
+    struct ProcessWindow final : juce::DocumentWindow
+    {
+        std::function<void()> onClose;
+        ProcessWindow():DocumentWindow("Process with Plug-in",sp::ui::background,juce::DocumentWindow::closeButton){setUsingNativeTitleBar(true);}
+        void closeButtonPressed() override {if(onClose)onClose();}
+    };
+    std::unique_ptr<ProcessWindow> processWindow;
+    void showProcessing(sp::PluginInput input,const juce::File &db)
+    {
+        if(designer.session.takeBusy())return;
+        processWindow.reset();auto panel=std::make_unique<sp::PluginProcessPanel>(input,db.getParentDirectory().getChildFile("plugin-processing/"+juce::Uuid().toString()),library.audioClient(),library.waveformProvider());
+        auto id=designer.session.document.id,variation=designer.session.document.activeVariation,take=designer.session.document.activeTake;auto revision=designer.session.document.revision;
+        juce::Component::SafePointer<Workstation> safe(this);
+        panel->session.contextValid=[safe,id,variation,take,revision] {return safe&&safe->designer.session.document.id==id&&safe->designer.session.document.activeVariation==variation&&safe->designer.session.document.activeTake==take&&safe->designer.session.document.revision==revision&&!safe->designer.session.takeBusy()&&!safe->designer.session.transitionPending();};
+        panel->beforeAudition=[safe]{if(safe){safe->designer.session.stop();safe->library.parkPlayback();}};
+        panel->onPrint=[safe](auto &file){if(safe&&!safe->designer.session.takeBusy()){if(safe->designer.session.document.activeTake.isNotEmpty())safe->designer.session.selectTake({});safe->designer.session.addExternal(file);safe->showDesigner(true);}};
+        panel->onIndex=[safe](auto &folder){if(safe)safe->library.addFolder(folder);};
+        processWindow=std::make_unique<ProcessWindow>();processWindow->onClose=[safe]{juce::MessageManager::callAsync([safe]{if(safe)safe->processWindow.reset();});};
+        processWindow->setContentOwned(panel.release(),true);processWindow->centreWithSize(700,650);processWindow->setVisible(true);processWindow->toFront(true);
+    }
     bool designerActive=false,browserOpen=true;int browserWidth=300;
     struct Divider : juce::Component
     {

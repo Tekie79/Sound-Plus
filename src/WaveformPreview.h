@@ -20,6 +20,7 @@ class WaveformPool
   public:
     explicit WaveformPool(const juce::File &, std::function<void()> beforeRead = {},
                           std::function<double()> now = {}, WaveformCache::Checkpoint = {});
+    // Owner 8 is the contextual Process panel, limited to its input and processed source.
     void demand(int owner, const std::vector<Asset> &);
     bool tick();
     std::shared_ptr<const WaveformData> get(const Asset &);

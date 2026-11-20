@@ -1,0 +1,118 @@
+{
+  "platform": "macOS 26.3.2 arm64, MacBook Pro M5 Pro 48 GiB",
+  "fixture": {
+    "name": "SoundPlus QA Effect",
+    "vendor": "SoundPlus QA",
+    "version": "0.1.0",
+    "architecture": "arm64",
+    "layout": "stereo-v1"
+  },
+  "nativeInput": {
+    "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/vst3-v16/native-qa/media/Native stereo.wav",
+    "scope": "Original source/range",
+    "seconds": 2,
+    "rate": 48000,
+    "channels": 2
+  },
+  "nativeWorkflow": {
+    "prepare": true,
+    "genericGainValueEntry": 0.25,
+    "tailSeconds": 0.2,
+    "preview": true,
+    "normalizeAfterReady": true,
+    "workerRequestsBefore": 5,
+    "workerRequestsAfter": 5,
+    "abNextActionsObserved": [
+      "Compare Original",
+      "Compare Processed"
+    ],
+    "abStartsAt": "frame zero for each representation",
+    "sharedTransport": true,
+    "realWaveforms": true,
+    "saveOpenProcessingJob": true,
+    "copy": true,
+    "indexMasterAndStereoSplits": true,
+    "printOrdinaryMaster": true,
+    "saveQuitReopenDesignRevision": 4,
+    "reopenedPlaybackMeterDb": [
+      -7,
+      -9.9
+    ],
+    "minimumContentSize": [
+      1040,
+      680
+    ],
+    "normalContentSize": [
+      1360,
+      860
+    ],
+    "browserInspectorVisible": true,
+    "tabFocus": true,
+    "finalizedScopeObserved": true
+  },
+  "processed": {
+    "path": "/Users/harvest/Music/SoundPlus/Processed/Processed-8910b5759d5945e0ba8506bec1814f8b/Mix.wav",
+    "sha256": "e6c5a2df69e436b3854af96c20ccaad8592d41ea2e2f811c25b79c377901e7ca",
+    "frames": 105600,
+    "seconds": 2.2,
+    "rate": 48000,
+    "channels": 2,
+    "gainMaxError": 0.0,
+    "normalizationMaxError": 4.540626241666956e-08,
+    "splitMaxError": 0,
+    "tail": 0.2
+  },
+  "receiver": {
+    "application": "DaVinci Resolve Studio",
+    "version": "21.1.2.10",
+    "qaProject": "SoundPlus VST3 Native QA 20261119",
+    "status": "Blocked: receiver acceptance not achieved with native-control gesture",
+    "nativeDragInitiated": true,
+    "dragEndObserved": true,
+    "importedMediaCount": 0,
+    "placement": "Not reached",
+    "rateChannelsDurationContentInReceiver": "Not reached",
+    "saveCloseReopen": true,
+    "mediaPersistence": "Not qualified; only empty timeline persisted",
+    "copiedOrReferenced": "Undetermined; no imported media",
+    "previousProjectRestored": "SoundPlus Native Delivery QA 20261118",
+    "sourceFileExistsAndFinalized": true,
+    "sourceFileRetained": true,
+    "implementationChangedForFailedDrag": false,
+    "dragEndMeaning": "End callback followed Escape during cleanup; no receiver media item resulted."
+  },
+  "humanListening": "Not performed; numeric PCM and native playback state only",
+  "vendorEffect": "Blocked: none installed in checked locations",
+  "completeWorkflowArtifact": {
+    "compiledSourceTreeSha256": "0ad20a8e200a7594650e9f8355b2c9a25eb2033e78fc72904f5d6d1fe55129ff",
+    "executables": {
+      "app": "63ae301ea9edfde72de01b47542370831c67c9e6e9b36303e328b47f22debb7c",
+      "audio": "f84ee03debc88a5a155bee67e9377d735362053ede447f8ccc43f2a3cb3c9ce0",
+      "ai": "94a55669860eebeca1753bbc1ada22495d53bbb7581c209f7b2eaededabf1bf9",
+      "plugin": "797ea55ec60c9d496b509f97d3a731a2d874b640b45aa7f071c43327b456a43a"
+    },
+    "note": "Complete native workflow before helper-only architecture-label correction; final smoke separately binds the corrected bundle. UI implementation unchanged."
+  },
+  "finalBundleSmoke": {
+    "compiledSourceTreeSha256": "77f9a7ee98afae5119ab48f453df1d849272d820a3a4904a0a254ac3e1a2834b",
+    "executables": {
+      "app": "63ae301ea9edfde72de01b47542370831c67c9e6e9b36303e328b47f22debb7c",
+      "audio": "f84ee03debc88a5a155bee67e9377d735362053ede447f8ccc43f2a3cb3c9ce0",
+      "ai": "94a55669860eebeca1753bbc1ada22495d53bbb7581c209f7b2eaededabf1bf9",
+      "plugin": "e2f17de24903a04fe2759dbd4c577a52983ded403794d6134bc8a7d66c1cdc52"
+    },
+    "qaDesignRevision": 4,
+    "indexedMasterAndSplitsRetained": true,
+    "compactProcessVisible": true,
+    "processingJobReopened": true,
+    "gainNormalized": 0.25,
+    "tailSeconds": 0.2,
+    "normalize": true,
+    "splitMono": true,
+    "newPreviewReady": true,
+    "processedDuration": 2.2,
+    "realWaveforms": true,
+    "sharedAuditionNextAction": "Compare Original",
+    "screenshot": "process-final-smoke.jpg"
+  }
+}
