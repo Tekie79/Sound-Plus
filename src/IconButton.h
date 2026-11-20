@@ -32,6 +32,14 @@ class IconButton : public juce::TextButton
     {
         return icons::forState(kind, getToggleState());
     }
+    void setLabelVisible(bool value)
+    {
+        if (showLabel != value)
+        {
+            showLabel = value;
+            repaint();
+        }
+    }
     void setLabelAlignedLeft(bool value = true)
     {
         labelAlignedLeft = value;

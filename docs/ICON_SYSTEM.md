@@ -98,3 +98,7 @@ The current working catalog can be opened explicitly:
 open -n "$PWD/build/SoundPlus_artefacts/Release/SoundPlus.app" --args \
   --data-dir "$PWD/build/fade-ui/native-ui"
 ```
+
+## Unified insert follow-up
+
+The insert toolbar now adds Lucide `plus`, `power` and `ellipsis` from the same pinned revision, through the existing cached registry and theme tones. Empty racks show only Add effect; selected-effect power, parameters, editor and secondary-action controls replace the repeated generic sliders icons. See [unified insert UX](INSERT_RACKS_UX.md) and the current asset manifest for mappings/hashes. Historical first-pass counts above describe that earlier milestone.

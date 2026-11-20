@@ -71,6 +71,9 @@ constexpr const char *resources[]{
     "lucide_check_svg",                       // check
     "lucide_repeat_svg",                      // repeat
     "lucide_repeat_1_svg",                    // repeatOne
+    "lucide_power_svg",                       // effectEnabled
+    "lucide_plus_svg",                        // addEffect
+    "lucide_ellipsis_svg",                    // more
 };
 static_assert(std::size(resources) == (size_t)ActionIcon::count);
 using Images = std::array<std::unique_ptr<juce::Drawable>, (size_t)Tone::count>;

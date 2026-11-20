@@ -1,0 +1,61 @@
+{
+  "utc": "2026-11-20T06:24:15.475803+00:00",
+  "baseline": "3e09c9d65ef8eb1fb43365b710a5ae872ad090b7",
+  "sourceFiles": {
+    "src/StockRackView.h": "70d82ff742e40fcddd81d976c389838439e2f40c0db1bfeef6eb88e22e72747d",
+    "src/HostedRackView.h": "406c3a5dc3f2e7efeeec1a77738dca7a1f7486b1d583120a7385c5a91bd7850f",
+    "src/IconButton.h": "36d30f0ce450e5aed376729e7ce796984922a0957880656f8db0464747db9af3",
+    "src/IconRegistry.h": "45b6f4d7ab3841bbb834711de3574be549c244d7cfe3d1d01fb037d366c2f8b8",
+    "src/IconRegistry.cpp": "3886599d8c3854a8f4275150f9b72ab8e95e5e0c2eb60115f92cd6cb12c9b630",
+    "tests/PluginProcessingTests.cpp": "ff64d0713f723a787e903f82dcf3f77976ecf3f40b138e259ee7965598549bfa",
+    "resources/icons/manifest.json": "8226c1726b4e037ba06c6c48c52946cd61f79aeec53ab0474099b0c23a1e330e",
+    "resources/icons/lucide/lucide_plus.svg": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17",
+    "resources/icons/lucide/lucide_power.svg": "1e6b84a659aa43f826cdd8df0a63d349720004e2ccb10c33e415a990a311aa05",
+    "resources/icons/lucide/lucide_ellipsis.svg": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112"
+  },
+  "artifacts": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "cb6847f46dcf54ab94bce833b4e37ffc1034e76a28769e0eb861f6157f5a6651",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "6655323772405ef868b6aa02234e9ebc51b52c70ceaf6586949dd569db4e4a27",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": "9a90bd249ff87be34b32f7b7c46c5e286bb73adc474690a5e7f36b8fa84e4341",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "42457642c9db4295047ff26deacd3bf109da6bac10e91b3b8a9e6f089e95837c"
+  },
+  "qaCopiesByteIdentical": true,
+  "native": {
+    "platform": "macOS 26.3.2 / Apple Silicon M5 Pro",
+    "sizes": [
+      "1360-wide normal window",
+      "1040 x 680 minimum"
+    ],
+    "checks": [
+      "One selector contains stock filter and Apple AUDelay; selecting AU reveals its tools in same card",
+      "Inline AU parameters expand/collapse without a separate external panel",
+      "Dry track and emptied Master show only Add effect",
+      "Context menu removes both stock and external effects; empty state restored",
+      "Shared Add menu adds stock gain and searches/loads another Apple AUDelay",
+      "Power switch On/Off and bypass suffix/tooltip remain synchronized",
+      "Native Play/Stop after adding the AU works"
+    ],
+    "scope": "Pointer/keyboard and visual verification with generated QA media. No new human listening or receiving-app qualification."
+  },
+  "screenshots": {
+    "added-plugin.jpg": "2f73971cb0c5dbc21fe56c7eed41ab38e0565a2118e16d8354fe7a7e0a540b33",
+    "empty-racks.jpg": "ecba80fa80263d5d8123590526c427a3dade244dae2294035d7920b108c24d94",
+    "unified-racks.jpg": "32fef45635e4469f22bc477557a8d9695a38c588b6b5b03c609168cfb805185e",
+    "empty-track.jpg": "687a178c601869ad9cdd1a5d7327d082d322f9ce658ab372a641ea7422cf7f4d",
+    "unified-parameters.jpg": "4671fc5dd9e15c4508637d12ec149cc1c30809ce166e15ad50e95d4e9167c67c",
+    "minimum.jpg": "5b72c74572e556d9aa542fbcfc50aa6c45188495138e8280fa3a4867c65e960d"
+  },
+  "protection": {
+    "retainedUserDocument": "Workflow demonstration r34",
+    "protectedFiles": 178,
+    "changed": [],
+    "relaunch": {
+      "document": "Workflow demonstration",
+      "revision": 34,
+      "workspace": "Edit",
+      "monitorVolume": 0.25,
+      "status": "Recovered latest changes",
+      "allProtectedFilesUnchangedAfterRelaunch": true
+    }
+  }
+}

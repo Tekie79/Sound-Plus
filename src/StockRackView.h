@@ -19,30 +19,54 @@ class StockRackView final : public juce::Component
     {
         for (auto *c :
              std::initializer_list<juce::Component *>{&heading, &slots, &add, &remove, &up, &down, &bypass,
-                                                      &all, &transfer, &reset, &lockSlot, &parameters})
+                                                      &all, &transfer, &reset, &lockSlot, &parameters, &more})
             addAndMakeVisible(c);
         heading.setColour(juce::Label::textColourId, ui::muted);
         heading.setFont(juce::FontOptions(12.f));
         slots.setTitle(master ? "Master insert slots" : "Track insert slots");
-        slots.setTextWhenNothingSelected("No stock inserts");
+        slots.setTextWhenNothingSelected("No inserts");
+        slots.setTooltip("Effects run top to bottom. Stock effects precede plug-ins.");
         slots.onChange = [this]
         {
-            selectedSlot = slotId();
+            externalSelected = slots.getSelectedId() >= 100;
+            if (externalSelected && external)
+            {
+                auto *rack = external->currentRack();
+                auto at = slots.getSelectedId() - 100;
+                if (rack && juce::isPositiveAndBelow(at, (int)rack->slots.size()))
+                    selectedExternalSlot = rack->slots[(size_t)at].id;
+            }
+            else
+                selectedSlot = slotId();
             refresh();
+            if (onHeightChange)
+                onHeightChange();
         };
         add.onClick = [this]
         {
             auto target = owner;
             juce::PopupMenu menu;
-            menu.addItem(1, "Gain");
-            menu.addItem(2, "Filter");
-            menu.addItem(3, "Delay");
-            menu.addItem(4, "Reverb");
+            auto *fx = rack(target);
+            bool canStock = fx && fx->size() < 8;
+            menu.addItem(1, "Gain", canStock);
+            menu.addItem(2, "Filter", canStock);
+            menu.addItem(3, "Delay", canStock);
+            menu.addItem(4, "Reverb", canStock);
+            if (external)
+            {
+                menu.addSeparator();
+                menu.addItem(5, "Plug-in…",
+                             external->currentRack() && external->currentRack()->slots.size() < 8);
+            }
             juce::Component::SafePointer<StockRackView> safe(this);
             menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(add),
                                [safe, target](int choice)
                                {
-                                   if (safe && choice >= 1 && choice <= 4)
+                                   if (safe && choice == 5 && safe->external && safe->rack(target))
+                                       safe->external->chooseEffectFor({target.document, target.variation,
+                                                                        target.layer, target.generation},
+                                                                       safe->add.getScreenBounds());
+                                   else if (safe && choice >= 1 && choice <= 4)
                                        safe->append(target, juce::StringArray{"gain", "filter", "delay",
                                                                               "reverb"}[choice - 1]);
                                });
@@ -83,6 +107,7 @@ class StockRackView final : public juce::Component
                      });
         };
         transfer.onClick = [this] { showTransfer(); };
+        more.onClick = [this] { showActions(); };
         parameters.setToggleable(true);
         parameters.onClick = [this] { setParametersExpanded(!expanded); };
         for (int i = 0; i < 4; ++i)
@@ -140,7 +165,7 @@ class StockRackView final : public juce::Component
         }
         if (registry != juce::File())
         {
-            external = std::make_unique<HostedRackView>(session, isMaster, registry);
+            external = std::make_unique<HostedRackView>(session, isMaster, registry, true);
             addAndMakeVisible(*external);
             external->onHeightChange = [this]
             {
@@ -169,7 +194,12 @@ class StockRackView final : public juce::Component
                    session.documentGeneration()};
         if (next.layer != owner.layer || next.document != owner.document ||
             next.variation != owner.variation || next.generation != owner.generation)
+        {
             selectedSlot.clear();
+            selectedExternalSlot.clear();
+            externalSelected = false;
+            knownExternalCount = -1;
+        }
         owner = next;
         if (external)
             external->bind(layer);
@@ -210,18 +240,39 @@ class StockRackView final : public juce::Component
     }
     int preferredHeight() const
     {
-        return 96 + (expanded ? parameterCount * 46 : 0) + (external ? 12 + external->preferredHeight() : 0);
+        bool has = slots.getNumItems() > 0;
+        return 60 + (externalSelected && external ? external->preferredHeight()
+                     : has                        ? 32 + (expanded ? parameterCount * 46 : 0)
+                                                  : 0);
+    }
+    void selectExternalSlot(const juce::String &id)
+    {
+        externalSelected = true;
+        selectedExternalSlot = id;
+        refresh();
+        if (onHeightChange)
+            onHeightChange();
     }
     void refresh()
     {
         updating = true;
         auto *fx = rack(owner);
-        juce::String name = isMaster ? "Stock / Master" : "Stock";
+        juce::String name = isMaster ? "Master" : "";
         if (!isMaster)
             for (auto &l : session.document.activeMix().layers)
                 if (l.id == owner.layer)
-                    name += " / " + l.name;
+                    name = l.name;
         heading.setText(name, juce::dontSendNotification);
+        if (external)
+            external->refresh();
+        auto *hosted = external ? external->currentRack() : nullptr;
+        int externalCount = hosted ? (int)hosted->slots.size() : 0;
+        if (knownExternalCount >= 0 && externalCount > knownExternalCount)
+        {
+            externalSelected = true;
+            selectedExternalSlot = hosted->slots.back().id;
+        }
+        knownExternalCount = externalCount;
         slots.clear(juce::dontSendNotification);
         int picked = 0;
         if (fx)
@@ -234,13 +285,47 @@ class StockRackView final : public juce::Component
                 if (e.id == selectedSlot)
                     picked = (int)i + 1;
             }
-        if (!picked && fx && !fx->empty())
+        int selectedExternal = -1;
+        for (int i = 0; i < externalCount; ++i)
+        {
+            slots.addItem(juce::String((fx ? (int)fx->size() : 0) + i + 1) + " | " +
+                              external->slotDescription(i),
+                          100 + i);
+            if (hosted->slots[(size_t)i].id == selectedExternalSlot)
+                selectedExternal = i;
+        }
+        if (externalSelected && selectedExternal < 0 && externalCount)
+            selectedExternal = 0;
+        if ((!fx || fx->empty()) && externalCount)
+        {
+            externalSelected = true;
+            if (selectedExternal < 0)
+                selectedExternal = 0;
+        }
+        if (!externalCount)
+            externalSelected = false;
+        if (externalSelected)
+        {
+            selectedExternalSlot = hosted->slots[(size_t)selectedExternal].id;
+            external->selectSlot(selectedExternalSlot);
+        }
+        else if (!picked && fx && !fx->empty())
             picked = 1;
-        slots.setSelectedId(picked, juce::dontSendNotification);
-        selectedSlot = slotId();
-        auto *effect = fx && picked ? &(*fx)[(size_t)picked - 1] : nullptr;
+        slots.setSelectedId(externalSelected ? 100 + selectedExternal : picked, juce::dontSendNotification);
+        if (!externalSelected)
+            selectedSlot = slotId();
+        auto *effect = !externalSelected && fx && picked ? &(*fx)[(size_t)picked - 1] : nullptr;
         bool editable = fx && !session.takeBusy() && session.document.activeTake.isEmpty();
-        add.setEnabled(editable && fx->size() < 8);
+        add.setEnabled(editable && (fx->size() < 8 || (external && externalCount < 8)));
+        slots.setVisible(slots.getNumItems() > 0);
+        add.setLabelVisible(slots.getNumItems() == 0);
+        for (auto *button : {&remove, &up, &down, &all, &transfer, &reset, &lockSlot})
+            button->setVisible(false);
+        for (auto *button : {&bypass, &parameters, &more})
+            button->setVisible(effect != nullptr);
+        more.setEnabled(editable && effect);
+        if (external)
+            external->setVisible(externalSelected);
         remove.setEnabled(editable && effect);
         up.setEnabled(editable && picked > 1);
         down.setEnabled(editable && effect && picked < (int)fx->size());
@@ -249,7 +334,8 @@ class StockRackView final : public juce::Component
         bypass.setEnabled(editable && effect);
         reset.setEnabled(editable && effect);
         transfer.setEnabled(editable && effect);
-        bypass.setToggleState(effect && effect->bypass, juce::dontSendNotification);
+        bypass.setToggleState(effect && !effect->bypass, juce::dontSendNotification);
+        bypass.setTooltip(effect && effect->bypass ? "Enable effect" : "Bypass effect");
         bool allOff =
             fx && !fx->empty() && std::all_of(fx->begin(), fx->end(), [](auto &e) { return e.bypass; });
         all.setEnabled(editable && fx && !fx->empty());
@@ -288,7 +374,7 @@ class StockRackView final : public juce::Component
         {
             auto &v = values[(size_t)i];
             auto &label = labels[(size_t)i];
-            bool visible = expanded && i < parameterCount;
+            bool visible = !externalSelected && expanded && i < parameterCount;
             locks[(size_t)i].setVisible(visible);
             locks[(size_t)i].setEnabled(editable);
             locks[(size_t)i].setToggleState(effect && (effect->parameterLocks & (1u << i)),
@@ -316,58 +402,56 @@ class StockRackView final : public juce::Component
         updating = false;
         resized();
     }
-    void paint(juce::Graphics &g) override
-    {
-        if (external)
-        {
-            auto bounds = external->getBounds().toFloat().expanded(6, 4);
-            g.setColour(ui::background.withAlpha(.24f));
-            g.fillRoundedRectangle(bounds, 6);
-            g.setColour(ui::line.withAlpha(.5f));
-            g.drawRoundedRectangle(bounds.reduced(.5f), 6, 1);
-        }
-    }
     void resized() override
     {
         auto r = getLocalBounds();
         heading.setBounds(r.removeFromTop(22));
         auto row = r.removeFromTop(30);
-        slots.setBounds(row.removeFromLeft(std::max(70, row.getWidth() - 120)));
-        for (auto *b : {&add, &remove, &up, &down})
-            b->setBounds(row.removeFromLeft(30));
-        row = r.removeFromTop(36);
-        for (auto *b : {&bypass, &all, &transfer, &reset, &lockSlot, &parameters})
-            b->setBounds(row.removeFromLeft(34).reduced(2));
-        for (int i = 0; expanded && i < parameterCount; ++i)
+        if (slots.getNumItems())
         {
-            labels[(size_t)i].setBounds(r.removeFromTop(17));
-            auto row = r.removeFromTop(29);
-            locks[(size_t)i].setBounds(row.removeFromRight(28));
-            values[(size_t)i].setBounds(row);
+            add.setBounds(row.removeFromRight(30));
+            slots.setBounds(row);
         }
-        if (external)
+        else
+            add.setBounds(row);
+        r.removeFromTop(4);
+        if (externalSelected && external)
+            external->setBounds(r.removeFromTop(external->preferredHeight()));
+        else if (slots.getNumItems())
         {
-            r.removeFromTop(20);
-            external->setBounds(r.removeFromTop(external->preferredHeight()).reduced(6, 0));
+            row = r.removeFromTop(32);
+            for (auto *b : {&bypass, &parameters, &more})
+                b->setBounds(row.removeFromLeft(32).reduced(2));
+            for (int i = 0; expanded && i < parameterCount; ++i)
+            {
+                labels[(size_t)i].setBounds(r.removeFromTop(17));
+                row = r.removeFromTop(29);
+                locks[(size_t)i].setBounds(row.removeFromRight(28));
+                values[(size_t)i].setBounds(row);
+            }
         }
     }
 
   private:
     std::unique_ptr<HostedRackView> external;
     juce::Label heading;
-    IconButton add{"Add stock insert", ActionIcon::processing}, remove{"Remove insert", ActionIcon::trash},
+    IconButton add{"Add effect", ActionIcon::addEffect, true}, remove{"Remove insert", ActionIcon::trash},
         up{"Move insert up", ActionIcon::up}, down{"Move insert down", ActionIcon::down},
-        bypass{"Bypass insert", ActionIcon::mute}, all{"Bypass all stock inserts", ActionIcon::processing},
+        bypass{"Effect enabled", ActionIcon::effectEnabled},
+        all{"Bypass all stock inserts", ActionIcon::processing},
         transfer{"Copy or move insert to another rack", ActionIcon::duplicate},
         reset{"Reset stock preset", ActionIcon::undo};
     IconButton lockSlot{"Lock insert for variations", ActionIcon::lock},
-        parameters{"Show stock insert parameters", ActionIcon::chevron};
+        parameters{"Show stock insert parameters", ActionIcon::chevron},
+        more{"Effect actions", ActionIcon::more};
     std::array<IconButton, 4> locks{{{"Lock parameter 1", ActionIcon::lock},
                                      {"Lock parameter 2", ActionIcon::lock},
                                      {"Lock parameter 3", ActionIcon::lock},
                                      {"Lock parameter 4", ActionIcon::lock}}};
     std::array<juce::Label, 4> labels;
-    juce::String selectedSlot, gestureSlot;
+    juce::String selectedSlot, gestureSlot, selectedExternalSlot;
+    bool externalSelected = false;
+    int knownExternalCount = -1;
     Owner gestureOwner;
     bool updating = false, dragging = false, expanded = false;
     int parameterCount = 0;
@@ -401,6 +485,57 @@ class StockRackView final : public juce::Component
                      std::swap(fx[i], fx[(size_t)j]);
                  });
     }
+    void showActions()
+    {
+        auto target = owner;
+        auto id = selectedSlot;
+        juce::PopupMenu menu;
+        menu.addItem(1, "Reset effect", reset.isEnabled());
+        menu.addItem(2, "Lock for variations", lockSlot.isEnabled(), lockSlot.getToggleState());
+        menu.addItem(3, "Copy / move…", transfer.isEnabled());
+        menu.addSeparator();
+        menu.addItem(4, "Move earlier", up.isEnabled());
+        menu.addItem(5, "Move later", down.isEnabled());
+        if (auto *fx = rack(target); fx && fx->size() > 1)
+            menu.addItem(6, "Bypass all stock effects", all.isEnabled(), all.getToggleState());
+        menu.addSeparator();
+        menu.addItem(7, "Remove effect", remove.isEnabled());
+        juce::Component::SafePointer<StockRackView> safe(this);
+        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(more),
+                           [safe, target, id](int choice)
+                           {
+                               if (!safe || safe->owner.document != target.document ||
+                                   safe->owner.variation != target.variation ||
+                                   safe->owner.layer != target.layer ||
+                                   safe->owner.generation != target.generation || safe->selectedSlot != id ||
+                                   safe->externalSelected)
+                                   return;
+                               switch (choice)
+                               {
+                               case 1:
+                                   safe->reset.onClick();
+                                   break;
+                               case 2:
+                                   safe->lockSlot.onClick();
+                                   break;
+                               case 3:
+                                   safe->showTransfer();
+                                   break;
+                               case 4:
+                                   safe->move(-1);
+                                   break;
+                               case 5:
+                                   safe->move(1);
+                                   break;
+                               case 6:
+                                   safe->all.onClick();
+                                   break;
+                               case 7:
+                                   safe->remove.onClick();
+                                   break;
+                               }
+                           });
+    }
     void showTransfer()
     {
         auto source = owner;
@@ -419,7 +554,7 @@ class StockRackView final : public juce::Component
             menu.addItem(2 * i + 2, "Move to " + names[i]);
         }
         juce::Component::SafePointer<StockRackView> safe(this);
-        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(transfer),
+        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(more),
                            [safe, source, id, targets](int choice)
                            {
                                if (!safe || choice <= 0 || (size_t)((choice - 1) / 2) >= targets.size() ||

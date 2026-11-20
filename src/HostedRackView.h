@@ -12,12 +12,12 @@ class HostedRackView final : public juce::Component
         juce::String document, variation, layer;
         uint64_t generation = 0;
     };
-    HostedRackView(DesignSession &s, bool master, juce::File registry)
-        : session(s), isMaster(master), storage(std::move(registry))
+    HostedRackView(DesignSession &s, bool master, juce::File registry, bool embeddedView = false)
+        : session(s), isMaster(master), storage(std::move(registry)), embedded(embeddedView)
     {
-        for (auto *c : std::initializer_list<juce::Component *>{&title, &slots, &add, &remove, &up, &down,
-                                                                &bypass, &rackBypass, &transfer, &savePreset,
-                                                                &openPreset, &editor, &parameters, &feedback})
+        for (auto *c : std::initializer_list<juce::Component *>{
+                 &title, &slots, &add, &remove, &up, &down, &bypass, &rackBypass, &transfer, &savePreset,
+                 &openPreset, &editor, &parameters, &more, &feedback})
             addAndMakeVisible(c);
         title.setText("External / after stock", juce::dontSendNotification);
         title.setFont(juce::FontOptions(12.f));
@@ -31,7 +31,8 @@ class HostedRackView final : public juce::Component
             selected = slotId();
             refresh();
         };
-        add.onClick = [this] { showChooser(); };
+        add.onClick = [this] { showChooser(owner); };
+        more.onClick = [this] { showActions(); };
         remove.onClick = [this]
         {
             ++*epoch;
@@ -71,6 +72,26 @@ class HostedRackView final : public juce::Component
         ++*availabilityEpoch;
         worker.finish({});
         parameterViewport.setViewedComponent(nullptr, false);
+    }
+    HostedRack *currentRack()
+    {
+        return find(owner);
+    }
+    juce::String slotDescription(int index) const
+    {
+        return slots.getItemText(index).fromFirstOccurrenceOf(" | ", false, false);
+    }
+    void selectSlot(const juce::String &id)
+    {
+        if (selected != id)
+        {
+            selected = id;
+            refresh();
+        }
+    }
+    void chooseEffectFor(const Owner &target, juce::Rectangle<int> anchor)
+    {
+        showChooser(target, anchor);
     }
     std::function<void()> onHeightChange;
     void bind(const juce::String &layer)
@@ -134,7 +155,8 @@ class HostedRackView final : public juce::Component
             b->setEnabled(editable && has);
         rackBypass.setEnabled(editable && rack && !rack->slots.empty());
         rackBypass.setToggleState(rack && rack->bypass, juce::dontSendNotification);
-        bypass.setToggleState(has && rack->slots[(size_t)index - 1].bypass, juce::dontSendNotification);
+        bypass.setToggleState(has && !rack->slots[(size_t)index - 1].bypass, juce::dontSendNotification);
+        bypass.setTooltip(has && rack->slots[(size_t)index - 1].bypass ? "Enable effect" : "Bypass effect");
         if (has && availability[selected].isNotEmpty())
         {
             editor.setEnabled(false);
@@ -209,6 +231,14 @@ class HostedRackView final : public juce::Component
             v->setTooltip("Normalized host value. Plugin-reported text at preparation: " +
                           p["text"].toString());
         }
+        title.setVisible(!embedded);
+        slots.setVisible(!embedded && has);
+        add.setVisible(!embedded);
+        for (auto *b : {&remove, &up, &down, &rackBypass, &transfer, &savePreset, &openPreset})
+            b->setVisible(false);
+        for (auto *b : {&bypass, &editor, &parameters, &more})
+            b->setVisible(has);
+        more.setEnabled(has && editable);
         parameters.setEnabled(has);
         parameters.setToggleState(expanded, juce::dontSendNotification);
         parameters.setButtonText(expanded ? "Hide external insert parameters"
@@ -227,20 +257,27 @@ class HostedRackView final : public juce::Component
     }
     int preferredHeight() const
     {
-        return 104 + (expanded && !sliders.isEmpty() ? 132 : 0);
+        return (embedded ? 0 : 50) + (selected.isNotEmpty() ? 32 : 0) +
+               (feedback.getText().isNotEmpty() ? 24 : 0) +
+               (selected.isNotEmpty() && expanded && !sliders.isEmpty() ? 132 : 0);
     }
     void resized() override
     {
         auto r = getLocalBounds();
-        title.setBounds(r.removeFromTop(22));
-        auto row = r.removeFromTop(28);
-        slots.setBounds(row.removeFromLeft(std::max(70, row.getWidth() - 120)));
-        for (auto *b : {&add, &remove, &up, &down})
-            b->setBounds(row.removeFromLeft(30));
-        row = r.removeFromTop(30);
-        for (auto *b : {&bypass, &rackBypass, &transfer, &savePreset, &openPreset, &editor, &parameters})
-            b->setBounds(row.removeFromLeft(30));
-        feedback.setBounds(r.removeFromTop(24));
+        if (!embedded)
+        {
+            title.setBounds(r.removeFromTop(22));
+            auto row = r.removeFromTop(28);
+            slots.setBounds(row.removeFromLeft(std::max(70, row.getWidth() - 30)));
+            add.setBounds(row);
+        }
+        if (selected.isNotEmpty())
+        {
+            auto row = r.removeFromTop(32);
+            for (auto *b : {&bypass, &editor, &parameters, &more})
+                b->setBounds(row.removeFromLeft(32).reduced(2));
+        }
+        feedback.setBounds(r.removeFromTop(feedback.getText().isNotEmpty() ? 24 : 0));
         parameterViewport.setBounds(r);
         int width = std::max(80, r.getWidth() - 14);
         parameterContent.setSize(width, sliders.size() * 46);
@@ -253,7 +290,7 @@ class HostedRackView final : public juce::Component
 
   private:
     DesignSession &session;
-    bool isMaster;
+    bool isMaster, embedded;
     juce::File storage;
     Owner owner;
     SerialWorker worker;
@@ -269,16 +306,17 @@ class HostedRackView final : public juce::Component
         }
     }
     juce::ComboBox slots;
-    IconButton add{"Add external insert", ActionIcon::processing},
+    IconButton add{"Add external insert", ActionIcon::addEffect},
         remove{"Remove external insert", ActionIcon::trash}, up{"Move external insert up", ActionIcon::up},
         down{"Move external insert down", ActionIcon::down},
-        bypass{"Bypass external insert", ActionIcon::mute},
+        bypass{"Effect enabled", ActionIcon::effectEnabled},
         rackBypass{"Bypass external rack", ActionIcon::processing},
         transfer{"Copy or move external insert", ActionIcon::duplicate},
         savePreset{"Save insert preset", ActionIcon::save},
         openPreset{"Open insert preset", ActionIcon::open},
         editor{"Editor (apply state when closed)", ActionIcon::settings},
-        parameters{"Show external insert parameters", ActionIcon::chevron};
+        parameters{"Show external insert parameters", ActionIcon::chevron},
+        more{"Effect actions", ActionIcon::more};
     juce::Viewport parameterViewport;
     juce::Component parameterContent;
     juce::OwnedArray<juce::Slider> sliders;
@@ -566,11 +604,10 @@ class HostedRackView final : public juce::Component
         }
     };
     juce::Component::SafePointer<Chooser> chooser;
-    void showChooser()
+    void showChooser(const Owner &target, juce::Rectangle<int> anchor = {})
     {
         auto content = std::make_unique<Chooser>();
         chooser = content.get();
-        auto target = owner;
         juce::Component::SafePointer<HostedRackView> safe(this);
         auto view = chooser;
         content->choose = [safe, target, view](auto p)
@@ -606,7 +643,8 @@ class HostedRackView final : public juce::Component
                                            });
         };
         scanChooser(false);
-        juce::CallOutBox::launchAsynchronously(std::move(content), add.getScreenBounds(), nullptr);
+        juce::CallOutBox::launchAsynchronously(std::move(content),
+                                               anchor.isEmpty() ? add.getScreenBounds() : anchor, nullptr);
     }
     void scanChooser(bool retryQuarantine, std::vector<juce::File> extraRoots = {})
     {
@@ -700,7 +738,7 @@ class HostedRackView final : public juce::Component
         }
         juce::Component::SafePointer<HostedRackView> safe(this);
         menu.showMenuAsync(
-            juce::PopupMenu::Options().withTargetComponent(transfer),
+            juce::PopupMenu::Options().withTargetComponent(more),
             [safe, source, id, ids](int choice)
             {
                 if (!safe || !safe->find(source) || choice <= 0 || (size_t)((choice - 1) / 2) >= ids.size())
@@ -735,6 +773,56 @@ class HostedRackView final : public juce::Component
                                    });
                 safe->refresh();
             });
+    }
+    void showActions()
+    {
+        auto target = owner;
+        auto id = selected;
+        juce::PopupMenu menu;
+        menu.addItem(1, "Save preset…", savePreset.isEnabled());
+        menu.addItem(2, "Load preset…", openPreset.isEnabled());
+        menu.addItem(3, "Copy / move…", transfer.isEnabled());
+        menu.addSeparator();
+        menu.addItem(4, "Move earlier", up.isEnabled());
+        menu.addItem(5, "Move later", down.isEnabled());
+        if (auto *rack = find(target); rack && rack->slots.size() > 1)
+            menu.addItem(6, "Bypass plug-in effects", rackBypass.isEnabled(), rackBypass.getToggleState());
+        menu.addSeparator();
+        menu.addItem(7, "Remove effect", remove.isEnabled());
+        juce::Component::SafePointer<HostedRackView> safe(this);
+        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(more),
+                           [safe, target, id](int choice)
+                           {
+                               if (!safe || safe->owner.document != target.document ||
+                                   safe->owner.variation != target.variation ||
+                                   safe->owner.layer != target.layer ||
+                                   safe->owner.generation != target.generation || safe->selected != id)
+                                   return;
+                               switch (choice)
+                               {
+                               case 1:
+                                   safe->preset(true);
+                                   break;
+                               case 2:
+                                   safe->preset(false);
+                                   break;
+                               case 3:
+                                   safe->showTransfer();
+                                   break;
+                               case 4:
+                                   safe->move(-1);
+                                   break;
+                               case 5:
+                                   safe->move(1);
+                                   break;
+                               case 6:
+                                   safe->rackBypass.onClick();
+                                   break;
+                               case 7:
+                                   safe->remove.onClick();
+                                   break;
+                               }
+                           });
     }
     void editNative()
     {

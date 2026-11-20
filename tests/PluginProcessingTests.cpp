@@ -1068,6 +1068,63 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     recalled.original.layers[0].effects[0].id ==
                         rackSession.document.original.layers[0].effects[0].id,
                 "Separate rack owner/slot identity survives production serialization");
+        // One visible rack for stock + external effects; empty states expose no dead controls.
+        StockRackView unified(rackSession, false, root.getChildFile("racks/plugins-v1.json"));
+        unified.bind(secondId);
+        unified.setSize(306, unified.preferredHeight());
+        auto visibleButtons = [](Component &root)
+        {
+            StringArray names;
+            std::function<void(Component &)> visit = [&](Component &c)
+            {
+                for (auto *child : c.getChildren())
+                    if (child->isVisible())
+                    {
+                        if (auto *button = dynamic_cast<Button *>(child))
+                            names.add(button->getButtonText());
+                        visit(*child);
+                    }
+            };
+            visit(root);
+            return names;
+        };
+        require(visibleButtons(unified) == StringArray{"Add effect"} && !unified.slots.isVisible(),
+                "Empty unified rack exposes only Add effect, without disabled effect tools");
+        auto externalId = Uuid().toString();
+        rackSession.edit("QA external insert",
+                         [&](auto &d) {
+                             d.original.layers[1].hosted.slots = {
+                                 {externalId, JSON::toString(retainedJob, true), false}};
+                         });
+        unified.refresh();
+        require(unified.slots.getNumItems() == 1 && unified.slots.isVisible() &&
+                    !visibleButtons(unified).contains("Remove external insert") &&
+                    visibleButtons(unified).contains("Editor (apply state when closed)"),
+                "Loaded external effect shares the main selector and reveals only primary tools");
+        unified.append(unified.owner, "gain");
+        unified.refresh();
+        require(unified.slots.getNumItems() == 2,
+                "Stock and external entries coexist in one insert selector");
+        unified.slots.setSelectedId(1, sendNotificationSync);
+        unified.setParametersExpanded(true);
+        auto externalBefore = rackSession.document.original.layers[1].hosted.slots[0].settings;
+        unified.values[0].setValue(-9, sendNotificationSync);
+        require(std::abs(rackSession.document.original.layers[1].effects[0].parameters[0] + 9) < 1e-8 &&
+                    rackSession.document.original.layers[1].hosted.slots[0].settings == externalBefore,
+                "Shared stock selection edits only its stock effect: " + String(rackSession.document.original.layers[1].effects[0].parameters[0], 12));
+        unified.selectExternalSlot(externalId);
+        require(!visibleButtons(unified).contains("Show stock insert parameters") &&
+                    visibleButtons(unified).contains("Effect actions"),
+                "External selection hides stock tools and offers contextual actions");
+        rackSession.edit("QA clear rack",
+                         [&](auto &d)
+                         {
+                             d.original.layers[1].effects.clear();
+                             d.original.layers[1].hosted.slots.clear();
+                         });
+        unified.refresh();
+        require(visibleButtons(unified) == StringArray{"Add effect"} && unified.preferredHeight() == 60,
+                "Removing all effects restores the compact empty state without stale tools");
         rackSession.newDesign();
         auto transitionEnd = Time::getMillisecondCounter() + 3000;
         while (rackSession.transitionPending() && Time::getMillisecondCounter() < transitionEnd)

@@ -67,6 +67,9 @@ enum class ActionIcon
     check,
     repeat,
     repeatOne,
+    effectEnabled,
+    addEffect,
+    more,
     count
 };
 namespace icons

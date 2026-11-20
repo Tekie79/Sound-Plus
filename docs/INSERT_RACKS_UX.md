@@ -1,11 +1,11 @@
-# Details and independent insert racks
+# Unified insert controls
 
-The details inspector keeps separate Track Inserts and Master Inserts sections. Selecting a track changes only the track editor; Master controls retain their owner. The old rack-target dropdown is removed.
+Track Inserts and Master Inserts remain independent collapsible cards. Each card has one selector containing both stock and external effects, one Add effect action, and the selected effect's controls. There is no separate stock/external panel or shared track/master target switch.
 
-Each section is a distinct rounded surface with a consistently left-aligned disclosure, short label, subtle outline and theme accent. Space between sections and padding inside them separates controls without introducing more navigation levels. Stock and plug-in stages are visually distinct. Parameter disclosures expand only the relevant editor; the outer section remains collapsible and its existing preferences persist. Narrow layouts scroll, keeping owner labels visible rather than overlaying controls.
+Empty racks show only Add effect. Loaded stock effects show power, parameter disclosure and an actions menu. Plug-ins additionally show their editor action. Reset, variation locking, presets, copy/move, within-stage ordering, bulk bypass and removal remain available contextually in the actions menu; unavailable effect-specific buttons are not displayed as an empty toolbar.
 
-Icon controls retain Lucide rendering, accessible action names, keyboard focus and tooltips. Each stock/external stage has ordered slots, bypass, reorder/remove and explicit copy/move. The external rack additionally retains rack bypass, opaque preset state, generic normalized parameters and isolated editor access. Editor state applies when its window closes, with stale-owner/state rejection; the interface says so. Generic parameter gestures produce one undo history action and send controls to the retained DSP instance.
+Lucide plus, power and ellipsis distinguish adding, enabling and secondary actions. Power's accessible state is `Effect enabled = !bypass`; callbacks still change the model and refreshed state drives its highlight/tooltip. Parameter and outer-card disclosures retain their own expanded/collapsed state.
 
-The declared boundaries are deliberate and visible: external inserts follow stock inserts; there is no shared target selector or silent cross-format replacement. Source and master bus ownership are distinct. Missing/unsupported instances retain their saved slot/state. Hosted take recording is disabled until a plugin-aware authoritative capture contract is implemented.
+The shared selector follows actual processing order: stock effects precede plug-ins. This UI change does not introduce arbitrary cross-stage interleaving, alter source/master bus ownership, or change serialization/DSP. Delayed commands bind document incarnation, owner and slot. Less-used menu actions cannot redirect to a later selection.
 
-Native screenshots and actual interaction results belong to the accompanying implementation report; source layout alone is not visual acceptance evidence.
+See the [follow-up verification](INSERT_RACKS_UI_FOLLOWUP.md) for native empty/mixed states and targeted component checks. Native editors retain the existing apply-on-close policy.

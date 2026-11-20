@@ -67,7 +67,10 @@
     "processing": "sliders-horizontal",
     "check": "check",
     "repeat": "repeat",
-    "repeatOne": "repeat-1"
+    "repeatOne": "repeat-1",
+    "addEffect": "plus",
+    "more": "ellipsis",
+    "effectEnabled": "power"
   },
   "assets": {
     "arrow-down": {
@@ -317,6 +320,18 @@
     "repeat-1": {
       "path": "resources/icons/lucide/lucide_repeat_1.svg",
       "sha256": "d74c0581fd9410e52108d74aa07b011162000382238266775aaf7a2d18ba6c68"
+    },
+    "plus": {
+      "path": "resources/icons/lucide/lucide_plus.svg",
+      "sha256": "7f6af73bf1ff6c4bca3f18351c8d1bdec6749c0c2530c4de5da85d520c21df17"
+    },
+    "ellipsis": {
+      "path": "resources/icons/lucide/lucide_ellipsis.svg",
+      "sha256": "4f495cc72013ffdfec677f03b33a150f7b4dd741979283fd6853a09024bca112"
+    },
+    "power": {
+      "path": "resources/icons/lucide/lucide_power.svg",
+      "sha256": "1e6b84a659aa43f826cdd8df0a63d349720004e2ccb10c33e415a990a311aa05"
     }
   }
 }
