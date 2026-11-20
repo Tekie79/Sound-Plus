@@ -311,6 +311,8 @@ void PluginProcessPanel::populatePlugins()
             if (entry["error"].toString().isNotEmpty())
                 unavailable.add(juce::File(entry["path"].toString()).getFileName() + ": " +
                                 entry["error"].toString());
+            if (entry["error"].toString().isNotEmpty())
+                continue;
             if (auto *list = entry["plugins"].getArray())
                 for (auto &p : *list)
                     if ((p["name"].toString() + " / " + p["vendor"].toString() + " / " +
@@ -335,6 +337,16 @@ void PluginProcessPanel::populatePlugins()
     juce::String previousGroup;
     for (auto &p : grouped)
     {
+        auto requestedLayout = session.input["layout"]["id"].toString();
+        bool compatible = requestedLayout.isEmpty();
+        if (auto *layouts = p["layouts"].getArray())
+            for (auto &layout : *layouts)
+                compatible |= layout.toString() == requestedLayout;
+        if (p["reason"].toString().isNotEmpty() || !compatible)
+        {
+            ++displayIndex;
+            continue;
+        }
         auto group = pluginEffectGroup(p);
         if (group != previousGroup)
         {

@@ -168,6 +168,9 @@ class DesignerView final : public juce::Component,
     IconButton undoButton{"Undo", ActionIcon::undo}, redoButton{"Redo", ActionIcon::redo},
         duplicate{"Duplicate layer", ActionIcon::duplicate}, remove{"Remove layer", ActionIcon::trash},
         up{"Move layer up", ActionIcon::up}, down{"Move layer down", ActionIcon::down};
+    IconButton start{"Go to start · Home",ActionIcon::previous}, end{"Go to end · End",ActionIcon::next},
+        previousMarker{"Previous marker",ActionIcon::previousMarker}, nextMarker{"Next marker",ActionIcon::nextMarker},
+        addMarker{"Add marker · M",ActionIcon::marker}, stopButton{"Stop design",ActionIcon::stop};
     IconButton play{"Play design", ActionIcon::play},
         accurate{"Accurate audition from playhead", ActionIcon::accurate},
         generate{"Generate variations", ActionIcon::variations},

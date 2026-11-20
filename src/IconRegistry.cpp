@@ -74,6 +74,9 @@ constexpr const char *resources[]{
     "lucide_power_svg",                       // effectEnabled
     "lucide_plus_svg",                        // addEffect
     "lucide_ellipsis_svg",                    // more
+    "timeline_marker_svg",
+    "timeline_marker_previous_svg",
+    "timeline_marker_next_svg",
 };
 static_assert(std::size(resources) == (size_t)ActionIcon::count);
 using Images = std::array<std::unique_ptr<juce::Drawable>, (size_t)Tone::count>;

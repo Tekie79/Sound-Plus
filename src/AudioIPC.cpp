@@ -176,9 +176,17 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
     o->setProperty("id", id);
     o->setProperty("path", snapshot.getFullPathName());
     o->setProperty("positionSample", (juce::int64)position);
-    o->setProperty("capture", capture == juce::File() ? juce::String() : capture.getFullPathName());
+    auto capturePath = capture == juce::File() ? juce::String() : capture.getFullPathName();
+    auto qaCapture = juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_AUDITION_CAPTURE", {});
+    if (capturePath.isEmpty() && qaCapture.isNotEmpty())
+        capturePath = juce::File(qaCapture)
+                          .getChildFile("audition-" + juce::String(generation) + ".f32")
+                          .getFullPathName();
+    o->setProperty("capture", capturePath);
     o->setProperty("playGeneration", (juce::int64)generation);
     o->setProperty("mode", mode);
+    if (mode != "record" && liveRoot != juce::File())
+        o->setProperty("liveRoot", liveRoot.getFullPathName());
     o->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);
     enqueue(m);
     return generation;

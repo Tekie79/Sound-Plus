@@ -4,6 +4,7 @@
 #include <sys/mman.h>
 #include <fcntl.h>
 #include <unistd.h>
+#include "HostedRackLive.h"
 // Included after the isolated worker's instance/layout/restore functions.
 namespace
 {
@@ -35,7 +36,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
         {
             HostedInstance effect;
             int latency = 0, write = 0;
-            bool bypass = false;
+            std::shared_ptr<std::atomic<bool>> bypass = std::make_shared<std::atomic<bool>>(false);
             AudioBuffer<float> dry;
             AudioProcessor::BusesLayout buses;
             StringArray parameterIds;
@@ -65,7 +66,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             Slot prepared;
             prepared.opaqueValues = std::move(opaqueValues);
             prepared.latency = latency;
-            prepared.bypass = rack.bypass || slot.bypass;
+            *prepared.bypass = rack.bypass || slot.bypass;
             prepared.buses = p->getBusesLayout();
             onPluginMessageThread(
                 [&]
@@ -109,7 +110,30 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
         e->latency = totalLatency;
         AudioBuffer<float> audio(bus.size(), 512), dry(bus.size(), 512);
         MidiBuffer midi;
+        std::unique_ptr<RackLiveUI<Slot>> live;
+        if (job["liveDirectory"].toString().isNotEmpty())
+            live = std::make_unique<RackLiveUI<Slot>>(job, slots, *e);
         e->ready.store(1, std::memory_order_release);
+        std::jthread liveControl;
+        if (live)
+            liveControl = std::jthread(
+                [&](std::stop_token stop)
+                {
+                    try
+                    {
+                        while (!stop.stop_requested() && !e->closing.load())
+                        {
+                            live->poll();
+                            Thread::sleep(1);
+                        }
+                    }
+                    catch (const std::exception &error)
+                    {
+                        std::snprintf(e->reason, sizeof(e->reason), "%s", error.what());
+                        e->failed.store(1, std::memory_order_release);
+                        e->closing = 1;
+                    }
+                });
         uint32_t sequence = 0, controls = 0;
         while (!e->closing.load(std::memory_order_acquire))
         {
@@ -119,7 +143,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                 Thread::sleep(1);
                 continue;
             }
-            if (e->controls != controls)
+            if (!live && e->controls != controls)
             {
                 onPluginMessageThread(
                     [&]
@@ -127,7 +151,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                         for (size_t i = 0; i < slots.size(); ++i)
                         {
                             auto &slot = slots[i];
-                            slot.bypass = (e->bypass & (1u << i)) != 0;
+                            *slot.bypass = (e->bypass & (1u << i)) != 0;
                             check(e->parameterCount[i] >= 0 && e->parameterCount[i] <= 512,
                                   "Hosted control bound exceeded");
                             for (int n = 0; n < e->parameterCount[i]; ++n)
@@ -159,6 +183,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             check(frames > 0 && frames <= 512, "Invalid hosted block size");
             for (int c = 0; c < bus.size(); ++c)
                 std::copy_n(e->input[c], frames, audio.getWritePointer(c));
+            const auto blockBegan = Time::getHighResolutionTicks();
             for (auto &slot : slots)
             {
                 for (int n = 0; n < frames; ++n)
@@ -172,14 +197,20 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     slot.write = (at + 1) % slot.dry.getNumSamples();
                 }
                 AudioBuffer<float> view(audio.getArrayOfWritePointers(), bus.size(), frames);
-                onPluginMessageThread([&] { slot.effect->processBlock(view, midi); });
+                if (live)
+                {
+                    const ScopedLock lock(slot.effect->getCallbackLock());
+                    slot.effect->processBlock(view, midi);
+                }
+                else
+                    onPluginMessageThread([&] { slot.effect->processBlock(view, midi); });
                 midi.clear();
                 if (sequence == 0)
                     stage("first-processed-pcm");
                 check(slot.effect->getLatencySamples() == slot.latency &&
                           slot.effect->getBusesLayout() == slot.buses,
                       "Plugin changed bus/latency; stop and explicitly reprepare the graph");
-                if (slot.bypass)
+                if (*slot.bypass)
                     for (int c = 0; c < bus.size(); ++c)
                         audio.copyFrom(c, 0, dry, c, 0, frames);
             }
@@ -190,9 +221,17 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     check(std::isfinite(sample), "Hosted rack produced nonfinite output");
                     e->output[c][n] = sample;
                 }
+            if (live)
+                live->processed(frames, blockBegan);
             sequence = requested;
             e->response.store(sequence, std::memory_order_release);
         }
+        if (liveControl.joinable())
+        {
+            liveControl.request_stop();
+            liveControl.join();
+        }
+        live.reset();
         for (auto &slot : slots)
             onPluginMessageThread([&] { slot.effect->releaseResources(); });
         return obj();

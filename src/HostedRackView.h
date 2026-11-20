@@ -66,7 +66,15 @@ class HostedRackView final : public juce::Component
             if (onHeightChange)
                 onHeightChange();
         };
-        savePreset.onClick = [this] { preset(true); };
+        savePreset.onClick = [this]
+        {
+            session.withLiveState(
+                [safe = juce::Component::SafePointer<HostedRackView>(this)]
+                {
+                    if (safe)
+                        safe->preset(true);
+                });
+        };
         openPreset.onClick = [this] { preset(false); };
         parameterViewport.setViewedComponent(&parameterContent, false);
         parameterViewport.setScrollBarsShown(true, false);
@@ -372,7 +380,7 @@ class HostedRackView final : public juce::Component
         transfer{"Copy or move external insert", ActionIcon::duplicate},
         savePreset{"Save insert preset", ActionIcon::save},
         openPreset{"Open insert preset", ActionIcon::open},
-        editor{"Editor (apply state when closed)", ActionIcon::settings},
+        editor{"Open or focus live editor", ActionIcon::settings},
         parameters{"Show external insert parameters", ActionIcon::chevron},
         more{"Effect actions", ActionIcon::more};
     juce::Viewport parameterViewport;
@@ -580,15 +588,16 @@ class HostedRackView final : public juce::Component
                             safe->showFeedback(target, failure);
                             return;
                         }
+                        const auto newSlot = juce::Uuid().toString();
                         safe->change(target, "Add external insert",
                                      [&](auto &rack)
                                      {
                                          if (rack.slots.size() < 8)
-                                             rack.slots.push_back({juce::Uuid().toString(),
-                                                                   juce::JSON::toString(settings, true),
-                                                                   false});
+                                             rack.slots.push_back(
+                                                 {newSlot, juce::JSON::toString(settings, true), false});
                                      });
-                        safe->showFeedback(target, "Ready / persistent chain");
+                        safe->session.openLiveEditor(newSlot);
+                        safe->showFeedback(target, "Live");
                     });
             });
     }
@@ -750,6 +759,10 @@ class HostedRackView final : public juce::Component
         {
             refreshingRows = true;
             choices = pluginCandidateRows(snapshot, expected, search.getText(), attention.getToggleState());
+            if (!attention.getToggleState())
+                for (int i = choices.size(); --i >= 0;)
+                    if (!(bool)choices[i]["canInsert"])
+                        choices.remove(i);
             available.updateContent();
             int selected = -1;
             for (int i = 0; i < choices.size(); ++i)
@@ -939,32 +952,38 @@ class HostedRackView final : public juce::Component
                     return;
                 auto layer = ids[(size_t)((choice - 1) / 2)];
                 bool move = choice % 2 == 0;
-                safe->session.edit(move ? "Move external insert" : "Copy external insert",
-                                   [&](auto &d)
-                                   {
-                                       auto *from = safe->find(source);
-                                       auto *to = &d.activeMix().hosted;
-                                       if (layer.isNotEmpty())
-                                       {
-                                           to = nullptr;
-                                           for (auto &l : d.activeMix().layers)
-                                               if (l.id == layer)
-                                                   to = &l.hosted;
-                                       }
-                                       if (!from || !to || from == to || to->slots.size() >= 8)
-                                           return;
-                                       for (size_t i = 0; i < from->slots.size(); ++i)
-                                           if (from->slots[i].id == id)
+                safe->session.withLiveState(
+                    [safe, source, id, layer, move]
+                    {
+                        if (!safe || !safe->find(source))
+                            return;
+                        safe->session.edit(move ? "Move external insert" : "Copy external insert",
+                                           [&](auto &d)
                                            {
-                                               auto slot = from->slots[i];
-                                               if (!move)
-                                                   slot.id = juce::Uuid().toString();
-                                               to->slots.push_back(slot);
-                                               if (move)
-                                                   from->slots.erase(from->slots.begin() + (int)i);
-                                               break;
-                                           }
-                                   });
+                                               auto *from = safe->find(source);
+                                               auto *to = &d.activeMix().hosted;
+                                               if (layer.isNotEmpty())
+                                               {
+                                                   to = nullptr;
+                                                   for (auto &l : d.activeMix().layers)
+                                                       if (l.id == layer)
+                                                           to = &l.hosted;
+                                               }
+                                               if (!from || !to || from == to || to->slots.size() >= 8)
+                                                   return;
+                                               for (size_t i = 0; i < from->slots.size(); ++i)
+                                                   if (from->slots[i].id == id)
+                                                   {
+                                                       auto slot = from->slots[i];
+                                                       if (!move)
+                                                           slot.id = juce::Uuid().toString();
+                                                       to->slots.push_back(slot);
+                                                       if (move)
+                                                           from->slots.erase(from->slots.begin() + (int)i);
+                                                       break;
+                                                   }
+                                           });
+                    });
                 safe->refresh();
             });
     }
@@ -1020,6 +1039,14 @@ class HostedRackView final : public juce::Component
     }
     void editNative()
     {
+        if (!editorInvoker)
+        {
+            if (session.openLiveEditor(selected))
+                showFeedback(owner, "Live");
+            else
+                showFeedback(owner, "Live editor unavailable");
+            return;
+        }
         auto target = owner;
         auto id = selected;
         auto *r = find(target);

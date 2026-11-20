@@ -70,6 +70,9 @@ enum class ActionIcon
     effectEnabled,
     addEffect,
     more,
+    marker,
+    previousMarker,
+    nextMarker,
     count
 };
 namespace icons

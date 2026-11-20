@@ -80,13 +80,29 @@ struct HostedRackClient::Impl
     pid_t pid = -1;
     HostedRackExchange *exchange = nullptr;
     uint32_t sequence = 0;
-    bool valid = false;
+    bool valid = false, borrowed = false, liveOwner = false, composite = false;
+    uint64_t lease = 0, commandSequence = 0, modelCommand = 0;
+    bool leaseAcquired = false;
+    juce::String instance;
+    std::vector<std::unique_ptr<HostedRackClient>> children;
+    int compositeLatency = 0;
     HostedRack configuration;
+    std::vector<std::set<int>> pendingIndices;
+    std::vector<bool> pendingState;
+    std::vector<uint64_t> restoreSequences;
     ~Impl()
     {
         if (exchange)
-            exchange->closing.store(1, std::memory_order_release);
-        if (pid > 0)
+        {
+            if (borrowed && leaseAcquired)
+            {
+                auto mine = lease;
+                exchange->lease.compare_exchange_strong(mine, 0);
+            }
+            else if (!borrowed)
+                exchange->closing.store(1, std::memory_order_release);
+        }
+        if (pid > 0 && !borrowed)
         {
             int status = 0;
             auto end = juce::Time::getMillisecondCounterHiRes() + 100;
@@ -98,6 +114,18 @@ struct HostedRackClient::Impl
                 while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
                 {
                 }
+            }
+        }
+        if (liveOwner)
+        {
+            try
+            {
+                auto endpoint = workspace.getParentDirectory().getChildFile("endpoint.json");
+                if (loadProcessingJson(endpoint)["generation"].toString() == instance)
+                    endpoint.deleteFile();
+            }
+            catch (const std::exception &)
+            {
             }
         }
         if (exchange)
@@ -115,6 +143,8 @@ struct HostedRackClient::Impl
         while ((target ? exchange->response.load(std::memory_order_acquire) != target
                        : !exchange->ready.load(std::memory_order_acquire)))
         {
+            if (borrowed && exchange->closing.load(std::memory_order_acquire))
+                throw std::runtime_error("Live insert owner closed; no output is certified");
             if (exchange->failed.load(std::memory_order_acquire))
                 throw std::runtime_error(exchange->reason);
             if (cancelled())
@@ -124,7 +154,8 @@ struct HostedRackClient::Impl
                 usage.ri_phys_footprint > 1024ULL * 1024 * 1024)
                 throw std::runtime_error("Hosted rack exceeded the one-GiB resident-memory bound");
             int status = 0;
-            if (waitpid(pid, &status, WNOHANG) == pid)
+            if ((borrowed && ::kill(pid, 0) != 0 && errno == ESRCH) ||
+                (!borrowed && waitpid(pid, &status, WNOHANG) == pid))
             {
                 pid = -1;
                 throw std::runtime_error("Hosted rack service exited; no output is certified");
@@ -139,12 +170,112 @@ struct HostedRackClient::Impl
     }
 };
 HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &layout, double rate,
-                                   const std::function<bool()> &cancelled)
+                                   const std::function<bool()> &cancelled, const juce::File &liveDirectory,
+                                   const juce::var &binding)
     : impl(std::make_unique<Impl>())
 {
     validateHostedRack(rack);
     validateLayout(layout);
     impl->configuration = rack;
+    if (rack.runtimeEndpoint != juce::File())
+    {
+        if (rack.runtimeOwnerRack.isEmpty())
+        {
+            impl->composite = true;
+            for (auto &slot : rack.slots)
+            {
+                HostedRack single;
+                single.id = slot.id;
+                single.bypass = rack.bypass;
+                single.slots = {slot};
+                single.runtimeOwnerRack = rack.id;
+                single.runtimeEndpoint =
+                    rack.runtimeEndpoint.getChildFile(slot.id).getChildFile("endpoint.json");
+                auto child = std::make_unique<HostedRackClient>(single, layout, rate, cancelled);
+                impl->compositeLatency += child->latency();
+                impl->children.push_back(std::move(child));
+                if (impl->compositeLatency > rate)
+                    throw std::runtime_error("Live rack latency exceeds one second");
+            }
+            impl->valid = true;
+            return;
+        }
+        auto end = juce::Time::getMillisecondCounterHiRes() + 20000;
+        juce::var endpoint;
+        while (!endpoint.isObject())
+        {
+            if (cancelled())
+                throw QueryCancelled();
+            try
+            {
+                auto v = loadProcessingJson(rack.runtimeEndpoint);
+                bool matches = v["rack"].toString() == rack.id && (double)v["rate"] == rate &&
+                               layoutFromJson(v["layout"]) == layout &&
+                               v["binding"]["rack"].toString() == rack.runtimeOwnerRack &&
+                               v["slots"].size() == (int)rack.slots.size();
+                for (size_t i = 0; matches && i < rack.slots.size(); ++i)
+                {
+                    auto plugin = juce::JSON::parse(rack.slots[i].settings)["plugin"];
+                    matches = v["slots"][(int)i]["slot"].toString() == rack.slots[i].id;
+                    for (auto key : {"id", "path", "format", "fingerprint"})
+                        matches = matches && v["slots"][(int)i]["plugin"][key] == plugin[key];
+                }
+                if (matches)
+                    endpoint = v;
+            }
+            catch (const std::exception &)
+            {
+            }
+            if (!endpoint.isObject())
+            {
+                if (juce::Time::getMillisecondCounterHiRes() > end)
+                    throw std::runtime_error("Live insert unavailable or reconnecting");
+                juce::Thread::sleep(5);
+            }
+        }
+        impl->borrowed = true;
+        impl->pid = (pid_t)(int)endpoint["pid"];
+        impl->instance = endpoint["generation"].toString();
+        impl->workspace = rack.runtimeEndpoint.getParentDirectory();
+        auto path = juce::File(endpoint["exchange"].toString());
+        impl->fd = ::open(path.getFullPathName().toRawUTF8(), O_RDWR);
+        if (impl->fd < 0)
+            throw std::runtime_error("Live insert exchange unavailable");
+        auto memory =
+            mmap(nullptr, sizeof(HostedRackExchange), PROT_READ | PROT_WRITE, MAP_SHARED, impl->fd, 0);
+        if (memory == MAP_FAILED)
+            throw std::runtime_error("Cannot attach live insert exchange");
+        impl->exchange = static_cast<HostedRackExchange *>(memory);
+        if (impl->exchange->protocol != HostedRackExchange::magic ||
+            impl->exchange->channels != layout.size())
+            throw std::runtime_error("Live insert protocol/layout mismatch");
+        impl->lease = (uint64_t)juce::Uuid().toString().hashCode64();
+        if (impl->lease == 0)
+            impl->lease = 1;
+        uint64_t empty = 0;
+        while (!impl->exchange->lease.compare_exchange_weak(empty, impl->lease))
+        {
+            empty = 0;
+            if (cancelled())
+                throw QueryCancelled();
+            if (juce::Time::getMillisecondCounterHiRes() > end)
+                throw std::runtime_error("Previous live insert producer did not release ownership");
+            juce::Thread::sleep(1);
+        }
+        impl->leaseAcquired = true;
+        impl->sequence = impl->exchange->request.load();
+        impl->exchange->resetRequested.store(impl->lease, std::memory_order_release);
+        while (impl->exchange->resetAcknowledged.load(std::memory_order_acquire) != impl->lease)
+        {
+            if (cancelled())
+                throw QueryCancelled();
+            if (juce::Time::getMillisecondCounterHiRes() > end)
+                throw std::runtime_error("Live insert reset timed out");
+            juce::Thread::sleep(1);
+        }
+        impl->valid = true;
+        return;
+    }
     auto exe = juce::File::getSpecialLocation(juce::File::currentExecutableFile);
     auto helper = exe.getSiblingFile("SoundPlusPlugin");
     if (!helper.existsAsFile())
@@ -154,8 +285,13 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
         helper = juce::File(override);
     if (!helper.existsAsFile())
         throw std::runtime_error("Persistent plugin helper unavailable");
-    impl->workspace = juce::File::getSpecialLocation(juce::File::tempDirectory)
-                          .getChildFile("SoundPlus-rack-" + juce::Uuid().toString());
+    impl->liveOwner = liveDirectory != juce::File();
+    impl->instance = juce::Uuid().toString();
+    if (impl->liveOwner)
+        helper = helper.getSiblingFile("SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor");
+    impl->workspace = impl->liveOwner ? liveDirectory
+                                      : juce::File::getSpecialLocation(juce::File::tempDirectory)
+                                            .getChildFile("SoundPlus-rack-" + juce::Uuid().toString());
     if (impl->workspace.createDirectory().failed())
         throw std::runtime_error("Cannot prepare hosted rack exchange");
     auto path = impl->workspace.getChildFile("exchange");
@@ -175,6 +311,14 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
     job->setProperty("rate", rate);
     job->setProperty("block", 512);
     job->setProperty("exchange", path.getFullPathName());
+    if (impl->liveOwner)
+    {
+        job->setProperty("liveDirectory", impl->workspace.getFullPathName());
+        job->setProperty("generation", impl->instance);
+        job->setProperty("binding", binding);
+        job->setProperty(
+            "endpoint", impl->workspace.getParentDirectory().getChildFile("endpoint.json").getFullPathName());
+    }
     job->setProperty("reply", impl->workspace.getChildFile("reply.json").getFullPathName());
     auto config = impl->workspace.getChildFile("job.json");
     saveProcessingJson(config, juce::var(job));
@@ -192,11 +336,19 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
 HostedRackClient::~HostedRackClient() = default;
 int HostedRackClient::latency() const
 {
-    return impl->exchange->latency;
+    return impl->composite ? impl->compositeLatency : impl->exchange->latency;
 }
 void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
 {
+    if (impl->composite)
+    {
+        for (auto &child : impl->children)
+            child->process(buffer, frames);
+        return;
+    }
     auto *e = impl->exchange;
+    if (impl->liveOwner)
+        throw std::runtime_error("UI live owner cannot drive PCM");
     if (!impl->valid || frames < 1 || frames > 512 || buffer.getNumChannels() != e->channels)
         throw std::runtime_error("Invalid hosted rack block");
     for (int c = 0; c < e->channels; ++c)
@@ -220,6 +372,71 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
 void HostedRackClient::update(const HostedRack &rack)
 {
     validateHostedRack(rack);
+    if (impl->composite)
+    {
+        if (rack.slots.size() != impl->children.size())
+            throw std::runtime_error("Live rack topology changed; reprepare");
+        for (size_t i = 0; i < rack.slots.size(); ++i)
+        {
+            HostedRack single;
+            single.id = rack.slots[i].id;
+            single.bypass = rack.bypass;
+            single.slots = {rack.slots[i]};
+            impl->children[i]->update(single);
+        }
+        impl->configuration = rack;
+        return;
+    }
+    if (impl->borrowed)
+    {
+        impl->configuration = rack;
+        return;
+    }
+    if (impl->liveOwner)
+    {
+        auto v = juce::var(new juce::DynamicObject());
+        v.getDynamicObject()->setProperty("generation", impl->instance);
+        v.getDynamicObject()->setProperty("sequence",
+                                          (juce::int64)(impl->modelCommand = ++impl->commandSequence));
+        v.getDynamicObject()->setProperty(
+            "eventTicks", (juce::int64)(rack.runtimeControlTicks > 0 ? rack.runtimeControlTicks
+                                                                     : juce::Time::getHighResolutionTicks()));
+        if (impl->pendingIndices.size() != rack.slots.size())
+        {
+            impl->pendingIndices.resize(rack.slots.size());
+            impl->pendingState.resize(rack.slots.size());
+            impl->restoreSequences.resize(rack.slots.size());
+        }
+        juce::Array<juce::var> changes;
+        for (size_t i = 0; i < rack.slots.size(); ++i)
+        {
+            auto before = juce::JSON::parse(impl->configuration.slots.at(i).settings);
+            auto after = juce::JSON::parse(rack.slots[i].settings);
+            auto row = juce::var(new juce::DynamicObject());
+            const bool changedState =
+                before["stateHash"] != after["stateHash"] || before["program"] != after["program"];
+            if (changedState)
+            {
+                impl->pendingState[i] = true;
+                impl->restoreSequences[i] = impl->modelCommand;
+            }
+            row.getDynamicObject()->setProperty("fullState", (bool)impl->pendingState[i]);
+            row.getDynamicObject()->setProperty("restoreSequence", (juce::int64)impl->restoreSequences[i]);
+            for (int n = 0; n < after["parameters"].size(); ++n)
+                if (after["parameters"][n]["value"] != before["parameters"][n]["value"])
+                    impl->pendingIndices[i].insert((int)after["parameters"][n]["index"]);
+            juce::Array<juce::var> indices;
+            for (auto index : impl->pendingIndices[i])
+                indices.add(index);
+            row.getDynamicObject()->setProperty("indices", indices);
+            changes.add(row);
+        }
+        v.getDynamicObject()->setProperty("changes", changes);
+        v.getDynamicObject()->setProperty("rack", hostedRackJson(rack));
+        saveProcessingJson(impl->workspace.getChildFile("model.json"), v);
+        impl->configuration = rack;
+        return;
+    }
     auto &before = impl->configuration;
     if (rack.id != before.id || rack.slots.size() != before.slots.size())
         throw std::runtime_error("Hosted rack topology changed");
@@ -257,4 +474,63 @@ void HostedRackClient::update(const HostedRack &rack)
     before = rack;
 }
 
+void HostedRackClient::acceptCapture(const HostedRack &rack)
+{
+    impl->configuration = rack;
+    if (impl->liveOwner)
+    {
+        auto record = juce::var(new juce::DynamicObject());
+        auto *o = record.getDynamicObject();
+        o->setProperty("generation", impl->instance);
+        o->setProperty("sequence", (juce::int64)++impl->commandSequence);
+        o->setProperty("rack", hostedRackJson(rack));
+        saveProcessingJson(impl->workspace.getChildFile("baseline.json"), record);
+    }
+}
+uint64_t HostedRackClient::modelSequence() const
+{
+    return impl->modelCommand;
+}
+void HostedRackClient::checkHealth() const
+{
+    if (!impl->exchange || impl->exchange->failed.load() || impl->pid <= 0 ||
+        (::kill(impl->pid, 0) != 0 && errno == ESRCH))
+        throw std::runtime_error("Live insert unavailable; last coherent checkpoint retained");
+    const auto tick = impl->exchange->heartbeatTicks.load();
+    if (tick > 0 && juce::Time::highResolutionTicksToSeconds(juce::Time::getHighResolutionTicks() - tick) > 5)
+        throw std::runtime_error("Live insert unresponsive; last coherent checkpoint retained");
+}
+juce::var HostedRackClient::liveState() const
+{
+    auto state = loadProcessingJson(impl->workspace.getChildFile("state.json"));
+    if ((uint64_t)(juce::int64)state["modelSequence"] == impl->modelCommand)
+    {
+        for (auto &indices : impl->pendingIndices)
+            indices.clear();
+        std::fill(impl->pendingState.begin(), impl->pendingState.end(), false);
+    }
+    return state;
+}
+juce::String HostedRackClient::instanceGeneration() const
+{
+    return impl->instance;
+}
+void HostedRackClient::editor(const juce::String &slot, bool open)
+{
+    auto v = juce::var(new juce::DynamicObject());
+    auto *o = v.getDynamicObject();
+    o->setProperty("generation", impl->instance);
+    o->setProperty("sequence", (juce::int64)++impl->commandSequence);
+    o->setProperty("slot", slot);
+    o->setProperty("open", open);
+    saveProcessingJson(impl->workspace.getChildFile("editor.json"), v);
+}
+void HostedRackClient::capture(uint64_t sequence)
+{
+    auto v = juce::var(new juce::DynamicObject());
+    auto *o = v.getDynamicObject();
+    o->setProperty("generation", impl->instance);
+    o->setProperty("sequence", (juce::int64)sequence);
+    saveProcessingJson(impl->workspace.getChildFile("capture.json"), v);
+}
 } // namespace sp

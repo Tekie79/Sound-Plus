@@ -265,6 +265,11 @@ juce::var designToJson(const DesignDocument &d)
     put(o, "activeVariation", d.activeVariation);
     put(o, "selectedLayer", d.selectedLayer);
     put(o, "playhead", (juce::int64)d.playhead);
+    if(!d.markers.empty()) {
+        juce::Array<juce::var> markers;
+        for(auto &m:d.markers) { auto v=object(); put(v,"id",m.id); put(v,"name",m.name); put(v,"frame",(juce::int64)m.frame); markers.add(v); }
+        put(o,"markers",markers);
+    }
     if (!d.takes.empty())
     {
         juce::Array<juce::var> takes;
@@ -337,6 +342,10 @@ DesignDocument designFromJson(const juce::var &o)
     d.activeVariation = o["activeVariation"].toString();
     d.selectedLayer = o["selectedLayer"].toString();
     d.playhead = integer(o, "playhead");
+    if(auto *markers=o["markers"].getArray()) {
+        if(markers->size()>128) throw std::runtime_error("Too many timeline markers");
+        for(auto &m:*markers) d.markers.push_back({m["id"].toString(),m["name"].toString(),integer(m,"frame")});
+    }
     if(auto *a=o["variations"].getArray()){if(a->size()>32)throw std::runtime_error("Too many variations");for(auto &v:*a){DesignVariation n;n.id=v["id"].toString();n.name=v["name"].toString();n.seed=(uint64_t)v["seed"].toString().getHexValue64();n.kept=(bool)v["kept"];n.snapshot=(bool)v["snapshot"];n.mix=mixFrom(v["mix"]);d.variations.push_back(std::move(n));}}
     auto s=o["variationSettings"];d.variationSettings={(int)s["count"],(uint32_t)(int)s["enabled"],(double)s["gainDb"],(double)s["pan"],(double)s["placementSeconds"],(double)s["ratePercent"],(double)s["fadeSeconds"],(double)s["trimSeconds"],(double)s["effectAmount"]};d.renderSettings=renderFrom(o["renderSettings"]);
     if (auto *a = o["outputs"].getArray())
@@ -404,6 +413,13 @@ DesignDocument designFromJson(const juce::var &o)
 }
 void validateDesign(const DesignDocument &d, bool verifyTakeContent)
 {
+    if(d.markers.size()>128) throw std::runtime_error("At most 128 timeline markers");
+    juce::StringArray markerIds;
+    for(auto &m:d.markers) {
+        if(m.id.isEmpty() || markerIds.contains(m.id) || m.name.length()>100 || m.frame<0 || m.frame>d.sampleRate*86400*7)
+            throw std::runtime_error("Invalid timeline marker");
+        markerIds.add(m.id);
+    }
     if(d.id.isEmpty() || d.revision<1 || (d.sampleRate!=44100 && d.sampleRate!=48000 && d.sampleRate!=96000))throw std::runtime_error("Invalid design identity or sample rate");
     auto rack=[&](const std::vector<StockEffect> &fx){if(fx.size()>8)throw std::runtime_error("Eight inserts per rack maximum");juce::StringArray effectIds;for(auto &e:fx){if(e.id.isEmpty() || effectIds.contains(e.id))throw std::runtime_error("Duplicate insert identity");effectIds.add(e.id);makeStockEffect(e.type);for(double p:e.parameters)bounded(p,-100000,100000,"Nonfinite effect parameter");
         if(e.type=="gain")bounded(e.parameters[0],-90,24,"Gain insert outside supported range");

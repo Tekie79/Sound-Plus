@@ -219,12 +219,16 @@ struct DesignOutput
     juce::var channelProvenance, files;
     int outputSetVersion = 0; // Metadata contract; independent of legacy/new DSP.
 };
+struct DesignMarker { juce::String id=juce::Uuid().toString(), name; int64_t frame=0; };
 struct DesignDocument
 {
     juce::String id=juce::Uuid().toString(),name="Untitled design",activeVariation,selectedLayer,outputFolder,activeTake;
     int64_t revision=1,playhead=0;
     double sampleRate=48000;
+    int64_t liveControlTicks=0; // Transient UI control-event clock.
+    bool liveInserts=false; // Transient retained-instance routing; never saved.
     bool takeProcessing=false; // Transient partition contract, never a saved static change.
+    std::vector<DesignMarker> markers;
     DesignMix original;
     VariationSettings variationSettings;
     DesignRenderSettings renderSettings;

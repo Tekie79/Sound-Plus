@@ -12,6 +12,10 @@ struct HostedRack
 {
     juce::String id = juce::Uuid().toString();
     bool bypass = false;
+    // Transient audition connection; intentionally omitted from saved JSON.
+    juce::File runtimeEndpoint;
+    juce::String runtimeOwnerRack;
+    int64_t runtimeControlTicks = 0;
     std::vector<HostedSlot> slots;
 };
 juce::var hostedRackJson(const HostedRack &);
@@ -21,11 +25,19 @@ class HostedRackClient
 {
   public:
     HostedRackClient(const HostedRack &, const ChannelLayout &, double rate,
-                     const std::function<bool()> &cancelled);
+                     const std::function<bool()> &cancelled, const juce::File &liveDirectory = {},
+                     const juce::var &binding = {});
     ~HostedRackClient();
     void process(juce::AudioBuffer<float> &, int frames);
     int latency() const;
     void update(const HostedRack &);
+    void acceptCapture(const HostedRack &);
+    uint64_t modelSequence() const;
+    void checkHealth() const;
+    juce::var liveState() const;
+    void editor(const juce::String &slot, bool open);
+    void capture(uint64_t sequence);
+    juce::String instanceGeneration() const;
 
   private:
     struct Impl;

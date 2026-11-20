@@ -4,6 +4,7 @@
 #include "DesignRecovery.h"
 #include "SerialWorker.h"
 #include "SourcePools.h"
+#include "LiveInsertSession.h"
 #include <set>
 
 namespace sp
@@ -49,7 +50,10 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::File outputFolder() const;
     DialogToken beginDialog();
     bool accepts(DialogToken) const;
-    uint64_t documentGeneration() const { return lifetime; }
+    uint64_t documentGeneration() const
+    {
+        return lifetime;
+    }
     void protectStartupEdits();
     bool transitionPending() const
     {
@@ -77,6 +81,12 @@ class DesignSession final : public juce::Component, private juce::Timer
     void newDesign();
     void open(const juce::File &);
     void save(const juce::File &);
+    bool openLiveEditor(const juce::String &slot);
+    void withLiveState(std::function<void()>);
+    bool hasLiveInserts() const
+    {
+        return liveInserts != nullptr;
+    }
     void closeWhenSafe(std::function<void()>);
     void add(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0,
              int64_t placement = -1);
@@ -98,6 +108,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void play();
     void playAccurate();
     void seek(int64_t);
+    void addMarker(int64_t frame = -1);
+    void navigateMarker(int direction);
     void stop();
     bool ownsPlayback() const;
     enum class TakeState
@@ -216,6 +228,18 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool accepts(Stamp) const;
     void finishOperation(Stamp);
     void enqueue(Stamp, std::function<std::function<void()>()>);
+    std::unique_ptr<LiveInsertSession> liveInserts;
+    AudioClient *liveAudio = nullptr;
+    double lastLiveSync = -1000;
+    bool liveReady = false, liveApplying = false, liveFlushing = false;
+    uint64_t liveUserEdits = 0;
+    juce::String liveHistoryKey;
+    int64_t liveHistoryRevision = -1;
+    void syncLive();
+    void receiveLive(LiveInsertSession::Capture);
+    bool flushLive(std::function<void()>, bool allowFailure = false);
+    std::map<juce::String, LiveInsertSession::Capture> deferredNativeCaptures;
+    void drainLiveCaptures();
     void notify();
     void changed(ChangeImpact = ChangeImpact::audio);
     void restoreDerivedState();

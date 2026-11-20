@@ -221,12 +221,18 @@ void runPluginCorrectnessTests(const juce::File &base, const juce::File &app, co
             require(panel->status.getText().startsWith("Scan complete"), panel->status.getText());
         };
         waitScan();
+        require(panel->choices.isEmpty(), "Normal chooser hides failed/quarantined candidates");
+        panel->attention.setToggleState(true, dontSendNotification);
+        panel->populate();
+        require(panel->choices.size() == 1 && !(bool)panel->choices[0]["canInsert"],
+                "Explicit diagnostics retain failed candidate for targeted recovery");
         panel->available.selectRow(0);
         require(stereo.copyDirectoryTo(installed.getChildFile(stereo.getFileName())),
                 "Introduce owned fixture B");
         panel->scan.onClick();
         waitScan();
-        require(panel->choices.size() == 2, "Actual Rescan callback discovers B while A selected");
+        require(panel->choices.size() == 1 && panel->snapshot["entries"].size() == 2,
+                "Actual Rescan discovers available B while failed A remains selected in diagnostics");
         auto beforeRetry = loadProcessingJson(registry);
         panel->retry.onClick();
         waitScan();
@@ -244,6 +250,10 @@ void runPluginCorrectnessTests(const juce::File &base, const juce::File &app, co
         require((int)afterRetry["launched"] == 1 && afterRetry["roots"] == beforeRetry["roots"] &&
                     unchangedB && recoveredA,
                 "Actual targeted Retry callback recovers only failed A, retaining B and roots");
+        panel->attention.setToggleState(false, dontSendNotification);
+        panel->populate();
+        require(panel->choices.size() == 2 && panel->insert.isEnabled(),
+                "Recovered and newly discovered effects are available in the normal chooser");
         if (auto *box = panel->findParentComponentOfClass<CallOutBox>())
             box->dismiss();
         pump(20);

@@ -40,6 +40,13 @@ void makeAudioProcessBackground()
     // The helper must never compete with the Library window for keyboard focus.
     [[NSApplication sharedApplication] setActivationPolicy:NSApplicationActivationPolicyProhibited];
 }
+void configurePluginServiceApplication()
+{
+    // Native editor services have no restorable user windows. Their owner restores
+    // exact processors/checkpoints; macOS must not offer stale helper windows.
+    [[NSUserDefaults standardUserDefaults] registerDefaults:@{@"NSQuitAlwaysKeepsWindows":@NO,@"NSApplePersistenceIgnoreState":@YES}];
+    [[NSApplication sharedApplication] setActivationPolicy:NSApplicationActivationPolicyAccessory];
+}
 void activateDesktopApplication()
 {
     [[NSApplication sharedApplication] setActivationPolicy:NSApplicationActivationPolicyRegular];

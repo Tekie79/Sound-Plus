@@ -1,6 +1,7 @@
 #include "PluginProcessing.h"
 #include "PluginBusPolicy.h"
 #include "RegisteredAudioUnits.h"
+#include "MacSources.h"
 #include <thread>
 #include <future>
 #include <juce_audio_processors/juce_audio_processors.h>
@@ -13,9 +14,11 @@ namespace
 using namespace juce;
 std::atomic<bool> editorCloseRequested{false};
 juce::File diagnosticFile;
+std::mutex diagnosticMutex;
 juce::var diagnostic = juce::var(new juce::DynamicObject());
 void stage(const juce::String &name)
 {
+    std::lock_guard lock(diagnosticMutex);
     diagnostic.getDynamicObject()->setProperty("stage", name);
     diagnostic.getDynamicObject()->setProperty("atMs", juce::Time::currentTimeMillis());
     if (diagnosticFile != juce::File())
@@ -800,6 +803,7 @@ class PluginEditorApplication final : public juce::JUCEApplication
     }
     void initialise(const juce::String &commandLine) override
     {
+        sp::configurePluginServiceApplication();
         auto args = juce::StringArray::fromTokens(commandLine, true);
         if (args.size() != 1)
         {

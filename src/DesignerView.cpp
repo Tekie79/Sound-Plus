@@ -248,21 +248,28 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     redoButton.onClick = [this] { session.redo(); };
     duplicate.onClick = [this]
     {
-        if (auto *l = session.selectedLayer())
-        {
-            auto copy = *l;
-            copy.id = juce::Uuid().toString();
-            copy.name += " copy";
-            copy.hosted.id = juce::Uuid().toString();
-            for (auto &slot : copy.hosted.slots)
-                slot.id = juce::Uuid().toString();
-            session.edit("Duplicate layer",
-                         [&](auto &d)
-                         {
-                             d.selectedLayer = copy.id;
-                             d.activeMix().layers.push_back(copy);
-                         });
-        }
+        session.withLiveState(
+            [safe = juce::Component::SafePointer<DesignerView>(this)]
+            {
+                if (!safe)
+                    return;
+                auto &session = safe->session;
+                if (auto *l = session.selectedLayer())
+                {
+                    auto copy = *l;
+                    copy.id = juce::Uuid().toString();
+                    copy.name += " copy";
+                    copy.hosted.id = juce::Uuid().toString();
+                    for (auto &slot : copy.hosted.slots)
+                        slot.id = juce::Uuid().toString();
+                    session.edit("Duplicate layer",
+                                 [&](auto &d)
+                                 {
+                                     d.selectedLayer = copy.id;
+                                     d.activeMix().layers.push_back(copy);
+                                 });
+                }
+            });
     };
     remove.onClick = [this]
     {
@@ -299,6 +306,14 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     play.setTooltip("Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use "
                     "Accurate audition to judge long tails.");
     accurate.onClick = [this] { session.playAccurate(); };
+    for (auto *button : {&start, &end, &previousMarker, &nextMarker, &addMarker, &stopButton})
+        addAndMakeVisible(button);
+    start.onClick = [this] { session.seek(0); };
+    end.onClick = [this] { session.seek(std::max<int64_t>(0, designPreviewEnd(session.document) - 1)); };
+    previousMarker.onClick = [this] { session.navigateMarker(-1); };
+    nextMarker.onClick = [this] { session.navigateMarker(1); };
+    addMarker.onClick = [this] { session.addMarker(); };
+    stopButton.onClick = [this] { session.stop(); };
     accurate.setTooltip(
         "Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. "
         "Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.");
@@ -1057,9 +1072,8 @@ void DesignerView::refresh()
         up.setEnabled(at != layers.begin());
         down.setEnabled(at != layers.end() && at + 1 != layers.end());
     }
-    renderSelection.setButtonText(hasHostedInserts(d.activeMix())
-                                      ? "Render selected layer (pre-master stem)"
-                                      : "Render selected layer");
+    renderSelection.setButtonText(hasHostedInserts(d.activeMix()) ? "Render selected layer (pre-master stem)"
+                                                                  : "Render selected layer");
     renderSelection.setTooltip(renderSelection.getButtonText());
     render.setEnabled(!d.activeMix().layers.empty() && !session.rendering);
     accurate.setEnabled(!d.activeMix().layers.empty() && !session.transitionPending());
@@ -1385,6 +1399,24 @@ void DesignerView::resized()
                    40, 40);
     accurate.setBounds(performMode ? creative - 120 : creative / 2 + 30,
                        getHeight() - (performMode ? 112 : 86), 28, 28);
+    for (auto *button : {&start, &end, &previousMarker, &nextMarker, &addMarker, &stopButton})
+        button->setVisible(!performMode);
+    if (!performMode)
+    {
+        int tx = creative / 2 - 116, ty = getHeight() - 86;
+        for (auto *button : {&start, &previousMarker, &stopButton})
+        {
+            button->setBounds(tx, ty, 28, 28);
+            tx += 32;
+        }
+        play.setBounds(tx, ty - 6, 40, 40);
+        tx += 44;
+        for (auto *button : {&nextMarker, &end, &addMarker, &accurate})
+        {
+            button->setBounds(tx, ty, 28, 28);
+            tx += 32;
+        }
+    }
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);
     bool denseMeters = designChannels(session.document) > 8;
     monitor.setBounds(getWidth() - 230, getHeight() - (denseMeters ? 25 : 33), 180, denseMeters ? 18 : 24);
@@ -1949,6 +1981,22 @@ bool DesignerView::keyPressed(const juce::KeyPress &key, juce::Component *)
     }
     if (editing)
         return false;
+    if (!key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown() &&
+        (key.isKeyCode('M') || key.isKeyCode('m')))
+    {
+        session.addMarker();
+        return true;
+    }
+    if (key.isKeyCode(juce::KeyPress::homeKey))
+    {
+        session.seek(0);
+        return true;
+    }
+    if (key.isKeyCode(juce::KeyPress::endKey))
+    {
+        session.seek(std::max<int64_t>(0, designPreviewEnd(session.document) - 1));
+        return true;
+    }
     if (key.isKeyCode('I') || key.isKeyCode('i') || key.isKeyCode('O') || key.isKeyCode('o'))
     {
         bool in = key.isKeyCode('I') || key.isKeyCode('i');

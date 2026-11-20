@@ -38,6 +38,11 @@ void AudioPlaybackService::request(juce::var command, double rate)
     captureRequestGeneration = recording ? (uint64_t)(int64_t)command["playGeneration"] : 0;
     captureRequestActive = recording;
     auto serial = ++epoch;
+    if (command["liveRoot"].toString().isNotEmpty())
+    {
+        stopGeneration = (uint64_t)(int64_t)command["playGeneration"];
+        stopEpoch = serial; // Retire the old borrower before attaching the new graph.
+    }
     {
         std::lock_guard lock(mutex);
         pending = Request{std::move(command), rate, serial, recording ? deviceTicket.load() : 0};
@@ -108,6 +113,14 @@ void AudioPlaybackService::prepare()
             if (request.command["command"].toString() == "play_design")
             {
                 auto document = loadDesign(juce::File(request.command["path"].toString()));
+                auto liveRoot = request.command["liveRoot"].toString();
+                if (liveRoot.isNotEmpty() && document.activeTake.isEmpty())
+                {
+                    document.liveInserts = true;
+                    document.activeMix().hosted.runtimeEndpoint = juce::File(liveRoot);
+                    for (auto &layer : document.activeMix().layers)
+                        layer.hosted.runtimeEndpoint = juce::File(liveRoot);
+                }
                 result.context = designPlaybackContext(document);
                 result.immutableReplay = selectedTake(document) != nullptr;
                 auto requestedStructure = designStructure(document);

@@ -87,6 +87,24 @@ DesignSessionServices nativeServices(AudioClient &audio)
 DesignSession::DesignSession(juce::File file, AudioClient &audio)
     : DesignSession(std::move(file), nativeServices(audio))
 {
+    liveAudio = &audio;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    liveInserts = std::make_unique<LiveInsertSession>(
+        directory,
+        [safe](auto capture)
+        {
+            if (safe)
+                safe->receiveLive(std::move(capture));
+        },
+        [safe](auto error)
+        {
+            if (safe)
+            {
+                safe->message = error;
+                safe->notify();
+            }
+        });
+    syncLive();
 }
 
 DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
@@ -170,6 +188,7 @@ DesignSession::~DesignSession()
 {
     invalidatePoolWork();
     stopTimer();
+    liveInserts.reset();
     services.reserveTake(false);
     // Capture on the owner thread. The worker never reads the mutable document.
     auto snapshot = document;
@@ -309,8 +328,185 @@ juce::File DesignSession::outputFolder() const
         return juce::File(document.outputFolder);
     return juce::File::getSpecialLocation(juce::File::userMusicDirectory).getChildFile("SoundPlus/Renders");
 }
+void DesignSession::addMarker(int64_t frame)
+{
+    if (takeBusy() || document.markers.size() >= 128)
+        return;
+    editMetadata("Add marker",
+                 [&](auto &d)
+                 {
+                     d.markers.push_back({juce::Uuid().toString(),
+                                          "Marker " + juce::String(d.markers.size() + 1),
+                                          std::max<int64_t>(0, frame < 0 ? d.playhead : frame)});
+                 });
+}
+void DesignSession::navigateMarker(int direction)
+{
+    int64_t target = direction < 0 ? 0 : std::max<int64_t>(0, designPreviewEnd(document) - 1);
+    for (auto &marker : document.markers)
+    {
+        if (direction < 0 && marker.frame < document.playhead)
+            target = std::max(target, marker.frame);
+        if (direction > 0 && marker.frame > document.playhead)
+            target = std::min(target, marker.frame);
+    }
+    seek(target);
+}
+void DesignSession::syncLive()
+{
+    if (!liveInserts)
+        return;
+    document.liveInserts = true;
+    if (liveAudio)
+        liveAudio->liveInsertRoot(liveInserts->rootFor(document, lifetime));
+    liveInserts->sync(document, lifetime);
+}
+bool DesignSession::openLiveEditor(const juce::String &slot)
+{
+    if (!liveInserts)
+        return false;
+    juce::String owner;
+    for (auto &candidate : document.activeMix().hosted.slots)
+        if (candidate.id == slot)
+            owner = "master";
+    for (auto &layer : document.activeMix().layers)
+        for (auto &candidate : layer.hosted.slots)
+            if (candidate.id == slot)
+                owner = layer.id;
+    if (owner.isEmpty())
+        return false;
+    syncLive();
+    liveInserts->editor(slot, liveInserts->rootFor(document, lifetime), owner);
+    message = "Opening editor…";
+    return true;
+}
+void DesignSession::receiveLive(LiveInsertSession::Capture capture)
+{
+    if (!liveInserts || !liveInserts->accepts(capture) || capture.incarnation != lifetime ||
+        capture.document != document.id || capture.variation != document.activeVariation ||
+        document.activeTake.isNotEmpty())
+        return;
+    auto rack = [&](DesignDocument &d) -> HostedRack *
+    {
+        if (capture.owner == "master")
+            return &d.activeMix().hosted;
+        for (auto &l : d.activeMix().layers)
+            if (l.id == capture.owner)
+                return &l.hosted;
+        return nullptr;
+    };
+    auto *r = rack(document);
+    if (!r)
+        return;
+    auto found =
+        std::find_if(r->slots.begin(), r->slots.end(), [&](auto &s) { return s.id == capture.slot; });
+    if (found == r->slots.end() || found->settings != capture.expected || found->settings == capture.settings)
+        return;
+    if (!capture.evidence.hasProperty("uiReceivedTicks"))
+        capture.evidence.getDynamicObject()->setProperty("uiReceivedTicks",
+                                                         (juce::int64)juce::Time::getHighResolutionTicks());
+    if (liveAudio)
+    {
+        auto status = liveAudio->status();
+        auto device = juce::var(new juce::DynamicObject());
+        for (auto key : {"device", "sampleRate", "bufferFrames", "activeDeviceOutputChannels", "sourceSample",
+                         "playGeneration", "playing"})
+            device.getDynamicObject()->setProperty(key, status[key]);
+        capture.evidence.getDynamicObject()->setProperty("device", device);
+    }
+    if (capture.native && gesture)
+    {
+        capture.evidence.getDynamicObject()->setProperty("deferredByGesture", true);
+        deferredNativeCaptures[capture.slot] = std::move(capture);
+        return;
+    }
+    const auto count = undoHistory.size();
+    bool merge =
+        capture.native && liveHistoryKey == capture.gesture && liveHistoryRevision == document.revision;
+    liveApplying = true;
+    edit("Plugin edit",
+         [&](auto &d)
+         {
+             auto *target = rack(d);
+             for (auto &slot : target->slots)
+                 if (slot.id == capture.slot)
+                     slot.settings = capture.settings;
+         });
+    liveApplying = false;
+    if (undoHistory.size() > count && (!capture.native || merge))
+        undoHistory.pop_back();
+    liveHistoryKey = capture.native ? capture.gesture : juce::String();
+    liveHistoryRevision = document.revision;
+    capture.evidence.getDynamicObject()->setProperty("uiAppliedTicks",
+                                                     (juce::int64)juce::Time::getHighResolutionTicks());
+    liveInserts->trace(capture.evidence);
+}
+void DesignSession::drainLiveCaptures()
+{
+    if (gesture)
+        return;
+    auto pending = std::move(deferredNativeCaptures);
+    deferredNativeCaptures.clear();
+    for (auto &[id, capture] : pending)
+        receiveLive(std::move(capture));
+}
+void DesignSession::withLiveState(std::function<void()> continuation)
+{
+    auto safe = juce::Component::SafePointer<DesignSession>(this);
+    if (!flushLive(
+            [safe, continuation]
+            {
+                if (safe)
+                    safe->withLiveState(continuation);
+            }))
+        continuation();
+}
+bool DesignSession::flushLive(std::function<void()> continuation, bool allowFailure)
+{
+    if (gesture)
+        endGesture();
+    if (!liveInserts || !hasHostedInserts(document) || document.activeTake.isNotEmpty())
+        return false;
+    if (liveReady)
+    {
+        liveReady = false;
+        return false;
+    }
+    if (liveFlushing)
+    {
+        message = "Capturing live insert state…";
+        return true;
+    }
+    syncLive();
+    liveFlushing = true;
+    const auto owner = lifetime, edits = liveUserEdits;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    liveInserts->flush(
+        [safe, owner, edits, continuation, allowFailure](bool success)
+        {
+            if (!safe || safe->lifetime != owner)
+                return;
+            safe->liveFlushing = false;
+            if (!success && !allowFailure)
+            {
+                safe->message =
+                    "Live insert unavailable; save/render not certified. Last checkpoint retained.";
+                safe->notify();
+                return;
+            }
+            if (safe->liveUserEdits != edits)
+            {
+                safe->flushLive(continuation, allowFailure);
+                return;
+            }
+            safe->liveReady = true;
+            continuation();
+        });
+    return true;
+}
 void DesignSession::notify()
 {
+    syncLive();
     if (onChange)
         onChange();
 }
@@ -335,6 +531,11 @@ void DesignSession::reconcileSelection(const DesignDocument *before)
 }
 void DesignSession::changed(ChangeImpact impact)
 {
+    if (!liveApplying)
+    {
+        ++liveUserEdits;
+        document.liveControlTicks = juce::Time::getHighResolutionTicks();
+    }
     if ((active || previewWaiting) && auditionContext.isNotEmpty() &&
         auditionContext != designPlaybackContext(document))
         stop(); // Undo/context restoration must not label A's audio as another take or Live Design.
@@ -457,6 +658,7 @@ void DesignSession::endGesture()
         redoHistory.clear();
     }
     gesture.reset();
+    drainLiveCaptures();
     if (committed)
         notify();
 }
@@ -482,6 +684,7 @@ void DesignSession::cancelGesture()
         document.selectedLayer = gesture->document.selectedLayer;
         selectedIds = gesture->selection;
         gesture.reset();
+        drainLiveCaptures();
         notify();
         return;
     }
@@ -490,6 +693,7 @@ void DesignSession::cancelGesture()
     document.revision = revision;
     selectedIds = std::move(gesture->selection);
     gesture.reset();
+    drainLiveCaptures();
     changed();
 }
 void DesignSession::undo()
@@ -561,6 +765,15 @@ DesignLayer *DesignSession::selectedLayer()
 
 void DesignSession::transition(const juce::File &file, bool recover, std::function<void()> close)
 {
+    auto liveSafe = juce::Component::SafePointer<DesignSession>(this);
+    if (flushLive(
+            [liveSafe, file, recover, close]
+            {
+                if (liveSafe)
+                    liveSafe->transition(file, recover, close);
+            },
+            (bool)close))
+        return;
     if (takeBusy())
     {
         message = "Stop or cancel the take before closing or changing designs";
@@ -713,6 +926,13 @@ void DesignSession::refreshRecoveries()
 }
 void DesignSession::save(const juce::File &file)
 {
+    if (flushLive(
+            [safe = juce::Component::SafePointer<DesignSession>(this), file]
+            {
+                if (safe)
+                    safe->save(file);
+            }))
+        return;
     if (replacing)
         return;
     auto token = stamp(Operation::save);
@@ -896,6 +1116,14 @@ void DesignSession::selectLayer(const juce::String &id, bool additive)
 }
 void DesignSession::selectVariation(const juce::String &id)
 {
+    auto safe = juce::Component::SafePointer<DesignSession>(this);
+    if (flushLive(
+            [safe, id]
+            {
+                if (safe)
+                    safe->selectVariation(id);
+            }))
+        return;
     endGesture();
     edit("Select variation",
          [&](auto &d)
@@ -1106,6 +1334,11 @@ void DesignSession::poll()
 }
 void DesignSession::timerCallback()
 {
+    if (liveInserts && services.now() - lastLiveSync >= 50)
+    {
+        lastLiveSync = services.now();
+        syncLive();
+    }
     auto state = services.status();
     auto now = services.now();
     pollTake(state);
@@ -1239,6 +1472,13 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
 }
 void DesignSession::render(bool selection)
 {
+    if (flushLive(
+            [safe = juce::Component::SafePointer<DesignSession>(this), selection]
+            {
+                if (safe)
+                    safe->render(selection);
+            }))
+        return;
     if (takeBusy())
         return;
     if (document.activeTake.isNotEmpty() && selection)

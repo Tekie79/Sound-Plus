@@ -54,7 +54,7 @@ class DesignerCanvas : public juce::Component, private juce::Timer
     DesignSession &session;
     Peaks peaks;
     juce::PropertiesFile &preferences;
-    juce::String headerSignature, documentId, feedback;
+    juce::String headerSignature, documentId, feedback, draggingMarker;
     bool pointerDown = false, moved = false, slip = false;
     bool needsInitialFit = true, restoredViewport = false;
     bool clipSelection = true, originalClipSelection = true;

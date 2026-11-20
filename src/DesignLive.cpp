@@ -14,7 +14,7 @@ void stripLiveRouting(juce::var routing)
         r->removeProperty("width");
     }
 }
-void stripHosted(juce::var rack)
+void stripHosted(juce::var rack, bool retained = false)
 {
     if (!rack.isObject())
         return;
@@ -24,6 +24,9 @@ void stripHosted(juce::var rack)
         {
             slot.getDynamicObject()->removeProperty("bypass");
             slot["settings"].getDynamicObject()->removeProperty("parameters");
+            if (retained)
+                for (auto key : {"state", "stateHash", "parameterBaseline", "program", "programName"})
+                    slot["settings"].getDynamicObject()->removeProperty(key);
         }
 }
 juce::var hostedControls(const HostedRack &rack)
@@ -141,11 +144,11 @@ juce::String designStructure(const DesignDocument &document)
     object->removeProperty("masterDb");
     object->removeProperty("performance");
     stripRack(mix["masterEffects"]);
-    stripHosted(mix["hostedRack"]);
+    stripHosted(mix["hostedRack"], document.liveInserts);
     for (auto &layer : *mix["layers"].getArray())
     {
         stripRack(layer["effects"]);
-        stripHosted(layer["hostedRack"]);
+        stripHosted(layer["hostedRack"], document.liveInserts);
         stripLiveRouting(layer["routing"]);
         for (const char *key : {"controlGain", "name", "first", "last", "placement", "sync", "fadeIn",
                                 "fadeOut", "gainDb", "pan", "rate", "reverse", "locked", "locks", "colour",

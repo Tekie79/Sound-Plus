@@ -39,6 +39,7 @@ class Fixture final : public juce::AudioProcessor
     juce::AudioParameterChoice *mode;
     std::vector<std::vector<float>> delay;
     int position = 0, delayFrames = 0, sleepMs = 0, program = 0;
+    std::atomic<float> opaqueGain{1.f};
     float randomGain = .5f + juce::Random::getSystemRandom().nextFloat() * .5f;
 
   public:
@@ -136,6 +137,8 @@ class Fixture final : public juce::AudioProcessor
         for (auto &c : delay)
             std::fill(c.begin(), c.end(), 0.f);
         position = 0;
+        if (auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA"))
+            juce::File(dir).getChildFile(juce::String((int)::getpid()) + ".resets").appendText("reset\n");
     }
     void processBlock(juce::AudioBuffer<float> &b, juce::MidiBuffer &midi) override
     {
@@ -154,7 +157,8 @@ class Fixture final : public juce::AudioProcessor
                 juce::Thread::sleep(100);
         if (mode->getIndex() == 5)
             setLatencySamples(getLatencySamples() + 1);
-        auto g = gain->get() * (invert->get() ? -1.f : 1.f) * (mode->getIndex() == 1 ? randomGain : 1.f);
+        auto g = gain->get() * opaqueGain.load() * (invert->get() ? -1.f : 1.f) *
+                 (mode->getIndex() == 1 ? randomGain : 1.f);
         for (int s = 0; s < b.getNumSamples(); ++s)
         {
             for (int c = 0; c < b.getNumChannels(); ++c)
@@ -167,13 +171,58 @@ class Fixture final : public juce::AudioProcessor
             position = (position + 1) % 2048;
         }
     }
+    struct Editor final : juce::AudioProcessorEditor, private juce::Timer
+    {
+        Fixture &fixture;
+        int last = 0;
+        juce::Slider gainControl;
+        explicit Editor(Fixture &f) : AudioProcessorEditor(f), fixture(f)
+        {
+            gainControl.setRange(0, 1, .001);
+            gainControl.setValue(f.getParameters()[0]->getValue());
+            gainControl.onDragStart = [this] { fixture.gain->beginChangeGesture(); };
+            gainControl.onDragEnd = [this] { fixture.gain->endChangeGesture(); };
+            gainControl.onValueChange = [this]
+            { fixture.gain->setValueNotifyingHost((float)gainControl.getValue()); };
+            addAndMakeVisible(gainControl);
+            gainControl.setBounds(20, 20, 280, 40);
+            setSize(320, 80);
+            startTimer(10);
+        }
+        void timerCallback() override
+        {
+            auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA");
+            if (!dir)
+                return;
+            auto file = juce::File(dir).getChildFile(juce::String((int)::getpid()) + ".json");
+            auto v = juce::JSON::parse(file.loadFileAsString());
+            if (!v.isObject() || (int)v["sequence"] <= last)
+                return;
+            last = (int)v["sequence"];
+            if (v.hasProperty("silentOpaque"))
+                fixture.opaqueGain = (float)v["silentOpaque"];
+            else if (v.hasProperty("program"))
+                fixture.setCurrentProgram((int)v["program"]);
+            else
+            {
+                auto *p = fixture.getParameters()[(int)v["index"]];
+                p->beginChangeGesture();
+                p->setValueNotifyingHost((float)v["value"]);
+                p->endChangeGesture();
+            }
+        }
+    };
     bool hasEditor() const override
     {
-        return false;
+        return std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA") != nullptr;
     }
     juce::AudioProcessorEditor *createEditor() override
     {
-        return nullptr;
+        if (!hasEditor())
+            return nullptr;
+        if (std::getenv("SOUNDPLUS_FIXTURE_GENERIC_EDITOR"))
+            return new juce::GenericAudioProcessorEditor(*this);
+        return new Editor(*this);
     }
     int getNumPrograms() override
     {
@@ -189,6 +238,7 @@ class Fixture final : public juce::AudioProcessor
         {
             program = index;
             gain->setValueNotifyingHost(index ? .75f : .25f);
+            updateHostDisplay(ChangeDetails().withProgramChanged(true));
         }
     }
     const juce::String getProgramName(int index) override
@@ -198,18 +248,21 @@ class Fixture final : public juce::AudioProcessor
     void changeProgramName(int, const juce::String &) override {}
     void getStateInformation(juce::MemoryBlock &b) override
     {
-        b.setSize((size_t)getParameters().size() * sizeof(float));
+        b.setSize((size_t)(getParameters().size() + 1) * sizeof(float));
         auto *p = static_cast<float *>(b.getData());
         for (auto *v : getParameters())
             *p++ = v->getValue();
+        *p = opaqueGain.load();
     }
     void setStateInformation(const void *data, int bytes) override
     {
-        if (bytes == getParameters().size() * (int)sizeof(float))
+        if (bytes == getParameters().size() * (int)sizeof(float) ||
+            bytes == (getParameters().size() + 1) * (int)sizeof(float))
         {
             auto *p = static_cast<const float *>(data);
             for (auto *v : getParameters())
                 v->setValueNotifyingHost(*p++);
+            opaqueGain = bytes > (getParameters().size() * (int)sizeof(float)) ? *p : 1.f;
         }
     }
 };

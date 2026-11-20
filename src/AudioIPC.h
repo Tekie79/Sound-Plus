@@ -24,6 +24,10 @@ class AudioClient
     uint64_t playDesign(const juce::String &id, const juce::File &snapshot, int64_t position = 0,
                         const juce::File &capture = {}, const juce::String &mode = "play");
     uint64_t updateDesign(const DesignDocument &, uint64_t generation, double eventMs);
+    void liveInsertRoot(const juce::File &root)
+    {
+        liveRoot = root;
+    }
     void stop();
     bool stopIfOwned(const juce::String &id, uint64_t generation);
     void gain(float);
@@ -51,7 +55,7 @@ class AudioClient
     void enqueue(juce::var);
     void enqueueLocked(juce::var);
     void run();
-    juce::File executable;
+    juce::File executable, liveRoot;
     std::atomic<bool> quitting{false}, restartRequested{false};
     std::atomic<bool> captureOwned{false}, captureReserved{false};
     std::atomic<uint64_t> captureReservationId{0};

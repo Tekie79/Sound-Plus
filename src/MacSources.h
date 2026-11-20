@@ -8,6 +8,7 @@
 namespace sp
 {
 void makeAudioProcessBackground();
+void configurePluginServiceApplication();
 void activateDesktopApplication();
 juce::var powerAndThermalState();
 struct VolumeLocation

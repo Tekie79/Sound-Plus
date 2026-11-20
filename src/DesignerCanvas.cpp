@@ -485,6 +485,12 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
     {
         juce::Graphics::ScopedSaveState saved(graphics);
         graphics.reduceClipRegion(timeline);
+        for(auto &marker:d.markers) {
+            auto x=viewport.x(marker.frame,rate);
+            graphics.setColour(ui::accent.withAlpha(.8f));
+            juce::Path flag; flag.addTriangle(x-4,24,x+4,24,x,31); graphics.fillPath(flag);
+            graphics.drawLine(x,31,x,37,1.f);
+        }
         float head = viewport.x(d.playhead, rate);
         graphics.setColour(ui::playhead);
         graphics.fillRect(head - .5f, 25.f, 1.f, getHeight() - 25.f);
@@ -528,6 +534,17 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
     if (session.transitionPending())
         return;
     grabKeyboardFocus();
+    if(event.y>=16 && event.y<=38 && event.x>=viewport.header) {
+        for(auto &marker:session.document.markers) if(std::abs(viewport.x(marker.frame,session.document.sampleRate)-event.x)<=7) {
+            if(event.mods.isRightButtonDown()) {
+                auto id=marker.id;
+                session.editMetadata("Remove marker",[&](auto &d){std::erase_if(d.markers,[&](auto &m){return m.id==id;});});
+            } else {
+                draggingMarker=marker.id; pointerDown=true; session.beginGesture(); session.seek(marker.frame);
+            }
+            return;
+        }
+    }
     pointer = anchor = event.position;
     modifiers = event.mods;
     hit = canvasHitTest(session.document, viewport, pointer.x, pointer.y, event.mods.isShiftDown());
@@ -600,6 +617,10 @@ void DesignerCanvas::mouseDown(const juce::MouseEvent &event)
 }
 void DesignerCanvas::mouseDrag(const juce::MouseEvent &event)
 {
+    if(draggingMarker.isNotEmpty()) {
+        auto frame=std::clamp<int64_t>(frameAt(event.x),0,(int64_t)(session.document.sampleRate*86400*7));
+        session.editMetadata("Move marker",[&](auto &d){for(auto &m:d.markers) if(m.id==draggingMarker)m.frame=frame;}); repaint(); return;
+    }
     if (!pointerDown)
         return;
     pointer = event.position;
@@ -722,6 +743,7 @@ void DesignerCanvas::applyDrag()
 }
 void DesignerCanvas::mouseUp(const juce::MouseEvent &)
 {
+    if(draggingMarker.isNotEmpty()) { draggingMarker.clear(); pointerDown=false; session.endGesture(); repaint(); return; }
     if (!pointerDown)
         return;
     if (hit.target == CanvasTarget::header && moved && insertion >= 0)
@@ -739,6 +761,7 @@ void DesignerCanvas::mouseUp(const juce::MouseEvent &)
 }
 void DesignerCanvas::cancelDrag()
 {
+    if(draggingMarker.isNotEmpty()) { draggingMarker.clear(); pointerDown=false; session.cancelGesture(); repaint(); return; }
     if (!pointerDown)
         return;
     if (hit.target == CanvasTarget::empty || hit.target == CanvasTarget::playhead)
@@ -829,6 +852,7 @@ void DesignerCanvas::updateHover(juce::Point<float> point)
 }
 void DesignerCanvas::mouseDoubleClick(const juce::MouseEvent &event)
 {
+    if(event.y<24 && event.x>=viewport.header) { cancelDrag(); session.addMarker(std::max<int64_t>(0,frameAt(event.x))); repaint(); return; }
     auto target = canvasHitTest(session.document, viewport, event.x, event.y, event.mods.isShiftDown());
     if (target.target == CanvasTarget::fadeInPoint || target.target == CanvasTarget::fadeOutPoint)
     {

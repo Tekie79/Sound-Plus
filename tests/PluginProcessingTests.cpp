@@ -9,6 +9,7 @@
 #include "Performance.h"
 #include <iostream>
 #include <cmath>
+#include <signal.h>
 #include <CoreFoundation/CoreFoundation.h>
 namespace
 {
@@ -2283,3 +2284,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
 #include "PluginCorrectnessTests.inc"
 
 #include "PluginGateATests.inc"
+
+#include "PluginLiveTests.inc"
