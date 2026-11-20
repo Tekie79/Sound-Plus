@@ -2281,3 +2281,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
 }
 
 #include "PluginCorrectnessTests.inc"
+
+#include "PluginGateATests.inc"

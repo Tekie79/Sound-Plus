@@ -10,6 +10,8 @@
 #include <set>
 #include <cmath>
 #include <limits.h>
+#include <mutex>
+#include <map>
 extern char **environ;
 namespace sp
 {
@@ -418,16 +420,84 @@ juce::var PluginWorker::call(juce::var request, const juce::File &workspace, int
             usage.ru_stime.tv_usec / 1000.);
     return reply;
 }
+namespace
+{
+juce::String canonicalRegistry(const juce::File &file)
+{
+    file.getParentDirectory().createDirectory();
+    char resolved[PATH_MAX]{};
+    return (::realpath(file.getParentDirectory().getFullPathName().toRawUTF8(), resolved)
+                ? juce::File(juce::String::fromUTF8(resolved)).getChildFile(file.getFileName())
+                : file)
+        .getFullPathName();
+}
+struct RegistryGuard
+{
+    std::shared_ptr<std::mutex> mutex;
+    std::unique_lock<std::mutex> local;
+    juce::InterProcessLock process;
+    static std::shared_ptr<std::mutex> shared(const juce::String &key)
+    {
+        static std::mutex tableMutex;
+        static std::map<juce::String, std::weak_ptr<std::mutex>> table;
+        std::lock_guard lock(tableMutex);
+        auto value = table[key].lock();
+        if (!value)
+        {
+            value = std::make_shared<std::mutex>();
+            table[key] = value;
+        }
+        return value;
+    }
+    RegistryGuard(const juce::File &file, const std::function<bool()> &cancel)
+        : mutex(shared(canonicalRegistry(file))), local(*mutex, std::defer_lock),
+          process("SoundPlus-plugin-registry-" + juce::String(canonicalRegistry(file).hashCode64()))
+    {
+        while (!local.try_lock())
+        {
+            if (cancel())
+                throw QueryCancelled();
+            juce::Thread::sleep(5);
+        }
+        while (!process.enter(50))
+            if (cancel())
+                throw QueryCancelled();
+    }
+    ~RegistryGuard()
+    {
+        process.exit();
+    }
+};
+void appendRoots(std::vector<juce::File> &roots, const juce::var &saved)
+{
+    if (auto *array = saved.getArray())
+        for (auto &v : *array)
+        {
+            juce::File f(v.toString());
+            if (std::find(roots.begin(), roots.end(), f) == roots.end())
+                roots.push_back(f);
+        }
+}
+} // namespace
 juce::var PluginCatalog::snapshot() const
 {
     return file.existsAsFile() ? loadProcessingJson(file) : object();
 }
-juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File> &roots, bool retry,
+juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File> &requestedRoots, bool retry,
                               const std::function<bool()> &cancel,
                               const std::function<void(juce::var)> &progress, bool registeredAudioUnits,
                               const juce::String &targetPath)
 {
-    auto cache = snapshot();
+    juce::var cache;
+    std::vector<juce::File> roots = requestedRoots;
+    int64_t operation = juce::Time::getHighResolutionTicks();
+    {
+        RegistryGuard coordinated(file, cancel);
+        cache = snapshot();
+        appendRoots(roots, cache["roots"]);
+    }
+    if (afterSnapshot)
+        afterSnapshot();
     juce::Array<juce::var> entries;
     juce::StringArray seen;
     int launched = 0, hits = 0;
@@ -562,6 +632,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                         set(e, "failureHistory", history);
                 }
         juce::String metadataStage = "registration";
+        bool reusedEntry = false;
         set(e, "path", path);
         set(e, "format", descriptor["format"]);
         try
@@ -607,6 +678,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                     {
                         e = v;
                         reused = true;
+                        reusedEntry = true;
                         break;
                     }
             if (reused)
@@ -672,6 +744,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                     if (auto xml = juce::parseXML(plugin["xml"].toString()))
                         set(plugin, "category", xml->getStringAttribute("category"));
             }
+        if (!reusedEntry)
+            set(e, "registryOperation", (juce::int64)operation);
         entries.add(e);
         if (progress)
             progress(e);
@@ -691,7 +765,59 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     // the last complete registry byte-identical, including unvisited candidates.
     if (cancel())
         throw QueryCancelled();
-    saveProcessingJson(file, result);
+    {
+        RegistryGuard coordinated(file, cancel);
+        if (cancel())
+            throw QueryCancelled();
+        auto latest = snapshot();
+        std::map<juce::String, juce::var> reconciled;
+        if (auto *current = latest["entries"].getArray())
+            for (auto &e : *current)
+                reconciled[e["path"].toString()] = e;
+        // Only remove entries absent from this operation's complete discovery if
+        // they were already in its initial snapshot and have not been refreshed.
+        if (targetPath.isEmpty())
+            if (auto *initial = cache["entries"].getArray())
+                for (auto &e : *initial)
+                {
+                    auto path = e["path"].toString();
+                    auto current = reconciled.find(path);
+                    if (!seen.contains(path) && current != reconciled.end() &&
+                        (int64_t)current->second["registryOperation"] <= operation)
+                        reconciled.erase(current);
+                }
+        for (auto &e : entries)
+        {
+            auto path = e["path"].toString();
+            auto current = reconciled.find(path);
+            if (current == reconciled.end() ||
+                (int64_t)e["registryOperation"] >= (int64_t)current->second["registryOperation"])
+                reconciled[path] = e;
+        }
+        juce::Array<juce::var> published;
+        // Keep operation discovery ordering, then any newly published candidates.
+        for (auto &e : entries)
+        {
+            auto at = reconciled.find(e["path"].toString());
+            if (at != reconciled.end())
+            {
+                published.add(at->second);
+                reconciled.erase(at);
+            }
+        }
+        for (auto &[path, e] : reconciled)
+            published.add(e);
+        appendRoots(roots, latest["roots"]);
+        juce::Array<juce::var> finalRoots;
+        for (auto &root : roots)
+            finalRoots.add(root.getFullPathName());
+        set(result, "entries", published);
+        set(result, "roots",
+            targetPath.isNotEmpty() && latest["roots"].isArray() ? latest["roots"] : juce::var(finalRoots));
+        set(result, "registryRevision", (juce::int64)((int64_t)latest["registryRevision"] + 1));
+        set(result, "registeredAudioUnits", registeredAudioUnits || (bool)latest["registeredAudioUnits"]);
+        saveProcessingJson(file, result);
+    }
     return result;
 }
 juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, bool normalize, bool split,

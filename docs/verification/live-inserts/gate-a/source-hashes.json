@@ -1,0 +1,12 @@
+{
+  "src/PluginProcessing.cpp": "4ca0f5a6f40ad19d8cf485eff8513dea2f176d7e68e4e0a5d855c6c61d49bb77",
+  "src/PluginProcessing.h": "6eec3e5e86a9571c70c08654b14abb7a2e8cd9922a1b11b043c4d84f6a660c6f",
+  "src/PluginWorkerMain.cpp": "726b345b55083f1c7f84ece5b06e7aac61540c8eded7f7ac862b3659db344842",
+  "src/HostedRackService.h": "5d9c5ab4869ab714c63254fae5acc5a4e78d6624776e9ef86a4ad379c0abedfa",
+  "tests/PluginMultiFactory.cpp": "ff14e6124771e2f15a20eae0f1155d255bc84386def6aff85dc304f7f549badc",
+  "tests/PrepareSchemaProxy.h": "654a2403b8ee80df329cbc78dcf92e0feeda29b40fbd547ad00f77f38b1d6d0e",
+  "tests/PluginGateATests.inc": "b449feece0877ef37657dbc8aabf6c8e531780b6a87afbde4ba4e44c98c75b9f",
+  "tests/PluginProcessingTests.cpp": "d10f19466f9b405e54e470456b0cb9aa1b37b862302c61c60cea7114955366d2",
+  "tests/Tests.cpp": "a6b9753b177f20fdd5bc6c74e36ae9f5ba0da6f94764aa234d5a77122e8c78bd",
+  "CMakeLists.txt": "63b2d8abaf590394e910e6653683788dc283340b335f48ac9409bf49e908ca97"
+}

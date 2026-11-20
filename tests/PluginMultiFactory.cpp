@@ -5,6 +5,7 @@
 #include <array>
 #include <atomic>
 #include <cstring>
+#include "PrepareSchemaProxy.h"
 using namespace Steinberg;
 namespace
 {
@@ -111,7 +112,10 @@ class Factory final : public IPluginFactory3
         *out = nullptr;
         for (auto &m : modules)
             if (m.factory && m.factory->createInstance(cid, iid, out) == kResultOk && *out)
+            {
+                schemaQA::wrap(iid, out);
                 return kResultOk;
+            }
         return kNoInterface;
     }
     tresult PLUGIN_API getClassInfo2(int32 index, PClassInfo2 *info) override

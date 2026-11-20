@@ -39,7 +39,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             AudioBuffer<float> dry;
             AudioProcessor::BusesLayout buses;
             StringArray parameterIds;
-            std::vector<float> requestedValues;
+            std::vector<float> requestedValues, opaqueValues, baselineRequests;
         };
         std::vector<Slot> slots;
         int totalLatency = 0;
@@ -47,10 +47,11 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
         {
             auto settings = JSON::parse(slot.settings);
             auto p = instance(formats, settings["plugin"], rate, 512);
+            std::vector<float> opaqueValues;
             onPluginMessageThread(
                 [&]
                 {
-                    restore(*p, settings);
+                    restore(*p, settings, &opaqueValues);
                     layout(*p, bus);
                     p->setNonRealtime(false);
                     p->setRateAndBufferSizeDetails(rate, 512);
@@ -62,17 +63,30 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             check(latency >= 0 && latency <= (int)rate && totalLatency + latency <= (int)rate,
                   "Hosted rack latency exceeds one-second bound");
             Slot prepared;
+            prepared.opaqueValues = std::move(opaqueValues);
             prepared.latency = latency;
             prepared.bypass = rack.bypass || slot.bypass;
             prepared.buses = p->getBusesLayout();
             onPluginMessageThread(
                 [&]
                 {
-                    validateParameterSchema(*p);
+                    validateRequestedIdentity(*p, settings);
                     for (int i = 0; i < p->getParameters().size(); ++i)
                         prepared.parameterIds.add(p->getHostedParameter(i)->getParameterID());
                     prepared.requestedValues.assign((size_t)p->getParameters().size(),
                                                     std::numeric_limits<float>::quiet_NaN());
+                    prepared.baselineRequests.assign((size_t)p->getParameters().size(),
+                                                     std::numeric_limits<float>::quiet_NaN());
+                    if (auto *baseline = settings["parameterBaseline"].getArray())
+                        for (auto &parameter : *baseline)
+                        {
+                            int index = (int)parameter["index"];
+                            double value = (double)parameter["value"];
+                            check(isPositiveAndBelow(index, prepared.parameterIds.size()) &&
+                                      std::isfinite(value) && value >= 0 && value <= 1,
+                                  "Invalid prepared baseline");
+                            prepared.baselineRequests[(size_t)index] = (float)value;
+                        }
                     if (auto *parameters = settings["parameters"].getArray())
                         for (auto &parameter : *parameters)
                         {
@@ -130,7 +144,10 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                 auto *parameter = slot.effect->getParameters()[index];
                                 if (slot.requestedValues[(size_t)index] != x)
                                 {
-                                    parameter->setValueNotifyingHost(x);
+                                    float effective = x == slot.baselineRequests[(size_t)index]
+                                                          ? slot.opaqueValues[(size_t)index]
+                                                          : x;
+                                    parameter->setValueNotifyingHost(effective);
                                     slot.requestedValues[(size_t)index] = x;
                                 }
                             }

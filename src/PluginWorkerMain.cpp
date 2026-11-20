@@ -224,6 +224,25 @@ void validateParameterSchema(AudioPluginInstance &p)
                                                  "; processor must expose unique native IDs");
         }
 }
+void validateRequestedIdentity(AudioPluginInstance &p, const var &job)
+{
+    validateParameterSchema(p);
+    stage("prepared-parameter-identity");
+    if (auto *parameters = job["parameters"].getArray())
+    {
+        check(parameters->size() <= 512, "Parameter bound exceeded");
+        for (auto &parameter : *parameters)
+        {
+            int index = (int)parameter["index"];
+            check(isPositiveAndBelow(index, p.getParameters().size()) &&
+                      (!parameter["stableId"].isString() ||
+                       (p.getHostedParameter(index) &&
+                        p.getHostedParameter(index)->getParameterID() == parameter["stableId"].toString())) &&
+                      (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+                  "Requested parameter identity changed during preparation");
+        }
+    }
+}
 var describe(AudioPluginInstance &p)
 {
     validateParameterSchema(p);
@@ -271,7 +290,7 @@ var describe(AudioPluginInstance &p)
     put(result, "reportedTail", std::isfinite(tail) ? tail : -1.);
     return result;
 }
-void restore(AudioPluginInstance &p, const var &job)
+void restore(AudioPluginInstance &p, const var &job, std::vector<float> *opaqueValues = nullptr)
 {
     validateParameterSchema(p);
     // Opaque state owns its program. Queuing a redundant VST3 program change
@@ -289,6 +308,12 @@ void restore(AudioPluginInstance &p, const var &job)
               "Invalid state bytes");
         check(hash(state) == job["stateHash"].toString(), "Plugin state checksum mismatch");
         p.setStateInformation(state.getData(), (int)state.getSize());
+    }
+    if (opaqueValues)
+    {
+        opaqueValues->clear();
+        for (auto *parameter : p.getParameters())
+            opaqueValues->push_back(parameter->getValue());
     }
     if (auto *params = job["parameters"].getArray())
     {
@@ -484,6 +509,11 @@ var execute(const var &job)
             stage("preparation");
             effect->prepareToPlay(rate, block);
             effect->reset();
+        });
+    onPluginMessageThread(
+        [&]
+        {
+            validateRequestedIdentity(*effect, job);
             state = describe(*effect);
         });
     if (mode == "editor")
@@ -658,6 +688,8 @@ var execute(const var &job)
     put(frozen, "state", state["state"]);
     put(frozen, "stateHash", state["stateHash"]);
     put(frozen, "parameters", state["parameters"]);
+    put(frozen, "parameterBaseline", state["parameterBaseline"]);
+    put(frozen, "program", state["program"]);
     put(result, "job", frozen);
     put(result, "plugin", identity);
     put(result, "input", input);
@@ -665,6 +697,7 @@ var execute(const var &job)
     put(result, "state", state["state"]);
     put(result, "stateHash", state["stateHash"]);
     put(result, "parameters", state["parameters"]);
+    put(result, "parameterBaseline", state["parameterBaseline"]);
     put(result, "rate", rate);
     put(result, "block", block);
     put(result, "frames", frames);
