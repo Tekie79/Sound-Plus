@@ -190,6 +190,7 @@ var execute(const var &job)
             put(p, "vendor", d->manufacturerName);
             put(p, "version", d->version);
             put(p, "format", "VST3");
+            put(p, "category", d->category);
             put(p, "architecture", architectures);
             put(p, "path", path);
             put(p, "fingerprint", fingerprint);

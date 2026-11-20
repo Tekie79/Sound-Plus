@@ -1,0 +1,9 @@
+{
+  "passed": true,
+  "rejectedMutations": {
+    "altered_percentile": true,
+    "missing_tick_record": true,
+    "altered_header_delta": true,
+    "altered_wave_timing": true
+  }
+}

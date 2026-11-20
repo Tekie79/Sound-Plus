@@ -1,0 +1,39 @@
+{
+  "VST3": {
+    "roots": [
+      "/Library/Audio/Plug-Ins/VST3",
+      "/Users/harvest/Library/Audio/Plug-Ins/VST3"
+    ],
+    "bundlesFound": 0,
+    "names": [],
+    "hostEnabled": true
+  },
+  "VST2": {
+    "roots": [
+      "/Library/Audio/Plug-Ins/VST",
+      "/Users/harvest/Library/Audio/Plug-Ins/VST"
+    ],
+    "bundlesFound": 0,
+    "names": [],
+    "hostEnabled": false
+  },
+  "Audio Units": {
+    "roots": [
+      "/Library/Audio/Plug-Ins/Components",
+      "/Users/harvest/Library/Audio/Plug-Ins/Components"
+    ],
+    "bundlesFound": 9,
+    "names": [
+      "ASAF Object Renderer.component",
+      "ASAF Channels.component",
+      "ASAF Channels Renderer.component",
+      "ASAF Object to Scene.component",
+      "ASAF Scene.component",
+      "ASAF Object.component",
+      "ASAF Scene Renderer.component",
+      "ASAF Export.component",
+      "ASAF Panner.component"
+    ],
+    "hostEnabled": false
+  }
+}

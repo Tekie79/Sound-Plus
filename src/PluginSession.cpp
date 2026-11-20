@@ -42,6 +42,22 @@ juce::var represent(const juce::var &completed, bool normalize, const juce::File
     put(normalized, "kind", "plugin-preview-v1");
     return normalized;
 }
+juce::var verifiedFallback(const juce::var &completed, const std::function<bool()> &cancel)
+{
+    // The raw pass is the authority even when a derived representation survives.
+    auto raw = represent(completed, false, {}, cancel);
+    if (cancel())
+        throw std::runtime_error("Cancelled");
+    try
+    {
+        if (processingHash(juce::File(completed["path"].toString())) == completed["sha256"].toString())
+            return completed;
+    }
+    catch (const std::exception &)
+    {
+    }
+    return raw;
+}
 } // namespace
 PluginSession::PluginSession(juce::File helper, juce::File dir)
     : directory(std::move(dir)), child(std::move(helper))
@@ -63,23 +79,36 @@ void PluginSession::invalidate()
     generation = ++*epoch;
     result = juce::var();
     receipt = juce::var();
+    retainingPass = false;
+    verifyingCancellation = false;
     error = {};
     status = "Stale - render Preview for these settings";
 }
 void PluginSession::launch(const juce::String &label,
                            std::function<juce::var(const std::function<bool()> &)> run,
-                           std::function<void(juce::var)> adopt)
+                           std::function<void(juce::var)> adopt, bool retainPass)
 {
-    invalidate();
+    auto completed = retainPass ? result.clone() : juce::var();
+    if (retainPass)
+    {
+        generation = ++*epoch;
+        receipt = juce::var();
+        error = {};
+    }
+    else
+        invalidate();
+    retainingPass = retainPass;
+    verifyingCancellation = false;
     busy = true;
     status = label;
     auto token = generation;
     auto serial = epoch;
     juce::Component::SafePointer<PluginSession> safe(this);
     if (!worker.submit(
-            [safe, token, serial, run = std::move(run), adopt = std::move(adopt)]() mutable
+            [safe, token, serial, completed, run = std::move(run), adopt = std::move(adopt)]() mutable
             {
                 juce::var value;
+                juce::var recovered;
                 juce::String failure;
                 try
                 {
@@ -90,13 +119,26 @@ void PluginSession::launch(const juce::String &label,
                 catch (const std::exception &e)
                 {
                     failure = e.what();
+                    if (completed.isObject() && serial->load() == token)
+                        try
+                        {
+                            recovered = verifiedFallback(completed,
+                                                         [serial, token] { return serial->load() != token; });
+                        }
+                        catch (const std::exception &x)
+                        {
+                            failure += "; completed PCM unavailable: " + juce::String(x.what());
+                        }
                 }
                 juce::MessageManager::callAsync(
-                    [safe, token, value = std::move(value), failure, adopt = std::move(adopt)]() mutable
+                    [safe, token, value = std::move(value), recovered, failure,
+                     adopt = std::move(adopt)]() mutable
                     {
                         if (!safe || safe->generation != token)
                             return;
                         safe->busy = false;
+                        safe->retainingPass = false;
+                        safe->verifyingCancellation = false;
                         if (!safe->contextValid())
                         {
                             safe->invalidate();
@@ -104,8 +146,13 @@ void PluginSession::launch(const juce::String &label,
                         }
                         else if (failure.isNotEmpty())
                         {
+                            safe->result = recovered;
+                            safe->receipt = juce::var();
                             safe->error = failure;
-                            safe->status = "Failed: " + failure;
+                            safe->status = "Failed: " + failure +
+                                           (recovered.isObject()
+                                                ? " - verified completed PCM available; audition or retry"
+                                                : " - no usable completed PCM");
                         }
                         else
                         {
@@ -127,6 +174,8 @@ void PluginSession::launch(const juce::String &label,
             }))
     {
         busy = false;
+        result = juce::var();
+        receipt = juce::var();
         error = "Worker queue is full";
         status = error;
     }
@@ -158,15 +207,24 @@ void PluginSession::prepare(PluginInput selected)
             status = "Input ready - choose a compatible VST3 effect";
         });
 }
-void PluginSession::recallCatalog()
+void PluginSession::recallCatalog(std::vector<juce::File> standardRoots)
 {
     auto file = directory.getParentDirectory().getChildFile("plugins-v1.json");
     launch(
         "Loading cached plugin registry", [file](auto &) { return PluginCatalog(file).snapshot(); },
-        [this](auto v)
+        [this, standardRoots](auto v)
         {
             discovery = v;
-            status = "Registry loaded - prepare input; Scan checks changed candidates";
+            status = "Registry loaded - checking standard VST3 folders in background";
+            auto roots = standardRoots;
+            if (auto *saved = v["roots"].getArray())
+                for (auto &path : *saved)
+                {
+                    juce::File root(path.toString());
+                    if (std::find(roots.begin(), roots.end(), root) == roots.end())
+                        roots.push_back(root);
+                }
+            scan(roots);
         });
 }
 void PluginSession::scan(std::vector<juce::File> roots, bool retry)
@@ -294,6 +352,26 @@ void PluginSession::reset()
 }
 void PluginSession::cancel()
 {
+    if (!busy || verifyingCancellation)
+        return;
+    if (busy && retainingPass && result.isObject())
+    {
+        auto completed = result.clone();
+        launch(
+            "Verifying completed PCM after cancellation",
+            [completed](auto &cancel) { return verifiedFallback(completed, cancel); },
+            [this](auto v)
+            {
+                result = v;
+                status = "Operation cancelled - verified completed PCM available";
+            },
+            true);
+        // This integrity check finishes the cancellation; it is not another
+        // cancellable delivery. A second click must not discard its authority.
+        verifyingCancellation = busy;
+        notify();
+        return;
+    }
     invalidate();
     busy = false;
     status = "Cancelled - no Ready output";
@@ -301,7 +379,7 @@ void PluginSession::cancel()
 }
 void PluginSession::setNormalization(bool enabled)
 {
-    if (deliveryNormalize == enabled)
+    if (deliveryNormalize == enabled && (!ready() || (bool)result["presentationNormalized"] == enabled))
         return;
     deliveryNormalize = enabled;
     if (!ready())
@@ -320,7 +398,8 @@ void PluginSession::setNormalization(bool enabled)
         {
             result = v;
             status = "Ready - representation updated from the same completed plugin pass";
-        });
+        },
+        true);
 }
 void PluginSession::preview()
 {
@@ -342,16 +421,39 @@ void PluginSession::preview()
         [this, job](auto &cancel)
         {
             auto v = child.call(job, directory, 120000, cancel);
-            return represent(v, (bool)job["normalize"], directory, cancel);
+            auto outcome = obj();
+            try
+            {
+                put(outcome, "pass", represent(v, (bool)job["normalize"], directory, cancel));
+            }
+            catch (const std::exception &e)
+            {
+                put(outcome, "pass", verifiedFallback(v, cancel));
+                put(outcome, "representationError", juce::String(e.what()));
+            }
+            auto frozen = outcome["pass"]["job"].clone();
+            put(frozen, "version", 1);
+            put(frozen, "result", outcome["pass"]);
+            try
+            {
+                saveProcessingJson(directory.getChildFile("job.json"), frozen);
+            }
+            catch (const std::exception &e)
+            {
+                put(outcome, "recordError", juce::String(e.what()));
+            }
+            return outcome;
         },
         [this, job](auto v)
         {
-            result = v;
+            result = v["pass"];
             status = "Ready - preview is the authoritative processed sound";
-            auto frozen = v["job"].clone();
-            put(frozen, "version", 1);
-            put(frozen, "result", v);
-            saveProcessingJson(directory.getChildFile("job.json"), frozen);
+            if (v["recordError"].toString().isNotEmpty())
+                status =
+                    "Verified completed PCM available; job record failed: " + v["recordError"].toString();
+            if (v["representationError"].toString().isNotEmpty())
+                status = "Normalization failed - verified raw PCM available: " +
+                         v["representationError"].toString();
         });
 }
 void PluginSession::createCopy(juce::File folder, bool normalize, bool split)
@@ -359,15 +461,21 @@ void PluginSession::createCopy(juce::File folder, bool normalize, bool split)
     if (!ready())
         return;
     auto frozen = result.clone();
+    auto staged = deliveryStaged;
     launch(
-        "Creating durable copy from completed PCM", [frozen, folder, normalize, split](auto &cancel)
-        { return publishPluginCopy(frozen, folder, normalize, split, cancel); },
+        "Creating durable copy from completed PCM",
+        [frozen, folder, normalize, split, staged](auto &cancel)
+        {
+            verifiedFallback(frozen, cancel);
+            return publishPluginCopy(frozen, folder, normalize, split, cancel, staged);
+        },
         [this, frozen](auto v)
         {
             result = frozen;
             receipt = v;
             status = "Copy ready - index, Print or drag the finalized WAV";
-        });
+        },
+        true);
 }
 void PluginSession::save(const juce::File &file)
 {

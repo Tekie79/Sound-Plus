@@ -6,6 +6,8 @@ namespace sp
 // Versioned independently of stock recipes/takes. No plugin code is loaded here.
 juce::String pluginFingerprint(const juce::File &);
 juce::String processingHash(const juce::File &);
+std::vector<juce::File> defaultVst3Locations();
+juce::String pluginEffectGroup(const juce::var &);
 void saveProcessingJson(const juce::File &, const juce::var &);
 juce::var loadProcessingJson(const juce::File &);
 struct PluginInput
@@ -44,5 +46,5 @@ class PluginCatalog
 };
 // Derive delivery from authoritative PCM; never calls a plugin. Atomic directory publication.
 juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, bool normalize, bool split,
-                            const std::function<bool()> &);
+                            const std::function<bool()> &, const std::function<void()> &afterStaging = {});
 } // namespace sp

@@ -148,6 +148,19 @@ bool WaveformPool::tick()
     }
     if (auto result = worker.snapshot(); pending.isNotEmpty() && result && result->generation == token)
     {
+        const auto adoptedMs = now();
+        if (loadMs.size() < 512)
+        {
+            const auto duration = adoptedMs - submittedMs;
+            loadMs.push_back(duration);
+            auto *record = new juce::DynamicObject();
+            record->setProperty("requestId", (juce::int64)token);
+            record->setProperty("sourceKey", pending);
+            record->setProperty("submittedMs", submittedMs);
+            record->setProperty("adoptedMs", adoptedMs);
+            record->setProperty("durationMs", duration);
+            adoptionRecords.add(juce::var(record));
+        }
         auto entry = Entry{result, ++clock, now()};
         if (pendingValidation && displays.contains(pending) && !completed.contains(pending))
             adoptDisplay(pending, entry);
@@ -161,8 +174,6 @@ bool WaveformPool::tick()
         changed = true;
         if (firstReadyMs < 0)
             firstReadyMs = now() - startedMs;
-        if (loadMs.size() < 512)
-            loadMs.push_back(now() - submittedMs);
     }
     if (pending.isEmpty())
     {
@@ -341,6 +352,9 @@ juce::var WaveformPool::metrics() const
         for (auto [name, fraction] : {std::pair{"p50", .5}, {"p95", .95}, {"p99", .99}})
             latency->setProperty(name, times[(size_t)std::ceil(times.size() * fraction) - 1]);
     o->setProperty("requestToUiAdoptionMs", juce::var(latency));
+    o->setProperty("requestToUiAdoptionRecords", adoptionRecords);
+    o->setProperty("timingRecordLimit", 512);
+    o->setProperty("percentileEstimator", "nearest-rank: sorted[ceil(p*N)-1]");
     return juce::var(o);
 }
 } // namespace sp

@@ -65,6 +65,7 @@ class WaveformPool
     uint64_t validationAdmissions = 0, sinceValidation = 0;
     double startedMs = 0, submittedMs = 0, firstReadyMs = -1;
     std::vector<double> loadMs;
+    juce::Array<juce::var> adoptionRecords;
     uint64_t token = 0, clock = 0, requests = 0, diskHits = 0, memoryHits = 0, changedGeneration = 0;
     uint64_t cancellations = 0, preemptions = 0, fairAdmissions = 0, admissions = 0;
 };

@@ -11,6 +11,39 @@
 extern char **environ;
 namespace sp
 {
+std::vector<juce::File> defaultVst3Locations()
+{
+    return {juce::File("/Library/Audio/Plug-Ins/VST3"),
+            juce::File::getSpecialLocation(juce::File::userHomeDirectory)
+                .getChildFile("Library/Audio/Plug-Ins/VST3")};
+}
+juce::String pluginEffectGroup(const juce::var &plugin)
+{
+    if ((bool)plugin["instrument"])
+        return "Instruments (not supported)";
+    auto category = plugin["category"].toString();
+    for (auto [token, group] :
+         std::initializer_list<std::pair<const char *, const char *>>{{"Reverb", "Reverb"},
+                                                                      {"Delay", "Delay"},
+                                                                      {"Dynamics", "Dynamics"},
+                                                                      {"Compressor", "Dynamics"},
+                                                                      {"Limiter", "Dynamics"},
+                                                                      {"EQ", "EQ / Filters"},
+                                                                      {"Filter", "EQ / Filters"},
+                                                                      {"Distortion", "Distortion"},
+                                                                      {"Modulation", "Modulation"},
+                                                                      {"Pitch", "Pitch"},
+                                                                      {"Spatial", "Spatial / Surround"},
+                                                                      {"Surround", "Spatial / Surround"},
+                                                                      {"Restoration", "Restoration"},
+                                                                      {"Analyzer", "Analyzers / Meters"},
+                                                                      {"Tools", "Utilities"},
+                                                                      {"Utility", "Utilities"}})
+        for (auto &reported : juce::StringArray::fromTokens(category, "|", ""))
+            if (reported.trim().equalsIgnoreCase(token))
+                return group;
+    return "Other effects";
+}
 namespace
 {
 void require(bool b, const juce::String &s)
@@ -279,7 +312,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     require(candidates.size() <= 2048, "Too many plugin candidates (limit 2048)");
     for (auto &p : candidates)
     {
-        require(!cancel(), "Cancelled");
+        if (cancel())
+            throw QueryCancelled();
         auto path = p.getFullPathName();
         if (seen.contains(path))
             continue;
@@ -327,18 +361,25 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                 }
             }
         }
+        catch (const QueryCancelled &)
+        {
+            throw;
+        }
         catch (const std::exception &x)
         {
+            if (cancel())
+                throw QueryCancelled();
             set(e, "error", juce::String(x.what()));
             set(e, "quarantined", true);
         }
+        if (auto *plugins = e["plugins"].getArray())
+            for (auto &plugin : *plugins)
+                if (!plugin.hasProperty("category"))
+                    if (auto xml = juce::parseXML(plugin["xml"].toString()))
+                        set(plugin, "category", xml->getStringAttribute("category"));
         entries.add(e);
         if (progress)
             progress(e);
-        auto partial = object();
-        set(partial, "version", 1);
-        set(partial, "entries", entries);
-        saveProcessingJson(file, partial);
     }
     juce::Array<juce::var> savedRoots;
     for (auto &root : roots)
@@ -349,11 +390,15 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     set(result, "roots", savedRoots);
     set(result, "launched", launched);
     set(result, "cacheHits", hits);
+    // Commit only a complete snapshot, including roots. Interrupted scans leave
+    // the last complete registry byte-identical, including unvisited candidates.
+    if (cancel())
+        throw QueryCancelled();
     saveProcessingJson(file, result);
     return result;
 }
 juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, bool normalize, bool split,
-                            const std::function<bool()> &cancel)
+                            const std::function<bool()> &cancel, const std::function<void()> &afterStaging)
 {
     auto stage = juce::File(result["path"].toString());
     require(processingHash(stage) == result["sha256"].toString(), "Processed artifact changed");
@@ -364,6 +409,9 @@ juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, b
     require(pending.createDirectory().wasOk(), "Cannot create delivery staging directory");
     try
     {
+        if (afterStaging)
+            afterStaging();
+        require(!cancel(), "Cancelled");
         juce::AudioFormatManager fm;
         fm.registerBasicFormats();
         std::unique_ptr<juce::AudioFormatReader> r(fm.createReaderFor(stage));

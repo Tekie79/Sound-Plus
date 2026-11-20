@@ -34,7 +34,8 @@ Asset artifact(const juce::var &v)
 }
 } // namespace
 PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, AudioClient &client,
-                                       std::shared_ptr<WaveformPool> waves, juce::File helper)
+                                       std::shared_ptr<WaveformPool> waves, juce::File helper,
+                                       std::vector<juce::File> automaticRoots)
     : session(helper == juce::File() ? juce::File::getSpecialLocation(juce::File::currentExecutableFile)
                                            .getParentDirectory()
                                            .getParentDirectory()
@@ -45,8 +46,11 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
 {
     setLookAndFeel(&look);
     setWantsKeyboardFocus(true);
+    addKeyListener(this);
     setTitle("Process with Plug-in");
     for (auto *c : std::initializer_list<juce::Component *>{&heading,
+                                                            &transport,
+                                                            &auditionFeedback,
                                                             &inputSummary,
                                                             &outputSummary,
                                                             &status,
@@ -80,7 +84,11 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
                                                             &tail,
                                                             &parameterViewport,
                                                             &drag})
+    {
         addAndMakeVisible(c);
+        if (!dynamic_cast<juce::TextEditor *>(c))
+            c->addKeyListener(this);
+    }
     label(heading, "Process with Plug-in");
     heading.setColour(juce::Label::textColourId, ui::text);
     heading.setFont(juce::FontOptions(18.f, juce::Font::bold));
@@ -92,7 +100,9 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
     label(physicalLabel, "Physical inputs (one-based)");
     label(roleLabel, "Ordered input roles");
     label(tailLabel, "Tail cap (seconds)");
-    label(parameterSummary, "Generic parameters - values are normalized 0-1");
+    label(parameterSummary, "Generic controls | normalized 0-1; plugin text in tooltips");
+    normalize.setTooltip("Requested normalization. The waveform summary identifies the actual "
+                         "audible/deliverable representation, including a raw fallback after failure.");
     subset.setTitle("Physical input subset, comma separated");
     subset.setColour(juce::TextEditor::outlineColourId, ui::line);
     juce::StringArray values;
@@ -145,9 +155,7 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
         if (!updating && juce::isPositiveAndBelow(plugins.getSelectedId() - 1, (int)choices.size()))
             session.choose(choices[(size_t)plugins.getSelectedId() - 1]);
     };
-    roots = {juce::File("/Library/Audio/Plug-Ins/VST3"),
-             juce::File::getSpecialLocation(juce::File::userHomeDirectory)
-                 .getChildFile("Library/Audio/Plug-Ins/VST3")};
+    roots = std::move(automaticRoots);
     prepare.onClick = [this] { prepareInput(); };
     scan.onClick = [this] { session.scan(roots); };
     retry.onClick = [this] { session.scan(roots, true); };
@@ -188,6 +196,19 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
     undo.onClick = [this] { session.undo(); };
     redo.onClick = [this] { session.redo(); };
     reset.onClick = [this] { session.reset(); };
+    transport.onClick = [this]
+    {
+        auto state = audio.status();
+        bool active = auditionGeneration && state["intentId"].toString() == auditionId &&
+                      (uint64_t)(juce::int64)state["intentGeneration"] == auditionGeneration &&
+                      ((bool)state["playing"] || (bool)state["pendingPlayback"] || (bool)state["preparing"]);
+        if (active)
+            stopAudition();
+        else
+            audition(processedPlaying && session.ready());
+    };
+    transport.setPrimary();
+    label(auditionFeedback, "Audition idle");
     compare.onClick = [this] { audition(!processedPlaying); };
     copy.onClick = [this]
     {
@@ -212,7 +233,7 @@ PluginProcessPanel::PluginProcessPanel(PluginInput input, juce::File workspace, 
     session.onChange = [this] { refresh(); };
     setSize(700, 620);
     refresh();
-    session.recallCatalog();
+    session.recallCatalog(roots);
     startTimerHz(15);
 }
 PluginProcessPanel::~PluginProcessPanel()
@@ -222,8 +243,7 @@ PluginProcessPanel::~PluginProcessPanel()
     session.cancel();
     if (pool)
         pool->demand(8, {});
-    if (audio.status()["id"].toString().startsWith("plugin-process:"))
-        audio.stop();
+    stopAudition();
     setLookAndFeel(nullptr);
 }
 void PluginProcessPanel::prepareInput()
@@ -284,6 +304,7 @@ void PluginProcessPanel::populatePlugins()
     choices.clear();
     int active = 0;
     juce::StringArray unavailable;
+    std::vector<juce::var> grouped;
     if (auto *entries = session.discovery["entries"].getArray())
         for (auto &entry : *entries)
         {
@@ -292,31 +313,50 @@ void PluginProcessPanel::populatePlugins()
                                 entry["error"].toString());
             if (auto *list = entry["plugins"].getArray())
                 for (auto &p : *list)
-                {
-                    auto name = p["name"].toString() + " / " + p["vendor"].toString();
-                    if (!name.containsIgnoreCase(search.getText()))
-                        continue;
-                    choices.push_back(p);
-                    int id = (int)choices.size();
-                    plugins.addItem(name, id);
-                    bool supported = p["reason"].toString().isEmpty();
-                    auto layoutId = session.input["layout"]["id"].toString();
-                    bool layoutOK = false;
-                    if (auto *a = p["layouts"].getArray())
-                        for (auto &l : *a)
-                            layoutOK |= l.toString() == layoutId;
-                    if (layoutId.isEmpty())
-                        plugins.changeItemText(id, name + " (prepare input first)");
-                    else if (!supported || !layoutOK)
-                        plugins.changeItemText(id, name + " (unavailable for input)");
-                    plugins.setItemEnabled(id, supported && layoutOK);
-                    if (!supported || (!layoutOK && layoutId.isNotEmpty()))
-                        unavailable.add(name + ": " +
-                                        (supported ? "does not accept " + layoutId : p["reason"].toString()));
-                    if (p["id"].toString() == selectedId)
-                        active = id;
-                }
+                    if ((p["name"].toString() + " / " + p["vendor"].toString() + " / " +
+                         p["category"].toString())
+                            .containsIgnoreCase(search.getText()))
+                        grouped.push_back(p);
         }
+    std::sort(grouped.begin(), grouped.end(),
+              [](const auto &a, const auto &b)
+              {
+                  auto left =
+                      pluginEffectGroup(a) + ":" + a["name"].toString() + ":" + a["vendor"].toString();
+                  auto right =
+                      pluginEffectGroup(b) + ":" + b["name"].toString() + ":" + b["vendor"].toString();
+                  return left.compareIgnoreCase(right) < 0;
+              });
+    juce::String previousGroup;
+    for (auto &p : grouped)
+    {
+        auto group = pluginEffectGroup(p);
+        if (group != previousGroup)
+        {
+            plugins.addSectionHeading(group);
+            previousGroup = group;
+        }
+        auto name = p["name"].toString() + " / " + p["vendor"].toString();
+        choices.push_back(p);
+        int id = (int)choices.size();
+        plugins.addItem(name, id);
+        bool supported = p["reason"].toString().isEmpty();
+        auto layoutId = session.input["layout"]["id"].toString();
+        bool layoutOK = false;
+        if (auto *a = p["layouts"].getArray())
+            for (auto &l : *a)
+                layoutOK |= l.toString() == layoutId;
+        if (layoutId.isEmpty())
+            plugins.changeItemText(id, name + " (prepare input first)");
+        else if (!supported || !layoutOK)
+            plugins.changeItemText(id, name + " (unavailable for input)");
+        plugins.setItemEnabled(id, supported && layoutOK);
+        if (!supported || (!layoutOK && layoutId.isNotEmpty()))
+            unavailable.add(name + ": " +
+                            (supported ? "does not accept " + layoutId : p["reason"].toString()));
+        if (p["id"].toString() == selectedId)
+            active = id;
+    }
     if (!session.busy && !unavailable.isEmpty())
         status.setText(session.status + "\n" + unavailable[0], juce::dontSendNotification);
     plugins.setSelectedId(active, juce::dontSendNotification);
@@ -347,6 +387,7 @@ void PluginProcessPanel::rebuildParameters()
             name->setBounds(0, y, 180, 28);
             parameterContent.addAndMakeVisible(name);
             auto *s = parameterSliders.add(new juce::Slider());
+            s->addKeyListener(this);
             s->setTitle(p["name"].toString() + " normalized value");
             s->setRange(0, 1, .0001);
             s->setSliderStyle(juce::Slider::LinearHorizontal);
@@ -382,15 +423,15 @@ void PluginProcessPanel::refresh()
     preview.setEnabled(session.input.isObject() && session.settings.isObject() && !session.busy &&
                        session.contextValid());
     copy.setEnabled(session.ready());
-    compare.setEnabled(session.ready());
-    cancel.setEnabled(session.busy);
+    compare.setEnabled(session.ready() && !audio.captureBusy());
+    cancel.setEnabled(session.canCancel());
     prepare.setEnabled(!session.busy);
     plugins.setEnabled(session.input.isObject() && !session.busy);
     tail.setEnabled(session.settings.isObject() && !session.busy);
     normalize.setEnabled(session.settings.isObject() && !session.busy);
     split.setToggleState(session.deliverySplit, juce::dontSendNotification);
     bypass.setEnabled(session.settings.isObject() && !session.busy);
-    auto published = session.receipt.isObject() && !session.busy;
+    auto published = session.receipt.isObject() && session.ready();
     print.setEnabled(published);
     index.setEnabled(published);
     drag.setEnabled(published);
@@ -411,21 +452,35 @@ void PluginProcessPanel::refresh()
     else if (auto *a = session.settings["parameters"].getArray())
         for (int i = 0; i < std::min(a->size(), parameterSliders.size()); ++i)
             parameterSliders[i]->setValue((double)(*a)[i]["value"], juce::dontSendNotification);
+    for (int i = 0; i < parameterSliders.size(); ++i)
+    {
+        auto current = session.settings["parameters"][i];
+        auto *renderedParameters = session.result["parameters"].getArray();
+        auto reported = renderedParameters && juce::isPositiveAndBelow(i, renderedParameters->size())
+                            ? (*renderedParameters)[i]
+                            : juce::var();
+        if (!reported.isObject() || std::abs((double)reported["value"] - (double)current["value"]) > 1e-7)
+            reported = lastParameters[i];
+        bool matches =
+            reported.isObject() && std::abs((double)reported["value"] - (double)current["value"]) <= 1e-7;
+        parameterSliders[i]->setTooltip(current["name"].toString() + " | normalized 0-1" +
+                                        (matches ? " | plugin reports: " + reported["text"].toString()
+                                                 : " | Preview to read the plugin's formatted value"));
+    }
     for (auto *s : parameterSliders)
         s->setEnabled(!session.busy);
     populatePlugins();
-    auto waves = session.input["sha256"].toString() + session.result["sha256"].toString();
-    if (waves != waveKey)
+    auto identity =
+        session.input.isObject() ? juce::JSON::toString(session.input["selection"], true) : juce::String();
+    if (identity != bindingKey)
     {
-        waveKey = waves;
-        inputAsset = {};
-        outputAsset = {};
-        inputPeaks.reset();
-        outputPeaks.reset();
+        bindingKey = identity;
         if (session.input.isObject())
         {
-            inputAsset = artifact(session.input);
             selected = pluginInputFromJson(session.input["selection"]);
+            inputSummary.setTooltip(selected.source.path + " | original frames [" +
+                                    juce::String(selected.first) + ", " + juce::String(selected.last) +
+                                    ") | " + selected.scope);
             juce::StringArray physical;
             for (auto c : selected.inputs)
                 physical.add(juce::String(c + 1));
@@ -440,22 +495,37 @@ void PluginProcessPanel::refresh()
                 if (layouts[n] == selected.layout)
                     interpretation.setSelectedId((int)n + 1, juce::dontSendNotification);
 
-            inputSummary.setText(selected.scope + ": " + selected.source.name + " | " +
-                                     juce::String(inputAsset.duration, 2) + " s | " +
-                                     layoutBadge(inputAsset.detectedChannels),
+            inputSummary.setText(
+                selected.scope + ": " + selected.source.name + " | " +
+                    juce::String(((double)session.input["frames"] / (double)session.input["rate"]), 2) +
+                    " s | " + layoutBadge(layoutFromJson(session.input["layout"])),
+                juce::dontSendNotification);
+        }
+        else
+            inputSummary.setText(selected.scope + ": " + selected.source.name + " | Prepare input",
                                  juce::dontSendNotification);
+    }
+    if (auditionGeneration &&
+        (auditionBinding != bindingKey ||
+         auditionHash != (processedPlaying ? session.result : session.input)["sha256"].toString() ||
+         !session.contextValid()))
+        stopAudition();
+    auto waves = session.input["sha256"].toString() + session.result["sha256"].toString();
+    if (waves != waveKey || waveformBindingNeedsRefresh())
+    {
+        waveKey = waves;
+        inputAsset = {};
+        outputAsset = {};
+        inputPeaks.reset();
+        outputPeaks.reset();
+        if (session.input.isObject())
+        {
+            inputAsset = artifact(session.input);
         }
         if (session.result.isObject())
         {
             outputAsset = artifact(session.result);
-            outputSummary.setText("Processed | " + juce::String(outputAsset.duration, 2) + " s | " +
-                                      layoutBadge(outputAsset.detectedChannels) + " | tail " +
-                                      session.result["tailSeconds"].toString() + " s",
-                                  juce::dontSendNotification);
         }
-        else
-            outputSummary.setText("No current processed waveform - render Preview",
-                                  juce::dontSendNotification);
         if (pool)
         {
             std::vector<Asset> demand;
@@ -466,12 +536,30 @@ void PluginProcessPanel::refresh()
             pool->demand(8, demand);
         }
     }
+    if (session.result.isObject())
+    {
+        const bool normalized = (bool)session.result["presentationNormalized"];
+        auto representation = normalized ? juce::String("Normalized") : juce::String("Raw processed");
+        if (normalized != session.deliveryNormalize)
+            representation += " (requested normalization differs)";
+        outputSummary.setText(
+            representation + " | " +
+                juce::String((double)session.result["frames"] / (double)session.result["rate"], 2) + " s | " +
+                layoutBadge(layoutFromJson(session.result["layout"])) + " | tail " +
+                session.result["tailSeconds"].toString() + " s",
+            juce::dontSendNotification);
+    }
+    else
+        outputSummary.setText("No current processed waveform - render Preview", juce::dontSendNotification);
     updating = false;
+    updateAudition();
     repaint();
 }
 void PluginProcessPanel::audition(bool processed)
 {
-    if (!session.ready() || audio.captureBusy())
+    if ((processed ? !session.ready()
+                   : !session.input.isObject() || session.busy || !session.contextValid()) ||
+        audio.captureBusy())
         return;
     if (beforeAudition)
         beforeAudition();
@@ -485,12 +573,66 @@ void PluginProcessPanel::audition(bool processed)
     region.revision = asset.revision;
     region.auditionPair = -2;
     region.sourceLayoutOverride = asset.detectedChannels.id;
-    audio.playRegion("plugin-process:" + asset.id, juce::File(asset.path), region);
+    auditionId = "plugin-process:" + juce::Uuid().toString();
+    auditionHash = v["sha256"].toString();
+    auditionBinding = bindingKey;
+    auditionGeneration = audio.playRegion(auditionId, juce::File(asset.path), region);
+    auditionState = "Preparing";
+    auditionWasActive = true;
     processedPlaying = processed;
-    compare.setButtonText(processed ? "Compare Original" : "Compare Processed");
+    updateAudition();
+}
+void PluginProcessPanel::stopAudition()
+{
+    if (audio.stopIfOwned(auditionId, auditionGeneration))
+        auditionState = "Stopped";
+    auditionGeneration = 0;
+    auditionWasActive = false;
+    updateAudition();
+}
+void PluginProcessPanel::updateAudition()
+{
+    auto state = audio.status();
+    bool owned = auditionGeneration && state["intentId"].toString() == auditionId &&
+                 (uint64_t)(juce::int64)state["intentGeneration"] == auditionGeneration;
+    bool active =
+        owned && ((bool)state["playing"] || (bool)state["pendingPlayback"] || (bool)state["preparing"]);
+    if (owned)
+    {
+        if ((bool)state["pendingPlayback"] || (bool)state["preparing"])
+            auditionState = "Preparing";
+        else if (state["error"].toString().isNotEmpty())
+            auditionState = "Error: " + state["error"].toString();
+        else if ((bool)state["playing"])
+            auditionState = "Playing";
+        else if ((bool)state["completed"])
+            auditionState = "Completed";
+        else if (auditionWasActive)
+            auditionState = "Stopped";
+    }
+    else if (auditionGeneration)
+    {
+        auditionState = "Other playback owns transport";
+        auditionGeneration = 0;
+    }
+    auditionWasActive = active;
+    transport.setIcon(active ? ActionIcon::stop : ActionIcon::play);
+    transport.setButtonText(active
+                                ? "Stop audition (Space)"
+                                : (processedPlaying && session.ready() ? "Play processed audition (Space)"
+                                                                       : "Play original audition (Space)"));
+    transport.setEnabled(!audio.captureBusy() && (active || (!session.busy && session.contextValid() &&
+                                                             (session.ready() || session.input.isObject()))));
+    compare.setButtonText(processedPlaying ? "Compare Original" : "Compare Processed");
+    compare.setEnabled(session.ready() && !audio.captureBusy());
+    auditionFeedback.setText(
+        ((processedPlaying && session.result.isObject()) ? "Processed | " : "Original | ") + auditionState,
+        juce::dontSendNotification);
+    auditionFeedback.setTooltip(auditionFeedback.getText());
 }
 void PluginProcessPanel::timerCallback()
 {
+    updateAudition();
     if (!session.contextValid() && !session.error.contains("context"))
     {
         session.cancel();
@@ -525,7 +667,22 @@ void PluginProcessPanel::timerCallback()
         if (outputAsset.samples)
             outputPeaks = pool->columns(outputAsset, 0, outputAsset.samples, false, getWidth() - 40);
     }
+    if (waveformBindingNeedsRefresh())
+        refresh();
     repaint();
+}
+bool PluginProcessPanel::waveformBindingNeedsRefresh() const
+{
+    if (!pool)
+        return false;
+    auto unavailableAlias = [this](const Asset &cached, const juce::var &current)
+    {
+        if (!current.isObject() || cached.path == current["path"].toString())
+            return false;
+        auto data = pool->get(cached);
+        return data && data->status != WaveformData::Status::ready;
+    };
+    return unavailableAlias(inputAsset, session.input) || unavailableAlias(outputAsset, session.result);
 }
 void PluginProcessPanel::paint(juce::Graphics &g)
 {
@@ -590,11 +747,24 @@ void PluginProcessPanel::resized()
     print.setBounds(370, 498, 110, 30);
     index.setBounds(484, 498, 112, 30);
     drag.setBounds(w - 92, 498, 32, 30);
-    cancel.setBounds(w - 58, 498, 46, 30);
-    status.setBounds(16, 538, w - 32, getHeight() - 548);
+    transport.setBounds(16, 534, 32, 30);
+    auditionFeedback.setBounds(56, 536, w - 232, 26);
+    cancel.setBounds(w - 166, 534, 150, 30);
+    status.setBounds(16, 574, w - 32, getHeight() - 584);
 }
 bool PluginProcessPanel::keyPressed(const juce::KeyPress &key)
 {
+    for (auto *focus = juce::Component::getCurrentlyFocusedComponent(); focus;
+         focus = focus->getParentComponent())
+        if (dynamic_cast<juce::TextEditor *>(focus))
+            return false;
+    if (key.getKeyCode() == juce::KeyPress::spaceKey && !key.getModifiers().isAnyModifierKeyDown())
+    {
+        if (!transport.isEnabled())
+            return false;
+        transport.onClick();
+        return true;
+    }
     if (key.getModifiers().isCommandDown() &&
         juce::CharacterFunctions::toUpperCase((juce::juce_wchar)key.getKeyCode()) == 'Z')
     {
@@ -602,6 +772,44 @@ bool PluginProcessPanel::keyPressed(const juce::KeyPress &key)
             session.redo();
         else
             session.undo();
+        return true;
+    }
+    return false;
+}
+bool PluginProcessPanel::keyPressed(const juce::KeyPress &key, juce::Component *)
+{
+    if (key.getKeyCode() != juce::KeyPress::spaceKey)
+        return keyPressed(key);
+    for (auto *focus = juce::Component::getCurrentlyFocusedComponent(); focus;
+         focus = focus->getParentComponent())
+        if (dynamic_cast<juce::TextEditor *>(focus))
+            return false;
+    if (key.getModifiers().isAnyModifierKeyDown())
+        return false;
+    const bool physicallyHeld = juce::KeyPress::isKeyCurrentlyDown(juce::KeyPress::spaceKey);
+    if (physicallyHeld && spaceApplied)
+        return true;
+    const bool used = keyPressed(key);
+    // Separate synthetic/accessibility key presses need not supply a key-up.
+    // Suppress only an actual held physical key's repeat, never a later press.
+    spaceApplied = physicallyHeld && used;
+    return used;
+}
+bool PluginProcessPanel::keyStateChanged(bool, juce::Component *)
+{
+    for (auto *focus = juce::Component::getCurrentlyFocusedComponent(); focus;
+         focus = focus->getParentComponent())
+        if (dynamic_cast<juce::TextEditor *>(focus))
+            return false;
+    if (juce::KeyPress::isKeyCurrentlyDown(juce::KeyPress::spaceKey) &&
+        !juce::ModifierKeys::currentModifiers.isAnyModifierKeyDown())
+    {
+        spaceHeld = true;
+        return true;
+    }
+    if (spaceHeld || spaceApplied)
+    {
+        spaceHeld = spaceApplied = false;
         return true;
     }
     return false;

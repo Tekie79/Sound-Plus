@@ -24,6 +24,11 @@ class Fixture final : public juce::AudioProcessor
                 for (;;)
                     juce::Thread::sleep(100);
         }
+        if (auto *marker = std::getenv("SOUNDPLUS_FIXTURE_SCAN_MARKER"))
+        {
+            juce::File(juce::String::fromUTF8(marker)).replaceWithText("Actual fixture constructor entered");
+            juce::Thread::sleep(200);
+        }
         if (auto *s = std::getenv("SOUNDPLUS_FIXTURE_BLOCK_SLEEP_MS"))
             sleepMs = juce::jlimit(0, 10, juce::String(s).getIntValue());
         addParameter(gain = new juce::AudioParameterFloat({"gain", 1}, "Gain", 0.f, 2.f, 1.f));

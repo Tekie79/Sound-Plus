@@ -24,6 +24,7 @@ class AudioClient
                         const juce::File &capture = {}, const juce::String &mode = "play");
     uint64_t updateDesign(const DesignDocument &, uint64_t generation, double eventMs);
     void stop();
+    bool stopIfOwned(const juce::String &id, uint64_t generation);
     void gain(float);
     void monitorChannel(int deviceChannel, int sourceChannel);
     void monitorSolo(int sourceChannel);
@@ -47,6 +48,7 @@ class AudioClient
 
   private:
     void enqueue(juce::var);
+    void enqueueLocked(juce::var);
     void run();
     juce::File executable;
     std::atomic<bool> quitting{false}, restartRequested{false};

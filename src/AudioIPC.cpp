@@ -84,6 +84,10 @@ AudioClient::~AudioClient()
 void AudioClient::enqueue(juce::var v)
 {
     std::lock_guard lock(mutex);
+    enqueueLocked(std::move(v));
+}
+void AudioClient::enqueueLocked(juce::var v)
+{
     const auto command = v["command"].toString();
     if (command == "play" || command == "play_design")
     {
@@ -146,6 +150,16 @@ void AudioClient::stop()
     auto m = message("stop");
     m.getDynamicObject()->setProperty("playGeneration", (juce::int64)++playbackGeneration);
     enqueue(m);
+}
+bool AudioClient::stopIfOwned(const juce::String &id, uint64_t generation)
+{
+    std::lock_guard lock(mutex);
+    if (id.isEmpty() || !generation || captureBusy() || desiredId != id || playbackGeneration != generation)
+        return false;
+    auto m = message("stop");
+    m.getDynamicObject()->setProperty("playGeneration", (juce::int64)++playbackGeneration);
+    enqueueLocked(m);
+    return true;
 }
 uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
                                  const juce::File &capture, const juce::String &mode)
@@ -269,7 +283,7 @@ void AudioClient::reserveTake(bool reserve)
 juce::var AudioClient::status()
 {
     std::lock_guard lock(mutex);
-    auto copy = latest.clone();
+    auto copy = latest.isObject() ? latest.clone() : message("status");
     if (auto *object = copy.getDynamicObject())
     {
         object->setProperty("intentId", desiredId);
@@ -286,6 +300,7 @@ juce::var AudioClient::status()
         {
             object->setProperty("id", desiredId);
             object->setProperty("playing", false);
+            object->setProperty("completed", false);
             object->setProperty("error", juce::String());
         }
         // Stop intent is immediate, even before the audio process acknowledges it.

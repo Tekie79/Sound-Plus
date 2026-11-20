@@ -14,9 +14,11 @@ class PluginSession final : public juce::Component
     uint64_t generation = 0;
     std::function<void()> onChange;
     std::function<bool()> contextValid = [] { return true; };
+    // Optional worker-thread progress observer; also permits controlled cancellation QA.
+    std::function<void()> deliveryStaged;
     void clearInput();
     void prepare(PluginInput);
-    void recallCatalog();
+    void recallCatalog(std::vector<juce::File> standardRoots = defaultVst3Locations());
     void scan(std::vector<juce::File>, bool retry = false);
     void choose(juce::var plugin);
     void change(const juce::var &);
@@ -42,7 +44,11 @@ class PluginSession final : public juce::Component
     }
     bool ready() const
     {
-        return result.isObject() && !busy && error.isEmpty() && contextValid();
+        return result.isObject() && !busy && contextValid();
+    }
+    bool canCancel() const
+    {
+        return busy && !verifyingCancellation;
     }
 
   private:
@@ -51,9 +57,11 @@ class PluginSession final : public juce::Component
     std::shared_ptr<std::atomic<uint64_t>> epoch = std::make_shared<std::atomic<uint64_t>>(0);
     std::vector<juce::var> past, future;
     juce::var gesture;
+    bool retainingPass = false;
+    bool verifyingCancellation = false;
     void invalidate();
     void notify();
     void launch(const juce::String &, std::function<juce::var(const std::function<bool()> &)>,
-                std::function<void(juce::var)>);
+                std::function<void(juce::var)>, bool retainPass = false);
 };
 } // namespace sp

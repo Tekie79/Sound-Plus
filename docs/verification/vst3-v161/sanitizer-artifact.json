@@ -1,0 +1,8 @@
+{
+  "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusPublicationDebug_artefacts/Release/SoundPlusPublicationDebug",
+  "sha256": "eac34d5899ab4c75080c113916fb734674710532a5829b60c257427fff465049",
+  "compiledSourceTreeSha256": "e70ef58e911bd294cd4b7aadee9d7c9d2395492d187c056d52bc07dfb6368073",
+  "workerSha256": "ec89fb9444d5bcb21d160ead9a10a6b6e64c0d020f74f78b66c70d4c7ff4b59e",
+  "instrumentation": "Dedicated core/JUCE/production UI/session instrumented -fsanitize=address -g -fno-omit-frame-pointer -O1; child helpers and VST3 fixtures are Release across actual process boundary",
+  "ASAN_OPTIONS": "detect_leaks=0; framework/global leak reporting excluded, memory-access checks enabled"
+}

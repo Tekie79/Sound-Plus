@@ -1,0 +1,27 @@
+{
+  "mediaCount": 11,
+  "allMediaUnchanged": true,
+  "recoveryFiles": 9,
+  "allRecoveryUnchanged": true,
+  "settingsUnchangedBeforeRelaunch": true,
+  "savedDesignsUnchanged": {
+    "Workflow demonstration.soundplus": true,
+    "Rain glass design - before walkthrough 19992.soundplus": true
+  },
+  "catalogCounts": {
+    "assets": 43,
+    "roots": 1
+  },
+  "restoredOldSnapshot": false,
+  "nativeRelaunch": {
+    "catalog": "build/gain-hover-native",
+    "name": "Workflow demonstration",
+    "revision": 31,
+    "activeTake": "Take 2 Ready",
+    "workspace": "Perform",
+    "browserVisible": true,
+    "monitor": 0.25,
+    "rainSavedRevisionRetained": 19992,
+    "normalAISettings": true
+  }
+}

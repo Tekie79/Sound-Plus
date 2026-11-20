@@ -1,0 +1,70 @@
+{
+  "repeatSpaceStates": [
+    "Playing",
+    "Stopped",
+    "Playing",
+    "Stopped"
+  ],
+  "compareFocusedSpaceStates": [
+    "Playing",
+    "Stopped",
+    "Playing",
+    "Stopped"
+  ],
+  "naturalCompletion": true,
+  "textEditorSpace": true,
+  "numericEditorSpace": true,
+  "recoveredRawPass": true,
+  "requestedNormalizationDistinct": true,
+  "normalizationRetry": true,
+  "freshPreview": true,
+  "copyReady": true,
+  "savedProcessingJob": true,
+  "printRecoveredOnReopenRevision": 2,
+  "libraryIndexedFiles": 4,
+  "normalContentSize": [
+    1360,
+    860
+  ],
+  "minimumContentSize": [
+    1041,
+    680
+  ],
+  "browserAndInspectorVisible": true,
+  "minimumProcessReady": true,
+  "groupMenuScreenshot": "Not captured; reported-category mapping and menu population exercised by production tests",
+  "humanListening": "Not performed; PCM and native state only",
+  "minimumNote": "Native resize ended 1 pixel above the 1040-wide registered clamp. Library component tests execute 1040x680; Designer layout source unchanged from v1.6. Process is 700x650 in both host sizes.",
+  "compiledSourceTreeSha256": "e70ef58e911bd294cd4b7aadee9d7c9d2395492d187c056d52bc07dfb6368073",
+  "appSha256": "e1a9b4438ab64434ad86024ea41c3b04206519d534c250bc8a651103abba2852",
+  "recoveryRequests": {
+    "before": 3,
+    "afterFailure": 3,
+    "afterRecoveryAndCopy": 3
+  },
+  "automaticDiscovery": {
+    "cacheHits": 1,
+    "launched": 0,
+    "roots": [
+      "/Library/Audio/Plug-Ins/VST3",
+      "/Users/harvest/Library/Audio/Plug-Ins/VST3",
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3"
+    ]
+  },
+  "requestsAfterExplicitFreshPreview": 4,
+  "finalCopy": {
+    "path": "/Users/harvest/Music/SoundPlus/Processed/Processed-1330bf95900543beb9c3c026c6aa7155/Mix.wav",
+    "sha256": "4f6c644ceb4d1b3283dcfcaa7c1707e8538bf1b24c9e018943d472268e165b27",
+    "rate": 48000,
+    "frames": 249600,
+    "channels": 2,
+    "gainMaxError": 0.0,
+    "tailMaxSample": 0.0,
+    "normalizationMaxError": 5.648783429901272e-08,
+    "splitMaxError": 0,
+    "rawPcmHash": "0b4615beb7f82c287c0541fb7058eff016cffce5a44393257f7f4c708be34235",
+    "retainedRawPcmHash": "0b4615beb7f82c287c0541fb7058eff016cffce5a44393257f7f4c708be34235",
+    "explicitNewRunSameKnownFixturePcm": true
+  },
+  "receiver": "Not requalified; blocked status retained from v1.6. No new native receiving drop/placement/save/reopen pass."
+}

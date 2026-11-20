@@ -164,6 +164,27 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     auto plugin = scan["entries"][0]["plugins"][0], stereoPlugin = scan["entries"][1]["plugins"][0];
     require(plugin.isObject() && plugin["reason"].toString().isEmpty(), "Capable fixture discovered");
     require(stereoPlugin.isObject(), "Stereo fixture discovered");
+    require(plugin.hasProperty("category"), "Discovery retains actual plugin-reported effect category");
+    auto classified = plugin.clone();
+    for (auto [category, expected] : std::initializer_list<std::pair<const char *, const char *>>{
+             {"Fx|Reverb", "Reverb"},
+             {"Fx|Delay", "Delay"},
+             {"Fx|Dynamics|Stereo", "Dynamics"},
+             {"Fx|EQ", "EQ / Filters"},
+             {"Fx|Modulation", "Modulation"},
+             {"Fx|FrequencyShifter", "Other effects"},
+             {"Fx", "Other effects"}})
+    {
+        put(classified, "category", category);
+        require(pluginEffectGroup(classified) == expected,
+                "Effect groups follow reported type, not filename guesses");
+    }
+    auto defaults = defaultVst3Locations();
+    require(
+        defaults.size() == 2 && defaults[0] == File("/Library/Audio/Plug-Ins/VST3") &&
+            defaults[1] ==
+                File::getSpecialLocation(File::userHomeDirectory).getChildFile("Library/Audio/Plug-Ins/VST3"),
+        "Default discovery includes standard system and user VST3 folders");
     saveProcessingJson(root.getChildFile("scan.json"), scan);
     std::vector<ChannelLayout> layouts = namedLayouts();
     var retainedInput, retainedResult, retainedJob;
@@ -195,6 +216,33 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             for (int s = 0; s < full.getNumSamples(); ++s)
                 require(std::abs(mono.getSample(0, s) - full.getSample(physical, s)) < 1e-6,
                         "Split role PCM");
+        }
+        if (l.id == "mono-v1" || l.id == "stereo-v1" || l.id == "5.1-side-v1" || l.id == "5.1-rear-v1")
+        {
+            PluginSession recovery(helper, root.getChildFile("recovery-" + l.id));
+            recovery.input = input;
+            recovery.settings = result["job"];
+            recovery.result = result;
+            auto blocked = root.getChildFile("blocked-" + l.id);
+            blocked.replaceWithText("owned non-directory destination");
+            auto renderCount = root.findChildFiles(File::findFiles, false, "*-request.json").size();
+            recovery.createCopy(blocked.getChildFile("destination"), false, true);
+            auto until = Time::getMillisecondCounter() + 5000;
+            while (recovery.busy && Time::getMillisecondCounter() < until)
+                pump(5);
+            require(!recovery.busy && recovery.ready() && recovery.error.isNotEmpty() &&
+                        !recovery.receipt.isObject(),
+                    "R21 failed delivery retains verified pass without Ready receipt: " + l.id);
+            require(recovery.result["sha256"] == result["sha256"] &&
+                        recovery.result["generation"] == result["generation"],
+                    "R21 failure preserves exact completed generation/PCM");
+            recovery.createCopy(root.getChildFile("recovered-" + l.id), false, true);
+            idle(recovery);
+            require(recovery.receipt["sha256"] == result["sha256"] &&
+                        recovery.receipt["files"].size() == l.size(),
+                    "R21 retry preserves master/splits and explicit LFE roles");
+            require(root.findChildFiles(File::findFiles, false, "*-request.json").size() == renderCount,
+                    "R21 fail/retry never reruns effect");
         }
         if (l.id == "5.1-side-v1")
         {
@@ -307,6 +355,75 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto retry = broken.scan(child, {fixture}, true, cancelled);
         require(retry["entries"][0]["error"].toString().isEmpty(), "Explicit retry recovers candidate");
     }
+    // R20: actual supervised child cancellation must never commit a partial registry.
+    {
+        auto registry = root.getChildFile("transactional/plugins.json");
+        PluginCatalog transactional(registry);
+        auto first = root.getChildFile("transactional/A.vst3");
+        auto last = root.getChildFile("transactional/B.vst3");
+        require(fixture.copyDirectoryTo(first) && stereo.copyDirectoryTo(last),
+                "Own transactional scan candidates");
+        auto customRoot = root.getChildFile("transactional/custom-root");
+        customRoot.createDirectory();
+        std::vector<File> scanRoots{first, last, customRoot};
+        transactional.scan(child, scanRoots, false, cancelled);
+        auto marker = root.getChildFile("scan-constructor-entered");
+        for (int target : {0, 1})
+        {
+            first.getChildFile("owned-version").replaceWithText(String(target));
+            last.getChildFile("owned-version").replaceWithText(String(target));
+            auto before = registry.loadFileAsString();
+            marker.deleteFile();
+            setenv("SOUNDPLUS_FIXTURE_SCAN_MARKER", marker.getFullPathName().toRawUTF8(), 1);
+            int visited = 0;
+            bool childObserved = false, didCancel = false;
+            try
+            {
+                transactional.scan(
+                    child, scanRoots, false,
+                    [&]
+                    {
+                        if (visited == target && marker.existsAsFile())
+                            childObserved = true;
+                        return childObserved;
+                    },
+                    [&](auto)
+                    {
+                        ++visited;
+                        marker.deleteFile();
+                    });
+            }
+            catch (const QueryCancelled &)
+            {
+                didCancel = true;
+            }
+            unsetenv("SOUNDPLUS_FIXTURE_SCAN_MARKER");
+            require(childObserved && didCancel, "R20 cancellation after actual first/last child constructor");
+            require(registry.loadFileAsString() == before,
+                    "R20 cancel retains byte-identical complete registry/roots");
+            PluginCatalog reopened(registry);
+            require(reopened.snapshot()["entries"].size() == 2 && reopened.snapshot()["roots"].size() == 3,
+                    "R20 reopen retains unvisited entries/custom roots");
+            auto resumed = reopened.scan(child, scanRoots, false, cancelled);
+            require((int)resumed["launched"] == 2,
+                    "R20 ordinary scan retries interrupted healthy candidates without quarantine retry");
+            for (auto &e : *resumed["entries"].getArray())
+                require(e["error"].toString().isEmpty() && !(bool)e["quarantined"],
+                        "R20 healthy candidates never falsely quarantined");
+        }
+        auto before = registry.loadFileAsString();
+        int visitedAtEnd = 0;
+        bool stopAtEnd = false;
+        fails(
+            [&]
+            {
+                transactional.scan(
+                    child, scanRoots, false, [&] { return stopAtEnd; },
+                    [&](auto) { stopAtEnd = ++visitedAtEnd == 2; });
+            },
+            "R20 cancellation before final registry commit");
+        require(registry.loadFileAsString() == before, "R20 interrupted snapshot never replaces roots");
+    }
     {
         auto visibilityDb = root.getChildFile("visibility/library.sqlite");
         visibilityDb.getParentDirectory().createDirectory();
@@ -330,10 +447,177 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         require(process->isVisible() && libraryView.getLocalBounds().contains(process->getBounds()),
                 "Full Library retains its Process action");
     }
+    {
+        auto workspace = root.getChildFile("automatic/panel");
+        PluginCatalog automaticRegistry(workspace.getParentDirectory().getChildFile("plugins-v1.json"));
+        automaticRegistry.scan(child, {fixture}, false, cancelled);
+        auto systemRoot = root.getChildFile("automatic/standard-system");
+        auto userRoot = root.getChildFile("automatic/standard-user");
+        systemRoot.createDirectory();
+        userRoot.createDirectory();
+        require(fixture.copyDirectoryTo(systemRoot.getChildFile("Default effect.vst3")),
+                "Own default-folder discovery effect");
+        std::vector<File> automaticRoots{systemRoot, userRoot};
+        AudioClient automaticAudio(app);
+        auto automaticWaves = std::make_shared<WaveformPool>(root.getChildFile("automatic/waves"));
+        PluginProcessPanel automatic(
+            selection(wave(root.getChildFile("automatic/source"), channelLayout("stereo-v1"))), workspace,
+            automaticAudio, automaticWaves, helper, automaticRoots);
+        idle(automatic.session);
+        require((int)automatic.session.discovery["cacheHits"] == 1 &&
+                    (int)automatic.session.discovery["launched"] == 1,
+                "Automatic discovery scans new standard-folder effect and reuses cached custom effect");
+        automatic.session.recallCatalog(automaticRoots);
+        idle(automatic.session);
+        require((int)automatic.session.discovery["cacheHits"] == 2 &&
+                    (int)automatic.session.discovery["launched"] == 0,
+                "Reopened automatic discovery never reloads unchanged effects");
+        require(automatic.session.discovery["roots"].size() == 3,
+                "Automatic discovery retains custom root plus both defaults");
+    }
     // Actual production component and session commands, generic slider callbacks and history.
     AudioClient audio(app);
     auto pool = std::make_shared<WaveformPool>(root.getChildFile("waves"));
-    PluginProcessPanel panel(mono, root.getChildFile("panel"), audio, pool, helper);
+    // R22: identical staged silence, distinct original paths/ranges/physical selections.
+    {
+        auto a = selection(wave(root.getChildFile("binding/A"), channelLayout("quad-v1"), 5000));
+        auto b = selection(wave(root.getChildFile("binding/B"), channelLayout("quad-v1"), 5000));
+        a.first = 3000;
+        a.last = 4099;
+        a.inputs = {0, 1};
+        a.layout = channelLayout("stereo-v1");
+        b.first = 3500;
+        b.last = 4599;
+        b.inputs = {3, 2};
+        b.layout = channelLayout("stereo-v1");
+        b.scope = "Finalized design/take output";
+        PluginProcessPanel binding(a, root.getChildFile("binding/panel"), audio, pool, helper, {});
+        idle(binding.session);
+        binding.prepare.onClick();
+        idle(binding.session);
+        auto jobA = root.getChildFile("binding/A.soundplus-process");
+        binding.session.save(jobA);
+        auto hashA = binding.session.input["sha256"];
+        PluginSession savedB(helper, root.getChildFile("binding/savedB"));
+        savedB.prepare(b);
+        idle(savedB);
+        auto jobB = root.getChildFile("binding/B.soundplus-process");
+        savedB.save(jobB);
+        require(savedB.input["sha256"] == hashA, "R22 prepared-only fixtures have identical staged PCM");
+        pump(150);
+        auto decodes = pool->metrics()["decodes"];
+        binding.session.open(jobA);
+        idle(binding.session);
+        binding.session.open(jobB);
+        idle(binding.session);
+        require(binding.subset.getText() == "4, 3" && binding.interpretation.getSelectedId() == 2 &&
+                    !binding.mean.getToggleState(),
+                "R22 equal-content Open binds B selectors");
+        bool summary = false;
+        for (auto *c : binding.getChildren())
+            if (auto *label = dynamic_cast<Label *>(c))
+                summary |= label->getText().contains(b.scope);
+        require(summary, "R22 visible summary follows adopted source scope");
+        pump(100);
+        require(pool->metrics()["decodes"] == decodes, "R22 equal verified content reuses peak data");
+        binding.prepare.onClick();
+        idle(binding.session);
+        require(JSON::toString(binding.session.input["selection"], true) ==
+                    JSON::toString(pluginInputJson(b), true),
+                "R22 next production Prepare uses B path/range/physical order exactly");
+        binding.session.open(jobA);
+        binding.session.open(jobB);
+        idle(binding.session);
+        require(binding.session.input["selection"]["source"]["path"] == b.source.path,
+                "R22 old async Open cannot overwrite B");
+        b.mean = true;
+        b.layout = channelLayout("mono-v1");
+        b.inputs = {0, 1, 2, 3};
+        savedB.prepare(b);
+        idle(savedB);
+        savedB.save(jobB);
+        binding.session.open(jobB);
+        idle(binding.session);
+        require(binding.mean.getToggleState() && !binding.subset.isEnabled(),
+                "R22 Mono mean controls recalled");
+        binding.prepare.onClick();
+        idle(binding.session);
+        require((bool)binding.session.input["selection"]["mean"] &&
+                    binding.session.input["layout"]["id"] == "mono-v1",
+                "R22 Mono mean preparation preserves explicit interpretation");
+        {
+            std::atomic<bool> decoding{false}, release{false};
+            auto latePool =
+                std::make_shared<WaveformPool>(root.getChildFile("binding/late-waves"),
+                                               [&]
+                                               {
+                                                   decoding = true;
+                                                   auto until = Time::getMillisecondCounter() + 3000;
+                                                   while (!release && Time::getMillisecondCounter() < until)
+                                                       Thread::sleep(1);
+                                               });
+            PluginProcessPanel late(a, root.getChildFile("binding/late-panel"), audio, latePool, helper, {});
+            idle(late.session);
+            late.session.open(jobA);
+            idle(late.session);
+            auto until = Time::getMillisecondCounter() + 2000;
+            while (!decoding && Time::getMillisecondCounter() < until)
+                pump(5);
+            require(decoding, "R22 old waveform actually decoding during job switch");
+            late.session.open(jobB);
+            idle(late.session);
+            release = true;
+            auto current = inspectDesignSource(File(late.session.input["path"].toString()));
+            current.id = late.session.input["sha256"].toString();
+            until = Time::getMillisecondCounter() + 4000;
+            while (!latePool->get(current) && Time::getMillisecondCounter() < until)
+            {
+                latePool->tick();
+                pump(10);
+            }
+            require(latePool->get(current) && latePool->get(current)->assetId == current.id &&
+                        current.id != hashA.toString(),
+                    "R22 late old waveform completion cannot become new job's content");
+            File(current.path).appendText("owned staged PCM alteration");
+            latePool->retry(current);
+            until = Time::getMillisecondCounter() + 3000;
+            while (
+                (!latePool->get(current) || latePool->get(current)->status == WaveformData::Status::ready) &&
+                Time::getMillisecondCounter() < until)
+            {
+                latePool->tick();
+                pump(10);
+            }
+            require(latePool->get(current) && latePool->get(current)->status == WaveformData::Status::changed,
+                    "R22 changed waveform has an explicit unavailable state");
+            late.prepare.onClick();
+            idle(late.session);
+            auto recovered = inspectDesignSource(File(late.session.input["path"].toString()));
+            recovered.id = late.session.input["sha256"].toString();
+            until = Time::getMillisecondCounter() + 4000;
+            while (!latePool->get(recovered) && Time::getMillisecondCounter() < until)
+            {
+                latePool->tick();
+                pump(10);
+            }
+            require(recovered.id == current.id && recovered.path != current.path &&
+                        latePool->get(recovered) &&
+                        latePool->get(recovered)->status == WaveformData::Status::ready,
+                    "R22 equal-content reprepare rebinds an unavailable old staged waveform");
+        }
+        binding.subset.setText("1", false);
+        binding.subset.onTextChange();
+        require(!binding.session.input.isObject() && !binding.preview.isEnabled(),
+                "R22 empty/stale input disables Preview");
+        auto broken = root.getChildFile("binding/broken.soundplus-process");
+        broken.replaceWithText("invalid owned job");
+        binding.session.open(broken);
+        while (binding.session.busy)
+            pump(5);
+        require(!binding.session.ready() && binding.session.error.isNotEmpty(),
+                "R22 erroneous Open cannot revive old pass");
+    }
+    PluginProcessPanel panel(mono, root.getChildFile("panel"), audio, pool, helper, {});
     panel.setBounds(0, 0, 700, 620);
     panel.prepare.onClick();
     idle(panel.session);
@@ -379,6 +663,133 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     require(pool->columns(previewAsset, 0, previewAsset.samples, false, 256) != nullptr,
             "Process owner admits actual processed waveform");
     auto rawReady = panel.session.result;
+    // R21: nondeterministic completed pass survives real staging cancellation/errors.
+    {
+        auto requests =
+            panel.session.directory.findChildFiles(File::findFiles, false, "*-request.json").size();
+        auto blocked = panel.session.directory.getChildFile("normalized-previews");
+        require(blocked.replaceWithText("owned non-directory normalization target"),
+                "Own normalization failure destination");
+        panel.session.setNormalization(true);
+        while (panel.session.busy)
+            pump(5);
+        require(panel.session.ready() && panel.session.error.isNotEmpty() &&
+                    panel.session.deliveryNormalize &&
+                    !(bool)panel.session.result["presentationNormalized"] &&
+                    panel.session.result["sha256"] == rawReady["sha256"],
+                "R21 normalization failure exposes verified raw fallback and requested state");
+        blocked.deleteFile();
+        panel.session.setNormalization(true);
+        idle(panel.session);
+        panel.session.setNormalization(false);
+        idle(panel.session);
+        auto recoveryJob = root.getChildFile("recovery-pass.soundplus-process");
+        panel.session.save(recoveryJob);
+        std::atomic<bool> staged{false}, released{false};
+        panel.session.deliveryStaged = [&]
+        {
+            staged = true;
+            auto until = Time::getMillisecondCounter() + 5000;
+            while (!released && Time::getMillisecondCounter() < until)
+                Thread::sleep(1);
+        };
+        auto deliveryFolder = root.getChildFile("cancelled-delivery");
+        panel.session.createCopy(deliveryFolder, false, true);
+        auto until = Time::getMillisecondCounter() + 3000;
+        while (!staged && Time::getMillisecondCounter() < until)
+            pump(5);
+        require(staged &&
+                    !deliveryFolder.findChildFiles(File::findDirectories, false, ".staging-*").isEmpty(),
+                "R21 actual copy has entered private staging before cancellation");
+        panel.session.cancel();
+        require(!panel.session.canCancel(),
+                "R21 cancellation verification is not another delivery cancellation");
+        panel.session.cancel();
+        released = true;
+        idle(panel.session);
+        require(panel.session.ready() && panel.session.result["sha256"] == rawReady["sha256"] &&
+                    !panel.session.receipt.isObject(),
+                "R21 delivery cancellation reverifies same nondeterministic pass");
+        require(deliveryFolder.findChildFiles(File::findDirectories, false).isEmpty(),
+                "R21 cancellation removes partial master/stem staging");
+        panel.session.deliveryStaged = {};
+        panel.session.createCopy(deliveryFolder, false, true);
+        idle(panel.session);
+        require(panel.session.receipt["sha256"] == rawReady["sha256"],
+                "R21 cancellation retry keeps exact completed bytes");
+        bool context = true;
+        panel.session.contextValid = [&] { return context; };
+        staged = false;
+        released = false;
+        panel.session.deliveryStaged = [&]
+        {
+            staged = true;
+            while (!released)
+                Thread::sleep(1);
+        };
+        panel.session.createCopy(root.getChildFile("stale-delivery"), false, true);
+        until = Time::getMillisecondCounter() + 3000;
+        while (!staged && Time::getMillisecondCounter() < until)
+            pump(5);
+        context = false;
+        released = true;
+        while (panel.session.busy)
+            pump(5);
+        require(!panel.session.ready() && !panel.session.result.isObject() &&
+                    !panel.session.receipt.isObject(),
+                "R21 stale context cannot restore a completed pass or delivery receipt");
+        panel.session.contextValid = [] { return true; };
+        panel.session.deliveryStaged = {};
+        panel.session.open(recoveryJob);
+        idle(panel.session);
+        for (bool changeSource : {false, true})
+        {
+            staged = false;
+            released = false;
+            panel.session.deliveryStaged = [&]
+            {
+                staged = true;
+                auto limit = Time::getMillisecondCounter() + 3000;
+                while (!released && Time::getMillisecondCounter() < limit)
+                    Thread::sleep(1);
+            };
+            panel.session.createCopy(
+                root.getChildFile(changeSource ? "source-changed-delivery" : "settings-changed-delivery"));
+            until = Time::getMillisecondCounter() + 2000;
+            while (!staged && Time::getMillisecondCounter() < until)
+                pump(5);
+            if (changeSource)
+                panel.session.clearInput();
+            else
+            {
+                auto settings = panel.session.settings.clone();
+                put(settings, "tailSeconds", .3);
+                panel.session.change(settings);
+            }
+            released = true;
+            pump(100);
+            require(!panel.session.ready() && !panel.session.receipt.isObject(),
+                    "R21 source/settings changes cannot revive old delivery fallback");
+            panel.session.deliveryStaged = {};
+            panel.session.open(recoveryJob);
+            idle(panel.session);
+        }
+        auto corrupted = root.getChildFile("corrupted-copy-pcm.wav");
+        corrupted.replaceWithText("owned changed PCM");
+        auto damaged = panel.session.result.clone();
+        put(damaged, "path", corrupted.getFullPathName());
+        panel.session.result = damaged;
+        panel.session.createCopy(root.getChildFile("corrupt-delivery"));
+        while (panel.session.busy)
+            pump(5);
+        require(!panel.session.ready() && !panel.session.receipt.isObject(),
+                "R21 corrupt authoritative PCM cannot recover Ready");
+        panel.session.open(recoveryJob);
+        idle(panel.session);
+        require(panel.session.directory.findChildFiles(File::findFiles, false, "*-request.json").size() ==
+                    requests,
+                "R21 normalization failure/cancel/retry/stale/corrupt paths run no extra plugin pass");
+    }
     auto requestsBefore =
         panel.session.directory.findChildFiles(File::findFiles, false, "*-request.json").size();
     panel.session.setNormalization(true);
@@ -424,6 +835,112 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     idle(panel.session);
     auto durable = panel.session.receipt;
     require(durable.isObject(), "Actual session promotion has receipt");
+    // R23: real component pointer/key handlers and actual shared audio ownership.
+    {
+        auto input =
+            selection(wave(root.getChildFile("transport-source"), channelLayout("stereo-v1"), 144000));
+        PluginProcessPanel transportPanel(input, root.getChildFile("transport-panel"), audio, pool, helper,
+                                          {});
+        idle(transportPanel.session);
+        transportPanel.prepare.onClick();
+        idle(transportPanel.session);
+        transportPanel.session.choose(plugin);
+        idle(transportPanel.session);
+        transportPanel.tail.setValue(0, sendNotificationSync);
+        transportPanel.preview.onClick();
+        idle(transportPanel.session);
+        auto renders =
+            transportPanel.session.directory.findChildFiles(File::findFiles, false, "*-request.json").size();
+        auto click = [&](Button &button)
+        {
+            auto point = button.getLocalBounds().getCentre().toFloat();
+            auto event = MouseEvent(Desktop::getInstance().getMainMouseSource(), point,
+                                    ModifierKeys::leftButtonModifier, 1, 0, 0, 0, 0, &button, &button,
+                                    Time::getCurrentTime(), point, Time::getCurrentTime(), 1, false);
+            static_cast<Component &>(button).mouseDown(event);
+            static_cast<Component &>(button).mouseUp(event);
+        };
+        click(transportPanel.transport);
+        auto playingDeadline = Time::getMillisecondCounter() + 3000;
+        while (!(bool)audio.status()["playing"] && Time::getMillisecondCounter() < playingDeadline)
+            pump(5);
+        transportPanel.updateAudition();
+        require((bool)audio.status()["playing"] &&
+                    transportPanel.transport.renderedIcon() == ActionIcon::stop,
+                "R23 pointer Play starts long actual audition and shows Stop");
+        require(transportPanel.keyPressed(KeyPress(KeyPress::spaceKey)),
+                "R23 Space reaches panel transport handler");
+        require(!(bool)audio.status()["playing"] && transportPanel.session.ready(),
+                "R23 Space Stop is immediate and retains editor/pass");
+        click(transportPanel.transport);
+        transportPanel.stopAudition();
+        require(!(bool)audio.status()["pendingPlayback"], "R23 Stop cancels pending-start intent");
+        transportPanel.audition(false);
+        auto originalGeneration = audio.status()["intentGeneration"];
+        click(transportPanel.compare);
+        require(audio.status()["intentGeneration"] != originalGeneration &&
+                    transportPanel.compare.getButtonText() == "Compare Original",
+                "R23 actual Compare pointer switches Original to Processed at frame zero");
+        auto end = Time::getMillisecondCounter() + 5000;
+        while (!(bool)audio.status()["completed"] && Time::getMillisecondCounter() < end)
+            pump(10);
+        transportPanel.updateAudition();
+        require((bool)audio.status()["completed"] &&
+                    transportPanel.transport.renderedIcon() == ActionIcon::play,
+                "R23 natural end returns actual transport to Play");
+        transportPanel.addToDesktop(ComponentPeer::windowIsTemporary);
+        transportPanel.setVisible(true);
+        transportPanel.compare.grabKeyboardFocus();
+        pump(20);
+        auto beforeFocusedButton = audio.status()["intentGeneration"];
+        require(transportPanel.getPeer()->handleKeyPress(KeyPress(KeyPress::spaceKey)),
+                "R23 peer dispatch handles Space with Compare focused");
+        require(audio.status()["intentGeneration"] != beforeFocusedButton &&
+                    transportPanel.compare.getButtonText() == "Compare Original",
+                "R23 focused Compare Space starts current representation, not its A/B action");
+        require(transportPanel.getPeer()->handleKeyPress(KeyPress(KeyPress::spaceKey)),
+                "R23 a subsequent independent Space is not swallowed as repeat");
+        require(!(bool)audio.status()["playing"] && !(bool)audio.status()["pendingPlayback"],
+                "R23 repeated peer key dispatch stops the pending/current owned audition");
+        transportPanel.stopAudition();
+        transportPanel.search.grabKeyboardFocus();
+        pump(20);
+        auto before = audio.status()["intentGeneration"];
+        require(!transportPanel.keyPressed(KeyPress(KeyPress::spaceKey)),
+                "R23 focused editor keeps Space away from transport");
+        require(transportPanel.search.keyPressed(KeyPress(KeyPress::spaceKey, {}, ' ')) &&
+                    transportPanel.search.getText().containsChar(' '),
+                "R23 actual text editor accepts Space");
+        require(audio.status()["intentGeneration"] == before, "R23 text Space creates no audio intent");
+        transportPanel.grabKeyboardFocus();
+        transportPanel.removeFromDesktop();
+        transportPanel.audition(true);
+        PlaybackRegion other;
+        other.endSample = input.last;
+        other.auditionPair = -2;
+        auto otherGeneration = audio.playRegion("other-workspace-owner", File(input.source.path), other);
+        transportPanel.stopAudition();
+        require((uint64_t)(juce::int64)audio.status()["intentGeneration"] == otherGeneration &&
+                    audio.status()["intentId"] == "other-workspace-owner",
+                "R23 Stop cannot interrupt another owner");
+        audio.reserveTake(true);
+        transportPanel.updateAudition();
+        transportPanel.stopAudition();
+        require(!transportPanel.transport.isEnabled() &&
+                    (uint64_t)(juce::int64)audio.status()["intentGeneration"] == otherGeneration,
+                "R23 capture reservation protects shared transport");
+        audio.reserveTake(false);
+        require(transportPanel.session.directory.findChildFiles(File::findFiles, false, "*-request.json")
+                        .size() == renders,
+                "R23 Play/Stop/A-B/text/natural completion issue no plugin request");
+    }
+    require(audio.status()["intentId"] == "other-workspace-owner",
+            "R23 panel destruction preserves unrelated playback");
+    audio.stop();
+    auto corrected = obj();
+    for (auto id : {"R20", "R21", "R22", "R23"})
+        put(corrected, id, "Production-path regressions passed");
+    saveProcessingJson(root.getChildFile("corrections.json"), corrected);
     auto catalogFile = root.getChildFile("qa/library.sqlite");
     catalogFile.getParentDirectory().createDirectory();
     {
@@ -563,7 +1080,9 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     require((bool)audio.status()["playing"], "Ordinary native transport active for load test");
     auto audioStart = audio.status();
 
-    Array<var> observations;
+    Array<var> observations, searches;
+    int pendingSearchRow = -1;
+    auto waveformBeforeLoad = pool->metrics();
     std::vector<double> ticks, searchTimes;
     int overlap = 0, activeSamples = 0;
     uint64_t pending = 0;
@@ -589,18 +1108,32 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto begin = Time::getMillisecondCounterHiRes();
         if (n % 10 == 0)
         {
+            if (pendingSearchRow >= 0 && pending)
+                put(searches.getReference(pendingSearchRow), "status", "superseded");
             pending = library.search(n % 20 ? "pulse" : "");
             searchStart = begin;
+            auto requestRow = obj();
+            put(requestRow, "iteration", n);
+            put(requestRow, "requestId", (juce::int64)pending);
+            put(requestRow, "requestedMs", begin);
+            put(requestRow, "status", "notObservedAtEnd");
+            searches.add(requestRow);
+            pendingSearchRow = searches.size() - 1;
         }
         auto snap = library.snapshot();
         if (pending && snap.request == pending)
         {
             searchTimes.push_back(begin - searchStart);
+            put(searches.getReference(pendingSearchRow), "observedPublishedMs", begin);
+            put(searches.getReference(pendingSearchRow), "publicationMs", begin - searchStart);
+            put(searches.getReference(pendingSearchRow), "publishedIteration", n);
+            put(searches.getReference(pendingSearchRow), "status", "published");
             pending = 0;
         }
         if (snap.progress.activeWorkers || snap.progress.metadataBacklog ||
             snap.headersRead > previousHeaders)
             ++overlap;
+        const auto headerDelta = snap.headersRead - previousHeaders;
         previousHeaders = snap.headersRead;
         if (panel.session.busy)
             ++activeSamples;
@@ -614,11 +1147,17 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         put(row, "phase", "process");
         put(row, "elapsedMs", begin - start);
         put(row, "audio", status);
+        put(row, "iteration", n);
+        put(row, "beginMs", begin);
+        put(row, "headersRead", (juce::int64)snap.headersRead);
+        put(row, "headersDelta", (juce::int64)headerDelta);
         put(row, "indexWorkers", snap.progress.activeWorkers);
         put(row, "backlog", snap.progress.metadataBacklog);
         put(row, "pluginBusy", panel.session.busy);
+        auto tickMs = Time::getMillisecondCounterHiRes() - begin;
+        put(row, "tickMs", tickMs);
         observations.add(row);
-        ticks.push_back(Time::getMillisecondCounterHiRes() - begin);
+        ticks.push_back(tickMs);
         pump(10);
     }
     idle(panel.session);
@@ -642,6 +1181,13 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
     };
     auto load = obj();
     put(load, "samples", observations);
+    put(load, "searchRequests", searches);
+    put(load, "percentileEstimator", "nearest-rank: sorted[ceil(p*N)-1]");
+    put(load, "searchTiming",
+        "request to observed publication at UI polling; not worker completion timestamp");
+    put(load, "indexOverlapDefinition",
+        "process row: indexWorkers>0 OR backlog>0 OR headersDelta>0; previousHeaders initially 0");
+    put(load, "waveformsBeforeLoad", waveformBeforeLoad);
     put(load, "tickMs", distribution(ticks));
     put(load, "searchPublicationMs", distribution(searchTimes));
     put(load, "indexOverlapSamples", overlap);
