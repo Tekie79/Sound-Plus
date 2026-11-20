@@ -1,0 +1,256 @@
+{
+  "passed": true,
+  "rate": 48000,
+  "format": "little endian interleaved float32, pre-monitor",
+  "records": [
+    {
+      "owner": "Track",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-1.f32",
+      "rawSha256": "e868f9c1051c85d454b06815b0701d86e1912d6794b325f79731474287541e7e",
+      "entry": "Track-silence.f32",
+      "channels": 2,
+      "firstFrame": 0,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    },
+    {
+      "owner": "Track",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-1.f32",
+      "rawSha256": "e868f9c1051c85d454b06815b0701d86e1912d6794b325f79731474287541e7e",
+      "entry": "Track-low.f32",
+      "channels": 2,
+      "firstFrame": 336000,
+      "frames": 48000,
+      "peak": [
+        0.100006103515625,
+        0.100006103515625
+      ],
+      "peakDbfs": [
+        -19.999469871546843,
+        -19.999469871546843
+      ],
+      "expectedPeak": 0.1
+    },
+    {
+      "owner": "Track",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-1.f32",
+      "rawSha256": "e868f9c1051c85d454b06815b0701d86e1912d6794b325f79731474287541e7e",
+      "entry": "Track-high.f32",
+      "channels": 2,
+      "firstFrame": 720000,
+      "frames": 48000,
+      "peak": [
+        0.398101806640625,
+        0.398101806640625
+      ],
+      "peakDbfs": [
+        -8.000117030469568,
+        -8.000117030469568
+      ],
+      "expectedPeak": 0.39810717055
+    },
+    {
+      "owner": "Track",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-1.f32",
+      "rawSha256": "e868f9c1051c85d454b06815b0701d86e1912d6794b325f79731474287541e7e",
+      "entry": "Track-silence-after-step.f32",
+      "channels": 2,
+      "firstFrame": 1104000,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    },
+    {
+      "owner": "Master",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-3.f32",
+      "rawSha256": "fa2b8f1cda67ea9e8956664259f0e58f18e0cbcb51cb456a30cdb728a20ffbd4",
+      "entry": "Master-silence.f32",
+      "channels": 2,
+      "firstFrame": 0,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    },
+    {
+      "owner": "Master",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-3.f32",
+      "rawSha256": "fa2b8f1cda67ea9e8956664259f0e58f18e0cbcb51cb456a30cdb728a20ffbd4",
+      "entry": "Master-low.f32",
+      "channels": 2,
+      "firstFrame": 336000,
+      "frames": 48000,
+      "peak": [
+        0.100006103515625,
+        0.100006103515625
+      ],
+      "peakDbfs": [
+        -19.999469871546843,
+        -19.999469871546843
+      ],
+      "expectedPeak": 0.1
+    },
+    {
+      "owner": "Master",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-3.f32",
+      "rawSha256": "fa2b8f1cda67ea9e8956664259f0e58f18e0cbcb51cb456a30cdb728a20ffbd4",
+      "entry": "Master-high.f32",
+      "channels": 2,
+      "firstFrame": 720000,
+      "frames": 48000,
+      "peak": [
+        0.398101806640625,
+        0.398101806640625
+      ],
+      "peakDbfs": [
+        -8.000117030469568,
+        -8.000117030469568
+      ],
+      "expectedPeak": 0.39810717055
+    },
+    {
+      "owner": "Master",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-3.f32",
+      "rawSha256": "fa2b8f1cda67ea9e8956664259f0e58f18e0cbcb51cb456a30cdb728a20ffbd4",
+      "entry": "Master-silence-after-step.f32",
+      "channels": 2,
+      "firstFrame": 1104000,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    },
+    {
+      "owner": "Master 5.1 Rear",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-5.f32",
+      "rawSha256": "eec0b61968ebdba7b0083e1f35000fbad080185cab34f47a98f1c935c2bfdbee",
+      "entry": "Master-5.1-Rear-silence.f32",
+      "channels": 6,
+      "firstFrame": 0,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    },
+    {
+      "owner": "Master 5.1 Rear",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-5.f32",
+      "rawSha256": "eec0b61968ebdba7b0083e1f35000fbad080185cab34f47a98f1c935c2bfdbee",
+      "entry": "Master-5.1-Rear-low.f32",
+      "channels": 6,
+      "firstFrame": 336000,
+      "frames": 48000,
+      "peak": [
+        0.100006103515625,
+        0.100006103515625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        -19.999469871546843,
+        -19.999469871546843,
+        null,
+        null,
+        null,
+        null
+      ],
+      "expectedPeak": 0.1
+    },
+    {
+      "owner": "Master 5.1 Rear",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-5.f32",
+      "rawSha256": "eec0b61968ebdba7b0083e1f35000fbad080185cab34f47a98f1c935c2bfdbee",
+      "entry": "Master-5.1-Rear-high.f32",
+      "channels": 6,
+      "firstFrame": 720000,
+      "frames": 48000,
+      "peak": [
+        0.398101806640625,
+        0.398101806640625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        -8.000117030469568,
+        -8.000117030469568,
+        null,
+        null,
+        null,
+        null
+      ],
+      "expectedPeak": 0.39810717055
+    },
+    {
+      "owner": "Master 5.1 Rear",
+      "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-5.f32",
+      "rawSha256": "eec0b61968ebdba7b0083e1f35000fbad080185cab34f47a98f1c935c2bfdbee",
+      "entry": "Master-5.1-Rear-silence-after-step.f32",
+      "channels": 6,
+      "firstFrame": 1104000,
+      "frames": 48000,
+      "peak": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "peakDbfs": [
+        null,
+        null,
+        null,
+        null,
+        null,
+        null
+      ],
+      "expectedPeak": 0
+    }
+  ],
+  "limits": "Signal-bus PCM; native meter readouts in matching screenshots. No physical listening or LUFS calibration."
+}

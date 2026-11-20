@@ -1,5 +1,7 @@
 # Plugin Correctness and Discovery Recovery
 
+Historical correctness checkpoint. The later [live insert milestone](LIVE_INSERT_REPORT.md) replaces the separate apply-on-close architecture and updates native qualification; the results below remain tied to their stated baseline.
+
 Started at `ac6a4805a74d35e62614b356c121fb77e0d86b61`, the reviewed HEAD; the working tree was clean. Preserved the R26–R30 implementation, separate owners, Lucide/theme system, compact waveforms and existing timeline/fade gestures. No vendor bundle, signing, quarantine, opaque vendor state or JUCE adapter source was modified.
 
 ## Corrections and closure

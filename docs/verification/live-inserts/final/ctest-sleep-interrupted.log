@@ -1,0 +1,78 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: pool_corrections
+ 1/29 Test  #1: pool_corrections .................   Passed    5.79 sec
+      Start  2: source_pools
+ 2/29 Test  #2: source_pools .....................   Passed    0.36 sec
+      Start  3: library_playback_search
+ 3/29 Test  #3: library_playback_search ..........   Passed    2.66 sec
+      Start  4: multichannel_corrections
+ 4/29 Test  #4: multichannel_corrections .........   Passed   13.14 sec
+      Start  5: multichannel
+ 5/29 Test  #5: multichannel .....................   Passed    5.12 sec
+      Start  6: take_integrity
+ 6/29 Test  #6: take_integrity ...................   Passed    3.99 sec
+      Start  7: capture_device_lifecycle
+ 7/29 Test  #7: capture_device_lifecycle .........   Passed    4.62 sec
+      Start  8: recorded_takes
+ 8/29 Test  #8: recorded_takes ...................   Passed    8.44 sec
+      Start  9: library_stability
+ 9/29 Test  #9: library_stability ................   Passed    1.38 sec
+      Start 10: waveform_scheduling
+10/29 Test #10: waveform_scheduling ..............   Passed    1.96 sec
+      Start 11: audio_health
+11/29 Test #11: audio_health .....................   Passed    7.57 sec
+      Start 12: waveform_previews
+12/29 Test #12: waveform_previews ................   Passed    0.45 sec
+      Start 13: performance_state
+13/29 Test #13: performance_state ................   Passed    2.97 sec
+      Start 14: designer_view_commands
+14/29 Test #14: designer_view_commands ...........   Passed    0.37 sec
+      Start 15: icon_system
+15/29 Test #15: icon_system ......................   Passed    0.12 sec
+      Start 16: library_and_audio
+16/29 Test #16: library_and_audio ................   Passed    9.00 sec
+      Start 17: library_selection_audition
+17/29 Test #17: library_selection_audition .......   Passed    3.92 sec
+      Start 18: library_performance_regression
+18/29 Test #18: library_performance_regression ...   Passed    6.40 sec
+      Start 19: library_semantic_integrity
+19/29 Test #19: library_semantic_integrity .......   Passed    0.40 sec
+      Start 20: library_similar_integrity
+20/29 Test #20: library_similar_integrity ........   Passed    1.16 sec
+      Start 21: designer_transport
+21/29 Test #21: designer_transport ...............   Passed   15.88 sec
+      Start 22: designer_canvas
+22/29 Test #22: designer_canvas ..................   Passed    0.23 sec
+      Start 23: designer_session
+23/29 Test #23: designer_session .................   Passed    0.12 sec
+      Start 24: designer_workflow
+24/29 Test #24: designer_workflow ................   Passed    9.81 sec
+      Start 25: designer_fades
+25/29 Test #25: designer_fades ...................   Passed    2.40 sec
+      Start 26: plugin_processing
+26/29 Test #26: plugin_processing ................***Failed  138.89 sec
+SoundPlus audio health: {"helperPid": 67492, "processGeneration": 1, "reason": "status heartbeat timed out", "failureMs": 2.6418677232175e8, "lastHeartbeatMs": 2.6418176792225e8, "heartbeatAgeMs": 5004.399499982595444, "lastCommandMs": 2.641817799235833e8, "lastCommand": "play_design", "sentSequence": 4, "statusesReceived": 0, "pendingResponseBytes": 0, "errno": 0, "exitCode": 0, "exitSignal": 0, "supervisorSignal": 0, "stderrTail": "", "lastStatus": null, "classification": "watchdogTimeout"}
+FAIL after 0 checks: Actual device adopts the persistent two-rack design
+
+      Start 27: plugin_correctness
+27/29 Test #27: plugin_correctness ...............   Passed   10.17 sec
+      Start 28: plugin_gate_a
+28/29 Test #28: plugin_gate_a ....................***Timeout 230.64 sec
+Plugin Gate A passed: 53 checks; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/gate-a/cac609bb9efc44b2bc1e99fdbcf9c497
+
+      Start 29: plugin_live
+29/29 Test #29: plugin_live ......................***Failed   27.92 sec
+SoundPlus audio health: {"helperPid": 67586, "processGeneration": 1, "reason": "status heartbeat timed out", "failureMs": 2.6424752462e8, "lastHeartbeatMs": 2.6424247799825e8, "heartbeatAgeMs": 5046.621750026941299, "lastCommandMs": 2.642355362978333e8, "lastCommand": "gain", "sentSequence": 2, "statusesReceived": 252, "pendingResponseBytes": 0, "errno": 0, "exitCode": -1, "exitSignal": 15, "supervisorSignal": 15, "stderrTail": "", "lastStatus": {"version": 10, "command": "status", "id": "", "playGeneration": 0, "graphEpoch": 0, "preparationsRequested": 0, "helperPid": 67586, "outputRate": 0.0, "sourceSample": 0, "acceptedSourceEnd": 0, "sourceRate": 0.0, "auditionPair": 0, "startSample": 0, "endSample": 0, "playing": false, "completed": false, "loopCount": 0, "seconds": 0.0, "firstCallbackMs": 0.0, "peak": 0.0, "preMonitorPeak": 0.0, "busChannels": 0, "channelPeaks": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": false, "designLayers": 0, "producerMaxMs": 0.0, "error": "", "playbackContext": "", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 0, "frames": 0, "underruns": 0, "designRevision": 0, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "statusSequence": 252, "statusMs": 2.642424777638333e8, "lastCommandSequence": 2, "lastCommandMs": 2.6423590784625e8, "sampleRate": 48000.0, "deviceReservationId": 0, "outputs": ["MacBook Pro Speakers"], "peakResidentBytes": 35160064, "cpuSeconds": 0.140386, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "watchdogTimeout"}
+FAIL after 0 checks: Silent opaque changes are retained by periodic observation without inventing a gesture / Live insert unresponsive; last coherent checkpoint retained
+
+
+90% tests passed, 3 tests failed out of 29
+
+Total Test time (real) = 515.93 sec
+
+The following tests FAILED:
+	 26 - plugin_processing (Failed)
+	 28 - plugin_gate_a (Timeout)
+	 29 - plugin_live (Failed)
+Errors while running CTest

@@ -1,0 +1,18 @@
+{
+  "passed": true,
+  "windowRmsDbfs": {
+    "initial-minus6": -28.86746685876634,
+    "native-minus12": -34.86746661560923,
+    "native-minus6": -28.86746685876634,
+    "undo-minus12": -34.86746661560923,
+    "redo-minus6": -28.86746685876634,
+    "before-close": -28.86746685876634,
+    "after-reopen": -28.86746685876634
+  },
+  "nativeDeltaDb": 5.999999756842893,
+  "undoRedoDeltaDb": 5.999999756842893,
+  "closeReopenIdentical": true,
+  "freshRenderMaximumError": 0.0,
+  "renderFrames": 192000,
+  "limits": "Selected deterministic pre-monitor PCM windows; no human/physical-output qualification."
+}

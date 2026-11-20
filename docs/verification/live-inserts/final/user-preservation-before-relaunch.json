@@ -1,0 +1,13 @@
+{
+  "protected": 250,
+  "missing": [],
+  "changed": [
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.soundplus"
+  ],
+  "restorePolicy": "Reopen original build/gain-hover-native in place; never copy old QA snapshot over it.",
+  "changedFieldsInLatestAutosave": [
+    ".sha256",
+    ".payload.playhead"
+  ],
+  "reason": "Latest native-observed r36 has playhead 6.0 s, newer than initial backup (0.7543 s). Preserve current in place, not initial backup."
+}

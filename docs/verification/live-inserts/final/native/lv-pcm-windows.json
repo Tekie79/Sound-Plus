@@ -1,0 +1,71 @@
+{
+  "rawPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/captures-scale/audition-9.f32",
+  "rawSha256": "652abbafbe82b93efd20bbff13107eb5ea62d45c1f3b73ef760baebe9cf08f3c",
+  "sampleRate": 48000,
+  "format": "little-endian interleaved float32, pre-monitor",
+  "windows": [
+    {
+      "label": "initial-minus6",
+      "firstFrame": 48000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.036026880338706144,
+      "dbfsRms": -28.86746685876634,
+      "path": "lv-initial-minus6.f32"
+    },
+    {
+      "label": "native-minus12",
+      "firstFrame": 336000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.018056212998651483,
+      "dbfsRms": -34.86746661560923,
+      "path": "lv-native-minus12.f32"
+    },
+    {
+      "label": "native-minus6",
+      "firstFrame": 672000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.036026880338706144,
+      "dbfsRms": -28.86746685876634,
+      "path": "lv-native-minus6.f32"
+    },
+    {
+      "label": "undo-minus12",
+      "firstFrame": 1104000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.018056212998651483,
+      "dbfsRms": -34.86746661560923,
+      "path": "lv-undo-minus12.f32"
+    },
+    {
+      "label": "redo-minus6",
+      "firstFrame": 1440000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.036026880338706144,
+      "dbfsRms": -28.86746685876634,
+      "path": "lv-redo-minus6.f32"
+    },
+    {
+      "label": "before-close",
+      "firstFrame": 1968000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.036026880338706144,
+      "dbfsRms": -28.86746685876634,
+      "path": "lv-before-close.f32"
+    },
+    {
+      "label": "after-reopen",
+      "firstFrame": 2400000,
+      "frames": 48000,
+      "channels": 2,
+      "rms": 0.036026880338706144,
+      "dbfsRms": -28.86746685876634,
+      "path": "lv-after-reopen.f32"
+    }
+  ]
+}

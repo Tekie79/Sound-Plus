@@ -1,0 +1,146 @@
+[
+  {
+    "layout": "mono-v1",
+    "owner": "Track",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/mono-v1-track.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/Renders/OldSkoolVerb vendor QA mono-v1-r1-5626b685.wav",
+    "sha256": "fdee0924fba579865ba885e6599efe5b181c8fc30a63c4b0db89d273469c41a4",
+    "maxDifference": 0.031249999999902,
+    "tailPeak": 0.001277093193494,
+    "plugin": {
+      "name": "OldSkoolVerb",
+      "version": "2.14",
+      "id": "VST3-OldSkoolVerb-c2dd90f-10700a49",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3"
+    }
+  },
+  {
+    "layout": "mono-v1",
+    "owner": "Master",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/mono-v1-master.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/Renders/OldSkoolVerb vendor QA mono-v1-r1-d91f9f0c.wav",
+    "sha256": "cad0299a8af12e45901ffc584d6d8f78ce89f5b8ffa2364a4d96d401e99fd0dc",
+    "maxDifference": 0.031250000000121,
+    "tailPeak": 0.001277093193494,
+    "plugin": {
+      "name": "OldSkoolVerb",
+      "version": "2.14",
+      "id": "VST3-OldSkoolVerb-c2dd90f-10700a49",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3"
+    }
+  },
+  {
+    "layout": "stereo-v1",
+    "owner": "Track",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/stereo-v1-track.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/Renders/OldSkoolVerb vendor QA stereo-v1-r1-01439365.wav",
+    "sha256": "26a5a4d0f4601366cf2fdea05052519e6248ccca474ed4d1c5f6fac7feb7db6e",
+    "maxDifference": 0.062500000000168,
+    "tailPeak": 0.001901993062347,
+    "plugin": {
+      "name": "OldSkoolVerb",
+      "version": "2.14",
+      "id": "VST3-OldSkoolVerb-c2dd90f-10700a49",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3"
+    }
+  },
+  {
+    "layout": "stereo-v1",
+    "owner": "Master",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/stereo-v1-master.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/OldSkoolVerb/Renders/OldSkoolVerb vendor QA stereo-v1-r1-d8b1b8e5.wav",
+    "sha256": "db242a59cc1e3b2632a395565cf03f3731d7c67b601aa51d09bc182b944aef99",
+    "maxDifference": 0.062500000000061,
+    "tailPeak": 0.001901993062347,
+    "plugin": {
+      "name": "OldSkoolVerb",
+      "version": "2.14",
+      "id": "VST3-OldSkoolVerb-c2dd90f-10700a49",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3"
+    }
+  },
+  {
+    "layout": "mono-v1",
+    "owner": "Track",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/mono-v1-track.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/Renders/LV50A vendor QA mono-v1-r1-c663888c.wav",
+    "sha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+    "maxDifference": 0.020701952278614,
+    "tailPeak": 0.0,
+    "plugin": {
+      "name": "LV50A",
+      "version": "1.0.0",
+      "id": "VST3-LV50A-175fed7d-f3a1a62e",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3"
+    }
+  },
+  {
+    "layout": "mono-v1",
+    "owner": "Master",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/mono-v1-master.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/Renders/LV50A vendor QA mono-v1-r1-749ac516.wav",
+    "sha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+    "maxDifference": 0.020701952278614,
+    "tailPeak": 0.0,
+    "plugin": {
+      "name": "LV50A",
+      "version": "1.0.0",
+      "id": "VST3-LV50A-175fed7d-f3a1a62e",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3"
+    }
+  },
+  {
+    "layout": "stereo-v1",
+    "owner": "Track",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/stereo-v1-track.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/Renders/LV50A vendor QA stereo-v1-r1-ba199643.wav",
+    "sha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+    "maxDifference": 0.041429787874222,
+    "tailPeak": 0.0,
+    "plugin": {
+      "name": "LV50A",
+      "version": "1.0.0",
+      "id": "VST3-LV50A-175fed7d-f3a1a62e",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3"
+    }
+  },
+  {
+    "layout": "stereo-v1",
+    "owner": "Master",
+    "document": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/stereo-v1-master.soundplus",
+    "render": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors-awake-final/LV50A/Renders/LV50A vendor QA stereo-v1-r1-cb08e675.wav",
+    "sha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+    "maxDifference": 0.041429787874222,
+    "tailPeak": 0.0,
+    "plugin": {
+      "name": "LV50A",
+      "version": "1.0.0",
+      "id": "VST3-LV50A-175fed7d-f3a1a62e",
+      "format": "VST3",
+      "architecture": "arm64+x86_64",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3"
+    }
+  }
+]

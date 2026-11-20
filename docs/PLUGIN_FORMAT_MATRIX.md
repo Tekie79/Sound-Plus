@@ -4,11 +4,11 @@ This is a capability/evidence matrix, not a promise that every installed effect 
 
 | Format / path | Discovery | Processing / state | Editor | Status |
 |---|---|---|---|---|
-| Owned QA VST3 | Isolated standard/custom registry | Persistent rack, finite Process, state round-trip; named-layout regression suite | Generic controls and isolated editor path | Implemented; see final report evidence |
-| Apple AUDelay AUv2 | Registered system component, resolved bundle fingerprint | Finite and persistent PCM / JSON state, Mono/Stereo/5.1 Side/Rear | Isolated native editor, apply on close | Implemented; see final report evidence |
-| LV50A 1.0.0 / OldSkoolVerb 2.14 VST3 | Installed native universal bundles, exact classes | Fresh Mono/Stereo Track/Master inline/state/render checks | Separate apply-on-close windows/recall observed; Voxengo custom gestures open | See [vendor report](REAL_VENDOR_LOADING_REPORT.md) |
-| TAL-Reverb-3 2.3.0 VST3 | Loading barriers corrected | Inline PCM response unresolved | Editor opens/returns state | Partial; not inline-qualified |
-| Youlean Loudness Meter 2 VST3 | Enumerates with advertised layouts | Actual meter response unqualified | Not audible-instance-qualified | Not counted as processing qualification |
+| Owned QA VST3 | Isolated standard/custom registry | Persistent rack, finite Process, state round-trip; named-layout regression suite | Same-instance live native editor, bidirectional controls and lifecycle regressions | Implemented; see [live report](LIVE_INSERT_REPORT.md) |
+| Apple AUDelay AUv2 | Registered system component, resolved bundle fingerprint | Finite and persistent PCM / JSON state, Mono/Stereo/5.1 Side/Rear | Retained live editor architecture; actual AU native GUI remains instance-specific | Implemented; see final report evidence |
+| LV50A 1.0.0 / OldSkoolVerb 2.14 VST3 | Installed native universal bundles, exact classes | Fresh Mono/Stereo Track/Master inline/state/render checks | LV50A live native changes/Undo/Save/render verified; OldSkoolVerb custom gestures not confirmed | See [live report](LIVE_INSERT_REPORT.md) |
+| TAL-Reverb-3 2.3.0 VST3 | Exact installed identity retained in diagnostics | Duplicate native IDs rejected | Not insertable normally | Compatibility open; no renumbering |
+| Youlean Loudness Meter 2 VST3 | Enumerates with advertised layouts | Signal-driven Track and Master known peaks/silence/reset, Stereo and accepted 5.1 Rear bus | Actual retained-instance meter responds; viewport/hit-test correction | Qualified to these cases; see [live report](LIVE_INSERT_REPORT.md) |
 | Other vendor VST3 / AUv2 | Supported discovery adapters | Instance-specific negotiation required | Instance-specific | Not qualified by owned fixtures |
 | AUv3 extension | Registered enumeration, asynchronous JUCE instantiation path | No available runtime fixture qualified | Unqualified | Open requirement |
 | VST2.x | No adapter compiled | Absent lawful SDK/distribution path in this checkout | Unavailable | Required / blocked |

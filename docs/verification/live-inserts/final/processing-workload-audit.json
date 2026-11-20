@@ -1,0 +1,41 @@
+{
+  "passed": true,
+  "estimator": "nearest-rank: sorted[ceil(p*N)-1]",
+  "scanPollingSamples": 23,
+  "processPollingSamples": 160,
+  "tickMs": {
+    "count": 160,
+    "p50": 0.055124998092651,
+    "p95": 0.077291667461395,
+    "p99": 0.093666672706604
+  },
+  "searchRequestCount": 16,
+  "searchPublicationMs": {
+    "count": 16,
+    "p50": 11.311125010251999,
+    "p95": 12.285250008106232,
+    "p99": 12.285250008106232
+  },
+  "searchStatuses": {
+    "published": 16,
+    "superseded": 0,
+    "notObservedAtEnd": 0
+  },
+  "indexOverlapSamples": 3,
+  "processingActiveSamples": 160,
+  "waveformAdoptionMs": {
+    "count": 10,
+    "p50": 32.193083345890045,
+    "p95": 71.32283332943916,
+    "p99": 71.32283332943916
+  },
+  "waveformRequestsTotal": 13,
+  "waveformDecodesTotal": 12,
+  "waveformRequestsDuringLoad": 2,
+  "waveformDecodesDuringLoad": 2,
+  "clockFramesAdvanced": 169984,
+  "underruns": 0,
+  "workerMs": 3237.716000020504,
+  "workerPeakBytes": 28164096,
+  "qualification": "One bounded concurrent run. Polling/timing records are not independent PCM experiments. Search latency ends at observed UI publication; waveform records span this pool's fixture lifetime."
+}

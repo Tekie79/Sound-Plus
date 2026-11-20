@@ -1,0 +1,14 @@
+{
+  "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/native/Renders/LV final native QA-r7-c94d8eed.wav",
+  "sha256": "7b611b6c906151aa8975aeb6787366d151e84af392b8a228b6c3430cdce573d1",
+  "matchesDocumentHash": true,
+  "sampleRate": 48000,
+  "channels": 2,
+  "bits": 32,
+  "frames": 192000,
+  "comparison": "fresh native render frames 48000..96000 against initial live -6dB state, same source/recipe",
+  "maximumError": 0.0,
+  "stateTrimNormalized": 0.375,
+  "documentRevision": 9,
+  "renderRevision": 7
+}

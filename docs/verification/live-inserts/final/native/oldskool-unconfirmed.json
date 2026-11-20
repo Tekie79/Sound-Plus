@@ -1,0 +1,347 @@
+{
+  "status": "Native gestures not qualified; displayed transient value alone not accepted",
+  "captures": [
+    {
+      "generation": "9a8409112402405c90d67d48d53ee458",
+      "binding": {
+        "document": "oldskool-final-native",
+        "incarnation": 4,
+        "variation": "",
+        "owner": "master",
+        "slot": "9aa4b9383563425ca90328ba8d28e281",
+        "rack": "e38d499c8e144d65af4ef594a5ddd564",
+        "label": "Master"
+      },
+      "nativeSequence": 0,
+      "editorVisible": false,
+      "processedFrames": 0,
+      "parameters": [
+        {
+          "automatable": true,
+          "stableId": "0",
+          "index": 0,
+          "name": "Bypass",
+          "id": "0",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Off",
+          "steps": 2
+        },
+        {
+          "automatable": true,
+          "stableId": "1",
+          "index": 1,
+          "name": "PreDly",
+          "id": "1",
+          "value": 0.534522473812103,
+          "default": 0.534522473812103,
+          "text": "50.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "2",
+          "index": 2,
+          "name": "Space",
+          "id": "2",
+          "value": 0.654653668403625,
+          "default": 0.654653668403625,
+          "text": "70.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "3",
+          "index": 3,
+          "name": "Time",
+          "id": "3",
+          "value": 0.428571432828903,
+          "default": 0.534522473812103,
+          "text": "2000",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "4",
+          "index": 4,
+          "name": "Width",
+          "id": "4",
+          "value": 0.75,
+          "default": 0.75,
+          "text": "75.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "5",
+          "index": 5,
+          "name": "DampLo",
+          "id": "5",
+          "value": 0.545526325702667,
+          "default": 0.261648029088974,
+          "text": "90.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "6",
+          "index": 6,
+          "name": "DampHi",
+          "id": "6",
+          "value": 0.430216699838638,
+          "default": 0.532778859138489,
+          "text": "5.50k",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "7",
+          "index": 7,
+          "name": "EQLo",
+          "id": "7",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "8",
+          "index": 8,
+          "name": "EQMid",
+          "id": "8",
+          "value": 0.375,
+          "default": 0.5,
+          "text": "-3.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "9",
+          "index": 9,
+          "name": "EQHi",
+          "id": "9",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "10",
+          "index": 10,
+          "name": "RevGain",
+          "id": "10",
+          "value": 0.571428596973419,
+          "default": 0.571428596973419,
+          "text": "-6.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "11",
+          "index": 11,
+          "name": "DryGain",
+          "id": "11",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "12",
+          "index": 12,
+          "name": "DryMute",
+          "id": "12",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Off",
+          "steps": 2147483647
+        },
+        {
+          "automatable": false,
+          "stableId": "999",
+          "index": 13,
+          "name": "Program",
+          "id": "13",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Default",
+          "steps": 19
+        }
+      ]
+    },
+    {
+      "generation": "d2ad5edc4cbd4ed68ad931dc36987baa",
+      "binding": {
+        "document": "oldskool-final-native",
+        "incarnation": 3,
+        "variation": "",
+        "owner": "master",
+        "slot": "9aa4b9383563425ca90328ba8d28e281",
+        "rack": "e38d499c8e144d65af4ef594a5ddd564",
+        "label": "Master"
+      },
+      "nativeSequence": 0,
+      "editorVisible": false,
+      "processedFrames": 5891584,
+      "parameters": [
+        {
+          "automatable": true,
+          "stableId": "0",
+          "index": 0,
+          "name": "Bypass",
+          "id": "0",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Off",
+          "steps": 2
+        },
+        {
+          "automatable": true,
+          "stableId": "1",
+          "index": 1,
+          "name": "PreDly",
+          "id": "1",
+          "value": 0.534522473812103,
+          "default": 0.534522473812103,
+          "text": "50.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "2",
+          "index": 2,
+          "name": "Space",
+          "id": "2",
+          "value": 0.654653668403625,
+          "default": 0.654653668403625,
+          "text": "70.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "3",
+          "index": 3,
+          "name": "Time",
+          "id": "3",
+          "value": 0.428571432828903,
+          "default": 0.534522473812103,
+          "text": "2000",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "4",
+          "index": 4,
+          "name": "Width",
+          "id": "4",
+          "value": 0.75,
+          "default": 0.75,
+          "text": "75.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "5",
+          "index": 5,
+          "name": "DampLo",
+          "id": "5",
+          "value": 0.545526325702667,
+          "default": 0.261648029088974,
+          "text": "90.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "6",
+          "index": 6,
+          "name": "DampHi",
+          "id": "6",
+          "value": 0.430216699838638,
+          "default": 0.532778859138489,
+          "text": "5.50k",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "7",
+          "index": 7,
+          "name": "EQLo",
+          "id": "7",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "8",
+          "index": 8,
+          "name": "EQMid",
+          "id": "8",
+          "value": 0.375,
+          "default": 0.5,
+          "text": "-3.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "9",
+          "index": 9,
+          "name": "EQHi",
+          "id": "9",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "10",
+          "index": 10,
+          "name": "RevGain",
+          "id": "10",
+          "value": 0.571428596973419,
+          "default": 0.571428596973419,
+          "text": "-6.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "11",
+          "index": 11,
+          "name": "DryGain",
+          "id": "11",
+          "value": 0.5,
+          "default": 0.5,
+          "text": "0.0",
+          "steps": 2147483647
+        },
+        {
+          "automatable": true,
+          "stableId": "12",
+          "index": 12,
+          "name": "DryMute",
+          "id": "12",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Off",
+          "steps": 2147483647
+        },
+        {
+          "automatable": false,
+          "stableId": "999",
+          "index": 13,
+          "name": "Program",
+          "id": "13",
+          "value": 0.0,
+          "default": 0.0,
+          "text": "Default",
+          "steps": 19
+        }
+      ]
+    }
+  ]
+}

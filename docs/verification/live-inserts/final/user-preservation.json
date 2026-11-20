@@ -1,0 +1,28 @@
+{
+  "protected": 250,
+  "missing": [],
+  "changed": [
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.soundplus"
+  ],
+  "expectedAutosaveChangedFields": [
+    "payload.playhead",
+    "sha256"
+  ],
+  "currentName": "Workflow demonstration",
+  "currentRevision": 36,
+  "playheadSeconds": 6.0,
+  "tal": [
+    {
+      "name": "TAL-Reverb-3",
+      "format": "AudioUnit",
+      "path": "AudioUnit:Effects/aumf,REV3,TOGU"
+    }
+  ],
+  "nativeObserved": {
+    "selected": "clip-005.wav",
+    "monitor": 0.25,
+    "unsaved": true,
+    "recoveredLatestChanges": true
+  },
+  "policy": "Original current catalog/session reopened in place; no older snapshot restored."
+}

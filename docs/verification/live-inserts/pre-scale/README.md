@@ -1,0 +1,1 @@
+Historical checkpoint before the unchanged-content-scale native UI correction (source 1d108b7). Not final-artifact native or metering acceptance. The final directory binds current source 35fe786 and all helper/frontend identities.
