@@ -1,4 +1,5 @@
 #include "PluginProcessing.h"
+#include "PluginBusPolicy.h"
 #include "RegisteredAudioUnits.h"
 #include <thread>
 #include <future>
@@ -10,6 +11,36 @@ namespace
 {
 using namespace juce;
 std::atomic<bool> editorCloseRequested{false};
+juce::File diagnosticFile;
+juce::var diagnostic = juce::var(new juce::DynamicObject());
+void stage(const juce::String &name)
+{
+    diagnostic.getDynamicObject()->setProperty("stage", name);
+    diagnostic.getDynamicObject()->setProperty("atMs", juce::Time::currentTimeMillis());
+    if (diagnosticFile != juce::File())
+        sp::saveProcessingJson(diagnosticFile, diagnostic);
+}
+juce::var busesJson(const juce::AudioProcessor &p)
+{
+    auto value = juce::var(new juce::DynamicObject());
+    for (bool input : {true, false})
+    {
+        juce::Array<juce::var> buses;
+        for (int i = 0; i < p.getBusCount(input); ++i)
+        {
+            auto *bus = p.getBus(input, i);
+            auto b = juce::var(new juce::DynamicObject());
+            b.getDynamicObject()->setProperty("name", bus->getName());
+            b.getDynamicObject()->setProperty("channels", bus->getNumberOfChannels());
+            b.getDynamicObject()->setProperty("roles", bus->getCurrentLayout().getDescription());
+            b.getDynamicObject()->setProperty("enabled", bus->isEnabled());
+            buses.add(b);
+        }
+        value.getDynamicObject()->setProperty(input ? "inputs" : "outputs", buses);
+    }
+    return value;
+}
+
 void check(bool b, const String &why)
 {
     if (!b)
@@ -141,41 +172,64 @@ HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, 
               File(d.pluginFormatName == "AudioUnit" ? identity["bundle"].toString() : d.fileOrIdentifier)) ==
               identity["fingerprint"].toString(),
           "Plugin is missing/changed; rescan and explicitly choose it for a new run");
+    stage("class-identity");
     String error;
     std::promise<std::pair<std::unique_ptr<AudioPluginInstance>, String>> created;
     auto future = created.get_future();
-    formats.createPluginInstanceAsync(d, rate, block, [&created](auto p, const String &why)
-                                      { created.set_value({std::move(p), why}); });
+    stage("instantiation");
+    onPluginMessageThread(
+        [&]
+        {
+            formats.createPluginInstanceAsync(d, rate, block, [&created](auto p, const String &why)
+                                              { created.set_value({std::move(p), why}); });
+        });
     auto outcome = future.get();
     HostedInstance p(outcome.first.release());
     error = outcome.second;
     check(p != nullptr, "Plugin unavailable/native architecture unsupported: " + error);
-    check(!p->acceptsMidi() && !p->producesMidi() && !p->isMidiEffect(),
-          "MIDI/instruments are not supported");
-    check(p->getBusCount(true) == 1 && p->getBusCount(false) == 1,
-          "One main input/output bus required; sidechains unsupported");
+    stage("audio-effect-classification");
+    check(!p->isMidiEffect() && p->getBusCount(true) >= 1 && p->getBusCount(false) >= 1,
+          "Instrument/MIDI-only processing or absent main audio bus is unsupported");
+    diagnostic.getDynamicObject()->setProperty("declaredBuses", busesJson(*p));
+    diagnostic.getDynamicObject()->setProperty("acceptsMidi", p->acceptsMidi());
+    diagnostic.getDynamicObject()->setProperty("producesMidi", p->producesMidi());
     return p;
 }
 void layout(AudioPluginInstance &p, const sp::ChannelLayout &l)
 {
     sp::validateLayout(l);
     check(!l.id.startsWith("unknown-"), "Explicit channel interpretation required");
-    AudioProcessor::BusesLayout buses;
-    buses.inputBuses.add(sp::juceChannelSet(l));
-    buses.outputBuses.add(sp::juceChannelSet(l));
-    check(p.checkBusesLayoutSupported(buses) && p.setBusesLayout(buses) && p.getBusesLayout() == buses,
-          "Incompatible layout: effect does not accept exact " + sp::layoutName(l) +
-              " input/output roles; convert explicitly before processing");
+    stage("main-bus-negotiation");
+    diagnostic.getDynamicObject()->setProperty("requestedLayout", sp::layoutJson(l));
+    bool accepted = sp::negotiatePluginMainBus(p, l);
+    diagnostic.getDynamicObject()->setProperty("activeBuses", busesJson(p));
+    check(accepted, "Incompatible main layout " + sp::layoutName(l) +
+                        " or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No "
+                        "conversion applied");
+    stage("main-bus-ready");
 }
 var describe(AudioPluginInstance &p)
 {
+    stage("state-description");
     auto result = obj();
+    put(result, "buses", busesJson(p));
+    put(result, "nonRealtime", p.isNonRealtime());
+    put(result, "acceptsMidi", p.acceptsMidi());
+    put(result, "producesMidi", p.producesMidi());
     Array<var> params;
-    check(p.getParameters().size() <= 512, "More than 512 parameters is unsupported");
-    for (int n = 0; n < p.getParameters().size(); ++n)
+    check(p.getParameters().size() <= 16384, "Processor exceeds 16384 declared parameter bound");
+    put(result, "parameterCount", p.getParameters().size());
+    for (int n = 0; n < p.getParameters().size() && params.size() < 512; ++n)
     {
         auto *v = p.getParameters()[n];
+        // Large MIDI-capable effects may expose thousands of non-automatable
+        // CC aliases. Those are not an inline audio-automation surface.
+        if (p.getParameters().size() > 512 && !v->isAutomatable())
+            continue;
         auto item = obj();
+        put(item, "automatable", v->isAutomatable());
+        if (auto *hosted = p.getHostedParameter(n))
+            put(item, "stableId", hosted->getParameterID());
         put(item, "index", n);
         put(item, "name", v->getName(128));
         put(item, "id", p.getParameterID(n));
@@ -188,9 +242,10 @@ var describe(AudioPluginInstance &p)
     MemoryBlock state;
     p.getStateInformation(state);
     check(state.getSize() <= 4 * 1024 * 1024, "Plugin state exceeds 4 MiB");
+    put(result, "exposedParameterCount", params.size());
     put(result, "parameters", params);
     put(result, "program", p.getCurrentProgram());
-    put(result, "programName", p.getProgramName(p.getCurrentProgram()));
+    put(result, "programName", p.getNumPrograms() > 0 ? p.getProgramName(p.getCurrentProgram()) : String());
     put(result, "state", state.toBase64Encoding());
     put(result, "stateHash", hash(state));
     put(result, "latency", p.getLatencySamples());
@@ -200,7 +255,9 @@ var describe(AudioPluginInstance &p)
 }
 void restore(AudioPluginInstance &p, const var &job)
 {
-    if (job.hasProperty("program") && p.getNumPrograms() > 0)
+    // Opaque state owns its program. Queuing a redundant VST3 program change
+    // before restoring state can reset the restored audio controls at first process.
+    if (job["state"].toString().isEmpty() && job.hasProperty("program") && p.getNumPrograms() > 0)
     {
         int program = (int)job["program"];
         check(isPositiveAndBelow(program, p.getNumPrograms()), "Saved program is unavailable");
@@ -223,10 +280,16 @@ void restore(AudioPluginInstance &p, const var &job)
             double x = (double)v["value"];
             check(isPositiveAndBelow(n, p.getParameters().size()) && std::isfinite(x) && x >= 0 && x <= 1,
                   "Invalid normalized parameter");
+            if (v["stableId"].isString())
+                check(p.getHostedParameter(n) &&
+                          p.getHostedParameter(n)->getParameterID() == v["stableId"].toString(),
+                      "Saved stable parameter ID no longer matches processor");
             if (v["id"].isString())
                 check(v["id"].toString() == p.getParameterID(n),
                       "Saved parameter ID no longer matches its processor");
-            p.getParameters()[n]->setValueNotifyingHost((float)x);
+            auto *parameter = p.getParameters()[n];
+            if (parameter->getValue() != (float)x)
+                parameter->setValueNotifyingHost((float)x);
         }
     }
 }
@@ -249,15 +312,21 @@ var execute(const var &job)
         auto path = job["path"].toString();
         OwnedArray<PluginDescription> types;
         bool au = job["format"].toString() == "AudioUnit";
-        formats.getFormat(au ? 1 : 0)->findAllTypesForFile(types, path);
-        check(!types.isEmpty(),
-              "No native arm64 VST3 effect found (corrupt, incompatible architecture or unsupported bundle)");
+        auto scanBundle = au ? File(job["bundle"].toString()) : File(path);
+        stage("binary-architecture");
+        auto architectures = binaryArchitectures(scanBundle);
+        diagnostic.getDynamicObject()->setProperty("architecture", architectures);
+        check(StringArray::fromTokens(architectures, "+", "").contains("arm64"),
+              "Native arm64 required; bundle architecture: " + architectures + "; no bridging");
+        stage("class-enumeration");
+        onPluginMessageThread([&] { formats.getFormat(au ? 1 : 0)->findAllTypesForFile(types, path); });
+        check(!types.isEmpty(), "No audio plugin classes enumerated from bundle");
         Array<var> plugins;
         auto bundle = au ? File(job["bundle"].toString()) : File(path);
         auto fingerprint = sp::pluginFingerprint(bundle);
         if (au)
             check(fingerprint == job["fingerprint"].toString(), "Audio Unit bundle changed during discovery");
-        auto architectures = binaryArchitectures(bundle);
+        stage("bundle-fingerprint");
         for (auto *d : types)
         {
             auto p = obj();
@@ -278,7 +347,7 @@ var execute(const var &job)
             put(p, "xml", d->createXml()->toString());
             put(p, "id", d->createIdentifierString());
             String reason;
-            Array<var> supported;
+            Array<var> supported, attempts;
             try
             {
                 check(StringArray::fromTokens(architectures, "+", "").contains("arm64"),
@@ -290,9 +359,16 @@ var execute(const var &job)
                     {
                         layout(*effect, l);
                         supported.add(l.id);
+                        auto attempt = diagnostic.clone();
+                        put(attempt, "accepted", true);
+                        attempts.add(attempt);
                     }
-                    catch (...)
+                    catch (const std::exception &e)
                     {
+                        auto attempt = diagnostic.clone();
+                        put(attempt, "accepted", false);
+                        put(attempt, "reason", String(e.what()));
+                        attempts.add(attempt);
                     }
                 }
                 for (int n : {4, 8, 16})
@@ -302,21 +378,37 @@ var execute(const var &job)
                     {
                         layout(*effect, l);
                         supported.add(l.id);
+                        auto attempt = diagnostic.clone();
+                        put(attempt, "accepted", true);
+                        attempts.add(attempt);
                     }
-                    catch (...)
+                    catch (const std::exception &e)
                     {
+                        auto attempt = diagnostic.clone();
+                        put(attempt, "accepted", false);
+                        put(attempt, "reason", String(e.what()));
+                        attempts.add(attempt);
                     }
                 }
             }
             catch (const std::exception &e)
             {
                 reason = e.what();
+                put(p, "failureStage", diagnostic["stage"]);
             }
+            if (supported.isEmpty() && reason.isEmpty())
+            {
+                reason = "No supported exact main layout with optional auxiliaries disabled";
+                put(p, "failureStage", "main-bus-negotiation");
+            }
+            put(p, "layoutAttempts", attempts);
+            put(p, "diagnostics", diagnostic.clone());
             put(p, "layouts", supported);
             put(p, "reason", reason);
             plugins.add(p);
         }
         auto result = obj();
+        stage("scan-complete");
         put(result, "plugins", plugins);
         return result;
     }
@@ -333,8 +425,9 @@ var execute(const var &job)
         {
             restore(*effect, job);
             layout(*effect, bus);
-            effect->setNonRealtime(true);
+            effect->setNonRealtime(mode != "editor");
             effect->setRateAndBufferSizeDetails(rate, block);
+            stage("preparation");
             effect->prepareToPlay(rate, block);
             effect->reset();
             state = describe(*effect);
@@ -372,8 +465,36 @@ var execute(const var &job)
                 window->setVisible(true);
                 window->toFront(true);
             });
+        auto healthPath = job["health"].toString(), checkpointPath = job["checkpoint"].toString();
+        auto nextState = juce::Time::getMillisecondCounterHiRes();
         while (!closed && !editorCloseRequested.load())
-            Thread::sleep(10);
+        {
+            auto now = juce::Time::getMillisecondCounterHiRes();
+            onPluginMessageThread(
+                [&]
+                {
+                    if (now >= nextState)
+                        state = describe(*effect);
+                });
+            if (now >= nextState && checkpointPath.isNotEmpty())
+            {
+                auto settings = job.clone();
+                for (auto key : {"state", "stateHash", "parameters", "program", "programName"})
+                    put(settings, key, state[key]);
+                for (auto key : {"reply", "diagnostic", "health", "checkpoint"})
+                    settings.getDynamicObject()->removeProperty(key);
+                auto preset = obj();
+                put(preset, "version", 1);
+                put(preset, "settings", settings);
+                sp::saveProcessingJson(File(checkpointPath), preset);
+            }
+            if (now >= nextState)
+                nextState = now + 2000;
+            if (healthPath.isNotEmpty())
+                File(healthPath).replaceWithText(String((juce::int64)now));
+            stage("editor-open");
+            Thread::sleep(250);
+        }
         onPluginMessageThread(
             [&]
             {
@@ -440,6 +561,10 @@ var execute(const var &job)
         {
             AudioBuffer<float> view(buffer.getArrayOfWritePointers(), bus.size(), count);
             onPluginMessageThread([&] { effect->processBlock(view, midi); });
+            if (at == 0)
+            {
+                stage("first-processed-pcm");
+            }
             midi.clear();
         }
         check(effect->getBusesLayout() == initialBuses &&
@@ -506,6 +631,13 @@ int runWorkerRequest(const juce::File &request, bool pumpMain)
     try
     {
         job = sp::loadProcessingJson(request);
+        diagnosticFile =
+            job["diagnostic"].toString().isEmpty() ? juce::File() : juce::File(job["diagnostic"].toString());
+        diagnostic = job.clone();
+        diagnostic.getDynamicObject()->removeProperty("state");
+        diagnostic.getDynamicObject()->removeProperty("parameters");
+        diagnostic.getDynamicObject()->removeProperty("rack");
+        stage("request");
         check((int)job["protocol"] == 1, "Unsupported worker protocol");
         juce::var reply;
         if (pumpMain)
@@ -534,6 +666,7 @@ int runWorkerRequest(const juce::File &request, bool pumpMain)
         }
         else
             reply = execute(job); // GUI application already owns its native run loop.
+        put(reply, "diagnostics", diagnostic.clone());
         put(reply, "protocol", 1);
         sp::saveProcessingJson(juce::File(job["reply"].toString()), reply);
         return 0;
@@ -544,6 +677,9 @@ int runWorkerRequest(const juce::File &request, bool pumpMain)
         {
             auto reply = obj();
             put(reply, "protocol", 1);
+            diagnostic.getDynamicObject()->setProperty("reason", String(e.what()));
+            stage(diagnostic["stage"].toString());
+            put(reply, "diagnostics", diagnostic.clone());
             put(reply, "error", juce::String(e.what()));
             try
             {

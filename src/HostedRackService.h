@@ -53,6 +53,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     layout(*p, bus);
                     p->setNonRealtime(false);
                     p->setRateAndBufferSizeDetails(rate, 512);
+                    stage("rack-preparation");
                     p->prepareToPlay(rate, 512);
                     p->reset();
                 });
@@ -66,8 +67,9 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             onPluginMessageThread(
                 [&]
                 {
+                    check(p->getParameters().size() <= 16384, "Hosted parameter bound exceeded");
                     for (int i = 0; i < p->getParameters().size(); ++i)
-                        prepared.parameterIds.add(p->getParameterID(i));
+                        prepared.parameterIds.add(p->getHostedParameter(i)->getParameterID());
                 });
             prepared.effect = std::move(p);
             prepared.dry.setSize(bus.size(), std::max(1, latency + 1));
@@ -107,9 +109,12 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                           std::isfinite(x) && x >= 0 && x <= 1,
                                       "Invalid hosted control");
                                 check(index < slot.parameterIds.size() &&
-                                          slot.effect->getParameterID(index) == slot.parameterIds[index],
+                                          slot.effect->getHostedParameter(index)->getParameterID() ==
+                                              slot.parameterIds[index],
                                       "Hosted parameter identity changed; reprepare graph");
-                                slot.effect->getParameters()[index]->setValueNotifyingHost(x);
+                                auto *parameter = slot.effect->getParameters()[index];
+                                if (parameter->getValue() != x)
+                                    parameter->setValueNotifyingHost(x);
                             }
                         }
                     });
@@ -134,6 +139,8 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                 AudioBuffer<float> view(audio.getArrayOfWritePointers(), bus.size(), frames);
                 onPluginMessageThread([&] { slot.effect->processBlock(view, midi); });
                 midi.clear();
+                if (sequence == 0)
+                    stage("first-processed-pcm");
                 check(slot.effect->getLatencySamples() == slot.latency &&
                           slot.effect->getBusesLayout() == slot.buses,
                       "Plugin changed bus/latency; stop and explicitly reprepare the graph");

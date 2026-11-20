@@ -3,6 +3,8 @@
 #include "LibraryService.h"
 #include "LibraryView.h"
 #include "StockRackView.h"
+#include "PluginBusPolicy.h"
+#include "PluginBusFixture.h"
 #include "DesignLive.h"
 #include "Performance.h"
 #include <iostream>
@@ -191,6 +193,261 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         put(classified, "category", category);
         require(pluginEffectGroup(classified) == expected,
                 "Effect groups follow reported type, not filename guesses");
+    }
+    if (auto *vendorRoot = std::getenv("SOUNDPLUS_VENDOR_QUALIFICATION"))
+    {
+        File evidence(vendorRoot);
+        Array<var> outcomes, controlEvidence;
+        for (auto name : {"OldSkoolVerb", "LV50A"})
+        {
+            auto work = evidence.getChildFile(name);
+            PluginCatalog realCatalog(work.getChildFile("registry.json"));
+            auto registry = realCatalog.scan(
+                child, {File("/Library/Audio/Plug-Ins/VST3/" + String(name) + ".vst3")}, true, cancelled);
+            auto real = registry["entries"][0]["plugins"][0];
+            require(real.isObject() && real["reason"].toString().isEmpty(), "Actual vendor class available");
+            for (auto layoutId : {"mono-v1", "stereo-v1"})
+            {
+                auto bus = channelLayout(layoutId);
+                auto source = selection(wave(work.getChildFile(String(layoutId) + "/source"), bus, 48000));
+                auto staged =
+                    stagePluginInput(source, work.getChildFile(String(layoutId) + "/input.wav"), cancelled);
+                auto job = request(real, staged, work.getChildFile(String(layoutId) + "/finite.wav"));
+                put(job, "mode", "describe");
+                auto desc = child.call(job, work, 10000);
+                for (auto key : {"state", "stateHash", "parameters", "program"})
+                    put(job, key, desc[key]);
+                if (String(name) == "OldSkoolVerb")
+                {
+                    parameter(job, 1, 0);
+                    parameter(job, 10, .8);
+                    parameter(job, 12, 1);
+                }
+                else
+                    parameter(job, 1, .3); // Actual LV50A Trim.
+                DesignDocument d;
+                d.name = String(name) + " vendor QA " + layoutId;
+                d.original.layout = bus;
+                d.original.masterDb = 0;
+                auto layer = makeDesignLayer(source.source, 0, -1, true);
+                initialiseRouting(layer, bus);
+                DesignDocument dryDoc = d;
+                dryDoc.original.layers = {layer};
+                AudioBuffer<float> dry(bus.size(), 48000);
+                DesignGraph dryGraph(dryDoc);
+                dryGraph.render(dry, 0, 48000);
+                for (bool master : {false, true})
+                {
+                    d.original.layers = {layer};
+                    d.original.hosted.slots.clear();
+                    auto &rack = master ? d.original.hosted : d.original.layers[0].hosted;
+                    rack.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+                    d.selectedLayer = layer.id;
+                    auto file = work.getChildFile(String(layoutId) +
+                                                  (master ? "-master.soundplus" : "-track.soundplus"));
+                    saveDesignAtomic(file, d);
+                    auto recalled = loadDesign(file);
+                    DesignGraph graph(recalled);
+                    AudioBuffer<float> wet(bus.size(), 48000);
+                    graph.render(wet, 0, 48000);
+                    double difference = 0, tailPeak = 0;
+                    for (int c = 0; c < bus.size(); ++c)
+                        for (int n = 0; n < 48000; ++n)
+                        {
+                            require(std::isfinite(wet.getSample(c, n)), "Finite vendor PCM");
+                            difference = std::max(
+                                difference, std::abs((double)wet.getSample(c, n) - dry.getSample(c, n)));
+                            if (n > 4096)
+                                tailPeak = std::max(tailPeak, std::abs((double)wet.getSample(c, n)));
+                        }
+                    require(difference > .001, "Real effect alters appropriate generated signal");
+                    if (String(name) == "OldSkoolVerb")
+                        require(tailPeak > .00001, "Actual reverb impulse tail");
+                    DesignRenderSettings options;
+                    options.normalize = false;
+                    options.layout = "same";
+                    options.bits = 32;
+                    options.tailSeconds = 0;
+                    auto output = renderDesign(recalled, work.getChildFile("Renders"), options, cancelled,
+                                               [](double) {});
+                    auto rendered = read(File(output.path));
+                    compare(wet, rendered);
+                    auto item = obj();
+                    put(item, "plugin", real);
+                    put(item, "layout", layoutId);
+                    put(item, "owner", master ? "Master" : "Track");
+                    put(item, "document", file.getFullPathName());
+                    put(item, "render", output.path);
+                    put(item, "sha256", processingHash(File(output.path)));
+                    put(item, "maxDifference", difference);
+                    put(item, "tailPeak", tailPeak);
+                    outcomes.add(item);
+                }
+                // Persistent inline controls change the existing child, not its opaque state.
+                HostedRack rack;
+                rack.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+                HostedRackClient live(rack, bus, 48000, cancelled);
+                AudioBuffer<float> x(bus.size(), 512);
+                for (int c = 0; c < bus.size(); ++c)
+                    for (int n = 0; n < 512; ++n)
+                        x.setSample(c, n, float(.1 * std::sin(n * .07)));
+                AudioBuffer<float> first(bus.size(), 512), second(bus.size(), 512);
+                for (int c = 0; c < bus.size(); ++c)
+                    first.copyFrom(c, 0, x, c, 0, 512);
+                for (int pass = 0; pass < 64; ++pass)
+                {
+                    for (int c = 0; c < bus.size(); ++c)
+                        first.copyFrom(c, 0, x, c, 0, 512);
+                    live.process(first, 512);
+                }
+                auto changed = job.clone();
+                parameter(changed, String(name) == "LV50A" ? 1 : 10, 0);
+                auto next = rack;
+                next.slots[0].settings = JSON::toString(changed, true);
+                auto controlStart = Time::getMillisecondCounterHiRes();
+                live.update(next);
+                for (int c = 0; c < bus.size(); ++c)
+                    second.copyFrom(c, 0, x, c, 0, 512);
+                // Allow the vendor's own parameter smoothing to settle.
+                for (int pass = 0; pass < 128; ++pass)
+                {
+                    for (int c = 0; c < bus.size(); ++c)
+                        second.copyFrom(c, 0, x, c, 0, 512);
+                    live.process(second, 512);
+                }
+                double delta = 0;
+                for (int c = 0; c < bus.size(); ++c)
+                    for (int n = 0; n < 512; ++n)
+                        delta =
+                            std::max(delta, std::abs((double)first.getSample(c, n) - second.getSample(c, n)));
+                require(delta > .000001, "Actual persistent vendor control changes PCM");
+                require(second.getMagnitude(0, 512) < first.getMagnitude(0, 512) * .75f,
+                        "Actual inline wet/trim reduction lowers processed level: " + String(name) + " " +
+                            layoutId + " before=" + String(first.getMagnitude(0, 512), 9) +
+                            " after=" + String(second.getMagnitude(0, 512), 9));
+                auto control = obj();
+                put(control, "plugin", real["id"]);
+                put(control, "layout", layoutId);
+                put(control, "beforePeak", first.getMagnitude(0, 512));
+                put(control, "afterPeak", second.getMagnitude(0, 512));
+                put(control, "maxDelta", delta);
+                put(control, "settledWindowMs", Time::getMillisecondCounterHiRes() - controlStart);
+                put(control, "settlingFrames", 128 * 512);
+                controlEvidence.add(control);
+            }
+            auto incompatible = pluginCandidateRows(registry, channelLayout("5.1-side-v1"), {}, false);
+            require(incompatible.size() == 1 && !(bool)incompatible[0]["canInsert"],
+                    "Stereo vendor explicitly unavailable on named 5.1 master");
+        }
+        saveProcessingJson(evidence.getChildFile("numerical-results.json"), outcomes);
+        saveProcessingJson(evidence.getChildFile("inline-controls.json"), controlEvidence);
+    }
+    {
+        RequiredAuxiliaryFixture required;
+        require(!negotiatePluginMainBus(required, channelLayout("stereo-v1")) &&
+                    required.getBusCount(true) == 2 && required.getBus(true, 1)->isEnabled(),
+                "R26 shared production negotiation rejects mandatory auxiliary without erasing topology");
+    }
+    // R26/R27: real VST3 factories with optional capabilities and class-only failures.
+    {
+        auto modeScan = [&](const String &mode, const String &name)
+        {
+            setenv("SOUNDPLUS_FIXTURE_TOPOLOGY", mode.toRawUTF8(), 1);
+            PluginCatalog c(root.getChildFile("capabilities/" + name + ".json"));
+            return c.scan(child, {fixture}, false, cancelled);
+        };
+        for (auto mode : {"midi", "optional", "mandatory", "midi-only"})
+        {
+            auto snapshot = modeScan(mode, mode);
+            auto effect = snapshot["entries"][0]["plugins"][0];
+            bool positive = String(mode) == "midi" || String(mode) == "optional";
+            require(snapshot["entries"][0]["error"].toString().isEmpty(),
+                    "Capability case enumerates its class: " + String(mode));
+            require(effect["reason"].toString().isEmpty() == positive,
+                    "Capability acceptance distinguishes optional from required: " + String(mode));
+            auto rows = pluginCandidateRows(snapshot, channelLayout("stereo-v1"), {}, false);
+            require(rows.size() == 1 && (bool)rows[0]["canInsert"] == positive,
+                    "Chooser exposes capability result instead of hiding it");
+            if (positive)
+            {
+                auto input = stagePluginInput(
+                    selection(
+                        wave(root.getChildFile("capabilities/source"), channelLayout("stereo-v1"), 513)),
+                    root.getChildFile("capabilities/" + String(mode) + "-input.wav"), cancelled);
+                auto job = request(effect, input,
+                                   root.getChildFile("capabilities/" + String(mode) + "-output.wav"), 127);
+                auto describeJob = job.clone();
+                put(describeJob, "mode", "describe");
+                auto description = child.call(describeJob, root, 10000);
+                require(description["buses"]["inputs"].size() == (String(mode) == "optional" ? 2 : 1),
+                        "Negotiation preserves declared bus structure");
+                if (String(mode) == "optional")
+                    require(!(bool)description["buses"]["inputs"][1]["enabled"],
+                            "Optional sidechain disabled without removing its bus");
+                for (auto key : {"state", "stateHash", "parameters", "program"})
+                    put(job, key, description[key]);
+                parameter(job, 0, .25);
+                parameter(job, 1, 1);
+                auto output = child.call(job, root, 10000);
+                compare(read(File(input["path"].toString())), read(File(output["path"].toString())), -.5);
+                HostedRack r;
+                r.slots = {{Uuid().toString(), JSON::toString(job, true), false},
+                           {Uuid().toString(), JSON::toString(job, true), false}};
+                HostedRackClient client(r, channelLayout("stereo-v1"), 48000, cancelled);
+                auto dry = read(File(input["path"].toString()));
+                AudioBuffer<float> actual(2, 513);
+                for (int at = 0; at < 513; at += 127)
+                {
+                    int n = std::min(127, 513 - at);
+                    AudioBuffer<float> block(2, n);
+                    for (int c = 0; c < 2; ++c)
+                        block.copyFrom(c, 0, dry, c, at, n);
+                    client.process(block, n);
+                    for (int c = 0; c < 2; ++c)
+                        actual.copyFrom(c, at, block, c, 0, n);
+                }
+                compare(dry, actual, .25);
+            }
+        }
+        setenv("SOUNDPLUS_FIXTURE_TOPOLOGY", "mandatory", 1);
+        auto storage = root.getChildFile("class-retry.json");
+        PluginCatalog retryCatalog(storage);
+        auto rejected = retryCatalog.scan(child, {fixture, stereo}, false, cancelled);
+        require(rejected["entries"][0]["error"].toString().isEmpty() &&
+                    rejected["entries"][0]["plugins"][0]["reason"].toString().isNotEmpty(),
+                "R27 starts from class rejection with no enclosing error");
+        auto hashBefore = pluginFingerprint(fixture);
+        unsetenv("SOUNDPLUS_FIXTURE_TOPOLOGY");
+        auto reused = retryCatalog.scan(child, {fixture, stereo}, false, cancelled);
+        require((int)reused["launched"] == 0, "Ordinary scan retains unchanged class failures");
+        auto retried = retryCatalog.scan(child, {fixture, stereo}, true, cancelled, {}, false,
+                                         fixture.getFullPathName());
+        require((int)retried["launched"] == 1 && retried["entries"].size() == 2 &&
+                    retried["roots"] == rejected["roots"] &&
+                    retried["entries"][0]["plugins"][0]["reason"].toString().isEmpty() &&
+                    hashBefore == pluginFingerprint(fixture),
+                "Targeted retry clears unchanged class failure and retains other entries/roots");
+        auto legacy = retried.clone();
+        auto oldEntry = legacy["entries"][0];
+        put(oldEntry, "probePolicy", 0);
+        saveProcessingJson(storage, legacy);
+        auto reprobed = retryCatalog.scan(child, {fixture, stereo}, false, cancelled);
+        require((int)reprobed["launched"] == 1,
+                "Host probing-policy changes invalidate an obsolete cached result");
+        auto instrument =
+            fixture.getParentDirectory()
+                .getParentDirectory()
+                .getParentDirectory()
+                .getParentDirectory()
+                .getChildFile(
+                    "SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3");
+        PluginCatalog instruments(root.getChildFile("instrument.json"));
+        auto negative = instruments.scan(child, {instrument}, false, cancelled);
+        require(negative["entries"][0]["plugins"][0]["reason"].toString().isNotEmpty(),
+                "Actual instrument class is rejected without optional-MIDI false positives");
+        auto rows = pluginCandidateRows(reprobed, channelLayout("5.1-side-v1"), "Stereo", true);
+        require(rows.size() == 1 && rows[0]["status"].toString().isNotEmpty() && !(bool)rows[0]["canInsert"],
+                "Attention view exposes incompatible/failed stereo class on 5.1 bus");
     }
     auto defaults = defaultVst3Locations();
     require(
@@ -1068,6 +1325,115 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     recalled.original.layers[0].effects[0].id ==
                         rackSession.document.original.layers[0].effects[0].id,
                 "Separate rack owner/slot identity survives production serialization");
+        // R30: actual selectors must request parent layout when parameter height changes.
+        for (auto *view : {&track, &master})
+        {
+            int relayouts = 0;
+            view->onHeightChange = [&] { ++relayouts; };
+            view->append(view->owner, "gain");
+            view->append(view->owner, "reverb");
+            view->setParametersExpanded(true);
+            int reverbId = view->slots.getNumItems();
+            view->slots.setSelectedId(reverbId - 1, sendNotificationSync);
+            int small = view->preferredHeight(), before = relayouts;
+            view->slots.setSelectedId(reverbId, sendNotificationSync);
+            require(view->preferredHeight() > small && relayouts > before,
+                    "R30 Gain to Reverb requests parent relayout");
+            before = relayouts;
+            view->slots.setSelectedId(reverbId - 1, sendNotificationSync);
+            require(view->preferredHeight() == small && relayouts > before,
+                    "R30 Reverb to Gain shrinks parent layout");
+            view->onHeightChange = {};
+        }
+        // R29: hold the real view's editor command in a controlled worker.
+        {
+            std::atomic<int> started{0}, cancelledEditors{0};
+            std::atomic<bool> releaseEditor{false};
+            HostedRackView editView(
+                rackSession, false, root.getChildFile("racks/editor-registry.json"), false,
+                [&](var job, const File &, const File &, const std::function<bool()> &cancel)
+                {
+                    ++started;
+                    while (!releaseEditor && !cancel())
+                        Thread::sleep(2);
+                    if (cancel())
+                        ++cancelledEditors;
+                    put(job, "stateHash", "controlled-editor-result");
+                    return job;
+                });
+            auto a = Uuid().toString(), b = Uuid().toString();
+            rackSession.edit(
+                "Editor lifecycle setup",
+                [&](auto &d)
+                {
+                    d.original.layers[0].hosted.slots = {{a, JSON::toString(retainedJob, true), false}};
+                    d.original.layers[1].hosted.slots = {{b, JSON::toString(retainedJob, true), false}};
+                });
+            auto press = [&](const String &name)
+            {
+                for (auto *c : editView.getChildren())
+                    if (auto *button = dynamic_cast<Button *>(c); button && button->getButtonText() == name)
+                    {
+                        button->onClick();
+                        return;
+                    }
+                require(false, "Actual editor command exists: " + name);
+            };
+            editView.bind(firstId);
+            press("Editor (apply state when closed)");
+            for (int i = 0; i < 100 && !started; ++i)
+                pump(5);
+            require(started == 1, "R29 actual editor action starts controlled worker");
+            editView.bind(secondId);
+            press("Remove external insert");
+            editView.refresh();
+            pump(30);
+            require(cancelledEditors == 0, "R29 removing B preserves A editor");
+            releaseEditor = true;
+            pump(100);
+            require(JSON::parse(rackSession.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                            .toString() == "controlled-editor-result",
+                    "R29 A state applies after unrelated B removal");
+            releaseEditor = false;
+            editView.bind(firstId);
+            press("Editor (apply state when closed)");
+            for (int i = 0; i < 100 && started < 2; ++i)
+                pump(5);
+            press("Remove external insert");
+            editView.refresh();
+            pump(100);
+            require(cancelledEditors == 1, "R29 removing actual A cancels only its editor");
+            releaseEditor = true;
+        }
+        {
+            auto empty = retainedJob.clone();
+            put(empty, "parameters", Array<var>());
+            auto a = Uuid().toString(), b = Uuid().toString();
+            rackSession.edit("Hosted height setup",
+                             [&](auto &d)
+                             {
+                                 d.original.layers[0].hosted.slots = {
+                                     {a, JSON::toString(empty, true), false},
+                                     {b, JSON::toString(retainedJob, true), false}};
+                             });
+            HostedRackView hosted(rackSession, false, root.getChildFile("racks/height-registry.json"));
+            int layouts = 0;
+            hosted.onHeightChange = [&] { ++layouts; };
+            hosted.bind(firstId);
+            hosted.selectSlot(b);
+            for (auto *c : hosted.getChildren())
+                if (auto *button = dynamic_cast<Button *>(c);
+                    button && button->getButtonText() == "Show external insert parameters")
+                    button->onClick();
+            int expandedHeight = hosted.preferredHeight(), before = layouts;
+            hosted.selectSlot(a);
+            require(hosted.preferredHeight() == expandedHeight - 132 && layouts > before,
+                    "R30 actual hosted selection shrinks parameterized to parameterless rack");
+            before = layouts;
+            hosted.selectSlot(b);
+            require(hosted.preferredHeight() == expandedHeight && layouts > before,
+                    "R30 hosted parameter controls grow on selection and notify parent");
+        }
         // One visible rack for stock + external effects; empty states expose no dead controls.
         StockRackView unified(rackSession, false, root.getChildFile("racks/plugins-v1.json"));
         unified.bind(secondId);
@@ -1111,7 +1477,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         unified.values[0].setValue(-9, sendNotificationSync);
         require(std::abs(rackSession.document.original.layers[1].effects[0].parameters[0] + 9) < 1e-8 &&
                     rackSession.document.original.layers[1].hosted.slots[0].settings == externalBefore,
-                "Shared stock selection edits only its stock effect: " + String(rackSession.document.original.layers[1].effects[0].parameters[0], 12));
+                "Shared stock selection edits only its stock effect: " +
+                    String(rackSession.document.original.layers[1].effects[0].parameters[0], 12));
         unified.selectExternalSlot(externalId);
         require(!visibleButtons(unified).contains("Show stock insert parameters") &&
                     visibleButtons(unified).contains("Effect actions"),

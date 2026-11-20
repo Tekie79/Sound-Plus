@@ -2,8 +2,28 @@
 #include <cstdlib>
 #include <cmath>
 #include <unistd.h>
+namespace
+{
+juce::String topology()
+{
+    auto *mode = std::getenv("SOUNDPLUS_FIXTURE_TOPOLOGY");
+    return mode ? juce::String(mode) : juce::String();
+}
+
+} // namespace
 class Fixture final : public juce::AudioProcessor
 {
+    static BusesProperties fixtureBuses()
+    {
+        BusesProperties p;
+        if (topology() == "midi-only")
+            return p;
+        p = p.withInput("Main", juce::AudioChannelSet::stereo(), true)
+                .withOutput("Main", juce::AudioChannelSet::stereo(), true);
+        if (topology() == "optional" || topology() == "mandatory")
+            p = p.withInput("Sidechain", juce::AudioChannelSet::stereo(), true);
+        return p;
+    }
     juce::AudioParameterFloat *gain, *latency, *creative, *tail, *bias;
     juce::AudioParameterBool *invert;
     juce::AudioParameterChoice *mode;
@@ -12,10 +32,7 @@ class Fixture final : public juce::AudioProcessor
     float randomGain = .5f + juce::Random::getSystemRandom().nextFloat() * .5f;
 
   public:
-    Fixture()
-        : AudioProcessor(BusesProperties()
-                             .withInput("Main", juce::AudioChannelSet::stereo(), true)
-                             .withOutput("Main", juce::AudioChannelSet::stereo(), true))
+    Fixture() : AudioProcessor(fixtureBuses())
     {
         if (auto *test = std::getenv("SOUNDPLUS_FIXTURE_SCAN_BEHAVIOR"))
         {
@@ -52,15 +69,15 @@ class Fixture final : public juce::AudioProcessor
     }
     bool acceptsMidi() const override
     {
-        return false;
+        return topology() == "midi" || topology() == "midi-only";
     }
     bool producesMidi() const override
     {
-        return false;
+        return topology() == "midi" || topology() == "midi-only";
     }
     bool isMidiEffect() const override
     {
-        return false;
+        return topology() == "midi-only";
     }
     double getTailLengthSeconds() const override
     {
@@ -68,7 +85,12 @@ class Fixture final : public juce::AudioProcessor
     }
     bool isBusesLayoutSupported(const BusesLayout &b) const override
     {
-        return b.inputBuses.size() == 1 && b.outputBuses.size() == 1 &&
+        auto aux = topology() == "optional" || topology() == "mandatory";
+        if (topology() == "mandatory")
+            return false; // Deliberately unsupported required processing topology.
+        if (aux && (b.inputBuses.size() != 2 || (topology() == "mandatory" && b.inputBuses[1].isDisabled())))
+            return false;
+        return b.inputBuses.size() == (aux ? 2 : 1) && b.outputBuses.size() == 1 &&
                b.getMainInputChannelSet() == b.getMainOutputChannelSet() &&
                b.getMainInputChannelSet().size() >= 1 && b.getMainInputChannelSet().size() <= 16
 #if SOUNDPLUS_FIXTURE_STEREO
@@ -97,8 +119,14 @@ class Fixture final : public juce::AudioProcessor
             std::fill(c.begin(), c.end(), 0.f);
         position = 0;
     }
-    void processBlock(juce::AudioBuffer<float> &b, juce::MidiBuffer &) override
+    void processBlock(juce::AudioBuffer<float> &b, juce::MidiBuffer &midi) override
     {
+        if (topology() == "midi")
+        {
+            if (!midi.isEmpty())
+                std::abort();
+            midi.addEvent(juce::MidiMessage::noteOn(1, 60, (juce::uint8)100), 0);
+        }
         if (sleepMs)
             juce::Thread::sleep(sleepMs);
         if (mode->getIndex() == 3)

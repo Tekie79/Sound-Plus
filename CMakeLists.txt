@@ -154,21 +154,28 @@ endif()
 if(BUILD_TESTING)
   juce_add_plugin(SoundPlusFixture COMPANY_NAME "SoundPlus QA" PLUGIN_MANUFACTURER_CODE SpQA
     PLUGIN_CODE SpF1 FORMATS VST3 PRODUCT_NAME "SoundPlus QA Effect" COPY_PLUGIN_AFTER_BUILD FALSE
-    VST3_CATEGORIES Fx IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE)
+    VST3_CATEGORIES Fx IS_SYNTH FALSE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT TRUE)
   target_sources(SoundPlusFixture PRIVATE tests/PluginFixture.cpp)
   target_compile_definitions(SoundPlusFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0 SOUNDPLUS_FIXTURE_STEREO=0)
   target_link_libraries(SoundPlusFixture PRIVATE juce::juce_audio_processors)
   juce_add_plugin(SoundPlusStereoFixture COMPANY_NAME "SoundPlus QA" PLUGIN_MANUFACTURER_CODE SpQA
     PLUGIN_CODE SpF2 FORMATS VST3 PRODUCT_NAME "SoundPlus QA Stereo" COPY_PLUGIN_AFTER_BUILD FALSE
-    VST3_CATEGORIES Fx IS_SYNTH FALSE NEEDS_MIDI_INPUT FALSE NEEDS_MIDI_OUTPUT FALSE)
+    VST3_CATEGORIES Fx IS_SYNTH FALSE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT TRUE)
   target_sources(SoundPlusStereoFixture PRIVATE tests/PluginFixture.cpp)
   target_compile_definitions(SoundPlusStereoFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0 SOUNDPLUS_FIXTURE_STEREO=1)
   target_link_libraries(SoundPlusStereoFixture PRIVATE juce::juce_audio_processors)
+  juce_add_plugin(SoundPlusInstrumentFixture COMPANY_NAME "SoundPlus QA" PLUGIN_MANUFACTURER_CODE SpQA
+    PLUGIN_CODE SpF3 FORMATS VST3 PRODUCT_NAME "SoundPlus QA Instrument" COPY_PLUGIN_AFTER_BUILD FALSE
+    VST3_CATEGORIES Instrument Synth IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE)
+  target_sources(SoundPlusInstrumentFixture PRIVATE tests/PluginFixture.cpp)
+  target_compile_definitions(SoundPlusInstrumentFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0 SOUNDPLUS_FIXTURE_STEREO=0)
+  target_link_libraries(SoundPlusInstrumentFixture PRIVATE juce::juce_audio_processors)
+
 endif()
 
 if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp)
-  add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusPlugin)
+  add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusInstrumentFixture_VST3 SoundPlusPlugin)
   add_test(NAME plugin_processing COMMAND SoundPlusTests --plugin-processing "${CMAKE_BINARY_DIR}/plugin-processing-test-output" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
   set_tests_properties(plugin_processing PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE ENVIRONMENT "SOUNDPLUS_QUALIFY_AU=1")
 endif()

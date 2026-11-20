@@ -9,6 +9,9 @@ juce::String processingHash(const juce::File &);
 std::vector<juce::File> defaultVst3Locations();
 juce::String pluginEffectGroup(const juce::var &);
 juce::String pluginFormatLabel(const juce::var &);
+inline constexpr int pluginProbePolicy = 2;
+juce::Array<juce::var> pluginCandidateRows(const juce::var &, const ChannelLayout &, const juce::String &,
+                                           bool attentionOnly);
 void saveProcessingJson(const juce::File &, const juce::var &);
 juce::var loadProcessingJson(const juce::File &);
 struct PluginInput
@@ -31,7 +34,8 @@ class PluginWorker
     juce::var call(
         juce::var, const juce::File &workspace, int timeoutMs,
         const std::function<bool()> &cancelled = [] { return false; });
-    juce::File executable;
+    juce::File executable, lastRequest;
+    juce::var lastDiagnostics;
 };
 class PluginCatalog
 {
@@ -39,7 +43,8 @@ class PluginCatalog
     explicit PluginCatalog(juce::File storage) : file(std::move(storage)) {}
     // Worker-thread only. One child per changed candidate. Failed unchanged candidates stay quarantined.
     juce::var scan(PluginWorker &, const std::vector<juce::File> &, bool retry, const std::function<bool()> &,
-                   const std::function<void(juce::var)> & = {}, bool registeredAudioUnits = false);
+                   const std::function<void(juce::var)> & = {}, bool registeredAudioUnits = false,
+                   const juce::String &targetPath = {});
     juce::var snapshot() const;
 
   private:

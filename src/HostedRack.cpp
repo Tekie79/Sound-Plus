@@ -66,7 +66,7 @@ void validateHostedRack(const HostedRack &r)
         {
             int index = (int)parameter["index"];
             double value = (double)parameter["value"];
-            if (index < 0 || index >= 512 || !indices.insert(index).second || !std::isfinite(value) ||
+            if (index < 0 || index >= 16384 || !indices.insert(index).second || !std::isfinite(value) ||
                 value < 0 || value > 1)
                 throw std::runtime_error("Invalid hosted parameter identity/value");
         }

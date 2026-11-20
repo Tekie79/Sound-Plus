@@ -1,0 +1,93 @@
+{
+  "helperSha256": "9a90bd249ff87be34b32f7b7c46c5e286bb73adc474690a5e7f36b8fa84e4341",
+  "results": [
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/EnveLover.vst3",
+      "format": "VST3",
+      "architecture": "x86_64",
+      "version": "1.0.3",
+      "bundleId": "com.PressPlay.vst3.EnveLover",
+      "elapsedMs": 21.438083000248298,
+      "exit": 0,
+      "reply": {
+        "protocol": 1,
+        "error": "No native arm64 VST3 effect found (corrupt, incompatible architecture or unsupported bundle)"
+      }
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3",
+      "format": "VST3",
+      "architecture": "x86_64 arm64",
+      "version": "1.0.0",
+      "bundleId": "com.yourcompany.LV50A",
+      "elapsedMs": 17009.25920897862,
+      "exit": "timeout17s",
+      "reply": {}
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+      "format": "VST3",
+      "architecture": "x86_64 arm64",
+      "version": "2.5.15",
+      "bundleId": "com.Youlean.vst3.Youlean-Loudness-Meter-2",
+      "elapsedMs": 340.5368750100024,
+      "exit": 0,
+      "reply": {
+        "plugins": [
+          {
+            "name": "Youlean Loudness Meter 2",
+            "vendor": "Youlean",
+            "version": "2.5.15",
+            "format": "VST3",
+            "category": "Fx|Analyzer",
+            "architecture": "arm64+x86_64",
+            "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+            "fingerprint": "3ed43bfed460a0f8c7e821522f77d9e3036f46c6de3e70fa39daf9cc9123f066",
+            "instrument": false,
+            "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"Youlean Loudness Meter 2\" format=\"VST3\" category=\"Fx|Analyzer\"\r\n        manufacturer=\"Youlean\" version=\"2.5.15\" file=\"/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3\"\r\n        uniqueId=\"8eadedc1\" isInstrument=\"0\" fileTime=\"1a0d7cd0608\" infoUpdateTime=\"1a1f7b2881f\"\r\n        numInputs=\"24\" numOutputs=\"24\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"49907184\"/>\r\n",
+            "id": "VST3-Youlean Loudness Meter 2-1caa29dc-8eadedc1",
+            "layouts": [
+              "mono-v1",
+              "stereo-v1",
+              "lcr-v1",
+              "quad-v1",
+              "5.1-rear-v1",
+              "7.1-v1"
+            ],
+            "reason": ""
+          }
+        ],
+        "protocol": 1
+      }
+    },
+    {
+      "path": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3",
+      "format": "VST3",
+      "architecture": "x86_64 arm64",
+      "version": "2.3.0",
+      "bundleId": "ch.toguaudioline.talreverb3",
+      "elapsedMs": 130.4638339788653,
+      "exit": 0,
+      "reply": {
+        "plugins": [
+          {
+            "name": "TAL-Reverb-3",
+            "vendor": "TAL-Togu Audio Line",
+            "version": "2.3.0",
+            "format": "VST3",
+            "category": "Fx",
+            "architecture": "arm64+x86_64",
+            "path": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3",
+            "fingerprint": "a7c34b4f78cae6f452d4a7d6efd9c35edb098c3fba305c9bfd4d939a8565ab6f",
+            "instrument": false,
+            "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"TAL-Reverb-3\" format=\"VST3\" category=\"Fx\" manufacturer=\"TAL-Togu Audio Line\"\r\n        version=\"2.3.0\" file=\"/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3\"\r\n        uniqueId=\"45487f22\" isInstrument=\"0\" fileTime=\"175db081388\" infoUpdateTime=\"1a1f7b287ea\"\r\n        numInputs=\"2\" numOutputs=\"2\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"5deeeafb\"/>\r\n",
+            "id": "VST3-TAL-Reverb-3-29a99d5-45487f22",
+            "layouts": [],
+            "reason": "MIDI/instruments are not supported"
+          }
+        ],
+        "protocol": 1
+      }
+    }
+  ]
+}

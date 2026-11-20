@@ -12,8 +12,12 @@ class HostedRackView final : public juce::Component
         juce::String document, variation, layer;
         uint64_t generation = 0;
     };
-    HostedRackView(DesignSession &s, bool master, juce::File registry, bool embeddedView = false)
-        : session(s), isMaster(master), storage(std::move(registry)), embedded(embeddedView)
+    using EditorInvoker = std::function<juce::var(juce::var, const juce::File &, const juce::File &,
+                                                  const std::function<bool()> &)>;
+    HostedRackView(DesignSession &s, bool master, juce::File registry, bool embeddedView = false,
+                   EditorInvoker invokeEditor = {})
+        : session(s), isMaster(master), storage(std::move(registry)), embedded(embeddedView),
+          editorInvoker(std::move(invokeEditor))
     {
         for (auto *c : std::initializer_list<juce::Component *>{
                  &title, &slots, &add, &remove, &up, &down, &bypass, &rackBypass, &transfer, &savePreset,
@@ -68,6 +72,9 @@ class HostedRackView final : public juce::Component
     }
     ~HostedRackView() override
     {
+        for (auto &edit : editors)
+            *edit->cancel = true;
+        editors.clear();
         ++*epoch;
         ++*availabilityEpoch;
         worker.finish({});
@@ -114,6 +121,7 @@ class HostedRackView final : public juce::Component
     }
     void refresh()
     {
+        reconcileEditors();
         auto *rack = find(owner);
         probeAvailability(rack);
         bool editable = rack && !session.takeBusy() && session.document.activeTake.isEmpty();
@@ -254,6 +262,7 @@ class HostedRackView final : public juce::Component
             "Persistent external chain follows stock inserts; master processing remains separate. "
             "Hosted take recording is not yet qualified.");
         resized();
+        reportHeight();
     }
     int preferredHeight() const
     {
@@ -293,6 +302,39 @@ class HostedRackView final : public juce::Component
     bool isMaster, embedded;
     juce::File storage;
     Owner owner;
+    int reportedHeight = -1;
+    void reportHeight()
+    {
+        auto height = preferredHeight();
+        if (height != reportedHeight)
+        {
+            reportedHeight = height;
+            if (onHeightChange)
+                onHeightChange();
+        }
+    }
+
+    EditorInvoker editorInvoker;
+    struct EditorTask
+    {
+        Owner owner;
+        juce::String slot;
+        std::shared_ptr<std::atomic<bool>> cancel = std::make_shared<std::atomic<bool>>(false);
+        std::shared_ptr<std::atomic<bool>> done = std::make_shared<std::atomic<bool>>(false);
+        SerialWorker worker;
+    };
+    std::vector<std::unique_ptr<EditorTask>> editors;
+    void reconcileEditors()
+    {
+        for (auto &edit : editors)
+        {
+            auto *rack = find(edit->owner);
+            if (!rack || std::none_of(rack->slots.begin(), rack->slots.end(),
+                                      [&](auto &slot) { return slot.id == edit->slot; }))
+                *edit->cancel = true;
+        }
+        std::erase_if(editors, [](auto &edit) { return edit->done->load(); });
+    }
     SerialWorker worker;
     std::shared_ptr<std::atomic<uint64_t>> epoch = std::make_shared<std::atomic<uint64_t>>(0);
     juce::Label title, feedback;
@@ -303,6 +345,8 @@ class HostedRackView final : public juce::Component
         {
             feedback.setText(message, juce::dontSendNotification);
             feedback.setTooltip(message);
+            resized();
+            reportHeight();
         }
     }
     juce::ComboBox slots;
@@ -530,83 +574,167 @@ class HostedRackView final : public juce::Component
                     });
             });
     }
-    struct Chooser final : juce::Component
+    struct Chooser final : juce::Component, juce::ListBoxModel
     {
-        juce::TextEditor search;
-        juce::ComboBox available;
-        ui::TextActionButton scan{"Rescan"}, retry{"Retry failed"};
+        juce::TextEditor search, details;
+        juce::ListBox available{"Installed effects", this};
+        ui::TextActionButton scan{"Rescan"}, retry{"Retry selected"}, insert{"Add effect"},
+            attention{"Needs attention"};
         IconButton location{"Add VST3 folder", ActionIcon::folder};
-        juce::Label status;
-        std::vector<juce::var> choices;
+        juce::Label status, requested;
+        juce::Array<juce::var> choices;
         juce::var snapshot;
+        ChannelLayout expected;
         std::function<void(juce::var)> choose;
         ui::LookAndFeel look;
         ~Chooser() override
         {
+            available.setModel(nullptr);
             setLookAndFeel(nullptr);
         }
-        Chooser()
+        Chooser(ChannelLayout layout, const juce::String &ownerName) : expected(layout)
         {
             setLookAndFeel(&look);
-            setSize(480, 160);
+            setSize(560, 420);
             for (auto *c : std::initializer_list<juce::Component *>{&search, &available, &scan, &retry,
-                                                                    &location, &status})
+                                                                    &insert, &attention, &location, &status,
+                                                                    &requested, &details})
                 addAndMakeVisible(c);
-            search.setTextToShowWhenEmpty("Search effect, vendor or category", ui::muted);
+            search.setTextToShowWhenEmpty("Search name, vendor, format or reason", ui::muted);
+            search.setTitle("Search installed effects");
             search.onTextChange = [this] { populate(); };
-            available.onChange = [this]
+            requested.setText(ownerName + " · " + layoutName(expected) + " main bus",
+                              juce::dontSendNotification);
+            requested.setColour(juce::Label::textColourId, ui::muted);
+            requested.setFont(juce::FontOptions(12.f));
+            attention.setClickingTogglesState(true);
+            attention.onClick = [this] { populate(); };
+            details.setMultiLine(true);
+            details.setReadOnly(true);
+            details.setTitle("Selected effect diagnostics");
+            available.setRowHeight(44);
+            available.setColour(juce::ListBox::backgroundColourId, ui::background);
+            insert.onClick = [this] { loadSelected(); };
+            insert.setEnabled(false);
+            retry.setEnabled(false);
+        }
+        int getNumRows() override
+        {
+            return choices.size();
+        }
+        juce::String getNameForRow(int row) override
+        {
+            if (!juce::isPositiveAndBelow(row, choices.size()))
+                return {};
+            auto p = choices[row];
+            return p["name"].toString() + " / " + p["vendor"].toString() + " / " + p["format"].toString() +
+                   " / " + p["architecture"].toString() + " / " + p["status"].toString() + " / " +
+                   p["reason"].toString();
+        }
+        void paintListBoxItem(int row, juce::Graphics &g, int width, int height, bool selected) override
+        {
+            if (!juce::isPositiveAndBelow(row, choices.size()))
+                return;
+            auto p = choices[row];
+            if (selected)
             {
-                int i = available.getSelectedId() - 1;
-                if (juce::isPositiveAndBelow(i, (int)choices.size()) && choose)
-                    choose(choices[(size_t)i]);
-            };
+                g.setColour(ui::accent.withAlpha(.15f));
+                g.fillRect(0, 0, width, height);
+            }
+            g.setColour(ui::text);
+            g.setFont(juce::FontOptions(12.f, juce::Font::bold));
+            g.drawText(p["name"].toString(), 10, 2, width - 20, 20, juce::Justification::centredLeft, true);
+            g.setColour(ui::muted);
+            g.setFont(juce::FontOptions(11.f));
+            g.drawText(p["vendor"].toString() + " · " + p["format"].toString() + " · " +
+                           p["architecture"].toString() + " · " + p["status"].toString(),
+                       10, 22, width - 20, 18, juce::Justification::centredLeft, true);
+        }
+        void selectedRowsChanged(int row) override
+        {
+            if (!juce::isPositiveAndBelow(row, choices.size()))
+            {
+                insert.setEnabled(false);
+                retry.setEnabled(false);
+                details.clear();
+                return;
+            }
+            auto p = choices[row];
+            insert.setEnabled((bool)p["canInsert"]);
+            retry.setEnabled(!(bool)p["canInsert"]);
+            juce::StringArray layouts;
+            if (auto *a = p["layouts"].getArray())
+                for (auto &l : *a)
+                    layouts.add(l.toString());
+            auto text = p["status"].toString() + " / stage: " + p["stage"].toString() + "\n" +
+                        p["reason"].toString() + "\nRequested: " + layoutName(expected) + " · Supported: " +
+                        (layouts.isEmpty() ? "not established" : layouts.joinIntoString(", ")) +
+                        "\nLast attempt: " + p["lastAttempt"].toString() + "\n" + p["path"].toString();
+            if (p["diagnostics"]["stderr"].toString().isNotEmpty())
+                text += "\nLog: " + p["diagnostics"]["stderr"].toString();
+            details.setText(text, false);
+        }
+        void listBoxItemDoubleClicked(int, const juce::MouseEvent &) override
+        {
+            loadSelected();
+        }
+        void returnKeyPressed(int) override
+        {
+            loadSelected();
+        }
+        void loadSelected()
+        {
+            int row = available.getSelectedRow();
+            if (juce::isPositiveAndBelow(row, choices.size()) && (bool)choices[row]["canInsert"] && choose)
+                choose(choices[row]["plugin"]);
+        }
+        juce::String selectedPath() const
+        {
+            int row = available.getSelectedRow();
+            return juce::isPositiveAndBelow(row, choices.size()) ? choices[row]["path"].toString()
+                                                                 : juce::String();
         }
         void resized() override
         {
-            search.setBounds(10, 10, 460, 28);
-            available.setBounds(10, 46, 460, 30);
-            scan.setBounds(10, 84, 120, 28);
-            retry.setBounds(138, 84, 120, 28);
-            location.setBounds(266, 84, 30, 28);
-            status.setBounds(10, 118, 460, 32);
+            search.setBounds(12, 10, 536, 28);
+            requested.setBounds(12, 40, 340, 22);
+            attention.setBounds(388, 40, 160, 24);
+            available.setBounds(12, 70, 536, 144);
+            details.setBounds(12, 220, 536, 104);
+            scan.setBounds(12, 332, 100, 28);
+            retry.setBounds(118, 332, 130, 28);
+            location.setBounds(254, 332, 30, 28);
+            insert.setBounds(416, 332, 132, 28);
+            status.setBounds(12, 366, 536, 42);
+            status.setFont(juce::FontOptions(11.f));
+            status.setColour(juce::Label::textColourId, ui::muted);
         }
         void populate()
         {
-            choices.clear();
-            available.clear(juce::dontSendNotification);
-            if (auto *entries = snapshot["entries"].getArray())
-                for (auto &entry : *entries)
-                    if (auto *plugins = entry["plugins"].getArray())
-                        for (auto &p : *plugins)
-                            if (p["reason"].toString().isEmpty() &&
-                                (p["name"].toString() + p["vendor"].toString() + p["category"].toString() +
-                                 pluginFormatLabel(p))
-                                    .containsIgnoreCase(search.getText()))
-                                choices.push_back(p);
-            std::sort(choices.begin(), choices.end(),
-                      [](auto &a, auto &b)
-                      {
-                          return (pluginEffectGroup(a) + a["name"].toString())
-                                     .compareIgnoreCase(pluginEffectGroup(b) + b["name"].toString()) < 0;
-                      });
-            juce::String group;
-            for (size_t i = 0; i < choices.size(); ++i)
-            {
-                auto &p = choices[i];
-                auto g = pluginEffectGroup(p);
-                if (g != group)
-                {
-                    available.addSectionHeading(g);
-                    group = g;
-                }
-                available.addItem(p["name"].toString() + " / " + pluginFormatLabel(p), (int)i + 1);
-            }
+            auto path = selectedPath();
+            choices = pluginCandidateRows(snapshot, expected, search.getText(), attention.getToggleState());
+            available.updateContent();
+            int selected = 0;
+            for (int i = 0; i < choices.size(); ++i)
+                if (choices[i]["path"].toString() == path)
+                    selected = i;
+            if (!choices.isEmpty())
+                available.selectRow(selected);
+            else
+                available.deselectAllRows();
+            selectedRowsChanged(available.getSelectedRow());
+            available.repaint();
         }
     };
     juce::Component::SafePointer<Chooser> chooser;
     void showChooser(const Owner &target, juce::Rectangle<int> anchor = {})
     {
-        auto content = std::make_unique<Chooser>();
+        juce::String ownerName = isMaster ? "Master" : "Track";
+        if (!isMaster)
+            for (auto &l : session.document.activeMix().layers)
+                if (l.id == target.layer)
+                    ownerName = l.name;
+        auto content = std::make_unique<Chooser>(bus(target), ownerName);
         chooser = content.get();
         juce::Component::SafePointer<HostedRackView> safe(this);
         auto view = chooser;
@@ -618,15 +746,15 @@ class HostedRackView final : public juce::Component
                 if (auto *box = view->template findParentComponentOfClass<juce::CallOutBox>())
                     box->dismiss();
         };
-        content->scan.onClick = [safe]
+        content->scan.onClick = [safe, view]
         {
-            if (safe)
-                safe->scanChooser(false);
+            if (safe && view)
+                safe->scanChooser(false, {}, view->selectedPath());
         };
-        content->retry.onClick = [safe]
+        content->retry.onClick = [safe, view]
         {
-            if (safe)
-                safe->scanChooser(true);
+            if (safe && view)
+                safe->scanChooser(true, {}, view->selectedPath());
         };
         content->location.onClick = [safe, view]
         {
@@ -646,7 +774,8 @@ class HostedRackView final : public juce::Component
         juce::CallOutBox::launchAsynchronously(std::move(content),
                                                anchor.isEmpty() ? add.getScreenBounds() : anchor, nullptr);
     }
-    void scanChooser(bool retryQuarantine, std::vector<juce::File> extraRoots = {})
+    void scanChooser(bool retryQuarantine, std::vector<juce::File> extraRoots = {},
+                     const juce::String &targetPath = {})
     {
         auto *panel = chooser.getComponent();
         if (!panel)
@@ -662,7 +791,7 @@ class HostedRackView final : public juce::Component
                                               : "Checking installed effects...",
                               juce::dontSendNotification);
         worker.submit(
-            [safe, view, registry, exe, folder, retryQuarantine, extraRoots, serial, gate]
+            [safe, view, registry, exe, folder, retryQuarantine, extraRoots, targetPath, serial, gate]
             {
                 juce::var snapshot;
                 juce::String failure;
@@ -697,7 +826,8 @@ class HostedRackView final : public juce::Component
                                 roots.push_back(root);
                         PluginWorker worker(exe);
                         snapshot = catalog.scan(
-                            worker, roots, retryQuarantine, [=] { return gate->load() != serial; }, {}, true);
+                            worker, roots, retryQuarantine, [=] { return gate->load() != serial; }, {}, true,
+                            targetPath);
                     }
                 }
                 catch (const std::exception &e)
@@ -711,11 +841,10 @@ class HostedRackView final : public juce::Component
                             return;
                         view->snapshot = snapshot;
                         view->populate();
-                        view->status.setText(
-                            failure.isEmpty()
-                                ? "Choose an effect; actual source bus is negotiated before insertion"
-                                : failure,
-                            juce::dontSendNotification);
+                        view->status.setText(failure.isEmpty() ? "Scan complete. Select a candidate for its "
+                                                                 "exact layout and failure details."
+                                                               : failure,
+                                             juce::dontSendNotification);
                     });
             });
     }
@@ -845,58 +974,95 @@ class HostedRackView final : public juce::Component
         settings.getDynamicObject()->setProperty("block", 512);
         auto exe = helper().getSiblingFile("SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor");
         auto folder = storage.getParentDirectory().getChildFile("insert-work");
-        auto gate = epoch;
-        auto serial = ++*gate;
+        reconcileEditors();
+        if (editors.size() >= 8)
+        {
+            showFeedback(target, "Close an editor first (maximum eight)");
+            return;
+        }
+        for (auto &edit : editors)
+            if (edit->owner.document == target.document && edit->owner.variation == target.variation &&
+                edit->owner.layer == target.layer && edit->owner.generation == target.generation &&
+                edit->slot == id)
+            {
+                showFeedback(target, "This effect's editor is already open");
+                return;
+            }
+        auto task = std::make_unique<EditorTask>();
+        task->owner = target;
+        task->slot = id;
+        auto cancel = task->cancel, done = task->done;
+        auto invoke = editorInvoker;
         juce::Component::SafePointer<HostedRackView> safe(this);
-        feedback.setText("Editor open / apply on close", juce::dontSendNotification);
-        worker.submit(
-            [safe, target, id, original, settings, exe, folder, gate, serial]
+        showFeedback(target, "Editor open / apply on close");
+        task->worker.submit(
+            [safe, target, id, original, settings, exe, folder, cancel, done, invoke]
             {
                 juce::var edited;
-                juce::String failure;
+                juce::String failure, recovery;
+                PluginWorker child(exe);
                 try
                 {
-                    edited = PluginWorker(exe).call(settings, folder, 20 * 60 * 1000,
-                                                    [=] { return gate->load() != serial; });
+                    auto cancelled = [cancel] { return cancel->load(); };
+                    edited = invoke ? invoke(settings, exe, folder, cancelled)
+                                    : child.call(settings, folder, 0, cancelled);
+                    recovery = edited["editorCheckpoint"].toString();
                 }
                 catch (const std::exception &e)
                 {
                     failure = e.what();
+                    recovery = child.lastDiagnostics["editorCheckpoint"].toString();
                 }
+                *done = true;
                 juce::MessageManager::callAsync(
-                    [safe, target, id, original, edited, failure, gate, serial]
+                    [safe, target, id, original, edited, failure, recovery, cancel]
                     {
-                        if (!safe || gate->load() != serial || !safe->find(target))
+                        if (!safe)
                             return;
+                        auto report = [&](const juce::String &text)
+                        {
+                            auto message = text + (recovery.isNotEmpty() ? " / recovery preset: " + recovery
+                                                                         : juce::String());
+                            safe->session.message = message;
+                            safe->showFeedback(target, message);
+                            if (safe->session.onChange)
+                                safe->session.onChange();
+                        };
+                        if (cancel->load() || !safe->find(target))
+                        {
+                            report("Editor owner was removed or changed; completion not applied");
+                            return;
+                        }
                         if (failure.isNotEmpty())
                         {
-                            safe->showFeedback(target, failure);
+                            report(failure);
                             return;
                         }
                         juce::Process::makeForegroundProcess();
                         if (auto *window = safe->getTopLevelComponent())
                             window->toFront(true);
                         bool applied = false;
-                        safe->change(
-                            target, "Apply isolated plugin editor",
-                            [&](auto &rack)
-                            {
-                                for (auto &slot : rack.slots)
-                                    if (slot.id == id && slot.settings == original)
-                                    {
-                                        auto settings = juce::JSON::parse(original);
-                                        for (auto key :
-                                             {"state", "stateHash", "parameters", "program", "programName"})
-                                            settings.getDynamicObject()->setProperty(key, edited[key]);
-                                        slot.settings = juce::JSON::toString(settings, true);
-                                        applied = true;
-                                    }
-                            });
-                        safe->showFeedback(target,
-                                           applied ? "Editor state applied"
-                                                   : "Insert changed; editor result retained in insert-work");
+                        safe->change(target, "Apply isolated plugin editor",
+                                     [&](auto &rack)
+                                     {
+                                         for (auto &slot : rack.slots)
+                                             if (slot.id == id && slot.settings == original)
+                                             {
+                                                 auto s = juce::JSON::parse(original);
+                                                 for (auto key : {"state", "stateHash", "parameters",
+                                                                  "program", "programName"})
+                                                     s.getDynamicObject()->setProperty(key, edited[key]);
+                                                 slot.settings = juce::JSON::toString(s, true);
+                                                 applied = true;
+                                             }
+                                     });
+                        if (applied)
+                            safe->showFeedback(target, "Editor state applied");
+                        else
+                            report("Insert state changed; editor state retained in insert-work");
                     });
             });
+        editors.push_back(std::move(task));
     }
     void preset(bool writing)
     {

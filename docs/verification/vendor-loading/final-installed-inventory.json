@@ -1,0 +1,42 @@
+[
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/EnveLover.vst3",
+    "format": "VST3",
+    "version": "1.0.3",
+    "binary": "/Library/Audio/Plug-Ins/VST3/EnveLover.vst3/Contents/MacOS/EnveLover",
+    "binarySha256": "5f38d8166cca3764a7c638d3a49603ab532c422554bc60fe5842850e8678da16",
+    "architectures": "x86_64"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3",
+    "format": "VST3",
+    "version": "1.0.0",
+    "binary": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3/Contents/MacOS/LV50A",
+    "binarySha256": "7e8277a0645699618ce525015ce6e4d95b32e0eb4f2a1d36b99b06db44bbfa09",
+    "architectures": "x86_64 arm64"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+    "format": "VST3",
+    "version": "2.14",
+    "binary": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3/Contents/MacOS/OldSkoolVerb",
+    "binarySha256": "3e92b7bf994483aa77fea461b1d5419906e0417da7564dc116ebe41482f4eb8b",
+    "architectures": "x86_64 arm64"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3",
+    "format": "VST3",
+    "version": "2.3.0",
+    "binary": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3/Contents/MacOS/TAL-Reverb-3",
+    "binarySha256": "bde9cbce2a765769696753918f2fda8f0d54fcd3b6bdeac7cd877d582a0f6490",
+    "architectures": "x86_64 arm64"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+    "format": "VST3",
+    "version": "2.5.15",
+    "binary": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3/Contents/MacOS/Youlean Loudness Meter 2",
+    "binarySha256": "d76a985b4a078f1b8cac077d58f93ecc9958298dbaf9a6a488b825c33c8ffa0a",
+    "architectures": "x86_64 arm64"
+  }
+]

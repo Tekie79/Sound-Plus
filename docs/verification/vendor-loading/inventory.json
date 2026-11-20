@@ -1,0 +1,135 @@
+[
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/EnveLover.vst3",
+    "format": "VST3",
+    "architecture": "x86_64",
+    "version": "1.0.3",
+    "bundleId": "com.PressPlay.vst3.EnveLover"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/LV50A.vst3",
+    "format": "VST3",
+    "architecture": "x86_64 arm64",
+    "version": "1.0.0",
+    "bundleId": "com.yourcompany.LV50A"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+    "format": "VST3",
+    "architecture": "x86_64 arm64",
+    "version": "2.5.15",
+    "bundleId": "com.Youlean.vst3.Youlean-Loudness-Meter-2"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST3/TAL-Reverb-3.vst3",
+    "format": "VST3",
+    "architecture": "x86_64 arm64",
+    "version": "2.3.0",
+    "bundleId": "ch.toguaudioline.talreverb3"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST/Youlean Loudness Meter 2.vst",
+    "format": "VST2 (unsupported adapter)",
+    "architecture": "x86_64 arm64",
+    "version": "2.5.15",
+    "bundleId": "com.Youlean.vst.Youlean-Loudness-Meter-2"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST/TAL-Reverb-3.vst",
+    "format": "VST2 (unsupported adapter)",
+    "architecture": "x86_64 arm64",
+    "version": "2.3.0",
+    "bundleId": "ch.toguaudioline.talreverb3"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/VST/EnveLover.vst",
+    "format": "VST2 (unsupported adapter)",
+    "architecture": "x86_64",
+    "version": "1.0.3",
+    "bundleId": "com.PressPlay.vst.EnveLover"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/EnveLover.component",
+    "format": "AUv2",
+    "architecture": "x86_64",
+    "version": "1.0.3",
+    "bundleId": "com.PressPlay.audiounit.EnveLover"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Object Renderer.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFObjectRenderer"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Channels.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFChannels"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Channels Renderer.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFChannelsRenderer"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Object to Scene.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFObjectToScene"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Scene.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFScene"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Object.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFObject"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Scene Renderer.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFSceneRenderer"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/Youlean Loudness Meter 2.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.5.15",
+    "bundleId": "com.Youlean.audiounit.Youlean-Loudness-Meter-2"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/TAL-Reverb-3.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.3.0",
+    "bundleId": "ch.toguaudioline.talreverb3"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Export.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFExport"
+  },
+  {
+    "path": "/Library/Audio/Plug-Ins/Components/ASAF Panner.component",
+    "format": "AUv2",
+    "architecture": "x86_64 arm64",
+    "version": "2.1.13",
+    "bundleId": "com.Apple.ASAFPanner"
+  }
+]

@@ -1,0 +1,36 @@
+[
+  {
+    "document": "build/vendor-loading/qualified/LV50A/stereo-v1-track.soundplus",
+    "revision": 8,
+    "output": "/Users/harvest/Music/SoundPlus/Renders/LV50A vendor QA stereo-v1-r7-571fe382.wav",
+    "sha256": "2713054b68cfbae43e986c14e710932d9358872e898db9cd89df06dfdefeb2a2",
+    "dimensions": {
+      "channels": 2,
+      "rate": 48000,
+      "bits": 24,
+      "frames": 96000
+    },
+    "rawPass": "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/2ad4b151cc314bd9afb103ce11816e3e/Raw.wav",
+    "rawHash": "3bf5c4100ad32de5e75037b91291dd68f032dbbaaeaedef9fa6963fae9a1b8bb",
+    "maxQuantizationError": 5.9604531088552903e-08,
+    "tailPeak": 8.821487426757812e-06,
+    "qualification": "Finalized native render dimensions/hash/raw-authority quantization audit; no listening or receiving-app claim"
+  },
+  {
+    "document": "build/vendor-loading/final-qualified/OldSkoolVerb/stereo-v1-track.soundplus",
+    "revision": 10,
+    "output": "/Users/harvest/Music/SoundPlus/Renders/OldSkoolVerb vendor QA stereo-v1-r7-04eb6eb9.wav",
+    "sha256": "83c3eb80619e51ad79ea1c301ff2d8cb6287bd7177dd94695bd4cc00b0b1e796",
+    "dimensions": {
+      "channels": 2,
+      "rate": 48000,
+      "bits": 24,
+      "frames": 96000
+    },
+    "rawPass": "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/93807480c84e488f8570c190259015b3/Raw.wav",
+    "rawHash": "9d4a6d5ffc1d383d197752b5fa174fc520b497f4a95f800ae1b099e0d0be8b12",
+    "maxQuantizationError": 5.960464477539063e-08,
+    "tailPeak": 5.269050598144531e-05,
+    "qualification": "Finalized native render dimensions/hash/raw-authority quantization audit; no listening or receiving-app claim"
+  }
+]

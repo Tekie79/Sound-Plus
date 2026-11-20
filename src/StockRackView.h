@@ -401,6 +401,7 @@ class StockRackView final : public juce::Component
         parameters.setButtonText(expanded ? "Hide stock insert parameters" : "Show stock insert parameters");
         updating = false;
         resized();
+        reportHeight();
     }
     void resized() override
     {
@@ -433,6 +434,17 @@ class StockRackView final : public juce::Component
     }
 
   private:
+    int reportedHeight = -1;
+    void reportHeight()
+    {
+        auto height = preferredHeight();
+        if (height != reportedHeight)
+        {
+            reportedHeight = height;
+            if (onHeightChange)
+                onHeightChange();
+        }
+    }
     std::unique_ptr<HostedRackView> external;
     juce::Label heading;
     IconButton add{"Add effect", ActionIcon::addEffect, true}, remove{"Remove insert", ActionIcon::trash},

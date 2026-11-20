@@ -1,0 +1,19 @@
+{
+  "status": "Not qualified for inline control",
+  "plugin": "TAL-Reverb-3 2.3.0",
+  "classId": "VST3-TAL-Reverb-3-29a99d5-45487f22",
+  "nativeFormat": "VST3 arm64",
+  "finalHelperSha256": "d63b7d015f732dd2e353d592c2eba081ceb8dcd8bea9d24ac2f55e3e9261761f",
+  "dry": 0,
+  "wetCases": [
+    0,
+    0.8
+  ],
+  "outputHashes": [
+    "b060b984ba93b3ec49e14c5085474daf2b5925e65b43267d686e9748d1aac09f",
+    "b060b984ba93b3ec49e14c5085474daf2b5925e65b43267d686e9748d1aac09f"
+  ],
+  "identicalOutputs": true,
+  "finding": "Advertised-ID normalized updates are visible in host/controller descriptions. Development queue trace observed corresponding getPoint reads in processor calls; component state and PCM did not reflect those changes. Root cause remains unresolved. Temporary SDK tracing was removed and original JUCE bytes restored.",
+  "native": "Enumerated and inserted on Track/Master; editor opened and returned state. This is not full inline processing qualification."
+}

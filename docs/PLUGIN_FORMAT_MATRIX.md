@@ -6,7 +6,10 @@ This is a capability/evidence matrix, not a promise that every installed effect 
 |---|---|---|---|---|
 | Owned QA VST3 | Isolated standard/custom registry | Persistent rack, finite Process, state round-trip; named-layout regression suite | Generic controls and isolated editor path | Implemented; see final report evidence |
 | Apple AUDelay AUv2 | Registered system component, resolved bundle fingerprint | Finite and persistent PCM / JSON state, Mono/Stereo/5.1 Side/Rear | Isolated native editor, apply on close | Implemented; see final report evidence |
-| Other vendor VST3 / AUv2 | Supported discovery adapters | Instance-specific negotiation required | Instance-specific | Not vendor-qualified by owned fixtures |
+| LV50A 1.0.0 / OldSkoolVerb 2.14 VST3 | Installed native universal bundles, exact classes | Fresh Mono/Stereo Track/Master inline/state/render checks | Separate apply-on-close windows/recall observed; Voxengo custom gestures open | See [vendor report](REAL_VENDOR_LOADING_REPORT.md) |
+| TAL-Reverb-3 2.3.0 VST3 | Loading barriers corrected | Inline PCM response unresolved | Editor opens/returns state | Partial; not inline-qualified |
+| Youlean Loudness Meter 2 VST3 | Enumerates with advertised layouts | Actual meter response unqualified | Not audible-instance-qualified | Not counted as processing qualification |
+| Other vendor VST3 / AUv2 | Supported discovery adapters | Instance-specific negotiation required | Instance-specific | Not qualified by owned fixtures |
 | AUv3 extension | Registered enumeration, asynchronous JUCE instantiation path | No available runtime fixture qualified | Unqualified | Open requirement |
 | VST2.x | No adapter compiled | Absent lawful SDK/distribution path in this checkout | Unavailable | Required / blocked |
 | Intel-only / 32-bit / Windows | No bridge | No processing qualification | Unavailable | Unsupported platform combinations |
@@ -23,4 +26,4 @@ This is a capability/evidence matrix, not a promise that every installed effect 
 
 Per-rack limits: eight slots, 512 parameters per slot, 16-channel fixed exchange, up to one second reported latency. Whole mix: at most 16 populated external racks / 64 slots / 24 MiB serialized settings. These bounds are not a real-time throughput guarantee.
 
-No MIDI/instrument, sidechain, automatic multi-mono, silent surround adapter or cross-format substitution is implemented. A mono insert before a surround panner stays mono. Master processing uses the actual ordered output bus. Physical surround monitoring, human listening and receiving-app save/quit/reopen remain separate evidence.
+Optional MIDI-capable audio effects may run with empty MIDI input and discarded output; MIDI routing and instruments remain unsupported. Optional declared auxiliary buses are disabled only when accepted. Sidechain routing, automatic multi-mono, silent surround adaptation and cross-format substitution are not implemented. A mono insert before a surround panner stays mono. Master processing uses the actual ordered output bus. Physical surround monitoring, human listening and receiving-app save/quit/reopen remain separate evidence.

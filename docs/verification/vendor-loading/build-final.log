@@ -1,0 +1,32 @@
+[0/2] Re-checking globbed directories...
+[1/5] Building CXX object CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:235:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  235 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:288:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  288 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+2 warnings generated.
+[2/5] Building CXX object CMakeFiles/SoundPlusPluginEditor.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:235:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  235 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:288:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  288 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+2 warnings generated.
+[3/5] Linking CXX executable SoundPlusPlugin_artefacts/Release/SoundPlusPlugin
+[4/5] Linking CXX executable SoundPlusPluginEditor_artefacts/Release/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor
+[5/5] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus

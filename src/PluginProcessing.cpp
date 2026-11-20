@@ -1,6 +1,7 @@
 #include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <spawn.h>
+#include <fcntl.h>
 #include <sys/wait.h>
 #include <sys/resource.h>
 #include <libproc.h>
@@ -237,21 +238,40 @@ juce::var PluginWorker::call(juce::var request, const juce::File &workspace, int
     workspace.createDirectory();
     auto id = juce::Uuid().toString();
     auto in = workspace.getChildFile(id + "-request.json"), out = workspace.getChildFile(id + "-reply.json");
+    lastRequest = in;
+    lastDiagnostics = object();
+    auto diagnostics = workspace.getChildFile(id + "-diagnostic.json");
+    auto health = workspace.getChildFile(id + "-health");
+    auto checkpoint = workspace.getChildFile(id + "-editor-recovery.soundplus-insert");
+    auto log = workspace.getChildFile(id + "-stderr.log");
+    set(request, "diagnostic", diagnostics.getFullPathName());
+    if (request["mode"].toString() == "editor")
+    {
+        set(request, "health", health.getFullPathName());
+        set(request, "checkpoint", checkpoint.getFullPathName());
+    }
     set(request, "protocol", 1);
     set(request, "reply", out.getFullPathName());
     saveProcessingJson(in, request);
     auto exe = executable.getFullPathName().toStdString(), arg = in.getFullPathName().toStdString();
     char *args[]{exe.data(), arg.data(), nullptr};
     pid_t pid = -1;
-    require(posix_spawn(&pid, exe.c_str(), nullptr, nullptr, args, environ) == 0,
-            "Cannot launch plugin worker");
+    posix_spawn_file_actions_t actions;
+    posix_spawn_file_actions_init(&actions);
+    posix_spawn_file_actions_addopen(&actions, STDOUT_FILENO, log.getFullPathName().toRawUTF8(),
+                                     O_CREAT | O_TRUNC | O_WRONLY, 0600);
+    posix_spawn_file_actions_adddup2(&actions, STDOUT_FILENO, STDERR_FILENO);
+    auto spawned = posix_spawn(&pid, exe.c_str(), &actions, nullptr, args, environ);
+    posix_spawn_file_actions_destroy(&actions);
+    require(spawned == 0, "Cannot launch plugin worker");
     auto start = juce::Time::getMillisecondCounterHiRes();
     int status = 0;
     bool done = false, memoryLimit = false;
     struct rusage usage
     {
     };
-    while (juce::Time::getMillisecondCounterHiRes() - start < timeout && !cancel())
+    bool unhealthy = false;
+    while ((timeout <= 0 || juce::Time::getMillisecondCounterHiRes() - start < timeout) && !cancel())
     {
         auto n = wait4(pid, &status, WNOHANG, &usage);
         if (n == pid)
@@ -261,6 +281,14 @@ juce::var PluginWorker::call(juce::var request, const juce::File &workspace, int
         }
         if (n < 0 && errno != EINTR)
             break;
+        if (timeout <= 0 && juce::Time::getMillisecondCounterHiRes() - start > 30000 &&
+            (!health.existsAsFile() || juce::Time::getCurrentTime().toMilliseconds() -
+                                               health.getLastModificationTime().toMilliseconds() >
+                                           15000))
+        {
+            unhealthy = true;
+            break;
+        }
         rusage_info_v4 footprint{};
         if (proc_pid_rusage(pid, RUSAGE_INFO_V4, (rusage_info_t *)&footprint) == 0 &&
             footprint.ri_phys_footprint > 1024ULL * 1024 * 1024)
@@ -270,23 +298,61 @@ juce::var PluginWorker::call(juce::var request, const juce::File &workspace, int
         }
         juce::Thread::sleep(10);
     }
+    auto retainDiagnostic = [&]
+    {
+        try
+        {
+            if (diagnostics.existsAsFile())
+                lastDiagnostics = loadProcessingJson(diagnostics);
+        }
+        catch (...)
+        {
+        }
+        set(lastDiagnostics, "request", in.getFullPathName());
+        set(lastDiagnostics, "stderr", log.getFullPathName());
+        set(lastDiagnostics, "elapsedMs", juce::Time::getMillisecondCounterHiRes() - start);
+        set(lastDiagnostics, "exit", WIFEXITED(status) ? WEXITSTATUS(status) : -1);
+        if (checkpoint.existsAsFile())
+            set(lastDiagnostics, "editorCheckpoint", checkpoint.getFullPathName());
+    };
     if (!done)
     {
         kill(pid, SIGKILL);
         while (waitpid(pid, &status, 0) < 0 && errno == EINTR)
         {
         };
+        retainDiagnostic();
+        set(lastDiagnostics, "failureKind",
+            cancel()      ? "cancelled"
+            : unhealthy   ? "editor-unresponsive"
+            : memoryLimit ? "memory-limit"
+                          : "timeout");
+        auto detail = " / stage: " + lastDiagnostics["stage"].toString() +
+                      " / diagnostics: " + diagnostics.getFullPathName();
         throw std::runtime_error(
-            cancel()      ? "Cancelled"
-            : memoryLimit ? "Plugin worker exceeded 1 GiB resident-memory limit; candidate quarantined"
-                          : "Plugin worker timed out; candidate quarantined");
+            (cancel()      ? "Cancelled"
+             : memoryLimit ? "Plugin worker exceeded 1 GiB resident-memory limit; candidate quarantined"
+             : unhealthy   ? "Plugin editor heartbeat stalled; recoverable checkpoint retained"
+                           : "Plugin worker timed out; candidate quarantined") +
+            detail.toStdString());
     }
+    retainDiagnostic();
     require(WIFEXITED(status) && WEXITSTATUS(status) == 0 && out.existsAsFile(),
             "Plugin worker crashed or exited without a result; candidate quarantined");
     auto reply = loadProcessingJson(out);
     require((int)reply["protocol"] == 1, "Incompatible plugin worker");
+    if (reply["diagnostics"].isObject())
+    {
+        auto value = reply["diagnostics"].clone();
+        for (auto key : {"request", "stderr", "elapsedMs", "exit", "editorCheckpoint"})
+            if (lastDiagnostics.hasProperty(key))
+                set(value, key, lastDiagnostics[key]);
+        lastDiagnostics = value;
+    }
     auto error = reply["error"].toString();
-    require(error.isEmpty(), error);
+    require(error.isEmpty(), error + " / stage: " + lastDiagnostics["stage"].toString());
+    if (lastDiagnostics["editorCheckpoint"].toString().isNotEmpty())
+        set(reply, "editorCheckpoint", lastDiagnostics["editorCheckpoint"]);
     set(reply, "workerMs", juce::Time::getMillisecondCounterHiRes() - start);
     set(reply, "workerPeakBytes", (juce::int64)usage.ru_maxrss);
     set(reply, "workerCpuMs",
@@ -300,7 +366,8 @@ juce::var PluginCatalog::snapshot() const
 }
 juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File> &roots, bool retry,
                               const std::function<bool()> &cancel,
-                              const std::function<void(juce::var)> &progress, bool registeredAudioUnits)
+                              const std::function<void(juce::var)> &progress, bool registeredAudioUnits,
+                              const juce::String &targetPath)
 {
     auto cache = snapshot();
     juce::Array<juce::var> entries;
@@ -323,7 +390,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         set(descriptor, "format", "VST3");
         descriptions.push_back(descriptor);
     }
-    if (registeredAudioUnits)
+    if (registeredAudioUnits && targetPath.isEmpty())
     {
         auto request = object();
         set(request, "mode", "enumerate-au");
@@ -331,6 +398,41 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         if (auto *units = registry["candidates"].getArray())
             for (auto &unit : *units)
                 descriptions.push_back(unit);
+    }
+    constexpr int probePolicy = pluginProbePolicy;
+    if (targetPath.isNotEmpty())
+    {
+        descriptions.clear();
+        if (auto *old = cache["entries"].getArray())
+            for (auto &v : *old)
+            {
+                auto descriptor = v.clone();
+                if (descriptor["format"].toString().isEmpty())
+                    set(descriptor, "format",
+                        v["path"].toString().startsWith("AudioUnit:") ? "AudioUnit" : "VST3");
+                if (descriptor["format"].toString() == "AudioUnit" &&
+                    descriptor["bundle"].toString().isEmpty() && v["plugins"].size())
+                    set(descriptor, "bundle", v["plugins"][0]["bundle"]);
+                descriptions.push_back(descriptor);
+            }
+    }
+    else
+    {
+        juce::StringArray legacy;
+        for (auto &root : roots)
+        {
+            auto directory = root.getSiblingFile("VST");
+            if (directory.isDirectory())
+                for (auto &f : directory.findChildFiles(juce::File::findDirectories, true, "*.vst"))
+                    legacy.addIfNotAlreadyThere(f.getFullPathName());
+        }
+        for (auto &path : legacy)
+        {
+            auto d = object();
+            set(d, "path", path);
+            set(d, "format", "VST2");
+            descriptions.push_back(d);
+        }
     }
     require(descriptions.size() <= 2048, "Too many plugin candidates (limit 2048)");
     for (auto &descriptor : descriptions)
@@ -341,19 +443,45 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         if (seen.contains(path))
             continue;
         seen.add(path);
-        auto e = object();
+        if (targetPath.isNotEmpty() && path != targetPath)
+        {
+            entries.add(descriptor);
+            continue;
+        }
+        auto e = descriptor.clone();
         set(e, "path", path);
+        set(e, "format", descriptor["format"]);
         try
         {
             bool au = descriptor["format"].toString() == "AudioUnit";
-            require(descriptor["error"].toString().isEmpty(), descriptor["error"].toString());
+            if (!au && descriptor["format"].toString() != "VST3")
+            {
+                set(e, "error",
+                    "Legacy VST2 adapter unavailable: required SDK/distribution path not established");
+                set(e, "failureStage", "unsupported-format");
+                set(e, "quarantined", false);
+                entries.add(e);
+                continue;
+            }
+            if (targetPath.isEmpty())
+                require(descriptor["error"].toString().isEmpty(), descriptor["error"].toString());
             auto hash = au ? descriptor["fingerprint"].toString() : pluginFingerprint(juce::File(path));
             require(hash.isNotEmpty(), "Missing plugin bundle fingerprint");
             bool reused = false;
             if (auto *old = cache["entries"].getArray())
                 for (auto &v : *old)
                     if (v["path"].toString() == path && v["fingerprint"].toString() == hash &&
-                        !(retry && v["error"].toString().isNotEmpty()))
+                        (int)v["probePolicy"] == probePolicy && targetPath.isEmpty() &&
+                        !(retry && (v["error"].toString().isNotEmpty() ||
+                                    [&]
+                                    {
+                                        if (auto *ps = v["plugins"].getArray())
+                                            for (auto &p : *ps)
+                                                if (p["reason"].toString().isNotEmpty() ||
+                                                    p["layouts"].size() == 0)
+                                                    return true;
+                                        return false;
+                                    }())))
                     {
                         e = v;
                         reused = true;
@@ -364,6 +492,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             else
             {
                 ++launched;
+                set(e, "probePolicy", probePolicy);
+                set(e, "lastAttempt", juce::Time::getCurrentTime().toISO8601(true));
                 set(e, "fingerprint", hash);
                 auto cmd = descriptor.clone();
                 set(cmd, "mode", "scan");
@@ -375,7 +505,9 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                     set(e, "plugins", result["plugins"]);
                     set(e, "scanMs", result["workerMs"]);
                     set(e, "workerPeakBytes", result["workerPeakBytes"]);
-                    set(e, "architecture", "arm64");
+                    set(e, "architecture", worker.lastDiagnostics["architecture"]);
+                    set(e, "diagnostics", worker.lastDiagnostics);
+                    set(e, "quarantined", false);
                     set(e, "error", "");
                 }
                 catch (const std::exception &x)
@@ -383,7 +515,13 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                     if (cancel())
                         throw QueryCancelled();
                     set(e, "error", juce::String(x.what()));
-                    set(e, "quarantined", true);
+                    set(e, "diagnostics", worker.lastDiagnostics);
+                    set(e, "failureStage", worker.lastDiagnostics["stage"]);
+                    set(e, "architecture", worker.lastDiagnostics["architecture"]);
+                    set(e, "quarantined",
+                        worker.lastDiagnostics["failureKind"].toString() == "timeout" ||
+                            worker.lastDiagnostics["failureKind"].toString() == "memory-limit" ||
+                            worker.lastDiagnostics["exit"].toString() != "0");
                 }
             }
         }
@@ -419,7 +557,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     set(result, "version", 1);
     set(result, "registeredAudioUnits", registeredAudioUnits);
     set(result, "entries", entries);
-    set(result, "roots", savedRoots);
+    set(result, "roots", targetPath.isEmpty() ? juce::var(savedRoots) : cache["roots"]);
     set(result, "launched", launched);
     set(result, "cacheHits", hits);
     // Commit only a complete snapshot, including roots. Interrupted scans leave
@@ -522,5 +660,101 @@ juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, b
         pending.deleteRecursively();
         throw;
     }
+}
+} // namespace sp
+
+namespace sp
+{
+juce::Array<juce::var> pluginCandidateRows(const juce::var &snapshot, const ChannelLayout &bus,
+                                           const juce::String &query, bool attentionOnly)
+{
+    juce::Array<juce::var> rows;
+    if (auto *entries = snapshot["entries"].getArray())
+        for (auto &entry : *entries)
+        {
+            juce::Array<juce::var> classes;
+            if (auto *ps = entry["plugins"].getArray())
+                classes = *ps;
+            if (classes.isEmpty())
+            {
+                auto p = object();
+                auto path = entry["path"].toString();
+                set(p, "name",
+                    path.startsWith("AudioUnit:") ? path.fromFirstOccurrenceOf(":", false, false)
+                                                  : juce::File(path).getFileNameWithoutExtension());
+                set(p, "format",
+                    entry["format"].toString().isEmpty()
+                        ? (path.startsWith("AudioUnit:") ? "AudioUnit" : "VST3")
+                        : entry["format"]);
+                set(p, "architecture", entry["architecture"]);
+                classes.add(p);
+            }
+            for (auto &p : classes)
+            {
+                auto row = object();
+                set(row, "plugin", p);
+                set(row, "path", entry["path"]);
+                set(row, "name", p["name"]);
+                set(row, "vendor", p["vendor"].toString().isEmpty() ? "Vendor not reported" : p["vendor"]);
+                set(row, "format", pluginFormatLabel(p));
+                set(row, "architecture",
+                    p["architecture"].toString().isNotEmpty()       ? p["architecture"]
+                    : entry["architecture"].toString().isNotEmpty() ? entry["architecture"]
+                                                                    : juce::var("Not established"));
+                auto reason = entry["error"].toString().isNotEmpty() ? entry["error"].toString()
+                                                                     : p["reason"].toString();
+                juce::String state = "Available", stageName = p["failureStage"].toString();
+                if (stageName.isEmpty())
+                    stageName = entry["failureStage"].toString();
+                if (stageName.isEmpty())
+                    stageName = entry["diagnostics"]["stage"].toString();
+                if (p["format"].toString() == "VST2")
+                    state = "Unsupported format";
+                else if (reason.containsIgnoreCase("arm64 required"))
+                    state = "Unsupported architecture";
+                else if ((bool)entry["quarantined"])
+                    state = "Quarantined";
+                else if (reason.isNotEmpty())
+                    state = "Failed";
+                else if ((int)entry["probePolicy"] != pluginProbePolicy)
+                    state = "Needs rescan";
+                else
+                {
+                    bool compatible = false;
+                    if (auto *layouts = p["layouts"].getArray())
+                        for (auto &l : *layouts)
+                            if (l.toString() == bus.id)
+                                compatible = true;
+                    if (!compatible)
+                    {
+                        state = "Incompatible layout";
+                        reason = "Requested " + layoutName(bus) +
+                                 "; no exact supported main layout. No conversion will be applied.";
+                        stageName = "main-bus-negotiation";
+                    }
+                }
+                if (state == "Needs rescan")
+                    reason = "Cached result predates the current host probing policy";
+                set(row, "status", state);
+                set(row, "reason", reason);
+                set(row, "stage", stageName);
+                set(row, "canInsert", state == "Available");
+                set(row, "lastAttempt", entry["lastAttempt"]);
+                set(row, "layouts", p["layouts"]);
+                set(row, "diagnostics", entry["diagnostics"]);
+                auto haystack = p["name"].toString() + p["vendor"].toString() + p["category"].toString() +
+                                p["format"].toString() + state + reason + entry["path"].toString();
+                if (haystack.containsIgnoreCase(query) && (!attentionOnly || state != "Available"))
+                    rows.add(row);
+            }
+        }
+    std::sort(rows.begin(), rows.end(),
+              [](auto &a, auto &b)
+              {
+                  if ((bool)a["canInsert"] != (bool)b["canInsert"])
+                      return (bool)a["canInsert"];
+                  return a["name"].toString().compareIgnoreCase(b["name"].toString()) < 0;
+              });
+    return rows;
 }
 } // namespace sp
