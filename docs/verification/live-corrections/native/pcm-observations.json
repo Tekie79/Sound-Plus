@@ -1,0 +1,82 @@
+[
+  {
+    "label": "initial",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 400000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144
+  },
+  {
+    "label": "native-minus12",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 1274496,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.018056212998651483
+  },
+  {
+    "label": "native-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 2937472,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144
+  },
+  {
+    "label": "undo-minus12",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 3614848,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.018056212998651483
+  },
+  {
+    "label": "redo-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 4095104,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144
+  },
+  {
+    "label": "after-close",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 5736576,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144
+  },
+  {
+    "label": "after-reopen",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 6704256,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144
+  },
+  {
+    "label": "old-before",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 539776,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.06729201627509315
+  },
+  {
+    "label": "old-mute-attempt",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 1421440,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.06729201627509315
+  },
+  {
+    "label": "old-drag-attempt",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/live-corrections/native/captures/audition-1.f32",
+    "firstFrame": 2937472,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.06729201627509315
+  }
+]

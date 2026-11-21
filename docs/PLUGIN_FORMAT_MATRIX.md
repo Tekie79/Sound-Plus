@@ -27,3 +27,7 @@ This is a capability/evidence matrix, not a promise that every installed effect 
 Per-rack limits: eight slots, 512 parameters per slot, 16-channel fixed exchange, up to one second reported latency. Whole mix: at most 16 populated external racks / 64 slots / 24 MiB serialized settings. These bounds are not a real-time throughput guarantee.
 
 Optional MIDI-capable audio effects may run with empty MIDI input and discarded output; MIDI routing and instruments remain unsupported. Optional declared auxiliary buses are disabled only when accepted. Sidechain routing, automatic multi-mono, silent surround adaptation and cross-format substitution are not implemented. A mono insert before a surround panner stays mono. Master processing uses the actual ordered output bus. Physical surround monitoring, human listening and receiving-app save/quit/reopen remain separate evidence.
+
+Correction-source execution and vendor reruns are recorded separately in the [Live Insert Correctness and Recovery report](LIVE_INSERT_CORRECTIONS_REPORT.md). Owned native-schema/scale and sanitizer tests do not qualify a vendor custom editor or an additional format.
+
+Final correction Release: 30/30 with actual vendor, AUv2 and device branches; final native LV50A and Youlean Track/Master Stereo + exact Rear front-pair reruns pass to the report scope. OldSkoolVerb native custom-input acceptance stays open after renewed unconfirmed gestures. See [new native evidence](verification/live-corrections/native/pcm-recomputed.json); no change to VST2/AUv3 capability status.

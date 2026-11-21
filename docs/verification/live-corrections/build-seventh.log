@@ -1,0 +1,45 @@
+[0/2] Re-checking globbed directories...
+[1/2] Re-running CMake...
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusFixture', which contains spaces.  Use the BUNDLE_ID option to
+  specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:156 (juce_add_plugin)
+
+
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusStereoFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusStereoFixture', which contains spaces.  Use the BUNDLE_ID
+  option to specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:162 (juce_add_plugin)
+
+
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusInstrumentFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusInstrumentFixture', which contains spaces.  Use the BUNDLE_ID
+  option to specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:168 (juce_add_plugin)
+
+
+-- Configuring done (1.2s)
+-- Generating done (0.0s)
+-- Build files have been written to: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+[0/2] Re-checking globbed directories...
+[1/83] Generating juce_binarydata_ModelManifest/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ModelManifest/JuceLibraryCode/ModelManifestData.h
+[2/80] Generating juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData42.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData43.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData44.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData45.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData46.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData47.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData48.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData49.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData50.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData51.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData52.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData53.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData54.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData55.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData56.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData57.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData58.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData59.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData60.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData61.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData62.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData63.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData64.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData65.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData66.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData67.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData68.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/IconAssets.h
+[3/4] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[4/4] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests

@@ -1,0 +1,18 @@
+{
+  "build/live-corrections/native/SoundPlus.app/Contents/MacOS/SoundPlus": {
+    "sha256": "96318d052e77de41d1f286e482d3208214488c30ff8a1d670eaa5cbfc627aa18",
+    "matchesFinalRootBuild": true
+  },
+  "build/live-corrections/native/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": {
+    "sha256": "71bbaed00ee1a0ea9aeefb0be593e0bb5a0cdc941d9991aa0be61f921b23c512",
+    "matchesFinalRootBuild": true
+  },
+  "build/live-corrections/native/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": {
+    "sha256": "ab52438fbce7892986aca13339e9511ed24bb06bf17bd846b56b259d78a05d52",
+    "matchesFinalRootBuild": true
+  },
+  "build/live-corrections/native/SoundPlus.app/Contents/Helpers/SoundPlusAudio": {
+    "sha256": "f5086a1d56c09d86e1ce510f16d6b3a045905da0d0efb7489657eee1a93ec8a0",
+    "matchesFinalRootBuild": true
+  }
+}

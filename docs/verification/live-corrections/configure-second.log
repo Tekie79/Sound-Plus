@@ -1,0 +1,38 @@
+-- Configuring juceaide
+-- Building juceaide
+-- Exporting juceaide
+-- Testing juceaide
+-- Finished setting up juceaide
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusFixture', which contains spaces.  Use the BUNDLE_ID option to
+  specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:156 (juce_add_plugin)
+
+
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusStereoFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusStereoFixture', which contains spaces.  Use the BUNDLE_ID
+  option to specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:162 (juce_add_plugin)
+
+
+CMake Warning at vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:1714 (message):
+  Target SoundPlusInstrumentFixture has JUCE_BUNDLE_ID 'com.SoundPlus
+  QA.SoundPlusInstrumentFixture', which contains spaces.  Use the BUNDLE_ID
+  option to specify a valid ID.
+Call Stack (most recent call first):
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2098 (_juce_set_fallback_properties)
+  vendor/JUCE-8.0.6/extras/Build/CMake/JUCEUtils.cmake:2181 (_juce_initialise_target)
+  CMakeLists.txt:168 (juce_add_plugin)
+
+
+-- Configuring done (1.1s)
+-- Generating done (0.1s)
+-- Build files have been written to: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build

@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 29: native_view_scale
+1/2 Test #29: native_view_scale ................   Passed    0.37 sec
+    Start 30: plugin_live
+2/2 Test #30: plugin_live ......................   Passed   31.42 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =  31.79 sec

@@ -1,0 +1,22 @@
+[0/2] Re-checking globbed directories...
+[1/21] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerTakes.cpp.o
+[2/21] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerPools.cpp.o
+[3/21] Building CXX object CMakeFiles/SoundPlus.dir/src/Main.cpp.o
+[4/21] Building CXX object CMakeFiles/SoundPlus.dir/src/Benchmark.cpp.o
+[5/21] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[6/21] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerLayouts.cpp.o
+[7/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PoolCorrectionTests.cpp.o
+[8/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[9/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[10/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ViewCommandTests.cpp.o
+[11/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeIntegrityTests.cpp.o
+[12/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelCorrectionsTests.cpp.o
+[13/21] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerView.cpp.o
+[14/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[15/21] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+[16/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[17/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerTakes.cpp.o
+[18/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerPools.cpp.o
+[19/21] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[20/21] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[21/21] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests

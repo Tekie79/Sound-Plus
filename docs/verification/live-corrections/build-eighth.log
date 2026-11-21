@@ -1,0 +1,530 @@
+[0/2] Re-checking globbed directories...
+[1/138] Generating juce_binarydata_ModelManifest/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_ModelManifest/JuceLibraryCode/ModelManifestData.h
+[2/135] Generating juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData1.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData2.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData3.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData4.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData5.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData6.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData7.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData8.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData9.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData10.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData11.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData12.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData13.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData14.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData15.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData16.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData17.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData18.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData19.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData20.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData21.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData22.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData23.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData24.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData25.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData26.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData27.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData28.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData29.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData30.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData31.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData32.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData33.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData34.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData35.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData36.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData37.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData38.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData39.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData40.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData41.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData42.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData43.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData44.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData45.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData46.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData47.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData48.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData49.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData50.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData51.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData52.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData53.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData54.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData55.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData56.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData57.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData58.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData59.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData60.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData61.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData62.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData63.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData64.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData65.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData66.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData67.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/BinaryData68.cpp, juce_binarydata_SoundPlusIcons/JuceLibraryCode/IconAssets.h
+[3/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceTests.cpp.o
+[4/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SemanticTests.cpp.o
+[5/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/Tests.cpp.o
+[6/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SimilarTests.cpp.o
+[7/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignTests.cpp.o
+[8/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TransportInteractionTests.cpp.o
+[9/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/CanvasGestureTests.cpp.o
+[10/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignSessionTests.cpp.o
+[11/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/FadeTests.cpp.o
+[12/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PlaybackSearchTests.cpp.o
+[13/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerCanvas.cpp.o
+[14/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SourcePoolTests.cpp.o
+[15/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/AudioEngine.cpp.o
+[16/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PoolCorrectionTests.cpp.o
+[17/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeIntegrityTests.cpp.o
+[18/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DeviceCaptureTests.cpp.o
+[19/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/IconTests.cpp.o
+[20/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelCorrectionsTests.cpp.o
+[21/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[22/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/AudioHealthTests.cpp.o
+[23/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceStateTests.cpp.o
+[24/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/WaveformPreviewTests.cpp.o
+[25/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ReliabilityTests.cpp.o
+[26/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[27/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeTests.cpp.o
+[28/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/LibraryView.cpp.o
+[29/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[30/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PluginProcessPanel.cpp.o
+[31/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ViewCommandTests.cpp.o
+[32/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[33/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerTakes.cpp.o
+[34/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerPools.cpp.o
+[35/59] Building CXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors_ara.cpp.o
+[36/59] Building CXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors_lv2_libs.cpp.o
+[37/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PoolMappingReview.cpp.o
+[38/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourcePoolView.cpp.o
+[39/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourceCard.cpp.o
+[40/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PerformView.cpp.o
+[41/59] Building C object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics_Sheenbidi.c.o
+[42/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_utils/juce_audio_utils.mm.o
+[43/59] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[44/59] Building CXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_core/juce_core_CompilationTime.cpp.o
+[45/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_gui_extra/juce_gui_extra.mm.o
+[46/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_events/juce_events.mm.o
+[47/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_data_structures/juce_data_structures.mm.o
+[48/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[49/59] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[50/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_devices/juce_audio_devices.mm.o
+[51/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_cryptography/juce_cryptography.mm.o
+[52/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_basics/juce_audio_basics.mm.o
+[53/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_core/juce_core.mm.o
+[54/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_formats/juce_audio_formats.mm.o
+[55/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_dsp/juce_dsp.mm.o
+[56/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics.mm.o
+[57/59] Building CXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics_Harfbuzz.cpp.o
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics_Harfbuzz.cpp:92:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb.hh:548:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:192:33: note: in instantiation of member function 'CrapHelper<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>::get_crap' requested here
+  192 |   static Type & get () { return Crap (Type); }
+      |                                 ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-array.hh:83:36: note: in instantiation of member function 'CrapOrNullHelper<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>::get' requested here
+   83 |     if (unlikely (!length)) return CrapOrNull (Type);
+      |                                    ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:198:50: note: expanded from macro 'CrapOrNull'
+  198 | #define CrapOrNull(Type) CrapOrNullHelper<Type>::get ()
+      |                                                  ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:89:41: note: in instantiation of member function 'hb_array_t<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>::__item__' requested here
+   89 |   item_t operator * () { return thiz()->__item__ (); }
+      |                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:456:55: note: in instantiation of member function 'hb_iter_t<hb_array_t<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>, hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t &>::operator*' requested here
+  456 |   { while (it && !hb_has (p.get (), hb_get (f.get (), *it))) ++it; }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:482:12: note: in instantiation of member function 'hb_filter_iter_t<hb_array_t<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>, bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>::hb_filter_iter_t' requested here
+  482 |   { return hb_filter_iter_t<Iter, Pred, Proj> (it, p, f); }
+      |            ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:369:51: note: in instantiation of function template specialization 'hb_filter_iter_factory_t<bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>::operator()<hb_array_t<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>, nullptr>' requested here
+  369 | operator | (Lhs&& lhs, Rhs&& rhs) HB_AUTO_RETURN (std::forward<Rhs> (rhs) (std::forward<Lhs> (lhs)))
+      |                                                   ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-map.hh:424:5: note: in instantiation of function template specialization 'operator|<hb_array_t<hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::item_t>, hb_filter_iter_factory_t<bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>, nullptr>' requested here
+  424 |     | hb_filter (&item_t::is_real)
+      |     ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-map.hh:448:13: note: in instantiation of member function 'hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::iter_items' requested here
+  448 |     + this->iter_items ()
+      |             ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-multimap.hh:78:36: note: in instantiation of member function 'hb_hashmap_t<unsigned int, hb_vector_t<unsigned int>>::values_ref' requested here
+   78 |     for (const auto &m : multiples.values_ref ())
+      |                                    ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_hashmap_t<unsigned int, Triple>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_hashmap_t<unsigned int, Triple>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:219:30: note: in instantiation of member function 'CrapHelper<hb_hashmap_t<unsigned int, Triple>>::get_crap' requested here
+  219 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-layout-common.hh:2687:15: note: in instantiation of function template specialization 'hb_vector_t<hb_hashmap_t<unsigned int, Triple>>::push<hb_hashmap_t<unsigned int, Triple>>' requested here
+ 2687 |       regions.push (std::move (axis_tuples));
+      |               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_inc_bimap_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_inc_bimap_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:210:30: note: in instantiation of member function 'CrapHelper<hb_inc_bimap_t>::get_crap' requested here
+  210 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-layout-common.hh:3350:40: note: in instantiation of member function 'hb_vector_t<hb_inc_bimap_t>::push' requested here
+ 3350 |       hb_inc_bimap_t *map = inner_maps.push ();
+      |                                        ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::tuple_delta_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::tuple_delta_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:219:30: note: in instantiation of member function 'CrapHelper<OT::tuple_delta_t>::get_crap' requested here
+  219 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-common.hh:331:11: note: in instantiation of function template specialization 'hb_vector_t<OT::tuple_delta_t>::push<const OT::tuple_delta_t &>' requested here
+  331 |       out.push (*this);
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:192:33: note: in instantiation of member function 'CrapHelper<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>::get_crap' requested here
+  192 |   static Type & get () { return Crap (Type); }
+      |                                 ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-array.hh:83:36: note: in instantiation of member function 'CrapOrNullHelper<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>::get' requested here
+   83 |     if (unlikely (!length)) return CrapOrNull (Type);
+      |                                    ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:198:50: note: expanded from macro 'CrapOrNull'
+  198 | #define CrapOrNull(Type) CrapOrNullHelper<Type>::get ()
+      |                                                  ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:89:41: note: in instantiation of member function 'hb_array_t<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>::__item__' requested here
+   89 |   item_t operator * () { return thiz()->__item__ (); }
+      |                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:456:55: note: in instantiation of member function 'hb_iter_t<hb_array_t<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>, hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t &>::operator*' requested here
+  456 |   { while (it && !hb_has (p.get (), hb_get (f.get (), *it))) ++it; }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:482:12: note: in instantiation of member function 'hb_filter_iter_t<hb_array_t<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>, bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>::hb_filter_iter_t' requested here
+  482 |   { return hb_filter_iter_t<Iter, Pred, Proj> (it, p, f); }
+      |            ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-iter.hh:369:51: note: in instantiation of function template specialization 'hb_filter_iter_factory_t<bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>::operator()<hb_array_t<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>, nullptr>' requested here
+  369 | operator | (Lhs&& lhs, Rhs&& rhs) HB_AUTO_RETURN (std::forward<Rhs> (rhs) (std::forward<Lhs> (lhs)))
+      |                                                   ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-map.hh:424:5: note: in instantiation of function template specialization 'operator|<hb_array_t<hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::item_t>, hb_filter_iter_factory_t<bool (item_t::*)() const, const (unnamed struct at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-algs.hh:228:1) &>, nullptr>' requested here
+  424 |     | hb_filter (&item_t::is_real)
+      |     ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-map.hh:428:13: note: in instantiation of member function 'hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::iter_items' requested here
+  428 |     + this->iter_items ()
+      |             ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-meta.hh:76:55: note: expanded from macro 'HB_AUTO_RETURN'
+   76 | #define HB_AUTO_RETURN(E) -> decltype ((E)) { return (E); }
+      |                                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-common.hh:1153:43: note: in instantiation of member function 'hb_hashmap_t<const hb_vector_t<bool> *, hb_vector_t<char>>::iter_ref' requested here
+ 1153 |       for (const auto& _ : point_data_map.iter_ref ())
+      |                                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::TupleVariationData::tuple_variations_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::TupleVariationData::tuple_variations_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:219:30: note: in instantiation of member function 'CrapHelper<OT::TupleVariationData::tuple_variations_t>::get_crap' requested here
+  219 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-common.hh:1611:12: note: in instantiation of function template specialization 'hb_vector_t<OT::TupleVariationData::tuple_variations_t>::push<OT::TupleVariationData::tuple_variations_t>' requested here
+ 1611 |       vars.push (std::move (var_data_tuples));
+      |            ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_vector_t<int>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_vector_t<int>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<hb_vector_t<int>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-common.hh:1744:23: note: in instantiation of member function 'hb_vector_t<hb_vector_t<int>>::operator[]' requested here
+ 1744 |       if (!(delta_rows[i].resize (num_cols))) return false;
+      |                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::delta_row_encoding_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::delta_row_encoding_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:219:30: note: in instantiation of member function 'CrapHelper<OT::delta_row_encoding_t>::get_crap' requested here
+  219 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-common.hh:1787:19: note: in instantiation of function template specialization 'hb_vector_t<OT::delta_row_encoding_t>::push<OT::delta_row_encoding_t>' requested here
+ 1787 |         encodings.push (std::move (obj));
+      |                   ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::index_map_subset_plan_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::index_map_subset_plan_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<OT::index_map_subset_plan_t>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../OT/glyf/../../hb-ot-var-hvar-table.hh:207:20: note: in instantiation of member function 'hb_vector_t<OT::index_map_subset_plan_t>::operator[]' requested here
+  207 |     index_map_plans[0].init (*index_maps[0], outer_map, inner_sets, plan, false);
+      |                    ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_set_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_set_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<hb_set_t>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-subset-cff-common.hh:387:21: note: in instantiation of member function 'hb_vector_t<hb_set_t>::operator[]' requested here
+  387 |       local_closures[i].clear();
+      |                     ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::parsed_cs_str_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::parsed_cs_str_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<CFF::parsed_cs_str_t>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-subset-cff-common.hh:604:33: note: in instantiation of member function 'hb_vector_t<CFF::parsed_cs_str_t>::operator[]' requested here
+  604 |           return &(*parsed_local_subrs)[context.subr_num];
+      |                                        ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff2_font_dict_values_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff2_font_dict_values_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:456:25: note: in instantiation of member function 'CrapHelper<CFF::cff2_font_dict_values_t>::get_crap' requested here
+  456 |         if (unlikely (font == &Crap (cff2_font_dict_values_t))) goto fail;
+      |                                ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb.hh:273:47: note: expanded from macro 'unlikely'
+  273 | #define unlikely(expr) __builtin_expect (bool(expr), 0)
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:516:39: note: in instantiation of member function 'OT::cff2::accelerator_templ_t<CFF::cff2_private_dict_opset_t, CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>>::accelerator_templ_t' requested here
+  516 |     accelerator_t (hb_face_t *face) : accelerator_templ_t (face) {}
+      |                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:464:2: note: in instantiation of member function 'hb_vector_t<CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>>::operator[]' requested here
+  464 |         privateDicts[i].init ();
+      |         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:516:39: note: in instantiation of member function 'OT::cff2::accelerator_templ_t<CFF::cff2_private_dict_opset_t, CFF::cff2_private_dict_values_base_t<CFF::dict_val_t>>::accelerator_templ_t' requested here
+  516 |     accelerator_t (hb_face_t *face) : accelerator_templ_t (face) {}
+      |                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff2_private_dict_values_base_t<CFF::op_str_t>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff2_private_dict_values_base_t<CFF::op_str_t>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<CFF::cff2_private_dict_values_base_t<CFF::op_str_t>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:464:2: note: in instantiation of member function 'hb_vector_t<CFF::cff2_private_dict_values_base_t<CFF::op_str_t>>::operator[]' requested here
+  464 |         privateDicts[i].init ();
+      |         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff2-table.hh:528:46: note: in instantiation of member function 'OT::cff2::accelerator_templ_t<CFF::cff2_private_dict_opset_subset_t, CFF::cff2_private_dict_values_base_t<CFF::op_str_t>>::accelerator_templ_t' requested here
+  528 |     accelerator_subset_t (hb_face_t *face) : SUPER (face) {}
+      |                                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1159:2: note: in instantiation of member function 'hb_vector_t<CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>>::operator[]' requested here
+ 1159 |         privateDicts[i].init ();
+      |         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1360:39: note: in instantiation of member function 'OT::cff1::accelerator_templ_t<CFF::cff1_private_dict_opset_t, CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>>::accelerator_templ_t' requested here
+ 1360 |     accelerator_t (hb_face_t *face) : SUPER (face)
+      |                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff1_font_dict_values_t' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff1_font_dict_values_t>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:210:30: note: in instantiation of member function 'CrapHelper<CFF::cff1_font_dict_values_t>::get_crap' requested here
+  210 |       return std::addressof (Crap (Type));
+      |                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1172:21: note: in instantiation of member function 'hb_vector_t<CFF::cff1_font_dict_values_t>::push' requested here
+ 1172 |           font = fontDicts.push ();
+      |                            ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1360:39: note: in instantiation of member function 'OT::cff1::accelerator_templ_t<CFF::cff1_private_dict_opset_t, CFF::cff1_private_dict_values_base_t<CFF::dict_val_t>>::accelerator_templ_t' requested here
+ 1360 |     accelerator_t (hb_face_t *face) : SUPER (face)
+      |                                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'CFF::cff1_private_dict_values_base_t<CFF::op_str_t>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<CFF::cff1_private_dict_values_base_t<CFF::op_str_t>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<CFF::cff1_private_dict_values_base_t<CFF::op_str_t>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1159:2: note: in instantiation of member function 'hb_vector_t<CFF::cff1_private_dict_values_base_t<CFF::op_str_t>>::operator[]' requested here
+ 1159 |         privateDicts[i].init ();
+      |         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-ot-cff1-table.hh:1494:46: note: in instantiation of member function 'OT::cff1::accelerator_templ_t<CFF::cff1_private_dict_opset_subset_t, CFF::cff1_private_dict_values_base_t<CFF::op_str_t>>::accelerator_templ_t' requested here
+ 1494 |     accelerator_subset_t (hb_face_t *face) : SUPER (face) {}
+      |                                              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'hb_vector_t<hb_aat_map_t::range_flags_t, true>' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<hb_vector_t<hb_aat_map_t::range_flags_t, true>>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<hb_vector_t<hb_aat_map_t::range_flags_t, true>>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-aat-layout-morx-table.hh:1359:23: note: in instantiation of member function 'hb_vector_t<hb_vector_t<hb_aat_map_t::range_flags_t, true>>::operator[]' requested here
+ 1359 |       map->chain_flags[i].push (hb_aat_map_t::range_flags_t {chain->compile_flags (mapper),
+      |                       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-aat-layout.cc:217:10: note: in instantiation of member function 'AAT::mortmorx<AAT::morx, AAT::ExtendedTypes, 1836020344>::compile_flags' requested here
+  217 |     morx.compile_flags (mapper, map);
+      |          ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::VariationSelectorRecord' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::VariationSelectorRecord>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Var/VARC/../../../hb-open-type.hh:722:37: note: in instantiation of member function 'CrapHelper<OT::VariationSelectorRecord>::get_crap' requested here
+  722 |     if (unlikely (i >= len)) return Crap (Type);
+      |                                     ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-ot-cmap-table.hh:1446:26: note: in instantiation of member function 'OT::ArrayOf<OT::VariationSelectorRecord, OT::IntType<unsigned int>>::operator[]' requested here
+ 1446 |       c->add_link (record[j].defaultUVS, obj_indices[i].first);
+      |                          ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: warning: first argument in call to 'memcpy' is a pointer to non-trivially copyable type 'OT::IndexSubtableRecord' [-Wnontrivial-memcall]
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:186:38: note: in instantiation of function template specialization 'Crap<OT::IndexSubtableRecord>' requested here
+  186 |   static Type & get_crap () { return Crap<Type> (); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-vector.hh:159:14: note: in instantiation of member function 'CrapHelper<OT::IndexSubtableRecord>::get_crap' requested here
+  159 |       return Crap (Type);
+      |              ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:188:38: note: expanded from macro 'Crap'
+  188 | #define Crap(Type) CrapHelper<Type>::get_crap ()
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/OT/Color/CBDT/CBDT.hh:607:66: note: in instantiation of member function 'hb_vector_t<OT::IndexSubtableRecord>::operator[]' requested here
+  607 |       IndexSubtableRecord* record = c->serializer->embed (records[i]);
+      |                                                                  ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/fonts/harfbuzz/hb-null.hh:179:11: note: explicitly cast the pointer to silence this warning
+  179 |   memcpy (obj, std::addressof (Null (Type)), sizeof (*obj));
+      |           ^
+      |           (void*)
+20 warnings generated.
+[58/59] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_gui_basics/juce_gui_basics.mm.o
+[59/59] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests

@@ -1,5 +1,7 @@
 # Live Insert Editing, Metering and State Synchronization
 
+**Latest correction milestone:** [Live Insert Correctness and Recovery](LIVE_INSERT_CORRECTIONS_REPORT.md), source `32a78e2`. The gate and native results below belong to the earlier artifact; see the correction report for new execution and remaining acceptance.
+
 Live native editors now control retained audible insert instances, with coherent state/history and open-editor Save/Render. The final full gate passes 29/29. LV50A and Youlean native cases pass as detailed below; **OldSkoolVerb custom native gesture qualification remains open**, so full two-vendor native acceptance is incomplete.
 
 Started at reviewed `185ed9aac74633e336d24df46a3c40f164af61f9` with a clean tree. Gate A committed as `cdfad9c`; retained-instance architecture as `0e45fd7`; idle capture/native ordering corrections as `1d108b7`. The provisional separate-instance bridge was discarded before Gate B. Original media and durable outputs remain in place. Latest working session is protected separately from generated QA documents.

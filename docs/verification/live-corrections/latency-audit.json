@@ -1,0 +1,483 @@
+{
+  "estimator": "nearest-rank; matching first affected event; deduplicated per generation",
+  "controlToDspMs": {
+    "n": 21,
+    "p50": 6.47225,
+    "p95": 12.816583333333334
+  },
+  "controlToUiReceiptMs": {
+    "n": 21,
+    "p50": 39.833333333333336,
+    "p95": 59.818666666666665
+  },
+  "byKind": {
+    "native": {
+      "controlToDspMs": {
+        "n": 20,
+        "p50": 5.952208333333333,
+        "p95": 9.685166666666667
+      },
+      "controlToUiReceiptMs": {
+        "n": 20,
+        "p50": 38.456583333333334,
+        "p95": 59.61570833333333
+      }
+    },
+    "inline": {
+      "controlToDspMs": {
+        "n": 1,
+        "p50": 37.98941666666666,
+        "p95": 37.98941666666666
+      },
+      "controlToUiReceiptMs": {
+        "n": 1,
+        "p50": 101.29004166666667,
+        "p95": 101.29004166666667
+      }
+    }
+  },
+  "samples": [
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603641506023,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 6,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 1536,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 7.262875,
+      "controlToUiReceiptMs": 38.456583333333334
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603643489191,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 7,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 5120,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 8.916208333333334,
+      "controlToUiReceiptMs": 39.833333333333336
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603645660389,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 8,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 10240,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 5.675416666666667,
+      "controlToUiReceiptMs": 42.855625
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603647532071,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 9,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 12800,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 2.237,
+      "controlToUiReceiptMs": 21.083208333333335
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603649768702,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 10,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 17408,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 6.47225,
+      "controlToUiReceiptMs": 35.72966666666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603651432565,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 11,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 21504,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 0.6099166666666667,
+      "controlToUiReceiptMs": 32.925625
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603653671134,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 12,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 25088,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 3.721125,
+      "controlToUiReceiptMs": 28.748625
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603655628374,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 13,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 29696,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 4.4474583333333335,
+      "controlToUiReceiptMs": 40.81729166666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603657534422,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 14,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 33280,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 12.816583333333334,
+      "controlToUiReceiptMs": 45.39758333333333
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603659641370,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 15,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 38912,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 9.368625,
+      "controlToUiReceiptMs": 53.23079166666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603661655088,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 16,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 41472,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 9.331041666666666,
+      "controlToUiReceiptMs": 21.412125
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603663618778,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 17,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 45056,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 4.567333333333333,
+      "controlToUiReceiptMs": 29.738375
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603665584016,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 18,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 50176,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 8.555291666666667,
+      "controlToUiReceiptMs": 45.32879166666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603667511063,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 19,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 52736,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 1.4890833333333333,
+      "controlToUiReceiptMs": 22.418708333333335
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603669589084,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 20,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 58880,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 0.9955416666666667,
+      "controlToUiReceiptMs": 59.61570833333333
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603671421467,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 21,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 60928,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 9.685166666666667,
+      "controlToUiReceiptMs": 41.94375
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603673360841,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 22,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 65024,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 3.3389166666666665,
+      "controlToUiReceiptMs": 33.99104166666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603675562219,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 23,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 70144,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 5.952208333333333,
+      "controlToUiReceiptMs": 59.818666666666665
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603677605699,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 24,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 72704,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 7.053833333333333,
+      "controlToUiReceiptMs": 31.677041666666668
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603679436116,
+      "kind": "native",
+      "modelSequence": 8,
+      "nativeSequence": 25,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 77824,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 7.433,
+      "controlToUiReceiptMs": 47.30054166666667
+    },
+    {
+      "generation": "80783761bcc94c6bbabf1fed2fe9e622",
+      "eventTicks": 6603709148320,
+      "kind": "inline",
+      "modelSequence": 70,
+      "nativeSequence": 25,
+      "device": {
+        "device": "MacBook Pro Speakers",
+        "sampleRate": 48000.0,
+        "bufferFrames": 512,
+        "activeDeviceOutputChannels": [
+          0,
+          1
+        ],
+        "sourceSample": 139776,
+        "playGeneration": 1,
+        "playing": true
+      },
+      "controlToDspMs": 37.98941666666666,
+      "controlToUiReceiptMs": 101.29004166666667
+    }
+  ],
+  "limits": "UI receipt is not pixel paint; pre-monitor PCM is not physical output or human listening."
+}

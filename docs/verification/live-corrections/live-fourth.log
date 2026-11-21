@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 30: plugin_live
+1/1 Test #30: plugin_live ......................***Failed   17.54 sec
+FAIL after 0 checks: Captured command recipe restores intended native Gain in a fresh processor
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =  17.55 sec
+
+The following tests FAILED:
+	 30 - plugin_live (Failed)
+Errors while running CTest

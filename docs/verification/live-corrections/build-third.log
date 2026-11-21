@@ -1,0 +1,174 @@
+[0/2] Re-checking globbed directories...
+[1/61] Building CXX object CMakeFiles/SoundPlusFixture.dir/tests/PluginFixture.cpp.o
+[2/61] Building CXX object CMakeFiles/SoundPlusStereoFixture.dir/tests/PluginFixture.cpp.o
+[3/61] Building CXX object CMakeFiles/SoundPlusInstrumentFixture.dir/tests/PluginFixture.cpp.o
+[4/61] Linking CXX static library "SoundPlusFixture_artefacts/Release/libSoundPlus QA Effect_SharedCode.a"
+[5/61] Linking CXX static library "SoundPlusStereoFixture_artefacts/Release/libSoundPlus QA Stereo_SharedCode.a"
+[6/61] Linking CXX static library "SoundPlusInstrumentFixture_artefacts/Release/libSoundPlus QA Instrument_SharedCode.a"
+[7/61] Linking CXX CFBundle shared module "SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/SoundPlus QA Stereo"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/Resources/moduleinfo.json
+[8/61] Linking CXX CFBundle shared module "SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/SoundPlus QA Effect"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/Resources/moduleinfo.json
+[9/61] Linking CXX CFBundle shared module "SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3/Contents/MacOS/SoundPlus QA Instrument"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3/Contents/Resources/moduleinfo.json
+[10/61] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignPoolSession.cpp.o
+[11/61] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignTakeSession.cpp.o
+[12/61] Building CXX object CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:244:57: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  244 |                       (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+      |                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:274:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  274 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:335:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  335 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:99:73: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+   99 |                                        parameter["id"].toString() == p->getParameterID(index)),
+      |                                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+4 warnings generated.
+[13/61] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignSession.cpp.o
+[14/61] Linking CXX static library libsoundplus_core.a
+[15/61] Linking CXX executable SoundPlusPlugin_artefacts/Release/SoundPlusPlugin
+[16/61] Linking CXX executable SoundPlusAudio_artefacts/Release/SoundPlusAudio
+[17/61] Linking CXX executable SoundPlusAI_artefacts/Release/SoundPlusAI
+[18/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/Tests.cpp.o
+[19/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/FadeTests.cpp.o
+[20/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TransportInteractionTests.cpp.o
+[21/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerCanvas.cpp.o
+[22/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/CanvasGestureTests.cpp.o
+[23/61] Building CXX object CMakeFiles/SoundPlusPluginEditor.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:244:57: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  244 |                       (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+      |                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:274:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  274 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:335:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  335 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:99:73: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+   99 |                                        parameter["id"].toString() == p->getParameterID(index)),
+      |                                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+4 warnings generated.
+[24/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignSessionTests.cpp.o
+[25/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SourcePoolTests.cpp.o
+[26/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DeviceCaptureTests.cpp.o
+[27/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PoolCorrectionTests.cpp.o
+[28/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceStateTests.cpp.o
+[29/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeIntegrityTests.cpp.o
+[30/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelCorrectionsTests.cpp.o
+[31/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/AudioHealthTests.cpp.o
+[32/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[33/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[34/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[35/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeTests.cpp.o
+[36/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ViewCommandTests.cpp.o
+[37/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerTakes.cpp.o
+[38/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[39/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PoolMappingReview.cpp.o
+[40/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerPools.cpp.o
+[41/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourcePoolView.cpp.o
+[42/61] Building OBJCXX object CMakeFiles/SoundPlusPluginEditor.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm:35:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.cpp:216:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/juce_VST3PluginFormat.cpp:38:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/juce_VST3Headers.h:154:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/base/source/fstring.cpp:41:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:51:31: warning: first argument in call to 'memset' is a pointer to non-trivially copyable type 'Steinberg::FVariant' [-Wnontrivial-memcall]
+   51 |         inline FVariant () { memset (this, 0, sizeof (FVariant)); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:51:31: note: explicitly cast the pointer to silence this warning
+   51 |         inline FVariant () { memset (this, 0, sizeof (FVariant)); }
+      |                                      ^
+      |                                      (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:260:10: warning: first argument in call to 'memset' is a pointer to non-trivially copyable type 'Steinberg::FVariant' [-Wnontrivial-memcall]
+  260 |         memset (this, 0, sizeof (FVariant));
+      |                 ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:260:10: note: explicitly cast the pointer to silence this warning
+  260 |         memset (this, 0, sizeof (FVariant));
+      |                 ^
+      |                 (void*)
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm:35:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.cpp:50:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.h:66:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_gui_basics/juce_gui_basics.h:68:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics.h:67:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/juce_core.h:215:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/system/juce_StandardHeader.h:68:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/functional:601:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/vector:363:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/locale:203:
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__locale_dir/wstring_convert.h:179:1: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  179 | wstring_convert<_Codecvt, _Elem, _WideAlloc, _ByteAlloc>::to_bytes(const _Elem* __frm, const _Elem* __frm_end) {
+      | ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/public.sdk/source/common/commonstringconvert.cpp:92:22: note: in instantiation of member function 'std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>::to_bytes' requested here
+   92 |         return converter ().to_bytes (reinterpret_cast<const UTF16Type*> (str.data ()),
+      |                             ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__locale_dir/wstring_convert.h:34:7: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+   34 | class _LIBCPP_DEPRECATED_IN_CXX17 wstring_convert {
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__config:581:41: note: expanded from macro '_LIBCPP_DEPRECATED_IN_CXX17'
+  581 | #    define _LIBCPP_DEPRECATED_IN_CXX17 _LIBCPP_DEPRECATED
+      |                                         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__config:554:49: note: expanded from macro '_LIBCPP_DEPRECATED'
+  554 | #      define _LIBCPP_DEPRECATED __attribute__((__deprecated__))
+      |                                                 ^
+3 warnings generated.
+[43/61] Linking CXX executable SoundPlusPluginEditor_artefacts/Release/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor
+[44/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PerformView.cpp.o
+[45/61] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerTakes.cpp.o
+[46/61] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[47/61] Building CXX object CMakeFiles/SoundPlus.dir/src/Main.cpp.o
+[48/61] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerPools.cpp.o
+[49/61] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerLayouts.cpp.o
+[50/61] Building OBJCXX object CMakeFiles/SoundPlusTests.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[51/61] Building CXX object CMakeFiles/SoundPlus.dir/src/PoolMappingReview.cpp.o
+[52/61] Building CXX object CMakeFiles/SoundPlus.dir/src/SourcePoolView.cpp.o
+[53/61] Building CXX object CMakeFiles/SoundPlus.dir/src/PerformView.cpp.o
+[54/61] Building CXX object CMakeFiles/SoundPlus.dir/src/Benchmark.cpp.o
+[55/61] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerCanvas.cpp.o
+[56/61] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[57/61] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerView.cpp.o
+[58/61] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[59/61] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests
+[60/61] Building OBJCXX object CMakeFiles/SoundPlus.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[61/61] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus

@@ -1,0 +1,154 @@
+{
+  "passed": true,
+  "sourceEncoding": "Stereo signed PCM16 /32768; generated nominal -20/-8 dBFS peaks are quantized",
+  "records": [
+    {
+      "path": "meter-track-low.f32",
+      "reference": "meter-input-low.pcm16",
+      "case": "track",
+      "kind": "low",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 288000,
+      "peakByChannel": [
+        0.100006103515625,
+        0.100006103515625
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "94a8a786ee31743629778eb54ce80d21f0d443323d8851a8e5f8b4621c18e106"
+    },
+    {
+      "path": "meter-track-high.f32",
+      "reference": "meter-input-high.pcm16",
+      "case": "track",
+      "kind": "high",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 720000,
+      "peakByChannel": [
+        0.398101806640625,
+        0.398101806640625
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "66fbdfef1fda828cd7823c4cbabc573088009cd075547d79af0922185bc6ad67"
+    },
+    {
+      "path": "meter-track-silence.f32",
+      "reference": "meter-input-silence.pcm16",
+      "case": "track",
+      "kind": "silence",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 1152000,
+      "peakByChannel": [
+        0.0,
+        0.0
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "fec9afb531a8e036eba1d81651896e1b2c1f78b0234dbadc8e7549563f09407b"
+    },
+    {
+      "path": "meter-master-low.f32",
+      "reference": "meter-input-low.pcm16",
+      "case": "master",
+      "kind": "low",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 288000,
+      "peakByChannel": [
+        0.100006103515625,
+        0.100006103515625
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "94a8a786ee31743629778eb54ce80d21f0d443323d8851a8e5f8b4621c18e106"
+    },
+    {
+      "path": "meter-master-high.f32",
+      "reference": "meter-input-high.pcm16",
+      "case": "master",
+      "kind": "high",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 720000,
+      "peakByChannel": [
+        0.398101806640625,
+        0.398101806640625
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "66fbdfef1fda828cd7823c4cbabc573088009cd075547d79af0922185bc6ad67"
+    },
+    {
+      "path": "meter-master-silence.f32",
+      "reference": "meter-input-silence.pcm16",
+      "case": "master",
+      "kind": "silence",
+      "channels": 2,
+      "frames": 48000,
+      "firstFrame": 1152000,
+      "peakByChannel": [
+        0.0,
+        0.0
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "fec9afb531a8e036eba1d81651896e1b2c1f78b0234dbadc8e7549563f09407b"
+    },
+    {
+      "path": "meter-rear-front-pair-low.f32",
+      "reference": "meter-input-low.pcm16",
+      "case": "rear-front-pair",
+      "kind": "low",
+      "channels": 6,
+      "frames": 48000,
+      "firstFrame": 288000,
+      "peakByChannel": [
+        0.100006103515625,
+        0.100006103515625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "65eda62cc88056847a280feadc110d7b7a00d8187c1833f0769905763b98b23c"
+    },
+    {
+      "path": "meter-rear-front-pair-high.f32",
+      "reference": "meter-input-high.pcm16",
+      "case": "rear-front-pair",
+      "kind": "high",
+      "channels": 6,
+      "frames": 48000,
+      "firstFrame": 720000,
+      "peakByChannel": [
+        0.398101806640625,
+        0.398101806640625,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "254987bfda9c50509911370e628d524145b22ace24bd0342ed0011043d3f8e16"
+    },
+    {
+      "path": "meter-rear-front-pair-silence.f32",
+      "reference": "meter-input-silence.pcm16",
+      "case": "rear-front-pair",
+      "kind": "silence",
+      "channels": 6,
+      "frames": 48000,
+      "firstFrame": 1152000,
+      "peakByChannel": [
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0,
+        0.0
+      ],
+      "maximumErrorAgainstDecodedSource": 0.0,
+      "sha256": "87b70eb78776e7b61f70a6fdbd06bddbfb7e877812b593071945976f73a89269"
+    }
+  ],
+  "limits": "Pre-monitor PCM, front pair only on exact Rear bus. Native readings are separate screenshots. No physical or LUFS calibration claim."
+}

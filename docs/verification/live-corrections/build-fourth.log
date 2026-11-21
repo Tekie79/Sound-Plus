@@ -1,0 +1,71 @@
+[0/2] Re-checking globbed directories...
+[1/55] Building CXX object CMakeFiles/SoundPlusFixture.dir/tests/PluginFixture.cpp.o
+[2/55] Building CXX object CMakeFiles/SoundPlusInstrumentFixture.dir/tests/PluginFixture.cpp.o
+[3/55] Building CXX object CMakeFiles/SoundPlusStereoFixture.dir/tests/PluginFixture.cpp.o
+[4/55] Linking CXX static library "SoundPlusFixture_artefacts/Release/libSoundPlus QA Effect_SharedCode.a"
+[5/55] Linking CXX static library "SoundPlusInstrumentFixture_artefacts/Release/libSoundPlus QA Instrument_SharedCode.a"
+[6/55] Linking CXX static library "SoundPlusStereoFixture_artefacts/Release/libSoundPlus QA Stereo_SharedCode.a"
+[7/55] Linking CXX CFBundle shared module "SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/SoundPlus QA Stereo"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/Resources/moduleinfo.json
+[8/55] Linking CXX CFBundle shared module "SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/SoundPlus QA Effect"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/Resources/moduleinfo.json
+[9/55] Linking CXX CFBundle shared module "SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3/Contents/MacOS/SoundPlus QA Instrument"
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3: code has no resources but signature indicates they must be present
+-- Replacing invalid signature with ad-hoc signature
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3: replacing existing signature
+removing moduleinfo.json
+creating /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3/Contents/Resources/moduleinfo.json
+[10/55] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignPoolSession.cpp.o
+[11/55] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignTakeSession.cpp.o
+[12/55] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignSession.cpp.o
+[13/55] Linking CXX static library libsoundplus_core.a
+[14/55] Linking CXX executable SoundPlusAudio_artefacts/Release/SoundPlusAudio
+[15/55] Linking CXX executable SoundPlusPlugin_artefacts/Release/SoundPlusPlugin
+[16/55] Linking CXX executable SoundPlusAI_artefacts/Release/SoundPlusAI
+[17/55] Linking CXX executable SoundPlusPluginEditor_artefacts/Release/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor
+[18/55] Building CXX object CMakeFiles/SoundPlus.dir/src/Main.cpp.o
+[19/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/FadeTests.cpp.o
+[20/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TransportInteractionTests.cpp.o
+[21/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerCanvas.cpp.o
+[22/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/CanvasGestureTests.cpp.o
+[23/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SourcePoolTests.cpp.o
+[24/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignSessionTests.cpp.o
+[25/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PoolCorrectionTests.cpp.o
+[26/55] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerTakes.cpp.o
+[27/55] Building CXX object CMakeFiles/SoundPlus.dir/src/PoolMappingReview.cpp.o
+[28/55] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerLayouts.cpp.o
+[29/55] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerPools.cpp.o
+[30/55] Building CXX object CMakeFiles/SoundPlus.dir/src/SourcePoolView.cpp.o
+[31/55] Building CXX object CMakeFiles/SoundPlus.dir/src/PerformView.cpp.o
+[32/55] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerCanvas.cpp.o
+[33/55] Building CXX object CMakeFiles/SoundPlus.dir/src/Benchmark.cpp.o
+[34/55] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[35/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DeviceCaptureTests.cpp.o
+[36/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeIntegrityTests.cpp.o
+[37/55] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerView.cpp.o
+[38/55] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+[39/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelCorrectionsTests.cpp.o
+[40/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/AudioHealthTests.cpp.o
+[41/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceStateTests.cpp.o
+[42/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[43/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeTests.cpp.o
+[44/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[45/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[46/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerTakes.cpp.o
+[47/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ViewCommandTests.cpp.o
+[48/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[49/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerPools.cpp.o
+[50/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PoolMappingReview.cpp.o
+[51/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourcePoolView.cpp.o
+[52/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PerformView.cpp.o
+[53/55] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[54/55] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[55/55] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests

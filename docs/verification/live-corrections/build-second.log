@@ -1,0 +1,101 @@
+[0/2] Re-checking globbed directories...
+[1/66] Building CXX object CMakeFiles/soundplus_core.dir/src/PluginProcessing.cpp.o
+[2/66] Building CXX object CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o
+FAILED: CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o 
+/Library/Developer/CommandLineTools/usr/bin/c++ -DJUCE_APPLICATION_NAME_STRING=\"SoundPlus\" -DJUCE_APPLICATION_VERSION_STRING=\"0.1.0\" -DJUCE_GLOBAL_MODULE_SETTINGS_INCLUDED=1 -DJUCE_MODAL_LOOPS_PERMITTED=0 -DJUCE_MODULE_AVAILABLE_juce_audio_basics=1 -DJUCE_MODULE_AVAILABLE_juce_audio_devices=1 -DJUCE_MODULE_AVAILABLE_juce_audio_formats=1 -DJUCE_MODULE_AVAILABLE_juce_audio_processors=1 -DJUCE_MODULE_AVAILABLE_juce_audio_utils=1 -DJUCE_MODULE_AVAILABLE_juce_core=1 -DJUCE_MODULE_AVAILABLE_juce_cryptography=1 -DJUCE_MODULE_AVAILABLE_juce_data_structures=1 -DJUCE_MODULE_AVAILABLE_juce_dsp=1 -DJUCE_MODULE_AVAILABLE_juce_events=1 -DJUCE_MODULE_AVAILABLE_juce_graphics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_basics=1 -DJUCE_MODULE_AVAILABLE_juce_gui_extra=1 -DJUCE_PLUGINHOST_AU=1 -DJUCE_PLUGINHOST_VST3=1 -DJUCE_STANDALONE_APPLICATION=1 -DJUCE_USE_CURL=0 -DJUCE_WEB_BROWSER=0 -DNDEBUG=1 -D_NDEBUG=1 -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusPlugin_artefacts/JuceLibraryCode -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/lv2 -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/serd -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/sord -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/sord/src -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/sratom -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/lilv -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/LV2_SDK/lilv/src -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/juce_binarydata_ModelManifest/JuceLibraryCode -I/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/juce_binarydata_SoundPlusIcons/JuceLibraryCode -O3 -DNDEBUG -std=gnu++20 -arch arm64 -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk -mmacosx-version-min=12.0 -MD -MT CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o -MF CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o.d -o CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o -c /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:244:57: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  244 |                       (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+      |                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:274:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  274 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:335:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  335 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:99:73: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+   99 |                                        parameter["id"].toString() == p->getParameterID(index)),
+      |                                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:7:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackLive.h:514:81: error: use of overloaded operator '[]' is ambiguous (with operand types 'const var' and 'String')
+  514 |                                                                      ? (int64_t)origins[String(index)]
+      |                                                                                 ^~~~~~~ ~~~~~~~~~~~~~
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackLive.h:459:17: note: while substituting into a lambda expression here
+  459 |                 {
+      |                 ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:126:35: note: in instantiation of member function '(anonymous namespace)::RackLiveUI<Slot>::poll' requested here
+  126 |                             live->poll();
+      |                                   ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/containers/juce_Variant.h:257:16: note: candidate function
+  257 |     const var& operator[] (const Identifier& propertyName) const;
+      |                ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/containers/juce_Variant.h:205:16: note: candidate function
+  205 |     const var& operator[] (int arrayIndex) const;
+      |                ^
+4 warnings and 1 error generated.
+[3/66] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignPoolSession.cpp.o
+[4/66] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignTakeSession.cpp.o
+[5/66] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignSession.cpp.o
+[6/66] Building OBJCXX object CMakeFiles/soundplus_core.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[7/66] Building OBJCXX object CMakeFiles/SoundPlusAudio.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[8/66] Building OBJCXX object CMakeFiles/SoundPlusAI.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+[9/66] Building OBJCXX object CMakeFiles/SoundPlusPlugin.dir/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm.o
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm:35:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.cpp:216:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/juce_VST3PluginFormat.cpp:38:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/juce_VST3Headers.h:154:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/base/source/fstring.cpp:41:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:51:31: warning: first argument in call to 'memset' is a pointer to non-trivially copyable type 'Steinberg::FVariant' [-Wnontrivial-memcall]
+   51 |         inline FVariant () { memset (this, 0, sizeof (FVariant)); }
+      |                                      ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:51:31: note: explicitly cast the pointer to silence this warning
+   51 |         inline FVariant () { memset (this, 0, sizeof (FVariant)); }
+      |                                      ^
+      |                                      (void*)
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:260:10: warning: first argument in call to 'memset' is a pointer to non-trivially copyable type 'Steinberg::FVariant' [-Wnontrivial-memcall]
+  260 |         memset (this, 0, sizeof (FVariant));
+      |                 ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/pluginterfaces/base/fvariant.h:260:10: note: explicitly cast the pointer to silence this warning
+  260 |         memset (this, 0, sizeof (FVariant));
+      |                 ^
+      |                 (void*)
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.mm:35:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.cpp:50:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/juce_audio_processors.h:66:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_gui_basics/juce_gui_basics.h:68:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_graphics/juce_graphics.h:67:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/juce_core.h:215:
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_core/system/juce_StandardHeader.h:68:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/functional:601:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/vector:363:
+In file included from /Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/locale:203:
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__locale_dir/wstring_convert.h:179:1: warning: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' is deprecated [-Wdeprecated-declarations]
+  179 | wstring_convert<_Codecvt, _Elem, _WideAlloc, _ByteAlloc>::to_bytes(const _Elem* __frm, const _Elem* __frm_end) {
+      | ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/format_types/VST3_SDK/public.sdk/source/common/commonstringconvert.cpp:92:22: note: in instantiation of member function 'std::wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>::to_bytes' requested here
+   92 |         return converter ().to_bytes (reinterpret_cast<const UTF16Type*> (str.data ()),
+      |                             ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__locale_dir/wstring_convert.h:34:7: note: 'wstring_convert<std::codecvt_utf8_utf16<char16_t>, char16_t>' has been explicitly marked deprecated here
+   34 | class _LIBCPP_DEPRECATED_IN_CXX17 wstring_convert {
+      |       ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__config:581:41: note: expanded from macro '_LIBCPP_DEPRECATED_IN_CXX17'
+  581 | #    define _LIBCPP_DEPRECATED_IN_CXX17 _LIBCPP_DEPRECATED
+      |                                         ^
+/Library/Developer/CommandLineTools/SDKs/MacOSX26.5.sdk/usr/include/c++/v1/__config:554:49: note: expanded from macro '_LIBCPP_DEPRECATED'
+  554 | #      define _LIBCPP_DEPRECATED __attribute__((__deprecated__))
+      |                                                 ^
+3 warnings generated.
+ninja: build stopped: subcommand failed.

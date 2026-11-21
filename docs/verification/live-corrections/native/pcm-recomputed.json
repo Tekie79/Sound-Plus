@@ -1,0 +1,13 @@
+{
+  "passed": true,
+  "nativeTrimDeltaDb": 5.999999756842893,
+  "undoRedoDeltaDb": 5.999999756842893,
+  "closeReopenSelectedWindowsIdentical": true,
+  "freshApplicationRendersIdentical": true,
+  "renderFrames": 192000,
+  "renderChannels": 2,
+  "renderRate": 48000,
+  "meterWindowsExactDecodedSource": 9,
+  "oldSkoolNativeInput": "Unconfirmed: captured state remained unchanged",
+  "limits": "Selected pre-monitor windows; no human listening, physical output, stateful LV tail or receiver qualification."
+}

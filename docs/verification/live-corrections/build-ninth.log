@@ -1,0 +1,144 @@
+[0/2] Re-checking globbed directories...
+[1/87] Building CXX object CMakeFiles/soundplus_core.dir/src/LayoutDesign.cpp.o
+[2/87] Building CXX object CMakeFiles/soundplus_core.dir/src/HostedRack.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRack.cpp:45:94: warning: missing field 'runtimeParameterOrigins' initializer [-Wmissing-field-initializers]
+   45 |             {s["id"].toString(), juce::JSON::toString(s["settings"], true), (bool)s["bypass"]});
+      |                                                                                              ^
+1 warning generated.
+[3/87] Building CXX object CMakeFiles/soundplus_core.dir/src/SourcePools.cpp.o
+[4/87] Building CXX object CMakeFiles/soundplus_core.dir/src/PluginProcessing.cpp.o
+[5/87] Building CXX object CMakeFiles/soundplus_core.dir/src/AudioStream.cpp.o
+[6/87] Building CXX object CMakeFiles/soundplus_core.dir/src/PluginSession.cpp.o
+[7/87] Building CXX object CMakeFiles/soundplus_core.dir/src/AudioIPC.cpp.o
+[8/87] Building CXX object CMakeFiles/soundplus_core.dir/src/AIProcess.cpp.o
+[9/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignPoolSession.cpp.o
+[10/87] Building CXX object CMakeFiles/soundplus_core.dir/src/LibraryService.cpp.o
+[11/87] Building CXX object CMakeFiles/soundplus_core.dir/src/Reference.cpp.o
+[12/87] Building CXX object CMakeFiles/soundplus_core.dir/src/TakeCapture.cpp.o
+[13/87] Building CXX object CMakeFiles/soundplus_core.dir/src/PerformanceState.cpp.o
+[14/87] Building CXX object CMakeFiles/soundplus_core.dir/src/PerformTake.cpp.o
+[15/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignModel.cpp.o
+[16/87] Building CXX object CMakeFiles/soundplus_core.dir/src/LiveInsertSession.cpp.o
+[17/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignRecovery.cpp.o
+[18/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignLive.cpp.o
+[19/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignTakeSession.cpp.o
+[20/87] Building CXX object CMakeFiles/soundplus_core.dir/src/CanvasEditing.cpp.o
+[21/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignAudio.cpp.o
+[22/87] Building CXX object CMakeFiles/soundplus_core.dir/src/AudioPlaybackService.cpp.o
+[23/87] Building CXX object CMakeFiles/SoundPlusAudio.dir/src/AudioMain.cpp.o
+[24/87] Building CXX object CMakeFiles/SoundPlusAI.dir/src/AIHelperMain.cpp.o
+[25/87] Building CXX object CMakeFiles/soundplus_core.dir/src/DesignSession.cpp.o
+[26/87] Linking CXX static library libsoundplus_core.a
+[27/87] Building CXX object CMakeFiles/SoundPlusAudio.dir/src/AudioEngine.cpp.o
+[28/87] Linking CXX executable SoundPlusAI_artefacts/Release/SoundPlusAI
+[29/87] Linking CXX executable SoundPlusAudio_artefacts/Release/SoundPlusAudio
+[30/87] Building CXX object CMakeFiles/SoundPlusPlugin.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:244:57: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  244 |                       (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+      |                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:274:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  274 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:335:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  335 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:99:73: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+   99 |                                        parameter["id"].toString() == p->getParameterID(index)),
+      |                                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+4 warnings generated.
+[31/87] Linking CXX executable SoundPlusPlugin_artefacts/Release/SoundPlusPlugin
+[32/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceTests.cpp.o
+[33/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SemanticTests.cpp.o
+[34/87] Building CXX object CMakeFiles/SoundPlusPluginEditor.dir/src/PluginWorkerMain.cpp.o
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:244:57: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  244 |                       (!parameter["id"].isString() || p.getParameterID(index) == parameter["id"].toString()),
+      |                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:274:27: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  274 |         put(item, "id", p.getParameterID(n));
+      |                           ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:335:47: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+  335 |                 check(v["id"].toString() == p.getParameterID(n),
+      |                                               ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+In file included from /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/PluginWorkerMain.cpp:354:
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/src/HostedRackService.h:99:73: warning: 'getParameterID' is deprecated [-Wdeprecated-declarations]
+   99 |                                        parameter["id"].toString() == p->getParameterID(index)),
+      |                                                                         ^
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/vendor/JUCE-8.0.6/modules/juce_audio_processors/processors/juce_AudioPluginInstance.h:138:7: note: 'getParameterID' has been explicitly marked deprecated here
+  138 |     [[deprecated]] String getParameterID (int index) override;
+      |       ^
+4 warnings generated.
+[35/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/Tests.cpp.o
+[36/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SimilarTests.cpp.o
+[37/87] Linking CXX executable SoundPlusPluginEditor_artefacts/Release/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor
+[38/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignTests.cpp.o
+[39/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/CanvasGestureTests.cpp.o
+[40/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DesignSessionTests.cpp.o
+[41/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TransportInteractionTests.cpp.o
+[42/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PlaybackSearchTests.cpp.o
+[43/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/FadeTests.cpp.o
+[44/87] Building CXX object CMakeFiles/SoundPlus.dir/src/PluginProcessPanel.cpp.o
+[45/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerCanvas.cpp.o
+[46/87] Building CXX object CMakeFiles/SoundPlus.dir/src/Main.cpp.o
+[47/87] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerLayouts.cpp.o
+[48/87] Building CXX object CMakeFiles/SoundPlus.dir/src/LibraryView.cpp.o
+[49/87] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerTakes.cpp.o
+[50/87] Building CXX object CMakeFiles/SoundPlus.dir/src/PoolMappingReview.cpp.o
+[51/87] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerPools.cpp.o
+[52/87] Building CXX object CMakeFiles/SoundPlus.dir/src/SourcePoolView.cpp.o
+[53/87] Building CXX object CMakeFiles/SoundPlus.dir/src/SourceCard.cpp.o
+[54/87] Building CXX object CMakeFiles/SoundPlus.dir/src/PerformView.cpp.o
+[55/87] Building CXX object CMakeFiles/SoundPlus.dir/src/Benchmark.cpp.o
+[56/87] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerCanvas.cpp.o
+[57/87] Building CXX object CMakeFiles/SoundPlus.dir/src/BenchmarkReliability.cpp.o
+[58/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/SourcePoolTests.cpp.o
+[59/87] Building CXX object CMakeFiles/SoundPlus.dir/src/DesignerView.cpp.o
+[60/87] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+[61/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/AudioEngine.cpp.o
+[62/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PoolCorrectionTests.cpp.o
+[63/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/IconTests.cpp.o
+[64/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DeviceCaptureTests.cpp.o
+[65/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelCorrectionsTests.cpp.o
+[66/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeIntegrityTests.cpp.o
+[67/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/MultichannelTests.cpp.o
+[68/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ReliabilityTests.cpp.o
+[69/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/WaveformPreviewTests.cpp.o
+[70/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/AudioHealthTests.cpp.o
+[71/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PerformanceStateTests.cpp.o
+[72/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/Benchmark.cpp.o
+[73/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/BenchmarkReliability.cpp.o
+[74/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeTests.cpp.o
+[75/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/LibraryView.cpp.o
+[76/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PluginProcessPanel.cpp.o
+[77/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/ViewCommandTests.cpp.o
+[78/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerLayouts.cpp.o
+[79/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerTakes.cpp.o
+[80/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PoolMappingReview.cpp.o
+[81/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerPools.cpp.o
+[82/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourcePoolView.cpp.o
+[83/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/SourceCard.cpp.o
+[84/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/PerformView.cpp.o
+[85/87] Building CXX object CMakeFiles/SoundPlusTests.dir/src/DesignerView.cpp.o
+[86/87] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/PluginProcessingTests.cpp.o
+[87/87] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests
