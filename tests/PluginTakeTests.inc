@@ -348,9 +348,15 @@ void runPluginTakeTests(const juce::File &base, const juce::File &app, const juc
             auto raw = root.getChildFile(t.id + ".f32");
             auto generation = audio.playDesign("design:" + d.id, File(t.checkpoint), 0, raw, "record");
             wait(
-                [&] {
-                    return (int)audio.status()["takePhase"] == TakeCapture::recording &&
-                           (bool)audio.status()["playing"];
+                [&]
+                {
+                    auto status = audio.status();
+                    require((uint64_t)(int64_t)status["playGeneration"] != generation ||
+                                status["id"].toString() == "design:" + d.id ||
+                                (bool)status["pendingPlayback"] || status["error"].toString().isNotEmpty(),
+                            "Record preparation never acknowledges its generation with an empty "
+                            "retired-owner ID");
+                    return (int)status["takePhase"] == TakeCapture::recording && (bool)status["playing"];
                 },
                 "Plugin device recording starts");
             for (int k = 0; k < 10; ++k)

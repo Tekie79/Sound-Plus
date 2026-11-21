@@ -38,7 +38,7 @@ void AudioPlaybackService::request(juce::var command, double rate)
     captureRequestGeneration = recording ? (uint64_t)(int64_t)command["playGeneration"] : 0;
     captureRequestActive = recording;
     auto serial = ++epoch;
-    if (command["liveRoot"].toString().isNotEmpty())
+    if (!recording && command["liveRoot"].toString().isNotEmpty())
     {
         stopGeneration = (uint64_t)(int64_t)command["playGeneration"];
         stopEpoch = serial; // Retire the old borrower before attaching the new graph.
