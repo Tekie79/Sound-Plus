@@ -814,8 +814,11 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         set(result, "fullScanOrdinal",
             (juce::int64)(targetPath.isEmpty() ? std::max(operation, deletionBarrier) : deletionBarrier));
         juce::Array<juce::var> published;
-        // Keep operation discovery ordering, then any newly published candidates.
-        for (auto &e : entries)
+        // A target-only refresh must not reorder the existing chooser. Full scans
+        // retain discovery ordering; new concurrent entries follow either list.
+        auto ordering =
+            targetPath.isNotEmpty() && latest["entries"].isArray() ? *latest["entries"].getArray() : entries;
+        for (auto &e : ordering)
         {
             auto at = reconciled.find(e["path"].toString());
             if (at != reconciled.end())
