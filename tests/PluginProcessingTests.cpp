@@ -1,3 +1,4 @@
+#include "NativeViewScale.h"
 #include "PluginProcessPanel.h"
 #include "DesignSession.h"
 #include "DesignerView.h"
@@ -12,6 +13,48 @@
 #include <cmath>
 #include <signal.h>
 #include <CoreFoundation/CoreFoundation.h>
+namespace sp
+{
+struct LiveCorrectionTestAccess
+{
+    static size_t history(const DesignSession &s)
+    {
+        return s.undoHistory.size();
+    }
+    static juce::String oldest(const DesignSession &s)
+    {
+        return s.undoHistory.front().label;
+    }
+    static size_t pending(const DesignSession &s)
+    {
+        return s.liveCommands.size();
+    }
+    static bool savePresetMenu(juce::Component &component, const juce::String &layer, const juce::File &file)
+    {
+        if (auto *view = dynamic_cast<HostedRackView *>(&component);
+            view && !view->isMaster && view->owner.layer == layer && view->selected.isNotEmpty())
+        {
+            view->presetChooser = [file](bool writing, auto chosen)
+            {
+                if (writing)
+                    chosen(file);
+            };
+            auto menu = view->actionMenu();
+            juce::PopupMenu::MenuItemIterator item(menu);
+            while (item.next())
+                if (item.getItem().itemID == 1 && item.getItem().isEnabled && item.getItem().action)
+                {
+                    item.getItem().action();
+                    return true;
+                }
+        }
+        for (auto *child : component.getChildren())
+            if (savePresetMenu(*child, layer, file))
+                return true;
+        return false;
+    }
+};
+} // namespace sp
 namespace
 {
 using namespace juce;
@@ -2287,3 +2330,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
 #include "PluginGateATests.inc"
 
 #include "PluginLiveTests.inc"
+
+#include "NativeViewScaleTests.inc"

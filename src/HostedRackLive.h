@@ -21,7 +21,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     std::atomic<int64_t> processedFrames{0}, processBegin{0}, processEnd{0}, nativeEventTicks{0};
     std::atomic<int64_t> modelAppliedTicks{0}, modelSourceTicks{0}, firstActor{0}, firstSource{0},
         firstDspBegin{0}, firstDspEnd{0};
-    std::mutex traceMutex;
+    std::mutex traceMutex, dspOperationMutex;
     std::map<String, std::vector<float>> capturedSeeds;
     std::deque<String> capturedOrder;
     std::vector<int64_t> restoredSequence;
@@ -175,6 +175,11 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     std::map<String, std::unique_ptr<Window>> windows;
     bool publish(bool checkpoint)
     {
+        // Explicit test-only barrier: hold publication while continuing native
+        // and Main control adoption, so ordering/command races are repeatable.
+        auto hold = SystemStats::getEnvironmentVariable("SOUNDPLUS_LIVE_TEST_HOLD_CAPTURE", {});
+        if (hold.isNotEmpty() && File(hold).existsAsFile())
+            return false;
         settleStopped();
         bool coherent = true, opaqueObservation = false;
         std::vector<String> hashes;
@@ -203,9 +208,20 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     for (auto key :
                          {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
                         put(settings, key, state[key]);
+                    // Descriptions expose a bounded subset, not a dense native array.
+                    // Keep the complete native-indexed seed, including omitted aliases.
                     std::vector<float> seed;
+                    for (auto *parameter : slots[i].effect->getParameters())
+                        seed.push_back(parameter->getValue());
                     for (auto &p : *state["parameters"].getArray())
-                        seed.push_back((float)p["value"]);
+                    {
+                        const int index = (int)p["index"];
+                        check(isPositiveAndBelow(index, seed.size()) &&
+                                  slots[i].effect->getHostedParameter(index)->getParameterID() ==
+                                      p["stableId"].toString(),
+                              "Captured native parameter identity changed");
+                        seed[(size_t)index] = (float)p["value"];
+                    }
                     auto hash = state["stateHash"].toString();
                     hashes.push_back(hash);
                     if (hasPublished && i < publishedHashes.size() && hash != publishedHashes[i] &&
@@ -318,6 +334,10 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     slot.effect->removeListener(this);
             });
     }
+    std::mutex &operationMutex()
+    {
+        return dspOperationMutex;
+    }
     void processed(int frames, int64_t began)
     {
         std::lock_guard metrics(traceMutex);
@@ -343,6 +363,9 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             onPluginMessageThread(
                 [&]
                 {
+                    // Serialize the entire DSP/dry-ring/request completion, not
+                    // merely the plugin's callback. A new borrower drains first.
+                    std::lock_guard operation(dspOperationMutex);
                     for (auto &slot : slots)
                     {
                         slot.effect->reset();
@@ -454,7 +477,11 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                             restoredSequence[i] != (int64_t)command["changes"][(int)i]["restoreSequence"])
                         {
                             restoredSequence[i] = (int64_t)command["changes"][(int)i]["restoreSequence"];
-                            if (nativeAnyTicks.load() > origin)
+                            const auto restoreOrigin =
+                                command["changes"][(int)i].hasProperty("restoreTicks")
+                                    ? (int64_t)command["changes"][(int)i]["restoreTicks"]
+                                    : origin;
+                            if (nativeAnyTicks.load() > restoreOrigin)
                             {
                                 skippedControls.add(-1);
                             }
@@ -486,8 +513,13 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                                     command["changes"][(int)i]["indices"].getArray()->contains(
                                         value["index"]))
                                 {
-                                    if (nativeStateTicks.load() > origin ||
-                                        nativeParameterTicks[i][index].load() > origin)
+                                    const auto origins = command["changes"][(int)i]["origins"];
+                                    const auto parameterOrigin =
+                                        origins.hasProperty(String(index))
+                                            ? (int64_t)origins[Identifier(String(index))]
+                                            : origin;
+                                    if (nativeStateTicks.load() > parameterOrigin ||
+                                        nativeParameterTicks[i][index].load() > parameterOrigin)
                                     {
                                         skippedControls.add(index);
                                         continue;

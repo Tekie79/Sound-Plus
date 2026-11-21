@@ -9,6 +9,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
     setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
     setenv("SOUNDPLUS_FIXTURE_LIVE_QA", root.getFullPathName().toRawUTF8(), 1);
     setenv("SOUNDPLUS_FIXTURE_PROGRAMS", "1", 1);
+    auto captureHold = root.getChildFile("hold-native-publication");
+    setenv("SOUNDPLUS_LIVE_TEST_HOLD_CAPTURE", captureHold.getFullPathName().toRawUTF8(), 1);
     auto cancel = [] { return false; };
     PluginWorker child(helper);
     PluginCatalog catalog(root.getChildFile("registry.json"));
@@ -200,6 +202,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         genericOwner.checkHealth();
     }
     unsetenv("SOUNDPLUS_FIXTURE_GENERIC_EDITOR");
+#include "PluginLiveCorrections.inc"
     // Real DesignSession control path, with the retained services and ordinary
     // save/Undo/Redo commands. Separate catalog/document; no user data is read.
     {
@@ -249,7 +252,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                 {
                     auto v = loadProcessingJson(file);
                     if (v["binding"]["document"].toString() == session.document.id &&
-                        v["binding"]["slot"].toString() == id)
+                        v["binding"]["slot"].toString() == id &&
+                        v["binding"]["variation"].toString() == session.document.activeVariation &&
+                        (uint64_t)(int64)v["binding"]["incarnation"] == session.documentGeneration())
                         return v;
                 }
                 catch (...)
@@ -520,6 +525,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         require(session.document.markers.size() == 1, "Timeline marker command supports Undo");
         session.redo();
         require(session.document.markers.size() == 2, "Timeline marker command supports Redo");
+#include "PluginSnapshotCorrections.inc"
+#include "PluginHistoryCorrections.inc"
         bool done = false;
         session.withLiveState([&] { done = true; });
         wait([&] { return done; }, "Coherent gate completes before copy/move commands");
@@ -542,9 +549,16 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         };
         auto *duplicateButton = findDuplicate(actualView);
         require(duplicateButton != nullptr, "Actual Designer Duplicate command exists");
+        captureHold.replaceWithText("hold Save then Duplicate");
+        auto beforeDuplicateSave = work.getChildFile("Save before queued Duplicate.soundplus");
+        session.save(beforeDuplicateSave);
         duplicateButton->onClick();
+        require(LiveCorrectionTestAccess::pending(session) == 2,
+                "Actual Duplicate is retained behind pending Save capture");
         session.selectLayer(other.id);
-        wait([&] { return session.document.original.layers.size() == 3; },
+        captureHold.deleteFile();
+        wait([&]
+             { return session.document.original.layers.size() == 3 && beforeDuplicateSave.existsAsFile(); },
              "Actual Duplicate completes after asynchronous live-state capture");
         auto copy = session.document.original.layers.back();
         require(copy.name == layer.name + " copy" && copy.hosted.slots.size() == 1,
@@ -621,5 +635,6 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
     base.getChildFile("latest.txt").replaceWithText(root.getFullPathName());
     unsetenv("SOUNDPLUS_FIXTURE_LIVE_QA");
     unsetenv("SOUNDPLUS_FIXTURE_PROGRAMS");
+    unsetenv("SOUNDPLUS_LIVE_TEST_HOLD_CAPTURE");
     std::cout << "Plugin live service passed: " << checks << " checks; " << root.getFullPathName() << "\n";
 }

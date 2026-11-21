@@ -32,10 +32,11 @@ void runPlaybackSearchTests(const juce::File &, const juce::File &);
 void runSourcePoolTests(const juce::File &, const juce::File &);
 void prepareSourcePoolUI(const juce::File &);
 void runPluginProcessingTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
-void runPluginLiveTests(const juce::File &,const juce::File &,const juce::File &);
+void runPluginLiveTests(const juce::File &, const juce::File &, const juce::File &);
 void runPluginGateATests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
 void runTalCorrectnessBaseline(const juce::File &, const juce::File &);
-void runPluginCorrectnessTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
+void runPluginCorrectnessTests(const juce::File &, const juce::File &, const juce::File &,
+                               const juce::File &);
 namespace
 {
 int checks = 0;
@@ -84,15 +85,50 @@ void fixture(const juce::File &file, int channels = 1, int rate = 48000, double 
 } // namespace
 void preparePoolCorrectionUI(const juce::File &);
 void runPoolCorrectionTests(const juce::File &, const juce::File &, const juce::String &);
+void runNativeViewScaleTests();
+void runRegistryWriter(const juce::File &, const juce::File &, const juce::File &);
 int main(int argc, char **argv)
 {
     try
     {
-        if (argc >= 5 && juce::String(argv[1]) == "--plugin-live") { runPluginLiveTests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4])); return 0; }
-        if (argc >= 6 && juce::String(argv[1]) == "--plugin-gate-a") { runPluginGateATests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
-        if (argc >= 4 && juce::String(argv[1]) == "--tal-baseline") { runTalCorrectnessBaseline(juce::File(argv[2]),juce::File(argv[3])); return 0; }
-        if (argc >= 6 && juce::String(argv[1]) == "--plugin-correctness") { runPluginCorrectnessTests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
-        if (argc >= 6 && juce::String(argv[1]) == "--plugin-processing") { runPluginProcessingTests(juce::File(argv[2]),juce::File(argv[3]),juce::File(argv[4]),juce::File(argv[5])); return 0; }
+        if (argc >= 5 && juce::String(argv[1]) == "--registry-writer")
+        {
+            runRegistryWriter(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
+            return 0;
+        }
+        if (argc >= 2 && juce::String(argv[1]) == "--native-view-scale")
+        {
+            runNativeViewScaleTests();
+            return 0;
+        }
+        if (argc >= 5 && juce::String(argv[1]) == "--plugin-live")
+        {
+            runPluginLiveTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
+            return 0;
+        }
+        if (argc >= 6 && juce::String(argv[1]) == "--plugin-gate-a")
+        {
+            runPluginGateATests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                juce::File(argv[5]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--tal-baseline")
+        {
+            runTalCorrectnessBaseline(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 6 && juce::String(argv[1]) == "--plugin-correctness")
+        {
+            runPluginCorrectnessTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                      juce::File(argv[5]));
+            return 0;
+        }
+        if (argc >= 6 && juce::String(argv[1]) == "--plugin-processing")
+        {
+            runPluginProcessingTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                     juce::File(argv[5]));
+            return 0;
+        }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-pool-correction-ui")
         {
             preparePoolCorrectionUI(juce::File(argv[2]));
@@ -197,8 +233,11 @@ int main(int argc, char **argv)
             prepareDesignWorkload(juce::File(argv[2]));
             return 0;
         }
-        if(argc>=3 && juce::String(argv[1])=="--prepare-reliability-workload")
-        {prepareReliabilityWorkload(juce::File(argv[2]));return 0;}
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-reliability-workload")
+        {
+            prepareReliabilityWorkload(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 5 && (juce::String(argv[1]) == "--interrupt-designer-save" ||
                           juce::String(argv[1]) == "--interrupt-designer-render"))
         {
@@ -229,7 +268,10 @@ int main(int argc, char **argv)
             return 0;
         }
         if (argc >= 4 && juce::String(argv[1]) == "--library-stability")
-        { runLibraryStabilityTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        {
+            runLibraryStabilityTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--multichannel")
         {
             runMultichannelTests(juce::File(argv[2]), juce::File(argv[3]));
@@ -250,14 +292,36 @@ int main(int argc, char **argv)
             prepareMultichannelUI(juce::File(argv[2]));
             return 0;
         }
-        if (argc >= 3 && juce::String(argv[1]) == "--prepare-take-ui") {prepareTakeUiFixture(juce::File(argv[2]));return 0;}
-        if (argc >= 4 && juce::String(argv[1]) == "--takes") {runTakeTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
-        if (argc >= 4 && juce::String(argv[1]) == "--take-integrity") {runTakeIntegrityTests(juce::File(argv[2]),juce::File(argv[3]));return 0;}
-        if (argc >= 3 && juce::String(argv[1]) == "--device-capture") {runDeviceCaptureTests(juce::File(argv[2]));return 0;}
+        if (argc >= 3 && juce::String(argv[1]) == "--prepare-take-ui")
+        {
+            prepareTakeUiFixture(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--takes")
+        {
+            runTakeTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--take-integrity")
+        {
+            runTakeIntegrityTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--device-capture")
+        {
+            runDeviceCaptureTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--audio-health")
-        { runAudioHealthTests(juce::File(argv[2]),juce::File(argv[3])); return 0; }
+        {
+            runAudioHealthTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 3 && juce::String(argv[1]) == "--waveform-scheduling")
-        { runWaveformSchedulingTests(juce::File(argv[2])); return 0; }
+        {
+            runWaveformSchedulingTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--semantic-integrity")
         {
             runSemanticIntegrity(juce::File(argv[2]), juce::File(argv[3]));

@@ -6,6 +6,7 @@
 #include "SourcePools.h"
 #include "LiveInsertSession.h"
 #include <set>
+#include <deque>
 
 namespace sp
 {
@@ -25,6 +26,8 @@ struct DesignSessionServices
     std::function<void()> stop;
     std::function<void(bool)> finishTake;
     std::function<void(bool)> reserveTake;
+    // Optional controlled capture service, same completion boundary as the native service.
+    std::function<void(std::function<void(bool)>)> captureLive;
     bool automaticRecovery = true, timers = true;
 };
 
@@ -163,6 +166,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     friend struct CorrectionViewTestAccess;
     friend struct TakeIntegrityTestAccess;
     friend struct LayoutViewTestAccess;
+    friend struct LiveCorrectionTestAccess;
     enum class Operation
     {
         save,
@@ -232,6 +236,20 @@ class DesignSession final : public juce::Component, private juce::Timer
     AudioClient *liveAudio = nullptr;
     double lastLiveSync = -1000;
     bool liveReady = false, liveApplying = false, liveFlushing = false;
+    struct LiveCommand
+    {
+        uint64_t incarnation;
+        juce::String document, variation, take;
+        std::function<void()> continuation;
+        bool allowFailure = false;
+    };
+    std::deque<LiveCommand> liveCommands;
+    bool liveSuppressHistory = false, liveInvalidateRedo = false;
+    void runLiveCommands();
+    void finishLiveCommand(bool);
+    void renderReady(bool, const juce::String &);
+    std::optional<DesignDocument> liveIntentBase;
+    void stampLiveIntents(int64_t);
     uint64_t liveUserEdits = 0;
     juce::String liveHistoryKey;
     int64_t liveHistoryRevision = -1;

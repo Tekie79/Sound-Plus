@@ -179,6 +179,9 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     });
                 controls = e->controls;
             }
+            std::unique_lock<std::mutex> operation;
+            if (live)
+                operation = std::unique_lock<std::mutex>(live->operationMutex());
             int frames = e->frames;
             check(frames > 0 && frames <= 512, "Invalid hosted block size");
             for (int c = 0; c < bus.size(); ++c)

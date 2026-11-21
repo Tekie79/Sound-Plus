@@ -354,6 +354,7 @@ void DesignSession::navigateMarker(int direction)
 }
 void DesignSession::syncLive()
 {
+    liveIntentBase = document;
     if (!liveInserts)
         return;
     document.liveInserts = true;
@@ -428,10 +429,11 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
     const bool observedOnly = (bool)capture.evidence["opaqueObservation"],
                historyNative = capture.native && !observedOnly;
     const auto historyRevision = document.revision;
-    const auto count = undoHistory.size();
     bool merge =
         historyNative && liveHistoryKey == capture.gesture && liveHistoryRevision == document.revision;
     liveApplying = true;
+    liveSuppressHistory = !historyNative || merge;
+    liveInvalidateRedo = historyNative;
     edit("Plugin edit",
          [&](auto &d)
          {
@@ -441,8 +443,7 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
                      slot.settings = capture.settings;
          });
     liveApplying = false;
-    if (undoHistory.size() > count && (!historyNative || merge))
-        undoHistory.pop_back();
+    liveSuppressHistory = liveInvalidateRedo = false;
     if (observedOnly)
     {
         if (liveHistoryRevision == historyRevision)
@@ -481,44 +482,96 @@ bool DesignSession::flushLive(std::function<void()> continuation, bool allowFail
 {
     if (gesture)
         endGesture();
-    if (!liveInserts || !hasHostedInserts(document) || document.activeTake.isNotEmpty())
-        return false;
     if (liveReady)
     {
         liveReady = false;
         return false;
     }
-    if (liveFlushing)
+    if (!liveFlushing && liveCommands.empty() &&
+        ((!liveInserts && !services.captureLive) || !hasHostedInserts(document.activeMix()) ||
+         document.activeTake.isNotEmpty()))
+        return false;
+    if (liveCommands.size() >= 128)
     {
-        message = "Capturing live insert state…";
+        message = "Pending command cancelled: queue is full";
+        notify();
         return true;
+    }
+    liveCommands.push_back({lifetime, document.id, document.activeVariation, document.activeTake,
+                            std::move(continuation), allowFailure});
+    runLiveCommands();
+    return true;
+}
+void DesignSession::runLiveCommands()
+{
+    if (liveFlushing || liveCommands.empty())
+        return;
+    const auto &command = liveCommands.front();
+    if (command.incarnation != lifetime || command.document != document.id ||
+        command.variation != document.activeVariation || command.take != document.activeTake)
+    {
+        liveCommands.pop_front();
+        message = "Pending command cancelled: design context changed";
+        notify();
+        runLiveCommands();
+        return;
+    }
+    if ((!liveInserts && !services.captureLive) || !hasHostedInserts(document.activeMix()) ||
+        document.activeTake.isNotEmpty())
+    {
+        finishLiveCommand(true);
+        return;
     }
     syncLive();
     liveFlushing = true;
-    const auto owner = lifetime, edits = liveUserEdits;
+    message = "Capturing live insert state...";
+    if (onChange)
+        onChange();
+    const auto edits = liveUserEdits;
     juce::Component::SafePointer<DesignSession> safe(this);
-    liveInserts->flush(
-        [safe, owner, edits, continuation, allowFailure](bool success)
+    auto captured = [safe, edits](bool success)
+    {
+        if (!safe)
+            return;
+        safe->liveFlushing = false;
+        if (safe->liveUserEdits != edits)
         {
-            if (!safe || safe->lifetime != owner)
-                return;
-            safe->liveFlushing = false;
-            if (!success && !allowFailure)
-            {
-                safe->message =
-                    "Live insert unavailable; save/render not certified. Last checkpoint retained.";
-                safe->notify();
-                return;
-            }
-            if (safe->liveUserEdits != edits)
-            {
-                safe->flushLive(continuation, allowFailure);
-                return;
-            }
-            safe->liveReady = true;
-            continuation();
-        });
-    return true;
+            // Keep the accepted command at the head. No hosted work remaining
+            // is a successful immediate barrier, not a dropped continuation.
+            safe->runLiveCommands();
+            return;
+        }
+        safe->finishLiveCommand(success);
+    };
+    if (services.captureLive)
+        services.captureLive(std::move(captured));
+    else
+        liveInserts->flush(std::move(captured));
+}
+void DesignSession::finishLiveCommand(bool success)
+{
+    if (liveCommands.empty())
+        return;
+    auto command = std::move(liveCommands.front());
+    liveCommands.pop_front();
+    const bool matches = command.incarnation == lifetime && command.document == document.id &&
+                         command.variation == document.activeVariation && command.take == document.activeTake;
+    if (matches && (success || command.allowFailure))
+    {
+        liveReady = true;
+        juce::Component::SafePointer<DesignSession> safe(this);
+        command.continuation();
+        if (!safe)
+            return;
+        liveReady = false;
+    }
+    else
+    {
+        message = matches ? "Live insert unavailable; pending command cancelled. Last checkpoint retained."
+                          : "Pending command cancelled: design context changed";
+        notify();
+    }
+    runLiveCommands();
 }
 void DesignSession::notify()
 {
@@ -545,12 +598,58 @@ void DesignSession::reconcileSelection(const DesignDocument *before)
     else
         document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
 }
+void DesignSession::stampLiveIntents(int64_t ticks)
+{
+    std::map<juce::String, const HostedSlot *> previous;
+    if (liveIntentBase && liveIntentBase->id == document.id &&
+        liveIntentBase->activeVariation == document.activeVariation)
+    {
+        auto add = [&](const HostedRack &rack)
+        {
+            for (auto &slot : rack.slots)
+                previous[slot.id] = &slot;
+        };
+        add(liveIntentBase->activeMix().hosted);
+        for (auto &layer : liveIntentBase->activeMix().layers)
+            add(layer.hosted);
+    }
+    auto stamp = [&](HostedRack &rack)
+    {
+        for (auto &slot : rack.slots)
+        {
+            auto at = previous.find(slot.id);
+            if (at != previous.end() && at->second->settings == slot.settings)
+                continue;
+            auto before = at == previous.end() ? juce::var() : juce::JSON::parse(at->second->settings);
+            auto after = juce::JSON::parse(slot.settings);
+            if (before["stateHash"] != after["stateHash"] || before["program"] != after["program"])
+                slot.runtimeRestoreOrigin = ticks;
+            std::map<int, juce::var> oldParameters;
+            if (auto *old = before["parameters"].getArray())
+                for (auto &p : *old)
+                    oldParameters[(int)p["index"]] = p;
+            if (auto *parameters = after["parameters"].getArray())
+                for (auto &parameter : *parameters)
+                {
+                    const int index = (int)parameter["index"];
+                    const auto old = oldParameters.find(index);
+                    if (old == oldParameters.end() || old->second["value"] != parameter["value"] ||
+                        old->second["stableId"] != parameter["stableId"])
+                        slot.runtimeParameterOrigins[index] = ticks;
+                }
+        }
+    };
+    stamp(document.activeMix().hosted);
+    for (auto &layer : document.activeMix().layers)
+        stamp(layer.hosted);
+}
 void DesignSession::changed(ChangeImpact impact)
 {
     if (!liveApplying)
     {
         ++liveUserEdits;
         document.liveControlTicks = juce::Time::getHighResolutionTicks();
+        stampLiveIntents(document.liveControlTicks);
     }
     if ((active || previewWaiting) && auditionContext.isNotEmpty() &&
         auditionContext != designPlaybackContext(document))
@@ -638,10 +737,14 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         stop();
     if (!gesture)
     {
-        undoHistory.push_back({std::move(before), std::move(beforeSelection), label});
-        if (undoHistory.size() > 100)
-            undoHistory.erase(undoHistory.begin());
-        redoHistory.clear();
+        if (!liveApplying || !liveSuppressHistory)
+        {
+            undoHistory.push_back({std::move(before), std::move(beforeSelection), label});
+            if (undoHistory.size() > 100)
+                undoHistory.erase(undoHistory.begin());
+        }
+        if (!liveApplying || liveInvalidateRedo)
+            redoHistory.clear();
     }
     changed(impact);
 }
@@ -1153,6 +1256,13 @@ void DesignSession::selectVariation(const juce::String &id)
 }
 void DesignSession::generate(uint64_t seed)
 {
+    if (flushLive(
+            [safe = juce::Component::SafePointer<DesignSession>(this), seed]
+            {
+                if (safe)
+                    safe->generate(seed);
+            }))
+        return;
     if ((document.variationSettings.enabled & varySource) && hasSourcePools(document))
     {
         generatePoolVariations(seed);
@@ -1175,6 +1285,13 @@ bool DesignSession::ownsPlayback() const
 }
 void DesignSession::saveSnapshot(const juce::String &name)
 {
+    if (flushLive(
+            [safe = juce::Component::SafePointer<DesignSession>(this), name]
+            {
+                if (safe)
+                    safe->saveSnapshot(name);
+            }))
+        return;
     endGesture();
     edit("Save Snapshot",
          [&](auto &d)
@@ -1488,13 +1605,29 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
 }
 void DesignSession::render(bool selection)
 {
-    if (flushLive(
-            [safe = juce::Component::SafePointer<DesignSession>(this), selection]
-            {
-                if (safe)
-                    safe->render(selection);
-            }))
-        return;
+    const auto incarnation = lifetime;
+    const auto id = document.id, variation = document.activeVariation, take = document.activeTake,
+               layer = document.selectedLayer;
+    auto perform = [safe = juce::Component::SafePointer<DesignSession>(this), selection, incarnation, id,
+                    variation, take, layer]
+    {
+        if (!safe)
+            return;
+        if (safe->lifetime != incarnation || safe->document.id != id ||
+            safe->document.activeVariation != variation || safe->document.activeTake != take ||
+            (selection && !layerById(safe->document, layer)))
+        {
+            safe->message = "Render cancelled: requested owner changed or was removed";
+            safe->notify();
+            return;
+        }
+        safe->renderReady(selection, layer);
+    };
+    if (!flushLive(perform))
+        perform();
+}
+void DesignSession::renderReady(bool selection, const juce::String &requestedLayer)
+{
     if (takeBusy())
         return;
     if (document.activeTake.isNotEmpty() && selection)
@@ -1511,7 +1644,7 @@ void DesignSession::render(bool selection)
     const bool hostedStem = selection && hasHostedInserts(snapshot.activeMix());
     if (selection)
     {
-        auto *layer = layerById(snapshot, document.selectedLayer);
+        auto *layer = layerById(snapshot, requestedLayer);
         if (!layer)
             return;
         auto chosen = *layer;

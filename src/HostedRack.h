@@ -1,5 +1,6 @@
 #pragma once
 #include "ChannelLayout.h"
+#include <map>
 namespace sp
 {
 // Opaque state/settings are serialized immutable values, not StockEffect parameters.
@@ -7,6 +8,9 @@ struct HostedSlot
 {
     juce::String id = juce::Uuid().toString(), settings;
     bool bypass = false;
+    // Main-thread intent clocks; transient, never part of saved recipes.
+    std::map<int, int64_t> runtimeParameterOrigins;
+    int64_t runtimeRestoreOrigin = 0;
 };
 struct HostedRack
 {

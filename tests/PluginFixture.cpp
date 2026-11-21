@@ -40,6 +40,7 @@ class Fixture final : public juce::AudioProcessor
     std::vector<std::vector<float>> delay;
     int position = 0, delayFrames = 0, sleepMs = 0, program = 0;
     std::atomic<float> opaqueGain{1.f};
+    std::atomic<int> processingDepth{0};
     float randomGain = .5f + juce::Random::getSystemRandom().nextFloat() * .5f;
 
   public:
@@ -134,6 +135,16 @@ class Fixture final : public juce::AudioProcessor
     }
     void reset() override
     {
+        if (processingDepth.load() != 0)
+            if (auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA"))
+                juce::File(dir)
+                    .getChildFile(juce::String((int)::getpid()) + ".overlap")
+                    .replaceWithText("reset overlapped DSP");
+        if (std::getenv("SOUNDPLUS_FIXTURE_SLOW_FAULT"))
+            if (auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA"))
+                juce::File(dir)
+                    .getChildFile(juce::String((int)::getpid()) + ".operations")
+                    .appendText("reset\n");
         for (auto &c : delay)
             std::fill(c.begin(), c.end(), 0.f);
         position = 0;
@@ -142,6 +153,32 @@ class Fixture final : public juce::AudioProcessor
     }
     void processBlock(juce::AudioBuffer<float> &b, juce::MidiBuffer &midi) override
     {
+        struct ProcessingScope
+        {
+            std::atomic<int> &depth;
+            explicit ProcessingScope(std::atomic<int> &d) : depth(d)
+            {
+                ++depth;
+            }
+            ~ProcessingScope()
+            {
+                --depth;
+            }
+        } inFlight(processingDepth);
+        if (b.getNumSamples() > 0 && std::getenv("SOUNDPLUS_FIXTURE_SLOW_FAULT"))
+            if (auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA"))
+            {
+                auto stem = juce::File(dir).getChildFile(juce::String((int)::getpid()));
+                auto fault = stem.withFileExtension("slow");
+                if (fault.existsAsFile())
+                {
+                    int ms = juce::jlimit(300, 1500, fault.loadFileAsString().getIntValue());
+                    fault.deleteFile();
+                    stem.withFileExtension("operations").appendText("begin\n");
+                    juce::Thread::sleep(ms);
+                    stem.withFileExtension("operations").appendText("end\n");
+                }
+            }
         if (topology() == "midi")
         {
             if (!midi.isEmpty())
@@ -175,12 +212,13 @@ class Fixture final : public juce::AudioProcessor
     {
         Fixture &fixture;
         int last = 0;
+        bool nativeGesture = false;
         double lastUi = std::numeric_limits<double>::quiet_NaN();
         juce::Slider gainControl;
         explicit Editor(Fixture &f) : AudioProcessorEditor(f), fixture(f)
         {
             gainControl.setRange(0, 1, .001);
-            gainControl.setValue(f.getParameters()[0]->getValue());
+            gainControl.setValue(static_cast<juce::AudioProcessorParameter *>(f.gain)->getValue());
             gainControl.onDragStart = [this] { fixture.gain->beginChangeGesture(); };
             gainControl.onDragEnd = [this] { fixture.gain->endChangeGesture(); };
             gainControl.onValueChange = [this]
@@ -195,7 +233,7 @@ class Fixture final : public juce::AudioProcessor
             auto *dir = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA");
             if (!dir)
                 return;
-            auto value = fixture.getParameters()[0]->getValue();
+            auto value = static_cast<juce::AudioProcessorParameter *>(fixture.gain)->getValue();
             if (!gainControl.isMouseButtonDown())
                 gainControl.setValue(value, juce::dontSendNotification);
             if (gainControl.getValue() != lastUi)
@@ -228,9 +266,13 @@ class Fixture final : public juce::AudioProcessor
             else
             {
                 auto *p = fixture.getParameters()[(int)v["index"]];
-                p->beginChangeGesture();
+                if (!nativeGesture)
+                    p->beginChangeGesture();
                 p->setValueNotifyingHost((float)v["value"]);
-                p->endChangeGesture();
+                auto stage = v["gestureStage"].toString();
+                nativeGesture = stage == "begin" || stage == "continue";
+                if (!nativeGesture)
+                    p->endChangeGesture();
             }
         }
     };

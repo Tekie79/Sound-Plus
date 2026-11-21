@@ -87,9 +87,10 @@ struct HostedRackClient::Impl
     std::vector<std::unique_ptr<HostedRackClient>> children;
     int compositeLatency = 0;
     HostedRack configuration;
-    std::vector<std::set<int>> pendingIndices;
+    std::vector<std::map<int, std::pair<int64_t, uint64_t>>> pendingIndices;
     std::vector<bool> pendingState;
     std::vector<uint64_t> restoreSequences;
+    std::vector<int64_t> restoreOrigins;
     ~Impl()
     {
         if (exchange)
@@ -263,10 +264,18 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
             juce::Thread::sleep(1);
         }
         impl->leaseAcquired = true;
-        impl->sequence = impl->exchange->request.load();
+        if (impl->exchange->closing.load() || impl->exchange->failed.load())
+            throw std::runtime_error("Live insert unavailable; no output is certified");
+        // A timed-out producer may have released its lease with a block still
+        // executing. Drain that entire request before resetting/reusing its ring.
+        impl->sequence = impl->exchange->request.load(std::memory_order_acquire);
+        if (impl->exchange->response.load(std::memory_order_acquire) != impl->sequence)
+            impl->await(impl->sequence, 20000, cancelled);
         impl->exchange->resetRequested.store(impl->lease, std::memory_order_release);
         while (impl->exchange->resetAcknowledged.load(std::memory_order_acquire) != impl->lease)
         {
+            if (impl->exchange->closing.load() || impl->exchange->failed.load())
+                throw std::runtime_error("Live insert failed during reset; no output is certified");
             if (cancelled())
                 throw QueryCancelled();
             if (juce::Time::getMillisecondCounterHiRes() > end)
@@ -407,6 +416,7 @@ void HostedRackClient::update(const HostedRack &rack)
             impl->pendingIndices.resize(rack.slots.size());
             impl->pendingState.resize(rack.slots.size());
             impl->restoreSequences.resize(rack.slots.size());
+            impl->restoreOrigins.resize(rack.slots.size());
         }
         juce::Array<juce::var> changes;
         for (size_t i = 0; i < rack.slots.size(); ++i)
@@ -420,15 +430,31 @@ void HostedRackClient::update(const HostedRack &rack)
             {
                 impl->pendingState[i] = true;
                 impl->restoreSequences[i] = impl->modelCommand;
+                impl->restoreOrigins[i] = rack.slots[i].runtimeRestoreOrigin > 0
+                                              ? rack.slots[i].runtimeRestoreOrigin
+                                              : (juce::int64)v["eventTicks"];
             }
             row.getDynamicObject()->setProperty("fullState", (bool)impl->pendingState[i]);
             row.getDynamicObject()->setProperty("restoreSequence", (juce::int64)impl->restoreSequences[i]);
+            row.getDynamicObject()->setProperty("restoreTicks", (juce::int64)impl->restoreOrigins[i]);
             for (int n = 0; n < after["parameters"].size(); ++n)
                 if (after["parameters"][n]["value"] != before["parameters"][n]["value"])
-                    impl->pendingIndices[i].insert((int)after["parameters"][n]["index"]);
+                {
+                    const int index = (int)after["parameters"][n]["index"];
+                    auto origin = rack.slots[i].runtimeParameterOrigins.find(index);
+                    impl->pendingIndices[i][index] = {origin == rack.slots[i].runtimeParameterOrigins.end()
+                                                          ? (juce::int64)v["eventTicks"]
+                                                          : origin->second,
+                                                      impl->modelCommand};
+                }
             juce::Array<juce::var> indices;
-            for (auto index : impl->pendingIndices[i])
+            auto origins = juce::var(new juce::DynamicObject());
+            for (auto &[index, intent] : impl->pendingIndices[i])
+            {
                 indices.add(index);
+                origins.getDynamicObject()->setProperty(juce::String(index), (juce::int64)intent.first);
+            }
+            row.getDynamicObject()->setProperty("origins", origins);
             row.getDynamicObject()->setProperty("indices", indices);
             changes.add(row);
         }
@@ -504,11 +530,13 @@ void HostedRackClient::checkHealth() const
 juce::var HostedRackClient::liveState() const
 {
     auto state = loadProcessingJson(impl->workspace.getChildFile("state.json"));
-    if ((uint64_t)(juce::int64)state["modelSequence"] == impl->modelCommand)
+    const auto acknowledged = (uint64_t)(juce::int64)state["modelSequence"];
+    for (size_t i = 0; i < impl->pendingIndices.size(); ++i)
     {
-        for (auto &indices : impl->pendingIndices)
-            indices.clear();
-        std::fill(impl->pendingState.begin(), impl->pendingState.end(), false);
+        std::erase_if(impl->pendingIndices[i],
+                      [&](auto &intent) { return intent.second.second <= acknowledged; });
+        if (impl->restoreSequences[i] <= acknowledged)
+            impl->pendingState[i] = false;
     }
     return state;
 }

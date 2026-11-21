@@ -490,10 +490,25 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
 {
     juce::var cache;
     std::vector<juce::File> roots = requestedRoots;
-    int64_t operation = juce::Time::getHighResolutionTicks();
+    int64_t operation = 0;
     {
         RegistryGuard coordinated(file, cancel);
         cache = snapshot();
+        // Durable ordinal, reserved under the same canonical interprocess lock.
+        // Legacy monotonic-clock operations are epoch 0, irrespective of size.
+        auto counterFile = juce::File(canonicalRegistry(file) + ".operations.json");
+        auto counter = counterFile.existsAsFile() ? loadProcessingJson(counterFile) : object();
+        int64_t latestOrdinal = (int64_t)counter["next"];
+        if (auto *existing = cache["entries"].getArray())
+            for (auto &entry : *existing)
+                if ((int)entry["registryOrderEpoch"] == 1)
+                    latestOrdinal = std::max(latestOrdinal, (int64_t)entry["registryOperation"]);
+        latestOrdinal = std::max(latestOrdinal, (int64_t)cache["fullScanOrdinal"]);
+        require(latestOrdinal >= 0 && latestOrdinal < std::numeric_limits<int64_t>::max(),
+                "Plugin registry operation counter exhausted");
+        operation = latestOrdinal + 1;
+        set(counter, "next", (juce::int64)operation);
+        saveProcessingJson(counterFile, counter);
         appendRoots(roots, cache["roots"]);
     }
     if (afterSnapshot)
@@ -605,10 +620,7 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
             continue;
         seen.add(path);
         if (targetPath.isNotEmpty() && path != targetPath)
-        {
-            entries.add(descriptor);
-            continue;
-        }
+            continue; // Retry publishes only the touched target, never stale siblings.
         auto e = descriptor.clone();
         // Preserve logs as bounded history, never as the current success/failure.
         if (auto *old = cache["entries"].getArray())
@@ -745,7 +757,10 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
                         set(plugin, "category", xml->getStringAttribute("category"));
             }
         if (!reusedEntry)
+        {
             set(e, "registryOperation", (juce::int64)operation);
+            set(e, "registryOrderEpoch", 1);
+        }
         entries.add(e);
         if (progress)
             progress(e);
@@ -774,26 +789,30 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         if (auto *current = latest["entries"].getArray())
             for (auto &e : *current)
                 reconciled[e["path"].toString()] = e;
-        // Only remove entries absent from this operation's complete discovery if
-        // they were already in its initial snapshot and have not been refreshed.
+        auto ordinal = [](const juce::var &entry) -> int64_t
+        { return (int)entry["registryOrderEpoch"] == 1 ? (int64_t)entry["registryOperation"] : 0; };
+        const auto deletionBarrier = (int64_t)latest["fullScanOrdinal"];
         if (targetPath.isEmpty())
-            if (auto *initial = cache["entries"].getArray())
-                for (auto &e : *initial)
-                {
-                    auto path = e["path"].toString();
-                    auto current = reconciled.find(path);
-                    if (!seen.contains(path) && current != reconciled.end() &&
-                        (int64_t)current->second["registryOperation"] <= operation)
-                        reconciled.erase(current);
-                }
+            std::erase_if(reconciled,
+                          [&](auto &item)
+                          {
+                              return !seen.contains(item.first) && ordinal(item.second) <= operation &&
+                                     (int64_t)item.second["registryPresenceOrdinal"] <= operation;
+                          });
         for (auto &e : entries)
         {
             auto path = e["path"].toString();
             auto current = reconciled.find(path);
-            if (current == reconciled.end() ||
-                (int64_t)e["registryOperation"] >= (int64_t)current->second["registryOperation"])
+            if (current == reconciled.end() && deletionBarrier > operation)
+                continue; // A newer complete scan explicitly observed it absent.
+            if (current == reconciled.end() || ordinal(e) >= ordinal(current->second))
                 reconciled[path] = e;
+            auto &present = reconciled[path];
+            set(present, "registryPresenceOrdinal",
+                (juce::int64)std::max(operation, (int64_t)present["registryPresenceOrdinal"]));
         }
+        set(result, "fullScanOrdinal",
+            (juce::int64)(targetPath.isEmpty() ? std::max(operation, deletionBarrier) : deletionBarrier));
         juce::Array<juce::var> published;
         // Keep operation discovery ordering, then any newly published candidates.
         for (auto &e : entries)

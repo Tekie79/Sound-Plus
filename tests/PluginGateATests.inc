@@ -77,6 +77,61 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
         put(row, "registry", final);
         evidence.add(row);
     }
+    // D: migrate prior-boot clocks and reconcile a targeted independent writer.
+    {
+        auto work = root.getChildFile("durable-deletion");
+        work.createDirectory();
+        auto a = work.getChildFile("A.vst3"), b = work.getChildFile("B.vst3");
+        require(fixture.copyDirectoryTo(a) && stereo.copyDirectoryTo(b), "Durable registry fixtures copied");
+        auto file = work.getChildFile("registry.json");
+        PluginCatalog catalog(file);
+        auto initial = catalog.scan(child, {work}, true, cancel);
+        for (auto &entry : *initial["entries"].getArray())
+        {
+            put(entry, "registryOperation", (int64)9000000000000000000LL);
+            entry.getDynamicObject()->removeProperty("registryOrderEpoch");
+            put(entry, "error", "prior boot failure");
+        }
+        saveProcessingJson(file, initial);
+        auto recovered = catalog.scan(child, {}, true, cancel, {}, false, b.getFullPathName());
+        for (auto &entry : *recovered["entries"].getArray())
+            if (entry["path"].toString() == b.getFullPathName())
+                require(entry["error"].toString().isEmpty() && (int)entry["registryOrderEpoch"] == 1,
+                        "New successful Retry supersedes arbitrarily high prior-boot clock");
+        PluginCatalog paused(
+            file,
+            [&]
+            {
+                require(a.deleteRecursively(), "Remove only generated A while Retry B holds old snapshot");
+                ChildProcess writer;
+                require(writer.start(StringArray{
+                            File::getSpecialLocation(File::currentExecutableFile).getFullPathName(),
+                            "--registry-writer", file.getFullPathName(), helper.getFullPathName(),
+                            work.getFullPathName()}),
+                        "Independently started registry writer launches");
+                require(writer.waitForProcessToFinish(20000) && writer.getExitCode() == 0,
+                        "Independent writer publishes newer full deletion scan");
+            });
+        auto result = paused.scan(child, {}, true, cancel, {}, false, b.getFullPathName());
+        bool hasA = false, hasB = false;
+        for (auto &entry : *result["entries"].getArray())
+        {
+            hasA |= entry["path"].toString() == a.getFullPathName();
+            hasB |= entry["path"].toString() == b.getFullPathName();
+        }
+        require(!hasA && hasB, "Retry B never republishes stale sibling A deleted by newer full scan");
+        auto bytes = file.loadFileAsString();
+        fails([&] { catalog.scan(child, {}, true, [] { return true; }); },
+              "Cancelled durable operation does not publish");
+        require(file.loadFileAsString() == bytes, "Cancellation preserves registry publication and roots");
+        require(a.createDirectory().wasOk() && fixture.copyDirectoryTo(a),
+                "Reintroduce changed installation A");
+        auto changed = catalog.scan(child, {work}, true, cancel);
+        require(changed["entries"].size() == 2 && changed["roots"].size() == 1,
+                "New full scan restores current installations and roots");
+        evidence.add(changed);
+    }
+
     PluginCatalog catalog(root.getChildFile("state-registry.json"));
     auto scan = catalog.scan(child, {fixture}, false, cancel);
     auto plugin = scan["entries"][0]["plugins"][0];
@@ -225,4 +280,12 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
     saveProcessingJson(root.getChildFile("summary.json"), summary);
     base.getChildFile("latest.txt").replaceWithText(root.getFullPathName());
     std::cout << "Plugin Gate A passed: " << checks << " checks; " << root.getFullPathName() << "\n";
+}
+
+void runRegistryWriter(const juce::File &registry, const juce::File &helper, const juce::File &root)
+{
+    juce::ScopedJuceInitialiser_GUI gui;
+    sp::PluginWorker worker(helper);
+    sp::PluginCatalog catalog(registry);
+    catalog.scan(worker, {root}, true, [] { return false; });
 }

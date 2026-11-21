@@ -1,18 +1,24 @@
-# Pinned JUCE 8.0.6: avoid repeating an unchanged IPlugViewContentScaleSupport
-# notification after native attachment. Some macOS views apply backing scale
-# again on that redundant call, separating drawing and input coordinates.
-# Generic host policy; no plugin-name, state, identity or layout exceptions.
+# Generic, per-view successful-request policy for pinned JUCE 8.0.6.
+# No vendor-name, parameter identity/state, or processing-layout exceptions.
 set(_sp_vst3 "${JUCE_DIR}/modules/juce_audio_processors/format_types/juce_VST3PluginFormat.cpp")
 file(READ "${_sp_vst3}" _sp_source)
-if(NOT _sp_source MATCHES "SoundPlus unchanged content scale")
-  set(_sp_old "            [[maybe_unused]] const auto result = scaleInterface->setContentScaleFactor ((IPlugViewContentScaleSupport::ScaleFactor) getEffectiveScale());")
-  set(_sp_new "            // SoundPlus unchanged content scale: retain the view's native backing geometry.\n            const auto scale = getEffectiveScale();\n            if (lastContentScale.has_value() && *lastContentScale == scale)\n                return;\n            lastContentScale = scale;\n            [[maybe_unused]] const auto result = scaleInterface->setContentScaleFactor ((IPlugViewContentScaleSupport::ScaleFactor) scale);")
+set(_sp_old "            [[maybe_unused]] const auto result = scaleInterface->setContentScaleFactor ((IPlugViewContentScaleSupport::ScaleFactor) getEffectiveScale());")
+# Migrate the earlier cache-before-result patch in an existing dependency tree.
+set(_sp_legacy "            // SoundPlus unchanged content scale: retain the view's native backing geometry.\n            const auto scale = getEffectiveScale();\n            if (lastContentScale.has_value() && *lastContentScale == scale)\n                return;\n            lastContentScale = scale;\n            [[maybe_unused]] const auto result = scaleInterface->setContentScaleFactor ((IPlugViewContentScaleSupport::ScaleFactor) scale);")
+string(REPLACE "${_sp_legacy}" "${_sp_old}" _sp_source "${_sp_source}")
+string(REPLACE "\n    std::optional<float> lastContentScale;" "" _sp_source "${_sp_source}")
+if(NOT _sp_source MATCHES "SoundPlus successful native scale policy")
   string(FIND "${_sp_source}" "${_sp_old}" _sp_found)
   if(_sp_found EQUAL -1)
     message(FATAL_ERROR "Pinned JUCE VST3 scale implementation changed; review SoundPlus scale patch")
   endif()
+  set(_sp_new "            // SoundPlus successful native scale policy, shared with owned-view tests.\n            [[maybe_unused]] const auto result = contentScale.apply (getEffectiveScale(), [this] (float scale)\n            {\n                return scaleInterface->setContentScaleFactor ((IPlugViewContentScaleSupport::ScaleFactor) scale);\n            });")
   string(REPLACE "${_sp_old}" "${_sp_new}" _sp_source "${_sp_source}")
-  string(REPLACE "    float userScaleFactor = 1.0f;" "    float userScaleFactor = 1.0f;\n    std::optional<float> lastContentScale;" _sp_source "${_sp_source}")
+  string(REPLACE "#include \"juce_VST3Headers.h\"" "#include \"NativeViewScale.h\"\n#include \"juce_VST3Headers.h\"" _sp_source "${_sp_source}")
+  string(REPLACE "    float userScaleFactor = 1.0f;" "    float userScaleFactor = 1.0f;\n    ::sp::NativeViewScale contentScale;" _sp_source "${_sp_source}")
+endif()
+file(READ "${_sp_vst3}" _sp_before)
+if(NOT _sp_before STREQUAL _sp_source)
   file(WRITE "${_sp_vst3}" "${_sp_source}")
 endif()
 unset(_sp_source)

@@ -12,6 +12,8 @@ class HostedRackView final : public juce::Component
         juce::String document, variation, layer;
         uint64_t generation = 0;
     };
+    friend struct LiveCorrectionTestAccess;
+    using PresetChooser = std::function<void(bool, std::function<void(juce::File)>)>;
     using EditorInvoker = std::function<juce::var(juce::var, const juce::File &, const juce::File &,
                                                   const std::function<bool()> &)>;
     HostedRackView(DesignSession &s, bool master, juce::File registry, bool embeddedView = false,
@@ -66,17 +68,7 @@ class HostedRackView final : public juce::Component
             if (onHeightChange)
                 onHeightChange();
         };
-        savePreset.onClick = [this]
-        {
-            const auto target = owner;
-            const auto id = selected;
-            session.withLiveState(
-                [safe = juce::Component::SafePointer<HostedRackView>(this), target, id]
-                {
-                    if (safe && safe->find(target))
-                        safe->preset(true, target, id);
-                });
-        };
+        savePreset.onClick = [this] { preset(true); };
         openPreset.onClick = [this] { preset(false); };
         parameterViewport.setViewedComponent(&parameterContent, false);
         parameterViewport.setScrollBarsShown(true, false);
@@ -989,13 +981,31 @@ class HostedRackView final : public juce::Component
                 safe->refresh();
             });
     }
-    void showActions()
+    PresetChooser presetChooser;
+    juce::PopupMenu actionMenu()
     {
         auto target = owner;
         auto id = selected;
+        juce::Component::SafePointer<HostedRackView> safe(this);
         juce::PopupMenu menu;
-        menu.addItem(1, "Save preset…", savePreset.isEnabled());
-        menu.addItem(2, "Load preset…", openPreset.isEnabled());
+        menu.addItem(juce::PopupMenu::Item("Save preset...")
+                         .setID(1)
+                         .setEnabled(savePreset.isEnabled())
+                         .setAction(
+                             [safe, target, id]
+                             {
+                                 if (safe)
+                                     safe->preset(true, target, id);
+                             }));
+        menu.addItem(juce::PopupMenu::Item("Load preset...")
+                         .setID(2)
+                         .setEnabled(openPreset.isEnabled())
+                         .setAction(
+                             [safe, target, id]
+                             {
+                                 if (safe)
+                                     safe->preset(false, target, id);
+                             }));
         menu.addItem(3, "Copy / move…", transfer.isEnabled());
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
@@ -1004,10 +1014,19 @@ class HostedRackView final : public juce::Component
             menu.addItem(6, "Bypass plug-in effects", rackBypass.isEnabled(), rackBypass.getToggleState());
         menu.addSeparator();
         menu.addItem(7, "Remove effect", remove.isEnabled());
+        return menu;
+    }
+    void showActions()
+    {
+        const auto target = owner;
+        const auto id = selected;
+        auto menu = actionMenu();
         juce::Component::SafePointer<HostedRackView> safe(this);
         menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(more),
                            [safe, target, id](int choice)
                            {
+                               if (choice == 1 || choice == 2)
+                                   return;
                                if (!safe || safe->owner.document != target.document ||
                                    safe->owner.variation != target.variation ||
                                    safe->owner.layer != target.layer ||
@@ -1016,10 +1035,10 @@ class HostedRackView final : public juce::Component
                                switch (choice)
                                {
                                case 1:
-                                   safe->preset(true);
+                                   safe->preset(true, target, id);
                                    break;
                                case 2:
-                                   safe->preset(false);
+                                   safe->preset(false, target, id);
                                    break;
                                case 3:
                                    safe->showTransfer();
@@ -1168,22 +1187,31 @@ class HostedRackView final : public juce::Component
         auto *rack = find(target);
         if (!rack)
             return;
-        juce::String settings;
-        for (auto &s : rack->slots)
-            if (s.id == id)
-                settings = s.settings;
-        fileChooser =
-            std::make_unique<juce::FileChooser>(writing ? "Save insert preset" : "Open insert preset",
-                                                storage.getParentDirectory(), "*.soundplus-insert");
         juce::Component::SafePointer<HostedRackView> safe(this);
-        fileChooser->launchAsync(
-            juce::FileBrowserComponent::canSelectFiles |
-                (writing ? juce::FileBrowserComponent::saveMode : juce::FileBrowserComponent::openMode),
-            [safe, target, id, settings, writing](const auto &fc)
+        auto chosen = [safe, target, id, writing](const juce::File &result)
+        {
+            if (!safe || result == juce::File())
+                return;
+            auto file = writing ? result.withFileExtension("soundplus-insert") : result;
+            auto persist = [safe, target, id, writing, file]
             {
-                if (!safe || !safe->find(target) || fc.getResult() == juce::File())
+                if (!safe)
                     return;
-                auto file = writing ? fc.getResult().withFileExtension("soundplus-insert") : fc.getResult();
+                if (!safe->find(target))
+                {
+                    safe->session.message = "Preset cancelled: owner changed or removed";
+                    safe->refresh();
+                    return;
+                }
+                juce::String settings;
+                for (auto &slot : safe->find(target)->slots)
+                    if (slot.id == id)
+                        settings = slot.settings;
+                if (settings.isEmpty())
+                {
+                    safe->showFeedback(target, "Preset cancelled: insert removed");
+                    return;
+                }
                 auto gate = safe->epoch;
                 auto serial = ++*gate;
                 safe->worker.submit(
@@ -1236,7 +1264,24 @@ class HostedRackView final : public juce::Component
                                 safe->showFeedback(target, writing ? "Preset saved" : "Preset restored");
                             });
                     });
-            });
+            };
+            if (writing)
+                safe->session.withLiveState(std::move(persist));
+            else
+                persist();
+        };
+        if (presetChooser)
+            presetChooser(writing, std::move(chosen));
+        else
+        {
+            fileChooser =
+                std::make_unique<juce::FileChooser>(writing ? "Save insert preset" : "Open insert preset",
+                                                    storage.getParentDirectory(), "*.soundplus-insert");
+            fileChooser->launchAsync(
+                juce::FileBrowserComponent::canSelectFiles |
+                    (writing ? juce::FileBrowserComponent::saveMode : juce::FileBrowserComponent::openMode),
+                [chosen = std::move(chosen)](const auto &fc) { chosen(fc.getResult()); });
+        }
     }
 };
 } // namespace sp
