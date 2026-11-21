@@ -281,7 +281,11 @@ void runPluginTakeTests(const juce::File &base, const juce::File &app, const juc
         auto replacement = makeDesignLayer(source, 0, -1, true);
         d.original.layers[0].source = replacement.source;
         d.original.layers[0].region = replacement.region;
+        d.liveInserts = true;
         AudioClient audio(app);
+        // Production sessions use a retained structural signature even though
+        // Record must construct independent processors, not borrow this root.
+        audio.liveInsertRoot(root.getChildFile("not-a-live-endpoint"));
         auto wait = [&](auto predicate, const String &label)
         {
             auto end = Time::getMillisecondCounterHiRes() + 15000;

@@ -185,7 +185,7 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
     o->setProperty("capture", capturePath);
     o->setProperty("playGeneration", (juce::int64)generation);
     o->setProperty("mode", mode);
-    if (mode != "record" && liveRoot != juce::File())
+    if (liveRoot != juce::File())
         o->setProperty("liveRoot", liveRoot.getFullPathName());
     o->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);
     enqueue(m);
