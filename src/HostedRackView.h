@@ -109,6 +109,12 @@ class HostedRackView final : public juce::Component
         showChooser(target, anchor);
     }
     std::function<void()> onHeightChange;
+    std::function<void(const Owner &, const juce::String &, int)> onReorder;
+    std::function<std::pair<int, int>(const Owner &, const juce::String &)> chainPosition;
+    void openSelectedEditor()
+    {
+        editNative();
+    }
     void bind(const juce::String &layer)
     {
         Owner next{session.document.id, session.document.activeVariation, isMaster ? juce::String() : layer,
@@ -170,6 +176,12 @@ class HostedRackView final : public juce::Component
         remove.setEnabled(editable && has);
         up.setEnabled(editable && index > 1);
         down.setEnabled(editable && has && index < (int)rack->slots.size());
+        if (chainPosition)
+        {
+            auto [position, count] = chainPosition(owner, selected);
+            up.setEnabled(editable && position > 0);
+            down.setEnabled(editable && position >= 0 && position + 1 < count);
+        }
         for (auto *b : {&bypass, &transfer, &savePreset, &openPreset, &editor, &parameters})
             b->setEnabled(editable && has);
         rackBypass.setEnabled(editable && rack && !rack->slots.empty());
@@ -262,7 +274,9 @@ class HostedRackView final : public juce::Component
         add.setVisible(!embedded);
         for (auto *b : {&remove, &up, &down, &rackBypass, &transfer, &savePreset, &openPreset})
             b->setVisible(false);
-        for (auto *b : {&bypass, &editor, &parameters, &more})
+        bypass.setVisible(has && !embedded);
+        editor.setVisible(has && !embedded);
+        for (auto *b : {&parameters, &more})
             b->setVisible(has);
         more.setEnabled(has && editable);
         parameters.setEnabled(has);
@@ -270,11 +284,14 @@ class HostedRackView final : public juce::Component
         parameters.setButtonText(expanded ? "Hide external insert parameters"
                                           : "Show external insert parameters");
         parameterViewport.setVisible(expanded && !sliders.isEmpty());
+        if (session.liveInsertProblem(selected).isNotEmpty())
+            feedback.setText("Unavailable · use editor to reconnect", juce::dontSendNotification);
+        else if (feedback.getText() == "Unavailable · use editor to reconnect")
+            feedback.setText("Live", juce::dontSendNotification);
         updating = false;
         title.setText("Inserts", juce::dontSendNotification);
-        feedback.setTooltip(
-            "Persistent external chain follows stock inserts; master processing remains separate. "
-            "Hosted take recording is not yet qualified.");
+        feedback.setTooltip("Effects run in the displayed insert order; Track and Master remain separate. "
+                            "Hosted take recording is not yet qualified.");
         resized();
         reportHeight();
     }
@@ -298,7 +315,8 @@ class HostedRackView final : public juce::Component
         {
             auto row = r.removeFromTop(32);
             for (auto *b : {&bypass, &editor, &parameters, &more})
-                b->setBounds(row.removeFromLeft(32).reduced(2));
+                if (b->isVisible())
+                    b->setBounds(row.removeFromLeft(32).reduced(2));
         }
         feedback.setBounds(r.removeFromTop(feedback.getText().isNotEmpty() ? 24 : 0));
         parameterViewport.setBounds(r);
@@ -465,10 +483,10 @@ class HostedRackView final : public juce::Component
             o.variation != session.document.activeVariation)
             return nullptr;
         if (o.layer.isEmpty())
-            return isMaster ? &session.document.activeMix().hosted : nullptr;
+            return isMaster ? &session.document.activeMix().inserts.hosted : nullptr;
         for (auto &l : session.document.activeMix().layers)
             if (l.id == o.layer)
-                return &l.hosted;
+                return &l.inserts.hosted;
         return nullptr;
     }
     ChannelLayout bus(const Owner &o)
@@ -518,6 +536,11 @@ class HostedRackView final : public juce::Component
     }
     void move(int step)
     {
+        if (onReorder)
+        {
+            onReorder(owner, selected, step);
+            return;
+        }
         editSlot("Reorder external insert",
                  [=](auto &r, size_t i)
                  {
@@ -946,38 +969,7 @@ class HostedRackView final : public juce::Component
                     return;
                 auto layer = ids[(size_t)((choice - 1) / 2)];
                 bool move = choice % 2 == 0;
-                safe->session.withLiveState(
-                    [safe, source, id, layer, move]
-                    {
-                        if (!safe || !safe->find(source))
-                            return;
-                        safe->session.edit(move ? "Move external insert" : "Copy external insert",
-                                           [&](auto &d)
-                                           {
-                                               auto *from = safe->find(source);
-                                               auto *to = &d.activeMix().hosted;
-                                               if (layer.isNotEmpty())
-                                               {
-                                                   to = nullptr;
-                                                   for (auto &l : d.activeMix().layers)
-                                                       if (l.id == layer)
-                                                           to = &l.hosted;
-                                               }
-                                               if (!from || !to || from == to || to->slots.size() >= 8)
-                                                   return;
-                                               for (size_t i = 0; i < from->slots.size(); ++i)
-                                                   if (from->slots[i].id == id)
-                                                   {
-                                                       auto slot = from->slots[i];
-                                                       if (!move)
-                                                           slot.id = juce::Uuid().toString();
-                                                       to->slots.push_back(slot);
-                                                       if (move)
-                                                           from->slots.erase(from->slots.begin() + (int)i);
-                                                       break;
-                                                   }
-                                           });
-                    });
+                safe->session.transferInsert(source.layer, {InsertKind::hosted, id}, layer, move);
                 safe->refresh();
             });
     }
@@ -1010,8 +1002,9 @@ class HostedRackView final : public juce::Component
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());
-        if (auto *rack = find(target); rack && rack->slots.size() > 1)
-            menu.addItem(6, "Bypass plug-in effects", rackBypass.isEnabled(), rackBypass.getToggleState());
+        if (auto *rack = find(target); rack && ((!onReorder && rack->slots.size() > 1) || rack->bypass))
+            menu.addItem(6, rack->bypass ? "Enable legacy plug-in group" : "Bypass plug-in effects",
+                         rackBypass.isEnabled(), rackBypass.getToggleState());
         menu.addSeparator();
         menu.addItem(7, "Remove effect", remove.isEnabled());
         return menu;

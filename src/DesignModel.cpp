@@ -11,22 +11,62 @@ namespace sp
 {
 namespace
 {
-juce::var object(){return juce::var(new juce::DynamicObject());}
-void put(juce::var &o,const char *key,const juce::var &v){o.getDynamicObject()->setProperty(key,v);}
-int64_t integer(const juce::var &o,const char *key){return (int64_t)o[key];}
+juce::var object()
+{
+    return juce::var(new juce::DynamicObject());
+}
+void put(juce::var &o, const char *key, const juce::var &v)
+{
+    o.getDynamicObject()->setProperty(key, v);
+}
+int64_t integer(const juce::var &o, const char *key)
+{
+    return (int64_t)o[key];
+}
 juce::var effectsJson(const std::vector<StockEffect> &effects)
 {
-    juce::Array<juce::var> a;for(auto &e:effects){auto v=object();put(v,"id",e.id);put(v,"type",e.type);put(v,"bypass",e.bypass);put(v,"locked",e.locked);put(v,"parameterLocks",(int)e.parameterLocks);
-        juce::Array<juce::var> p;for(double n:e.parameters)p.add(n);put(v,"parameters",p);a.add(v);}return a;
+    juce::Array<juce::var> a;
+    for (auto &e : effects)
+    {
+        auto v = object();
+        put(v, "id", e.id);
+        put(v, "type", e.type);
+        put(v, "bypass", e.bypass);
+        put(v, "locked", e.locked);
+        put(v, "parameterLocks", (int)e.parameterLocks);
+        juce::Array<juce::var> p;
+        for (double n : e.parameters)
+            p.add(n);
+        put(v, "parameters", p);
+        a.add(v);
+    }
+    return a;
 }
 std::vector<StockEffect> effectsFrom(const juce::var &value)
 {
-    std::vector<StockEffect> out;if(auto *a=value.getArray()){if(a->size()>8)throw std::runtime_error("At most eight inserts per rack");
-        for(auto &v:*a){auto e=makeStockEffect(v["type"].toString());e.id=v["id"].toString();e.bypass=(bool)v["bypass"];e.locked=(bool)v["locked"];e.parameterLocks=(uint32_t)(int)v["parameterLocks"];
-            auto *p=v["parameters"].getArray();if(!p || p->size()!=4)throw std::runtime_error("Invalid stock effect parameters");for(int i=0;i<4;++i)e.parameters[(size_t)i]=(double)(*p)[i];out.push_back(e);}}
+    std::vector<StockEffect> out;
+    if (auto *a = value.getArray())
+    {
+        if (a->size() > 8)
+            throw std::runtime_error("At most eight inserts per rack");
+        for (auto &v : *a)
+        {
+            auto e = makeStockEffect(v["type"].toString());
+            e.id = v["id"].toString();
+            e.bypass = (bool)v["bypass"];
+            e.locked = (bool)v["locked"];
+            e.parameterLocks = (uint32_t)(int)v["parameterLocks"];
+            auto *p = v["parameters"].getArray();
+            if (!p || p->size() != 4)
+                throw std::runtime_error("Invalid stock effect parameters");
+            for (int i = 0; i < 4; ++i)
+                e.parameters[(size_t)i] = (double)(*p)[i];
+            out.push_back(e);
+        }
+    }
     return out;
 }
-juce::var mixJson(const DesignMix &mix)
+juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
 {
     auto o = object();
     if (!mix.layout.id.isEmpty())
@@ -39,13 +79,37 @@ juce::var mixJson(const DesignMix &mix)
         put(o, "performance", performanceToJson(mix.performance));
     put(o, "masterDb", mix.masterDb);
     put(o, "duration", (juce::int64)mix.duration);
-    put(o, "masterEffects", effectsJson(mix.masterEffects));
-    if (!mix.hosted.slots.empty()) put(o, "hostedRack", hostedRackJson(mix.hosted));
+    if (!legacyInserts &&
+        (!mix.inserts.stock.empty() || !mix.inserts.hosted.slots.empty() || mix.inserts.bypass))
+        put(o, "insertChain", insertChainToJson(mix.inserts));
+    else
+    {
+        put(o, "masterEffects", effectsJson(mix.inserts.stock));
+        if (!mix.inserts.hosted.slots.empty())
+            put(o, "hostedRack", hostedRackJson(mix.inserts.hosted));
+    }
     juce::Array<juce::var> layers;
-    for(auto &l:mix.layers){auto v=object();put(v,"id",l.id);put(v,"name",l.name);put(v,"external",l.external);auto s=object();
-        put(s,"id",l.source.id);put(s,"root",l.source.rootId);put(s,"relative",l.source.relative);put(s,"path",l.source.path);put(s,"name",l.source.name);put(s,"status",l.source.error);
-        put(s,"revision",(juce::int64)l.source.revision);put(s,"size",(juce::int64)l.source.size);put(s,"modified",(juce::int64)l.source.modified);put(s,"inode",(juce::int64)l.source.inode);
-        put(s,"rate",l.source.sampleRate);put(s,"samples",(juce::int64)l.source.samples);put(s,"channels",l.source.channels);put(v,"source",s);
+    for (auto &l : mix.layers)
+    {
+        auto v = object();
+        put(v, "id", l.id);
+        put(v, "name", l.name);
+        put(v, "external", l.external);
+        auto s = object();
+        put(s, "id", l.source.id);
+        put(s, "root", l.source.rootId);
+        put(s, "relative", l.source.relative);
+        put(s, "path", l.source.path);
+        put(s, "name", l.source.name);
+        put(s, "status", l.source.error);
+        put(s, "revision", (juce::int64)l.source.revision);
+        put(s, "size", (juce::int64)l.source.size);
+        put(s, "modified", (juce::int64)l.source.modified);
+        put(s, "inode", (juce::int64)l.source.inode);
+        put(s, "rate", l.source.sampleRate);
+        put(s, "samples", (juce::int64)l.source.samples);
+        put(s, "channels", l.source.channels);
+        put(v, "source", s);
         if (!mix.layout.id.isEmpty())
         {
             put(v, "routing", routingJson(l.routing));
@@ -56,14 +120,45 @@ juce::var mixJson(const DesignMix &mix)
         }
         if (l.pool)
             put(v, "sourcePool", sourcePoolToJson(*l.pool));
-        put(v,"first",(juce::int64)l.region.startSample);put(v,"last",(juce::int64)l.region.endSample);put(v,"channelPair",l.region.auditionPair);
-        put(v,"placement",(juce::int64)l.placement);put(v,"sync",(juce::int64)l.sync);put(v,"fadeIn",(juce::int64)l.fadeIn);put(v,"fadeOut",(juce::int64)l.fadeOut);
-        if(l.fadeInShape!=FadeShape::linear)put(v,"fadeInShape",fadeShapeId(l.fadeInShape));
-        if(l.fadeOutShape!=FadeShape::linear)put(v,"fadeOutShape",fadeShapeId(l.fadeOutShape));
-        if(!l.fadeInPoints.empty())put(v,"fadeInPoints",fadePointsToJson(l.fadeInPoints));
-        if(!l.fadeOutPoints.empty())put(v,"fadeOutPoints",fadePointsToJson(l.fadeOutPoints));
-        if(l.controlGain!=1)put(v,"controlGain",l.controlGain);put(v,"gainDb",l.gainDb);put(v,"pan",l.pan);put(v,"rate",l.rate);put(v,"reverse",l.reverse);put(v,"mute",l.mute);put(v,"solo",l.solo);put(v,"locked",l.locked);put(v,"locks",(int)l.locks);put(v,"colour",(juce::int64)l.colour);put(v,"effects",effectsJson(l.effects));if(!l.hosted.slots.empty())put(v,"hostedRack",hostedRackJson(l.hosted));layers.add(v);}
-    put(o,"layers",layers);return o;
+        put(v, "first", (juce::int64)l.region.startSample);
+        put(v, "last", (juce::int64)l.region.endSample);
+        put(v, "channelPair", l.region.auditionPair);
+        put(v, "placement", (juce::int64)l.placement);
+        put(v, "sync", (juce::int64)l.sync);
+        put(v, "fadeIn", (juce::int64)l.fadeIn);
+        put(v, "fadeOut", (juce::int64)l.fadeOut);
+        if (l.fadeInShape != FadeShape::linear)
+            put(v, "fadeInShape", fadeShapeId(l.fadeInShape));
+        if (l.fadeOutShape != FadeShape::linear)
+            put(v, "fadeOutShape", fadeShapeId(l.fadeOutShape));
+        if (!l.fadeInPoints.empty())
+            put(v, "fadeInPoints", fadePointsToJson(l.fadeInPoints));
+        if (!l.fadeOutPoints.empty())
+            put(v, "fadeOutPoints", fadePointsToJson(l.fadeOutPoints));
+        if (l.controlGain != 1)
+            put(v, "controlGain", l.controlGain);
+        put(v, "gainDb", l.gainDb);
+        put(v, "pan", l.pan);
+        put(v, "rate", l.rate);
+        put(v, "reverse", l.reverse);
+        put(v, "mute", l.mute);
+        put(v, "solo", l.solo);
+        put(v, "locked", l.locked);
+        put(v, "locks", (int)l.locks);
+        put(v, "colour", (juce::int64)l.colour);
+        if (!legacyInserts &&
+            (!l.inserts.stock.empty() || !l.inserts.hosted.slots.empty() || l.inserts.bypass))
+            put(v, "insertChain", insertChainToJson(l.inserts));
+        else
+        {
+            put(v, "effects", effectsJson(l.inserts.stock));
+            if (!l.inserts.hosted.slots.empty())
+                put(v, "hostedRack", hostedRackJson(l.inserts.hosted));
+        }
+        layers.add(v);
+    }
+    put(o, "layers", layers);
+    return o;
 }
 DesignMix mixFrom(const juce::var &o)
 {
@@ -79,12 +174,40 @@ DesignMix mixFrom(const juce::var &o)
     mix.performance = performanceFromJson(o["performance"]);
     mix.masterDb = (double)o["masterDb"];
     mix.duration = integer(o, "duration");
-    mix.masterEffects = effectsFrom(o["masterEffects"]);
-    mix.hosted = hostedRackFromJson(o["hostedRack"]);
-    auto *a=o["layers"].getArray();if(!a || a->size()>64)throw std::runtime_error("Invalid layer list (maximum 64)");
-    for(auto &v:*a){DesignLayer l;l.id=v["id"].toString();l.name=v["name"].toString();l.external=(bool)v["external"];auto s=v["source"];
-        l.source.id=s["id"].toString();l.source.rootId=s["root"].toString();l.source.relative=s["relative"].toString();l.source.path=s["path"].toString();l.source.name=s["name"].toString();l.source.error=s["status"].toString();l.source.revision=integer(s,"revision");
-        l.source.size=integer(s,"size");l.source.modified=integer(s,"modified");l.source.inode=integer(s,"inode");l.source.sampleRate=(double)s["rate"];l.source.samples=integer(s,"samples");l.source.channels=(int)s["channels"];l.source.duration=l.source.samples/l.source.sampleRate;
+    mix.inserts.stock = effectsFrom(o["masterEffects"]);
+    mix.inserts.hosted = hostedRackFromJson(o["hostedRack"]);
+    if (o.hasProperty("insertChain"))
+    {
+        if (!mix.inserts.stock.empty() || !mix.inserts.hosted.slots.empty())
+            throw std::runtime_error("Conflicting insert order representations");
+        mix.inserts = insertChainFromJson(o["insertChain"]);
+    }
+    else
+        normaliseInsertChain(mix.inserts);
+    auto *a = o["layers"].getArray();
+    if (!a || a->size() > 64)
+        throw std::runtime_error("Invalid layer list (maximum 64)");
+    for (auto &v : *a)
+    {
+        DesignLayer l;
+        l.id = v["id"].toString();
+        l.name = v["name"].toString();
+        l.external = (bool)v["external"];
+        auto s = v["source"];
+        l.source.id = s["id"].toString();
+        l.source.rootId = s["root"].toString();
+        l.source.relative = s["relative"].toString();
+        l.source.path = s["path"].toString();
+        l.source.name = s["name"].toString();
+        l.source.error = s["status"].toString();
+        l.source.revision = integer(s, "revision");
+        l.source.size = integer(s, "size");
+        l.source.modified = integer(s, "modified");
+        l.source.inode = integer(s, "inode");
+        l.source.sampleRate = (double)s["rate"];
+        l.source.samples = integer(s, "samples");
+        l.source.channels = (int)s["channels"];
+        l.source.duration = l.source.samples / l.source.sampleRate;
         if (!mix.layout.id.isEmpty())
         {
             l.routing = routingFromJson(v["routing"]);
@@ -105,9 +228,43 @@ DesignMix mixFrom(const juce::var &o)
                         l.source.layoutOverride = entry.source.layoutOverride;
                     }
         }
-        l.region.startSample=integer(v,"first");l.region.endSample=integer(v,"last");l.region.auditionPair=(int)v["channelPair"];l.region.revision=l.source.revision;l.region.size=l.source.size;l.region.modified=l.source.modified;l.region.inode=l.source.inode;
-        l.placement=integer(v,"placement");l.sync=integer(v,"sync");l.fadeIn=integer(v,"fadeIn");l.fadeOut=integer(v,"fadeOut");l.fadeInShape=fadeShapeFromId(v["fadeInShape"].toString());l.fadeOutShape=fadeShapeFromId(v["fadeOutShape"].toString());l.fadeInPoints=fadePointsFromJson(v["fadeInPoints"]);l.fadeOutPoints=fadePointsFromJson(v["fadeOutPoints"]);l.controlGain=v.hasProperty("controlGain")?(double)v["controlGain"]:1;l.gainDb=(double)v["gainDb"];l.pan=(double)v["pan"];l.rate=(double)v["rate"];
-        l.reverse=(bool)v["reverse"];l.mute=(bool)v["mute"];l.solo=(bool)v["solo"];l.locked=(bool)v["locked"];l.locks=(uint32_t)(int)v["locks"];l.colour=(uint32_t)(juce::int64)v["colour"];l.effects=effectsFrom(v["effects"]);l.hosted=hostedRackFromJson(v["hostedRack"]);mix.layers.push_back(std::move(l));}
+        l.region.startSample = integer(v, "first");
+        l.region.endSample = integer(v, "last");
+        l.region.auditionPair = (int)v["channelPair"];
+        l.region.revision = l.source.revision;
+        l.region.size = l.source.size;
+        l.region.modified = l.source.modified;
+        l.region.inode = l.source.inode;
+        l.placement = integer(v, "placement");
+        l.sync = integer(v, "sync");
+        l.fadeIn = integer(v, "fadeIn");
+        l.fadeOut = integer(v, "fadeOut");
+        l.fadeInShape = fadeShapeFromId(v["fadeInShape"].toString());
+        l.fadeOutShape = fadeShapeFromId(v["fadeOutShape"].toString());
+        l.fadeInPoints = fadePointsFromJson(v["fadeInPoints"]);
+        l.fadeOutPoints = fadePointsFromJson(v["fadeOutPoints"]);
+        l.controlGain = v.hasProperty("controlGain") ? (double)v["controlGain"] : 1;
+        l.gainDb = (double)v["gainDb"];
+        l.pan = (double)v["pan"];
+        l.rate = (double)v["rate"];
+        l.reverse = (bool)v["reverse"];
+        l.mute = (bool)v["mute"];
+        l.solo = (bool)v["solo"];
+        l.locked = (bool)v["locked"];
+        l.locks = (uint32_t)(int)v["locks"];
+        l.colour = (uint32_t)(juce::int64)v["colour"];
+        l.inserts.stock = effectsFrom(v["effects"]);
+        l.inserts.hosted = hostedRackFromJson(v["hostedRack"]);
+        if (v.hasProperty("insertChain"))
+        {
+            if (!l.inserts.stock.empty() || !l.inserts.hosted.slots.empty())
+                throw std::runtime_error("Conflicting layer insert representations");
+            l.inserts = insertChainFromJson(v["insertChain"]);
+        }
+        else
+            normaliseInsertChain(l.inserts);
+        mix.layers.push_back(std::move(l));
+    }
     return mix;
 }
 juce::var renderJson(const DesignRenderSettings &s)
@@ -142,29 +299,192 @@ DesignRenderSettings renderFrom(const juce::var &o)
     s.splitMono = (bool)o["splitMono"];
     return s;
 }
-void bounded(double n,double lo,double hi,const char *name){if(!std::isfinite(n) || n<lo || n>hi)throw std::runtime_error(name);}
-}
-juce::var designMixToJson(const DesignMix &m){return mixJson(m);}
-DesignMix designMixFromJson(const juce::var &v){return mixFrom(v);}
-DesignMix &DesignDocument::activeMix(){for(auto &v:variations)if(v.id==activeVariation)return v.mix;return original;}
-const DesignMix &DesignDocument::activeMix() const {for(auto &v:variations)if(v.id==activeVariation)return v.mix;return original;}
-int64_t layerDuration(const DesignLayer &l,double rate){return (int64_t)std::ceil((long double)(l.region.endSample-l.region.startSample)*rate/(l.source.sampleRate*l.rate));}
-int64_t mixDuration(const DesignMix &m,double rate){int64_t end=1;for(auto &l:m.layers)end=std::max(end,l.placement+layerDuration(l,rate));return m.duration>0 ? m.duration : end;}
-int64_t designPreviewEnd(const DesignDocument &d){if(auto *t=selectedTake(d))return t->bodyEnd+(int64_t)std::llround(d.renderSettings.tailSeconds*t->sampleRate);return mixDuration(d.activeMix(),d.sampleRate)+(int64_t)std::llround(d.renderSettings.tailSeconds*d.sampleRate);}
-int64_t designPlayStart(const DesignDocument &d,int64_t frame){if(selectedTake(d))return 0;return frame<0 || frame>=mixDuration(d.activeMix(),d.sampleRate) ? 0 : frame;}
-int64_t layerSyncFrame(const DesignLayer &l,double rate){auto distance=l.reverse ? l.region.endSample-1-l.sync : l.sync-l.region.startSample;return l.placement+(int64_t)std::llround(distance*rate/(l.source.sampleRate*l.rate));}
-DesignLayer makeDesignLayer(const Asset &a,int64_t first,int64_t last,bool external)
+void bounded(double n, double lo, double hi, const char *name)
 {
-    DesignLayer l;l.source=a;l.name=a.name;l.external=external;l.region.startSample=first;l.region.endSample=last<0 ? a.samples : last;l.sync=first;
-    l.region.size=a.size;l.region.modified=a.modified;l.region.inode=a.inode;l.region.revision=a.revision;l.region.auditionPair=0;return l;
+    if (!std::isfinite(n) || n < lo || n > hi)
+        throw std::runtime_error(name);
 }
-StockEffect makeStockEffect(const juce::String &type){StockEffect e;e.type=type;if(type=="filter")e.parameters={20,20000,0,0};else if(type=="delay")e.parameters={150,.3,.2,0};else if(type=="reverb")e.parameters={.5,.5,.2,1};else if(type!="gain")throw std::runtime_error("Unknown stock effect");return e;}
+} // namespace
+juce::var insertChainToJson(const InsertChain &chain)
+{
+    auto o = object();
+    put(o, "version", 1);
+    put(o, "bypass", chain.bypass);
+    if (!chain.hosted.slots.empty())
+        put(o, "serviceRack", chain.hosted.id);
+    if (chain.hosted.bypass)
+        put(o, "legacyHostedBypass", true);
+    juce::Array<juce::var> slots;
+    for (auto &r : resolvedInsertOrder(chain))
+    {
+        auto row = object();
+        put(row, "id", r.id);
+        put(row, "kind", r.kind == InsertKind::stock ? "stock" : "hosted");
+        if (r.kind == InsertKind::stock)
+            for (auto &s : chain.stock)
+                if (s.id == r.id)
+                {
+                    auto settings = effectsJson({s})[0].clone();
+                    settings.getDynamicObject()->removeProperty("id");
+                    settings.getDynamicObject()->removeProperty("bypass");
+                    put(row, "settings", settings);
+                    put(row, "bypass", s.bypass);
+                    break;
+                }
+        if (r.kind == InsertKind::hosted)
+            for (auto &s : chain.hosted.slots)
+                if (s.id == r.id)
+                {
+                    put(row, "settings", juce::JSON::parse(s.settings));
+                    put(row, "bypass", s.bypass);
+                    break;
+                }
+        slots.add(row);
+    }
+    put(o, "slots", slots);
+    return o;
+}
+InsertChain insertChainFromJson(const juce::var &o)
+{
+    if ((int)o["version"] != 1 || !o["slots"].isArray() || o["slots"].size() > 16)
+        throw std::runtime_error("Unsupported ordered insert chain");
+    InsertChain c;
+    c.bypass = (bool)o["bypass"];
+    if (o.hasProperty("serviceRack"))
+        c.hosted.id = o["serviceRack"].toString();
+    c.hosted.bypass = (bool)o["legacyHostedBypass"];
+    if (c.hosted.id.isEmpty())
+        throw std::runtime_error("Missing insert service identity");
+    for (auto &row : *o["slots"].getArray())
+    {
+        auto kind = row["kind"].toString();
+        auto id = row["id"].toString();
+        if (id.isEmpty())
+            throw std::runtime_error("Missing insert slot identity");
+        if (kind == "stock")
+        {
+            auto v = row["settings"].clone();
+            if (!v.isObject())
+                throw std::runtime_error("Invalid stock insert settings");
+            put(v, "id", id);
+            put(v, "bypass", row["bypass"]);
+            auto fx = effectsFrom(juce::var(juce::Array<juce::var>{v}));
+            c.stock.push_back(fx[0]);
+            c.order.push_back({InsertKind::stock, id});
+        }
+        else if (kind == "hosted")
+        {
+            HostedSlot s;
+            s.id = id;
+            s.bypass = (bool)row["bypass"];
+            if (!row["settings"].isObject())
+                throw std::runtime_error("Invalid hosted insert settings");
+            s.settings = juce::JSON::toString(row["settings"], true);
+            c.hosted.slots.push_back(s);
+            c.order.push_back({InsertKind::hosted, id});
+        }
+        else
+            throw std::runtime_error("Unknown insert slot kind");
+    }
+    if (c.stock.size() > 8)
+        throw std::runtime_error("Eight stock inserts per chain maximum");
+    if (!c.hosted.slots.empty() && !o.hasProperty("serviceRack"))
+        throw std::runtime_error("Missing hosted service identity");
+    validateHostedRack(c.hosted);
+    resolvedInsertOrder(c);
+    return c;
+}
+juce::var designMixToJson(const DesignMix &m, bool legacyInserts)
+{
+    return mixJson(m, legacyInserts);
+}
+DesignMix designMixFromJson(const juce::var &v)
+{
+    return mixFrom(v);
+}
+DesignMix &DesignDocument::activeMix()
+{
+    for (auto &v : variations)
+        if (v.id == activeVariation)
+            return v.mix;
+    return original;
+}
+const DesignMix &DesignDocument::activeMix() const
+{
+    for (auto &v : variations)
+        if (v.id == activeVariation)
+            return v.mix;
+    return original;
+}
+int64_t layerDuration(const DesignLayer &l, double rate)
+{
+    return (int64_t)std::ceil((long double)(l.region.endSample - l.region.startSample) * rate /
+                              (l.source.sampleRate * l.rate));
+}
+int64_t mixDuration(const DesignMix &m, double rate)
+{
+    int64_t end = 1;
+    for (auto &l : m.layers)
+        end = std::max(end, l.placement + layerDuration(l, rate));
+    return m.duration > 0 ? m.duration : end;
+}
+int64_t designPreviewEnd(const DesignDocument &d)
+{
+    if (auto *t = selectedTake(d))
+        return t->bodyEnd + (int64_t)std::llround(d.renderSettings.tailSeconds * t->sampleRate);
+    return mixDuration(d.activeMix(), d.sampleRate) +
+           (int64_t)std::llround(d.renderSettings.tailSeconds * d.sampleRate);
+}
+int64_t designPlayStart(const DesignDocument &d, int64_t frame)
+{
+    if (selectedTake(d))
+        return 0;
+    return frame < 0 || frame >= mixDuration(d.activeMix(), d.sampleRate) ? 0 : frame;
+}
+int64_t layerSyncFrame(const DesignLayer &l, double rate)
+{
+    auto distance = l.reverse ? l.region.endSample - 1 - l.sync : l.sync - l.region.startSample;
+    return l.placement + (int64_t)std::llround(distance * rate / (l.source.sampleRate * l.rate));
+}
+DesignLayer makeDesignLayer(const Asset &a, int64_t first, int64_t last, bool external)
+{
+    DesignLayer l;
+    l.source = a;
+    l.name = a.name;
+    l.external = external;
+    l.region.startSample = first;
+    l.region.endSample = last < 0 ? a.samples : last;
+    l.sync = first;
+    l.region.size = a.size;
+    l.region.modified = a.modified;
+    l.region.inode = a.inode;
+    l.region.revision = a.revision;
+    l.region.auditionPair = 0;
+    return l;
+}
+StockEffect makeStockEffect(const juce::String &type)
+{
+    StockEffect e;
+    e.type = type;
+    if (type == "filter")
+        e.parameters = {20, 20000, 0, 0};
+    else if (type == "delay")
+        e.parameters = {150, .3, .2, 0};
+    else if (type == "reverb")
+        e.parameters = {.5, .5, .2, 1};
+    else if (type != "gain")
+        throw std::runtime_error("Unknown stock effect");
+    return e;
+}
 FadeShape fadeShapeFromId(const juce::String &id)
 {
-    if (id.isEmpty()) return FadeShape::linear;
-    if (id == "custom") return FadeShape::custom;
+    if (id.isEmpty())
+        return FadeShape::linear;
+    if (id == "custom")
+        return FadeShape::custom;
     for (auto shape : fadeShapes)
-        if (id == fadeShapeId(shape)) return shape;
+        if (id == fadeShapeId(shape))
+            return shape;
     throw std::runtime_error("Unsupported fade shape");
 }
 namespace
@@ -173,29 +493,43 @@ bool shapedFades(const DesignDocument &d)
 {
     auto shaped = [](const DesignMix &mix)
     {
-        return std::any_of(mix.layers.begin(), mix.layers.end(), [](auto &l)
-        { return l.fadeInShape != FadeShape::linear || l.fadeOutShape != FadeShape::linear || !l.fadeInPoints.empty() || !l.fadeOutPoints.empty(); });
+        return std::any_of(mix.layers.begin(), mix.layers.end(),
+                           [](auto &l)
+                           {
+                               return l.fadeInShape != FadeShape::linear ||
+                                      l.fadeOutShape != FadeShape::linear || !l.fadeInPoints.empty() ||
+                                      !l.fadeOutPoints.empty();
+                           });
     };
-    return shaped(d.original) || std::any_of(d.variations.begin(), d.variations.end(),
-                                           [&](auto &v) { return shaped(v.mix); });
+    return shaped(d.original) ||
+           std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return shaped(v.mix); });
 }
-}
+} // namespace
 juce::var fadePointsToJson(const std::vector<FadePoint> &points)
 {
     juce::Array<juce::var> values;
-    for (auto &point : points) { auto v=object();put(v,"x",point.x);put(v,"y",point.y);values.add(v); }
+    for (auto &point : points)
+    {
+        auto v = object();
+        put(v, "x", point.x);
+        put(v, "y", point.y);
+        values.add(v);
+    }
     return values;
 }
 std::vector<FadePoint> fadePointsFromJson(const juce::var &value)
 {
-    if (value.isVoid()) return {};
-    auto *points=value.getArray();
-    if(!points || points->size()>maxFadePoints)throw std::runtime_error("Invalid fade points (maximum 32)");
+    if (value.isVoid())
+        return {};
+    auto *points = value.getArray();
+    if (!points || points->size() > maxFadePoints)
+        throw std::runtime_error("Invalid fade points (maximum 32)");
     std::vector<FadePoint> result;
-    for(auto &point:*points)
+    for (auto &point : *points)
     {
-        if(!point.isObject() || !point.hasProperty("x") || !point.hasProperty("y"))throw std::runtime_error("Invalid fade point");
-        result.push_back({(double)point["x"],(double)point["y"]});
+        if (!point.isObject() || !point.hasProperty("x") || !point.hasProperty("y"))
+            throw std::runtime_error("Invalid fade point");
+        result.push_back({(double)point["x"], (double)point["y"]});
     }
     return result;
 }
@@ -217,12 +551,15 @@ int performanceFormat(const DesignDocument &d)
                                (int)o.channelProvenance["spatialRoutingVersion"] == 2;
                     }))
         return 6;
-    auto version=[](const DesignMix &m){
-        bool used=hasPerformance(m.performance) || std::any_of(m.layers.begin(),m.layers.end(),[](auto &l){return l.controlGain!=1;});
-        return used ? (m.performance.blendLaw==2 ? 3 : 2) : 1;
+    auto version = [](const DesignMix &m)
+    {
+        bool used = hasPerformance(m.performance) ||
+                    std::any_of(m.layers.begin(), m.layers.end(), [](auto &l) { return l.controlGain != 1; });
+        return used ? (m.performance.blendLaw == 2 ? 3 : 2) : 1;
     };
-    int result=d.takes.empty()?version(d.original):4;
-    for(auto &v:d.variations)result=std::max(result,version(v.mix));
+    int result = d.takes.empty() ? version(d.original) : 4;
+    for (auto &v : d.variations)
+        result = std::max(result, version(v.mix));
     if (d.renderSettings.layout.isNotEmpty() || d.renderSettings.splitMono || !d.outputSelections.empty() ||
         !d.original.layout.id.isEmpty() ||
         std::any_of(d.variations.begin(), d.variations.end(),
@@ -232,7 +569,7 @@ int performanceFormat(const DesignDocument &d)
         return 5;
     return result;
 }
-}
+} // namespace
 juce::var designToJson(const DesignDocument &d)
 {
     auto o = object();
@@ -245,12 +582,24 @@ juce::var designToJson(const DesignDocument &d)
     }
     put(o, "outputFolder", d.outputFolder);
     put(o, "format", "SoundPlus referenced design");
-    put(o, "version", hasHostedInserts(d) ? 8 : hasSourcePools(d) ? 7 : performanceFormat(d));
+    auto hasChain = [](const DesignMix &m)
+    {
+        auto active = [](const InsertChain &c)
+        { return !c.stock.empty() || !c.hosted.slots.empty() || c.bypass; };
+        return active(m.inserts) ||
+               std::any_of(m.layers.begin(), m.layers.end(), [&](auto &l) { return active(l.inserts); });
+    };
+    bool ordered =
+        hasChain(d.original) ||
+        std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasChain(v.mix); }) ||
+        std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.orderedRecipe; });
+    put(o, "version", ordered ? 9 : hasHostedInserts(d) ? 8 : hasSourcePools(d) ? 7 : performanceFormat(d));
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasHostedInserts(d)         ? "hosted-racks-v1"
-        : performanceFormat(d) == 6   ? "stock-layout-v2"
+        ordered                     ? "ordered-inserts-v1"
+        : hasHostedInserts(d)       ? "hosted-racks-v1"
+        : performanceFormat(d) == 6 ? "stock-layout-v2"
         : performanceFormat(d) == 5 ? "stock-layout-v1"
         : performanceFormat(d) == 4 ? "stock-takes-v1"
         : performanceFormat(d) == 3 ? "stock-perform-v2"
@@ -265,10 +614,18 @@ juce::var designToJson(const DesignDocument &d)
     put(o, "activeVariation", d.activeVariation);
     put(o, "selectedLayer", d.selectedLayer);
     put(o, "playhead", (juce::int64)d.playhead);
-    if(!d.markers.empty()) {
+    if (!d.markers.empty())
+    {
         juce::Array<juce::var> markers;
-        for(auto &m:d.markers) { auto v=object(); put(v,"id",m.id); put(v,"name",m.name); put(v,"frame",(juce::int64)m.frame); markers.add(v); }
-        put(o,"markers",markers);
+        for (auto &m : d.markers)
+        {
+            auto v = object();
+            put(v, "id", m.id);
+            put(v, "name", m.name);
+            put(v, "frame", (juce::int64)m.frame);
+            markers.add(v);
+        }
+        put(o, "markers", markers);
     }
     if (!d.takes.empty())
     {
@@ -278,8 +635,33 @@ juce::var designToJson(const DesignDocument &d)
         put(o, "takes", takes);
         put(o, "activeTake", d.activeTake);
     }
-    juce::Array<juce::var> variations;for(auto &v:d.variations){auto n=object();put(n,"id",v.id);put(n,"name",v.name);put(n,"seed",juce::String::toHexString((juce::int64)v.seed));put(n,"kept",v.kept);if(v.snapshot)put(n,"snapshot",true);put(n,"mix",mixJson(v.mix));variations.add(n);}put(o,"variations",variations);
-    auto settings=object();auto &s=d.variationSettings;put(settings,"count",s.count);put(settings,"enabled",(int)s.enabled);put(settings,"gainDb",s.gainDb);put(settings,"pan",s.pan);put(settings,"placementSeconds",s.placementSeconds);put(settings,"ratePercent",s.ratePercent);put(settings,"fadeSeconds",s.fadeSeconds);put(settings,"trimSeconds",s.trimSeconds);put(settings,"effectAmount",s.effectAmount);put(o,"variationSettings",settings);put(o,"renderSettings",renderJson(d.renderSettings));
+    juce::Array<juce::var> variations;
+    for (auto &v : d.variations)
+    {
+        auto n = object();
+        put(n, "id", v.id);
+        put(n, "name", v.name);
+        put(n, "seed", juce::String::toHexString((juce::int64)v.seed));
+        put(n, "kept", v.kept);
+        if (v.snapshot)
+            put(n, "snapshot", true);
+        put(n, "mix", mixJson(v.mix));
+        variations.add(n);
+    }
+    put(o, "variations", variations);
+    auto settings = object();
+    auto &s = d.variationSettings;
+    put(settings, "count", s.count);
+    put(settings, "enabled", (int)s.enabled);
+    put(settings, "gainDb", s.gainDb);
+    put(settings, "pan", s.pan);
+    put(settings, "placementSeconds", s.placementSeconds);
+    put(settings, "ratePercent", s.ratePercent);
+    put(settings, "fadeSeconds", s.fadeSeconds);
+    put(settings, "trimSeconds", s.trimSeconds);
+    put(settings, "effectAmount", s.effectAmount);
+    put(o, "variationSettings", settings);
+    put(o, "renderSettings", renderJson(d.renderSettings));
     juce::Array<juce::var> outputs;
     for (auto &v : d.outputs)
     {
@@ -300,7 +682,11 @@ juce::var designToJson(const DesignDocument &d)
             put(n, "files", v.files);
         if (v.outputSetVersion)
             put(n, "outputSetVersion", v.outputSetVersion);
-        if(v.processing=="hosted-racks-v1") { put(n,"processing",v.processing);put(n,"sources",v.sourceProvenance); }
+        if (v.processing == "hosted-racks-v1")
+        {
+            put(n, "processing", v.processing);
+            put(n, "sources", v.sourceProvenance);
+        }
         if (v.takeId.isNotEmpty())
         {
             put(n, "takeId", v.takeId);
@@ -321,10 +707,12 @@ juce::var designToJson(const DesignDocument &d)
 }
 DesignDocument designFromJson(const juce::var &o)
 {
-    int version=(int)o["version"];auto dsp=o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 8) ||
-        (version == 8 ? dsp != "hosted-racks-v1"
-         : version == 7   ? (int)o["sourcePoolMetadataVersion"] != 1
+    int version = (int)o["version"];
+    auto dsp = o["dsp"].toString();
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 9) ||
+        (version == 9   ? dsp != "ordered-inserts-v1"
+         : version == 8 ? dsp != "hosted-racks-v1"
+         : version == 7 ? (int)o["sourcePoolMetadataVersion"] != 1
          : version == 6 ? dsp != "stock-layout-v2"
          : version == 5 ? dsp != "stock-layout-v1"
          : version == 4 ? dsp != "stock-takes-v1"
@@ -342,12 +730,35 @@ DesignDocument designFromJson(const juce::var &o)
     d.activeVariation = o["activeVariation"].toString();
     d.selectedLayer = o["selectedLayer"].toString();
     d.playhead = integer(o, "playhead");
-    if(auto *markers=o["markers"].getArray()) {
-        if(markers->size()>128) throw std::runtime_error("Too many timeline markers");
-        for(auto &m:*markers) d.markers.push_back({m["id"].toString(),m["name"].toString(),integer(m,"frame")});
+    if (auto *markers = o["markers"].getArray())
+    {
+        if (markers->size() > 128)
+            throw std::runtime_error("Too many timeline markers");
+        for (auto &m : *markers)
+            d.markers.push_back({m["id"].toString(), m["name"].toString(), integer(m, "frame")});
     }
-    if(auto *a=o["variations"].getArray()){if(a->size()>32)throw std::runtime_error("Too many variations");for(auto &v:*a){DesignVariation n;n.id=v["id"].toString();n.name=v["name"].toString();n.seed=(uint64_t)v["seed"].toString().getHexValue64();n.kept=(bool)v["kept"];n.snapshot=(bool)v["snapshot"];n.mix=mixFrom(v["mix"]);d.variations.push_back(std::move(n));}}
-    auto s=o["variationSettings"];d.variationSettings={(int)s["count"],(uint32_t)(int)s["enabled"],(double)s["gainDb"],(double)s["pan"],(double)s["placementSeconds"],(double)s["ratePercent"],(double)s["fadeSeconds"],(double)s["trimSeconds"],(double)s["effectAmount"]};d.renderSettings=renderFrom(o["renderSettings"]);
+    if (auto *a = o["variations"].getArray())
+    {
+        if (a->size() > 32)
+            throw std::runtime_error("Too many variations");
+        for (auto &v : *a)
+        {
+            DesignVariation n;
+            n.id = v["id"].toString();
+            n.name = v["name"].toString();
+            n.seed = (uint64_t)v["seed"].toString().getHexValue64();
+            n.kept = (bool)v["kept"];
+            n.snapshot = (bool)v["snapshot"];
+            n.mix = mixFrom(v["mix"]);
+            d.variations.push_back(std::move(n));
+        }
+    }
+    auto s = o["variationSettings"];
+    d.variationSettings = {
+        (int)s["count"],          (uint32_t)(int)s["enabled"],   (double)s["gainDb"],
+        (double)s["pan"],         (double)s["placementSeconds"], (double)s["ratePercent"],
+        (double)s["fadeSeconds"], (double)s["trimSeconds"],      (double)s["effectAmount"]};
+    d.renderSettings = renderFrom(o["renderSettings"]);
     if (auto *a = o["outputs"].getArray())
     {
         if (a->size() > 1000)
@@ -381,7 +792,14 @@ DesignDocument designFromJson(const juce::var &o)
             d.outputs.push_back(n);
         }
     }
-    if(auto *a=o["takes"].getArray()){if(a->size()>(int)maxDocumentTakes)throw std::runtime_error("Too many takes");for(auto &v:*a)d.takes.push_back(takeFromJson(v));}d.activeTake=o["activeTake"].toString();
+    if (auto *a = o["takes"].getArray())
+    {
+        if (a->size() > (int)maxDocumentTakes)
+            throw std::runtime_error("Too many takes");
+        for (auto &v : *a)
+            d.takes.push_back(takeFromJson(v));
+    }
+    d.activeTake = o["activeTake"].toString();
     if (o.hasProperty("outputSelections"))
     {
         auto *p = o["outputSelections"].getDynamicObject();
@@ -413,19 +831,50 @@ DesignDocument designFromJson(const juce::var &o)
 }
 void validateDesign(const DesignDocument &d, bool verifyTakeContent)
 {
-    if(d.markers.size()>128) throw std::runtime_error("At most 128 timeline markers");
+    if (d.markers.size() > 128)
+        throw std::runtime_error("At most 128 timeline markers");
     juce::StringArray markerIds;
-    for(auto &m:d.markers) {
-        if(m.id.isEmpty() || markerIds.contains(m.id) || m.name.length()>100 || m.frame<0 || m.frame>d.sampleRate*86400*7)
+    for (auto &m : d.markers)
+    {
+        if (m.id.isEmpty() || markerIds.contains(m.id) || m.name.length() > 100 || m.frame < 0 ||
+            m.frame > d.sampleRate * 86400 * 7)
             throw std::runtime_error("Invalid timeline marker");
         markerIds.add(m.id);
     }
-    if(d.id.isEmpty() || d.revision<1 || (d.sampleRate!=44100 && d.sampleRate!=48000 && d.sampleRate!=96000))throw std::runtime_error("Invalid design identity or sample rate");
-    auto rack=[&](const std::vector<StockEffect> &fx){if(fx.size()>8)throw std::runtime_error("Eight inserts per rack maximum");juce::StringArray effectIds;for(auto &e:fx){if(e.id.isEmpty() || effectIds.contains(e.id))throw std::runtime_error("Duplicate insert identity");effectIds.add(e.id);makeStockEffect(e.type);for(double p:e.parameters)bounded(p,-100000,100000,"Nonfinite effect parameter");
-        if(e.type=="gain")bounded(e.parameters[0],-90,24,"Gain insert outside supported range");
-        if(e.type=="filter"){bounded(e.parameters[0],10,20000,"High pass outside supported range");bounded(e.parameters[1],20,40000,"Low pass outside supported range");}
-        if(e.type=="delay"){bounded(e.parameters[0],1,2000,"Delay time outside supported range");bounded(e.parameters[1],0,.95,"Delay feedback outside supported range");bounded(e.parameters[2],0,1,"Delay mix outside supported range");}
-        if(e.type=="reverb")for(double p:e.parameters)bounded(p,0,1,"Reverb parameter outside supported range");}};
+    if (d.id.isEmpty() || d.revision < 1 ||
+        (d.sampleRate != 44100 && d.sampleRate != 48000 && d.sampleRate != 96000))
+        throw std::runtime_error("Invalid design identity or sample rate");
+    auto rack = [&](const std::vector<StockEffect> &fx)
+    {
+        if (fx.size() > 8)
+            throw std::runtime_error("Eight inserts per rack maximum");
+        juce::StringArray effectIds;
+        for (auto &e : fx)
+        {
+            if (e.id.isEmpty() || effectIds.contains(e.id))
+                throw std::runtime_error("Duplicate insert identity");
+            effectIds.add(e.id);
+            makeStockEffect(e.type);
+            for (double p : e.parameters)
+                bounded(p, -100000, 100000, "Nonfinite effect parameter");
+            if (e.type == "gain")
+                bounded(e.parameters[0], -90, 24, "Gain insert outside supported range");
+            if (e.type == "filter")
+            {
+                bounded(e.parameters[0], 10, 20000, "High pass outside supported range");
+                bounded(e.parameters[1], 20, 40000, "Low pass outside supported range");
+            }
+            if (e.type == "delay")
+            {
+                bounded(e.parameters[0], 1, 2000, "Delay time outside supported range");
+                bounded(e.parameters[1], 0, .95, "Delay feedback outside supported range");
+                bounded(e.parameters[2], 0, 1, "Delay mix outside supported range");
+            }
+            if (e.type == "reverb")
+                for (double p : e.parameters)
+                    bounded(p, 0, 1, "Reverb parameter outside supported range");
+        }
+    };
     auto mix = [&](const DesignMix &m)
     {
         validateLayoutMix(m, d.sampleRate);
@@ -433,17 +882,24 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
         if (m.layers.size() > 64 || m.duration < 0 || m.duration > d.sampleRate * 3600)
             throw std::runtime_error("Design supports 64 layers and up to one hour");
         bounded(m.masterDb, -90, 24, "Invalid master level");
-        rack(m.masterEffects);
-        validateHostedRack(m.hosted);
-        size_t services=m.hosted.slots.empty()?0:1, hostedSlots=m.hosted.slots.size(), stateBytes=0;
-        for(auto &slot:m.hosted.slots)stateBytes+=slot.settings.getNumBytesAsUTF8();
-        for(auto &layer:m.layers)
+        resolvedInsertOrder(m.inserts);
+        rack(m.inserts.stock);
+        validateHostedRack(m.inserts.hosted);
+        size_t services = m.inserts.hosted.slots.empty() ? 0 : 1, hostedSlots = m.inserts.hosted.slots.size(),
+               stateBytes = 0;
+        for (auto &slot : m.inserts.hosted.slots)
+            stateBytes += slot.settings.getNumBytesAsUTF8();
+        for (auto &layer : m.layers)
         {
-            if(!layer.hosted.slots.empty())++services;
-            hostedSlots+=layer.hosted.slots.size();
-            for(auto &slot:layer.hosted.slots)stateBytes+=slot.settings.getNumBytesAsUTF8();
+            if (!layer.inserts.hosted.slots.empty())
+                ++services;
+            hostedSlots += layer.inserts.hosted.slots.size();
+            for (auto &slot : layer.inserts.hosted.slots)
+                stateBytes += slot.settings.getNumBytesAsUTF8();
         }
-        if(services>16 || hostedSlots>64 || stateBytes>24*1024*1024)throw std::runtime_error("Hosted graph limit: 16 racks, 64 slots, 24 MiB aggregate state per mix");
+        if (services > 16 || hostedSlots > 64 || stateBytes > 24 * 1024 * 1024)
+            throw std::runtime_error(
+                "Hosted graph limit: 16 racks, 64 slots, 24 MiB aggregate state per mix");
         juce::StringArray ids;
         for (auto &l : m.layers)
         {
@@ -466,11 +922,11 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
             for (auto shape : {l.fadeInShape, l.fadeOutShape})
                 if ((int)shape < 0 || (int)shape > (int)FadeShape::custom)
                     throw std::runtime_error("Invalid fade shape");
-            for(auto *points:{&l.fadeInPoints,&l.fadeOutPoints})
+            for (auto *points : {&l.fadeInPoints, &l.fadeOutPoints})
             {
                 if (points->size() > maxFadePoints)
                     throw std::runtime_error("At most 32 interior points per fade");
-                double previous=0;
+                double previous = 0;
                 for (auto &point : *points)
                 {
                     bounded(point.x, fadePointEpsilon, 1 - fadePointEpsilon, "Invalid fade point time");
@@ -488,12 +944,25 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
                 layerDuration(l, d.sampleRate) + l.placement > d.sampleRate * 3600 ||
                 l.fadeIn > d.sampleRate * 3600 || l.fadeOut > d.sampleRate * 3600)
                 throw std::runtime_error("Invalid design timing");
-            rack(l.effects);
-            validateHostedRack(l.hosted);
+            resolvedInsertOrder(l.inserts);
+            rack(l.inserts.stock);
+            validateHostedRack(l.inserts.hosted);
         }
     };
-    mix(d.original);if(d.variations.size()>32)throw std::runtime_error("32 variations maximum");juce::StringArray variationIds;for(auto &v:d.variations){if(v.id.isEmpty() || variationIds.contains(v.id))throw std::runtime_error("Duplicate variation identity");variationIds.add(v.id);mix(v.mix);}
-    if(d.activeVariation.isNotEmpty() && std::none_of(d.variations.begin(),d.variations.end(),[&](auto &v){return v.id==d.activeVariation;}))throw std::runtime_error("Active variation is missing");
+    mix(d.original);
+    if (d.variations.size() > 32)
+        throw std::runtime_error("32 variations maximum");
+    juce::StringArray variationIds;
+    for (auto &v : d.variations)
+    {
+        if (v.id.isEmpty() || variationIds.contains(v.id))
+            throw std::runtime_error("Duplicate variation identity");
+        variationIds.add(v.id);
+        mix(v.mix);
+    }
+    if (d.activeVariation.isNotEmpty() && std::none_of(d.variations.begin(), d.variations.end(),
+                                                       [&](auto &v) { return v.id == d.activeVariation; }))
+        throw std::runtime_error("Active variation is missing");
     if (d.takes.size() > maxDocumentTakes)
         throw std::runtime_error("16 takes maximum");
     juce::StringArray takeIds;
@@ -507,7 +976,16 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
     }
     if (d.activeTake.isNotEmpty() && !selectedTake(d))
         throw std::runtime_error("Selected take missing");
-    auto &s=d.variationSettings;if(s.count<1 || s.count>32)throw std::runtime_error("Variation count must be 1–32");bounded(s.gainDb,0,24,"Invalid variation gain bound");bounded(s.pan,0,1,"Invalid variation pan bound");bounded(s.placementSeconds,0,10,"Invalid variation timing bound");bounded(s.ratePercent,0,75,"Invalid variation rate bound");bounded(s.fadeSeconds,0,10,"Invalid variation fade bound");bounded(s.trimSeconds,0,10,"Invalid variation trim bound");bounded(s.effectAmount,0,1,"Invalid effect variation bound");
+    auto &s = d.variationSettings;
+    if (s.count < 1 || s.count > 32)
+        throw std::runtime_error("Variation count must be 1–32");
+    bounded(s.gainDb, 0, 24, "Invalid variation gain bound");
+    bounded(s.pan, 0, 1, "Invalid variation pan bound");
+    bounded(s.placementSeconds, 0, 10, "Invalid variation timing bound");
+    bounded(s.ratePercent, 0, 75, "Invalid variation rate bound");
+    bounded(s.fadeSeconds, 0, 10, "Invalid variation fade bound");
+    bounded(s.trimSeconds, 0, 10, "Invalid variation trim bound");
+    bounded(s.effectAmount, 0, 1, "Invalid effect variation bound");
     if (d.outputSelections.size() > d.takes.size() + 1)
         throw std::runtime_error("Too many output selections for current contexts");
     for (auto &[key, path] : d.outputSelections)
@@ -571,33 +1049,141 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
         (r.last >= 0 && r.last <= r.first))
         throw std::runtime_error("Invalid render range");
 }
-void saveDesignAtomic(const juce::File &file,const DesignDocument &d,const std::function<bool()> &cancelled)
+void saveDesignAtomic(const juce::File &file, const DesignDocument &d, const std::function<bool()> &cancelled)
 {
-    validateDesign(d);auto payload=designToJson(d);auto text=juce::JSON::toString(payload,true);if(text.getNumBytesAsUTF8()>60*1024*1024)throw std::runtime_error("Design exceeds the safe 60 MiB save budget; reduce retained state before saving");auto envelope=object();put(envelope,"payload",payload);put(envelope,"sha256",juce::SHA256(text.toRawUTF8(),text.getNumBytesAsUTF8()).toHexString());
-    if(cancelled())throw QueryCancelled();if(!file.getParentDirectory().createDirectory())throw std::runtime_error("Cannot create design folder");juce::TemporaryFile staging(file,juce::TemporaryFile::useHiddenFile);
-    if(!staging.getFile().replaceWithText(juce::JSON::toString(envelope,true)))throw std::runtime_error("Cannot write design; previous save preserved");
-    loadDesign(staging.getFile());int fd=::open(staging.getFile().getFullPathName().toRawUTF8(),O_RDONLY);if(fd<0 || ::fsync(fd)!=0){if(fd>=0)::close(fd);throw std::runtime_error("Cannot synchronize design save");}::close(fd);
-    if(cancelled())throw QueryCancelled();if(file.existsAsFile()){loadDesign(file);juce::TemporaryFile backup(file.getSiblingFile(file.getFileName()+".bak"));if(!file.copyFileTo(backup.getFile()) || !backup.overwriteTargetFileWithTemporary())throw std::runtime_error("Cannot preserve previous design backup");}
-    if(cancelled())throw QueryCancelled();if(!staging.overwriteTargetFileWithTemporary())throw std::runtime_error("Cannot publish design; previous save preserved");
+    validateDesign(d);
+    auto payload = designToJson(d);
+    auto text = juce::JSON::toString(payload, true);
+    if (text.getNumBytesAsUTF8() > 60 * 1024 * 1024)
+        throw std::runtime_error(
+            "Design exceeds the safe 60 MiB save budget; reduce retained state before saving");
+    auto envelope = object();
+    put(envelope, "payload", payload);
+    put(envelope, "sha256", juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString());
+    if (cancelled())
+        throw QueryCancelled();
+    if (!file.getParentDirectory().createDirectory())
+        throw std::runtime_error("Cannot create design folder");
+    juce::TemporaryFile staging(file, juce::TemporaryFile::useHiddenFile);
+    if (!staging.getFile().replaceWithText(juce::JSON::toString(envelope, true)))
+        throw std::runtime_error("Cannot write design; previous save preserved");
+    loadDesign(staging.getFile());
+    int fd = ::open(staging.getFile().getFullPathName().toRawUTF8(), O_RDONLY);
+    if (fd < 0 || ::fsync(fd) != 0)
+    {
+        if (fd >= 0)
+            ::close(fd);
+        throw std::runtime_error("Cannot synchronize design save");
+    }
+    ::close(fd);
+    if (cancelled())
+        throw QueryCancelled();
+    if (file.existsAsFile())
+    {
+        loadDesign(file);
+        juce::TemporaryFile backup(file.getSiblingFile(file.getFileName() + ".bak"));
+        if (!file.copyFileTo(backup.getFile()) || !backup.overwriteTargetFileWithTemporary())
+            throw std::runtime_error("Cannot preserve previous design backup");
+    }
+    if (cancelled())
+        throw QueryCancelled();
+    if (!staging.overwriteTargetFileWithTemporary())
+        throw std::runtime_error("Cannot publish design; previous save preserved");
 }
 DesignDocument loadDesign(const juce::File &file)
 {
-    if(!file.existsAsFile() || file.getSize()>64*1024*1024)throw std::runtime_error("Design is missing or too large");auto envelope=juce::JSON::parse(file);auto payload=envelope["payload"];auto text=juce::JSON::toString(payload,true);
-    if(juce::SHA256(text.toRawUTF8(),text.getNumBytesAsUTF8()).toHexString()!=envelope["sha256"].toString())throw std::runtime_error("Design checksum failed; try its .bak or autosave");return designFromJson(payload);
+    if (!file.existsAsFile() || file.getSize() > 64 * 1024 * 1024)
+        throw std::runtime_error("Design is missing or too large");
+    auto envelope = juce::JSON::parse(file);
+    auto payload = envelope["payload"];
+    auto text = juce::JSON::toString(payload, true);
+    if (juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString() !=
+        envelope["sha256"].toString())
+        throw std::runtime_error("Design checksum failed; try its .bak or autosave");
+    return designFromJson(payload);
 }
-std::vector<DesignVariation> generateVariations(const DesignDocument &d,uint64_t seed)
+std::vector<DesignVariation> generateVariations(const DesignDocument &d, uint64_t seed)
 {
-    validateDesign(d);auto &s=d.variationSettings;std::vector<DesignVariation> result;
-    for(int n=0;n<s.count;++n){DesignVariation v;v.name="Variation "+juce::String(n+1);v.seed=seed+0x9e3779b97f4a7c15ULL*(uint64_t)(n+1);std::mt19937_64 rng(v.seed);auto delta=[&](double bound){return (((rng()>>11)*(1.0/9007199254740992.0))*2-1)*bound;};v.mix=d.activeMix();
+    validateDesign(d);
+    auto &s = d.variationSettings;
+    std::vector<DesignVariation> result;
+    for (int n = 0; n < s.count; ++n)
+    {
+        DesignVariation v;
+        v.name = "Variation " + juce::String(n + 1);
+        v.seed = seed + 0x9e3779b97f4a7c15ULL * (uint64_t)(n + 1);
+        std::mt19937_64 rng(v.seed);
+        auto delta = [&](double bound)
+        { return (((rng() >> 11) * (1.0 / 9007199254740992.0)) * 2 - 1) * bound; };
+        v.mix = d.activeMix();
         if (s.enabled & varySource)
             resolvePoolChoices(v.mix, seed, (uint64_t)n, d.sampleRate);
-        for(auto &l:v.mix.layers){if(l.locked)continue;auto enabled=[&](uint32_t bit){return (s.enabled&bit) && !(l.locks&bit) && !(bit==varyGain && performanceOwns(v.mix,{l.id,{},"gain"})) && !(bit==varyPan && performanceOwns(v.mix,{l.id,{},"pan"}));};
-            if(enabled(varyGain))l.gainDb=std::clamp(l.gainDb+delta(s.gainDb),-90.0,24.0);if(enabled(varyPan))l.pan=std::clamp(l.pan+delta(s.pan),-1.0,1.0);
-            if(enabled(varyPlacement))l.placement=std::max<int64_t>(0,l.placement+(int64_t)std::llround(delta(s.placementSeconds)*d.sampleRate));
-            if(enabled(varyRate))l.rate=std::clamp(l.rate*(1+delta(s.ratePercent)/100),.25,4.0);if(enabled(varyReverse) && delta(1)>0)l.reverse=!l.reverse;
-            if(enabled(varyFades)){if(!(l.locks&lockFadeIn))l.fadeIn=std::max<int64_t>(0,l.fadeIn+(int64_t)std::llround(delta(s.fadeSeconds)*d.sampleRate));if(!(l.locks&lockFadeOut))l.fadeOut=std::max<int64_t>(0,l.fadeOut+(int64_t)std::llround(delta(s.fadeSeconds)*d.sampleRate));}
-            if(enabled(varyTrim)){auto amount=(int64_t)std::llround(s.trimSeconds*l.source.sampleRate);if(!(l.locks&lockTrimIn))l.region.startSample=std::clamp<int64_t>(l.region.startSample+(int64_t)std::llround(delta(amount)),0,l.sync);if(!(l.locks&lockTrimOut))l.region.endSample=std::clamp<int64_t>(l.region.endSample+(int64_t)std::llround(delta(amount)),l.sync+1,l.source.samples);}
-            if(enabled(varyEffects))for(auto &e:l.effects)if(!e.locked){for(int p=0;p<(e.type=="gain" ? 1 : e.type=="filter" ? 2 : e.type=="delay" ? 3 : 4);++p)if(!(e.parameterLocks&(1u<<p)) && !performanceEffectOwned(v.mix,l.id,e,p)){auto &value=e.parameters[(size_t)p];if(e.type=="gain")value=std::clamp(value+delta(s.effectAmount*24),-90.0,24.0);else if(e.type=="filter")value=std::clamp(value*std::pow(2.0,delta(s.effectAmount*4)),p==0 ? 10.0 : 20.0,p==0 ? 20000.0 : 40000.0);else if(e.type=="delay" && p==0)value=std::clamp(value*(1+delta(s.effectAmount)),1.0,2000.0);else value=std::clamp(value+delta(s.effectAmount),0.0,e.type=="delay" && p==1 ? .95 : 1.0);}}}
+        for (auto &l : v.mix.layers)
+        {
+            if (l.locked)
+                continue;
+            auto enabled = [&](uint32_t bit)
+            {
+                return (s.enabled & bit) && !(l.locks & bit) &&
+                       !(bit == varyGain && performanceOwns(v.mix, {l.id, {}, "gain"})) &&
+                       !(bit == varyPan && performanceOwns(v.mix, {l.id, {}, "pan"}));
+            };
+            if (enabled(varyGain))
+                l.gainDb = std::clamp(l.gainDb + delta(s.gainDb), -90.0, 24.0);
+            if (enabled(varyPan))
+                l.pan = std::clamp(l.pan + delta(s.pan), -1.0, 1.0);
+            if (enabled(varyPlacement))
+                l.placement = std::max<int64_t>(
+                    0, l.placement + (int64_t)std::llround(delta(s.placementSeconds) * d.sampleRate));
+            if (enabled(varyRate))
+                l.rate = std::clamp(l.rate * (1 + delta(s.ratePercent) / 100), .25, 4.0);
+            if (enabled(varyReverse) && delta(1) > 0)
+                l.reverse = !l.reverse;
+            if (enabled(varyFades))
+            {
+                if (!(l.locks & lockFadeIn))
+                    l.fadeIn = std::max<int64_t>(
+                        0, l.fadeIn + (int64_t)std::llround(delta(s.fadeSeconds) * d.sampleRate));
+                if (!(l.locks & lockFadeOut))
+                    l.fadeOut = std::max<int64_t>(
+                        0, l.fadeOut + (int64_t)std::llround(delta(s.fadeSeconds) * d.sampleRate));
+            }
+            if (enabled(varyTrim))
+            {
+                auto amount = (int64_t)std::llround(s.trimSeconds * l.source.sampleRate);
+                if (!(l.locks & lockTrimIn))
+                    l.region.startSample = std::clamp<int64_t>(
+                        l.region.startSample + (int64_t)std::llround(delta(amount)), 0, l.sync);
+                if (!(l.locks & lockTrimOut))
+                    l.region.endSample =
+                        std::clamp<int64_t>(l.region.endSample + (int64_t)std::llround(delta(amount)),
+                                            l.sync + 1, l.source.samples);
+            }
+            if (enabled(varyEffects))
+                for (auto &e : l.inserts.stock)
+                    if (!e.locked)
+                    {
+                        for (int p = 0; p < (e.type == "gain"     ? 1
+                                             : e.type == "filter" ? 2
+                                             : e.type == "delay"  ? 3
+                                                                  : 4);
+                             ++p)
+                            if (!(e.parameterLocks & (1u << p)) && !performanceEffectOwned(v.mix, l.id, e, p))
+                            {
+                                auto &value = e.parameters[(size_t)p];
+                                if (e.type == "gain")
+                                    value = std::clamp(value + delta(s.effectAmount * 24), -90.0, 24.0);
+                                else if (e.type == "filter")
+                                    value = std::clamp(value * std::pow(2.0, delta(s.effectAmount * 4)),
+                                                       p == 0 ? 10.0 : 20.0, p == 0 ? 20000.0 : 40000.0);
+                                else if (e.type == "delay" && p == 0)
+                                    value = std::clamp(value * (1 + delta(s.effectAmount)), 1.0, 2000.0);
+                                else
+                                    value = std::clamp(value + delta(s.effectAmount), 0.0,
+                                                       e.type == "delay" && p == 1 ? .95 : 1.0);
+                            }
+                    }
+        }
         syncPoolSelection(v.mix);
         result.push_back(std::move(v));
     }
@@ -605,7 +1191,14 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d,uint64_t
 }
 Asset inspectDesignSource(const juce::File &file)
 {
-    FileStamp stamp,after;if(!fileStamp(file,stamp))throw std::runtime_error("Source is offline or missing");juce::AudioFormatManager fm;fm.registerBasicFormats();std::unique_ptr<juce::AudioFormatReader> reader(fm.createReaderFor(file));if(!reader || reader->lengthInSamples<1 || reader->numChannels>64)throw std::runtime_error("Unsupported or empty source");
+    FileStamp stamp, after;
+    if (!fileStamp(file, stamp))
+        throw std::runtime_error("Source is offline or missing");
+    juce::AudioFormatManager fm;
+    fm.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader(fm.createReaderFor(file));
+    if (!reader || reader->lengthInSamples < 1 || reader->numChannels > 64)
+        throw std::runtime_error("Unsupported or empty source");
     Asset a;
     a.id = "external-" + juce::Uuid().toString();
     a.path = file.getFullPathName();
@@ -621,9 +1214,12 @@ Asset inspectDesignSource(const juce::File &file)
     a.online = true;
     a.detectedChannels = detectedLayout(*reader);
     a.layoutConfidence = detectedLayoutConfidence(*reader);
-    if(!fileStamp(file,after) || after.size!=stamp.size || after.modified!=stamp.modified || after.inode!=stamp.inode)throw std::runtime_error("Source changed while reading its header");return a;
+    if (!fileStamp(file, after) || after.size != stamp.size || after.modified != stamp.modified ||
+        after.inode != stamp.inode)
+        throw std::runtime_error("Source changed while reading its header");
+    return a;
 }
-void resolveDesignSources(DesignDocument &d,const juce::File &catalog)
+void resolveDesignSources(DesignDocument &d, const juce::File &catalog)
 {
     Catalog db(catalog, true);
     auto resolve = [&](DesignMix &m)
@@ -672,17 +1268,25 @@ void resolveDesignSources(DesignDocument &d,const juce::File &catalog)
             }
         }
     };
-    resolve(d.original);for(auto &v:d.variations)resolve(v.mix);
+    resolve(d.original);
+    for (auto &v : d.variations)
+        resolve(v.mix);
 }
 bool hasHostedInserts(const DesignMix &mix)
 {
-    return !mix.hosted.slots.empty() || std::any_of(mix.layers.begin(), mix.layers.end(), [](auto &l){return !l.hosted.slots.empty();});
+    return !mix.inserts.hosted.slots.empty() || std::any_of(mix.layers.begin(), mix.layers.end(), [](auto &l)
+                                                            { return !l.inserts.hosted.slots.empty(); });
 }
 bool hasHostedInserts(const DesignDocument &d)
 {
-    if(hasHostedInserts(d.original))return true;
-    for(auto &v:d.variations)if(hasHostedInserts(v.mix))return true;
-    for(auto &o:d.outputs)if(o.processing=="hosted-racks-v1")return true;
+    if (hasHostedInserts(d.original))
+        return true;
+    for (auto &v : d.variations)
+        if (hasHostedInserts(v.mix))
+            return true;
+    for (auto &o : d.outputs)
+        if (o.processing == "hosted-racks-v1")
+            return true;
     return false;
 }
-}
+} // namespace sp

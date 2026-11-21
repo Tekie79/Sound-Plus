@@ -176,7 +176,7 @@ void runPluginCorrectnessTests(const juce::File &base, const juce::File &app, co
         auto controls = describe.clone();
         for (auto key : {"state", "stateHash", "parameters", "parameterBaseline"})
             put(controls, key, defaults[key].clone());
-        session.document.original.hosted.slots = {{Uuid().toString(), JSON::toString(controls, true), false}};
+        session.document.original.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(controls, true), false}};
         view.refresh();
         std::function<Slider *(Component &)> findGain = [&](Component &component) -> Slider *
         {
@@ -193,16 +193,16 @@ void runPluginCorrectnessTests(const juce::File &base, const juce::File &app, co
         auto staleCallback = oldGain->onValueChange;
         auto *parameters = controls["parameters"].getArray();
         std::swap(parameters->getReference(0), parameters->getReference(1));
-        session.document.original.hosted.slots[0].settings = JSON::toString(controls, true);
+        session.document.original.inserts.hosted.slots[0].settings = JSON::toString(controls, true);
         view.refresh();
-        auto beforeStale = session.document.original.hosted.slots[0].settings;
+        auto beforeStale = session.document.original.inserts.hosted.slots[0].settings;
         staleCallback();
-        require(session.document.original.hosted.slots[0].settings == beforeStale,
+        require(session.document.original.inserts.hosted.slots[0].settings == beforeStale,
                 "Destroyed same-count reordered widget callback cannot change another parameter");
         auto *newGain = findGain(view);
         require(newGain != nullptr, "Reordered gain widget rebuilt with correct label");
         newGain->setValue(.4, sendNotificationSync);
-        auto updated = JSON::parse(session.document.original.hosted.slots[0].settings);
+        auto updated = JSON::parse(session.document.original.inserts.hosted.slots[0].settings);
         require((int)updated["parameters"][1]["index"] == 0 &&
                     std::abs((double)updated["parameters"][1]["value"] - .4) < 1e-6 &&
                     (double)updated["parameters"][0]["value"] == 0,
@@ -384,7 +384,7 @@ void runTalCorrectnessBaseline(const juce::File &root, const juce::File &app)
         auto layer = makeDesignLayer(source.source, 0, -1, true);
         initialiseRouting(layer, bus);
         d.original.layers = {layer};
-        auto &rack = master ? d.original.hosted : d.original.layers[0].hosted;
+        auto &rack = master ? d.original.inserts.hosted : d.original.layers[0].inserts.hosted;
         rack.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
         Array<var> renders;
         std::vector<AudioBuffer<float>> pcm;

@@ -218,30 +218,10 @@ class StockProcessor final : public EffectProcessor
         }
     }
 };
-using Rack = std::vector<std::unique_ptr<EffectProcessor>>;
-Rack prepareRack(const std::vector<StockEffect> &effects, double rate, bool invariant = false,
-                 int channels = 2, bool aware = false)
-{
-    negotiateStockBus({discreteLayout(channels), discreteLayout(channels), false});
-    Rack rack;
-    for (auto &e : effects)
-        rack.push_back(std::make_unique<StockProcessor>(e, rate, invariant, channels, aware));
-    return rack;
-}
-void processRack(Rack &rack, juce::AudioBuffer<float> &buffer, int n)
-{
-    for (auto &effect : rack)
-        effect->process(buffer, n);
-}
-void updateRack(Rack &rack, const std::vector<StockEffect> &effects)
-{
-    for (size_t i = 0; i < rack.size(); ++i)
-        rack[i]->update(effects[i]);
-}
+#include "OrderedRack.inc"
 class Voice
 {
     DesignLayer layer;
-    std::unique_ptr<HostedRackClient> hosted;
     juce::AudioBuffer<float> alignment;
     int alignmentPosition = 0, alignmentFrames = 0;
     double ratio;
@@ -258,7 +238,7 @@ class Voice
     Cache cache[2];
     uint64_t clock = 0;
     std::array<std::array<float, 32>, 1024> coefficients{};
-    Rack rack;
+    std::unique_ptr<OrderedRack> rack;
     juce::AudioBuffer<float> block{2, 512};
     bool mono = false, identity = false, layoutAware = false;
     int inputChannels = 2;
@@ -392,16 +372,13 @@ class Voice
         const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {}, int version = 2,
         const std::function<bool()> &cancelled = [] { return false; })
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
-          rack(prepareRack(l.effects, rate, invariant,
-                           layout.id.isEmpty() ? 2 : l.routing.interpretation.size(), !layout.id.isEmpty())),
+          rack(std::make_unique<OrderedRack>(
+              l.inserts, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
+              invariant, !layout.id.isEmpty(), cancelled)),
           layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? l.routing.interpretation.size() : 2),
           routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
           previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
-        if (!l.hosted.slots.empty())
-            hosted = std::make_unique<HostedRackClient>(
-                l.hosted, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
-                cancelled);
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
         sourceUnchanged(l.source);
@@ -480,9 +457,7 @@ class Voice
                 block.setSample(1, n, interpolated(1, position) * right * envelope);
             }
         }
-        processRack(rack, block, frames);
-        if (hosted)
-            hosted->process(block, frames);
+        rack->process(block, frames);
         if (alignmentFrames)
             for (int n = 0; n < frames; ++n)
             {
@@ -533,7 +508,7 @@ class Voice
     }
     int latency() const
     {
-        return hosted ? hosted->latency() : 0;
+        return rack->latency();
     }
     void compensate(int frames)
     {
@@ -598,9 +573,7 @@ class Voice
         if (rateChanged)
             buildCoefficients();
         gainTargets(false);
-        updateRack(rack, layer.effects);
-        if (hosted)
-            hosted->update(layer.hosted);
+        rack->update(layer.inserts);
     }
     void verify()
     {
@@ -631,8 +604,7 @@ struct DesignGraph::Impl
     int64_t inputEnd = -1;
     juce::SmoothedValue<float> masterGain;
     std::vector<std::unique_ptr<Voice>> voices;
-    Rack masterRack;
-    std::unique_ptr<HostedRackClient> hostedMaster;
+    std::unique_ptr<OrderedRack> masterRack;
     int pipelineLatency = 0;
     bool primed = false;
     juce::AudioBuffer<float> block{2, 512};
@@ -658,12 +630,9 @@ struct DesignGraph::Impl
         auto &mix = document.activeMix();
         int channels = mix.layout.id.isEmpty() ? 2 : mix.layout.size();
         block.setSize(channels, 512);
-        masterRack = prepareRack(mix.masterEffects, sampleRate, invariant || !mix.layout.id.isEmpty(),
-                                 channels, !mix.layout.id.isEmpty());
-        if (!mix.hosted.slots.empty())
-            hostedMaster = std::make_unique<HostedRackClient>(
-                mix.hosted, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
-                cancelled);
+        masterRack = std::make_unique<OrderedRack>(
+            mix.inserts, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
+            invariant || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), cancelled);
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -683,7 +652,7 @@ struct DesignGraph::Impl
             longest = std::max(longest, voice->latency());
         for (auto &voice : voices)
             voice->compensate(longest - voice->latency());
-        pipelineLatency = longest + (hostedMaster ? hostedMaster->latency() : 0);
+        pipelineLatency = longest + masterRack->latency();
     }
     void prime(int64_t first, const std::function<bool()> &cancelled)
     {
@@ -715,7 +684,7 @@ struct DesignGraph::Impl
                             v->update(l);
                 masterGain.setTargetValue(
                     juce::Decibels::decibelsToGain((float)document.activeMix().masterDb));
-                updateRack(masterRack, document.activeMix().masterEffects);
+                masterRack->update(document.activeMix().inserts);
             }
             int n = std::min(512, count - done);
             if (nextEvent < events.size())
@@ -729,9 +698,7 @@ struct DesignGraph::Impl
             }
             for (auto &voice : voices)
                 voice->add(block, 0, n, cursor, inputEnd);
-            processRack(masterRack, block, n);
-            if (hostedMaster)
-                hostedMaster->process(block, n);
+            masterRack->process(block, n);
             for (int i = 0; i < n; ++i)
             {
                 auto gain = masterGain.getNextValue();
@@ -770,9 +737,7 @@ void DesignGraph::updateParameters(const juce::var &parameters)
                 voice->update(layer);
     impl->masterGain.setTargetValue(
         juce::Decibels::decibelsToGain((float)impl->document.activeMix().masterDb));
-    updateRack(impl->masterRack, impl->document.activeMix().masterEffects);
-    if (impl->hostedMaster)
-        impl->hostedMaster->update(impl->document.activeMix().hosted);
+    impl->masterRack->update(impl->document.activeMix().inserts);
 }
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)

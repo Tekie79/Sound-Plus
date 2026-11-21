@@ -86,11 +86,18 @@ void fixture(const juce::File &file, int channels = 1, int rate = 48000, double 
 void preparePoolCorrectionUI(const juce::File &);
 void runPoolCorrectionTests(const juce::File &, const juce::File &, const juce::String &);
 void runNativeViewScaleTests();
+void runOrderedInsertTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
 void runRegistryWriter(const juce::File &, const juce::File &, const juce::File &);
 int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 6 && juce::String(argv[1]) == "--ordered-inserts")
+        {
+            runOrderedInsertTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]),
+                                  juce::File(argv[5]));
+            return 0;
+        }
         if (argc >= 5 && juce::String(argv[1]) == "--registry-writer")
         {
             runRegistryWriter(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));

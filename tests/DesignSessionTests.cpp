@@ -325,18 +325,18 @@ void runDesignSessionTests(const juce::File &parent)
         Harness h(root.getChildFile("pending-seek-parameters"));
         sp::DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
         session.document = recipe();
-        session.document.activeMix().layers[0].effects = {sp::makeStockEffect("gain")};
+        session.document.activeMix().layers[0].inserts.stock = {sp::makeStockEffect("gain")};
         session.play();
         h.drain();
         auto oldGeneration = h.generation;
         session.seek(120000);
         session.edit("Edit during seek",
-                     [](auto &d) { d.activeMix().layers[0].effects[0].parameters[0] = -18; });
+                     [](auto &d) { d.activeMix().layers[0].inserts.stock[0].parameters[0] = -18; });
         h.now = 100;
         session.poll(); // Previously acknowledged against the old generation only.
         h.drain();
         check(h.generation > oldGeneration && h.lastParameterGeneration == h.generation &&
-                  h.lastParameters.activeMix().layers[0].effects[0].parameters[0] == -18,
+                  h.lastParameters.activeMix().layers[0].inserts.stock[0].parameters[0] == -18,
               "Pending seek publishes current parameters to the newly adopted generation");
         auto plays = h.plays, parameters = h.parameters;
         session.beginGesture();
@@ -344,7 +344,7 @@ void runDesignSessionTests(const juce::File &parent)
         {
             h.now += 10;
             session.edit("Stock gain",
-                         [&](auto &d) { d.activeMix().layers[0].effects[0].parameters[0] = -i * .1; });
+                         [&](auto &d) { d.activeMix().layers[0].inserts.stock[0].parameters[0] = -i * .1; });
             session.poll();
             h.drain();
         }

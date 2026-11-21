@@ -31,7 +31,7 @@
     auto src = selection(wave(work.getChildFile("source"), channelLayout("mono-v1")));
     auto a = makeDesignLayer(src.source, 0, -1, true);
     initialiseRouting(a, session.document.original.layout);
-    a.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+    a.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
     session.document.original.layers = {a};
     session.document.selectedLayer = a.id;
     auto release = [&](bool success)
@@ -52,22 +52,22 @@
     session.edit("First Gain intent",
                  [](auto &d)
                  {
-                     auto &slot = d.original.layers[0].hosted.slots[0];
+                     auto &slot = d.original.layers[0].inserts.hosted.slots[0];
                      auto v = JSON::parse(slot.settings);
                      parameter(v, 0, .4);
                      slot.settings = JSON::toString(v, true);
                  });
-    auto gainOrigin = session.document.original.layers[0].hosted.slots[0].runtimeParameterOrigins.at(0);
+    auto gainOrigin = session.document.original.layers[0].inserts.hosted.slots[0].runtimeParameterOrigins.at(0);
     Thread::sleep(2);
     session.edit("Unrelated Bias intent",
                  [](auto &d)
                  {
-                     auto &slot = d.original.layers[0].hosted.slots[0];
+                     auto &slot = d.original.layers[0].inserts.hosted.slots[0];
                      auto v = JSON::parse(slot.settings);
                      parameter(v, 6, .7);
                      slot.settings = JSON::toString(v, true);
                  });
-    auto &origins = session.document.original.layers[0].hosted.slots[0].runtimeParameterOrigins;
+    auto &origins = session.document.original.layers[0].inserts.hosted.slots[0].runtimeParameterOrigins;
     require(gainOrigin > 0 && origins.at(0) == gainOrigin && origins.at(6) > gainOrigin,
             "Actual Main edits preserve separate origins before the worker can coalesce snapshots");
     auto saved = work.getChildFile("Save then Render.soundplus");
@@ -91,17 +91,17 @@
             "Capture failures explicitly cancel both accepted commands without certifying stale output");
     auto removed = work.getChildFile("Save after last insert removed.soundplus");
     session.save(removed);
-    session.edit("Remove last insert", [](auto &d) { d.original.layers[0].hosted.slots.clear(); });
+    session.edit("Remove last insert", [](auto &d) { d.original.layers[0].inserts.hosted.slots.clear(); });
     release(false);
     wait([&] { return removed.existsAsFile(); },
          "No-work retry resumes accepted Save immediately after last insert removal");
     require(captures.empty() && LiveCorrectionTestAccess::pending(session) == 0,
             "No-work capture retry cannot leave a dropped/hung command");
-    session.edit("Restore generated insert", [&](auto &d) { d.original.layers[0].hosted = a.hosted; });
+    session.edit("Restore generated insert", [&](auto &d) { d.original.layers[0].inserts.hosted = a.inserts.hosted; });
     auto b = a;
     b.id = Uuid().toString();
     b.name = "Quiet B";
-    b.hosted.slots.clear();
+    b.inserts.hosted.slots.clear();
     b.gainDb = -30;
     b.mute = true;
     session.edit("Add B", [&](auto &d) { d.original.layers.push_back(b); });

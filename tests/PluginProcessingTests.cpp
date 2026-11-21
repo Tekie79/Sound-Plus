@@ -285,8 +285,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 for (bool master : {false, true})
                 {
                     d.original.layers = {layer};
-                    d.original.hosted.slots.clear();
-                    auto &rack = master ? d.original.hosted : d.original.layers[0].hosted;
+                    d.original.inserts.hosted.slots.clear();
+                    auto &rack = master ? d.original.inserts.hosted : d.original.layers[0].inserts.hosted;
                     rack.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
                     d.selectedLayer = layer.id;
                     auto file = work.getChildFile(String(layoutId) +
@@ -705,16 +705,16 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             DesignGraph baseline(design);
             AudioBuffer<float> expected(l.size(), 4099);
             baseline.render(expected, 0, 4099);
-            design.original.layers[0].hosted = rack;
+            design.original.layers[0].inserts.hosted = rack;
             auto master = result["job"].clone();
             parameter(master, 1, 0);
             parameter(master, 2, 23. / 256.);
-            design.original.hosted.slots.push_back({Uuid().toString(), JSON::toString(master, true), false});
+            design.original.inserts.hosted.slots.push_back({Uuid().toString(), JSON::toString(master, true), false});
             auto recalled = designFromJson(designToJson(design));
-            require((int)designToJson(recalled)["version"] == 8 &&
-                        recalled.original.layers[0].hosted.id == rack.id &&
-                        recalled.original.hosted.slots[0].id == design.original.hosted.slots[0].id,
-                    "Hosted graph persists independently owned opaque slots in version 8");
+            require((int)designToJson(recalled)["version"] == 9 &&
+                        recalled.original.layers[0].inserts.hosted.id == rack.id &&
+                        recalled.original.inserts.hosted.slots[0].id == design.original.inserts.hosted.slots[0].id,
+                    "Hosted graph persists independently owned opaque slots in version 9");
             DesignGraph compensated(recalled);
             AudioBuffer<float> actual(l.size(), 4099);
             compensated.render(actual, 0, 4099);
@@ -725,9 +725,9 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             AudioBuffer<float> before(l.size(), 1024);
             streaming.render(before, 0, 1024);
             auto changed = recalled;
-            auto settings = JSON::parse(changed.original.layers[0].hosted.slots[0].settings);
+            auto settings = JSON::parse(changed.original.layers[0].inserts.hosted.slots[0].settings);
             parameter(settings, 0, .5);
-            changed.original.layers[0].hosted.slots[0].settings = JSON::toString(settings, true);
+            changed.original.layers[0].inserts.hosted.slots[0].settings = JSON::toString(settings, true);
             require(designStructure(changed) == designStructure(recalled),
                     "Hosted parameter edits keep the same graph topology");
             streaming.updateParameters(designParameters(changed));
@@ -736,7 +736,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             require(after.getMagnitude(0, after.getNumSamples()) < 1e-6,
                     "Persistent host parameter updates audibly reconcile without replacing the chain");
 
-            recalled.original.layers[0].hosted.bypass = true;
+            recalled.original.layers[0].inserts.hosted.bypass = true;
             DesignGraph bypassed(recalled);
             bypassed.render(actual, 0, 4099);
             compare(expected, actual, .5);
@@ -857,7 +857,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto settings = retainedResult["job"].clone();
         parameter(settings, 5, 1. / 6.);
         parameter(settings, 2, 0);
-        layer.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
         design.original.layers = {layer};
         design.selectedLayer = layer.id;
         DesignRenderSettings options;
@@ -883,7 +883,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto presented = read(File(output.path));
         compare(raw, presented, std::pow(10., -1. / 20) / raw.getMagnitude(0, raw.getNumSamples()));
         design.outputs.push_back(output);
-        design.original.layers[0].hosted.slots.clear();
+        design.original.layers[0].inserts.hosted.slots.clear();
         auto recalled = designFromJson(designToJson(design));
         require(recalled.outputs[0].sourceProvenance["rawSha256"] == output.sourceProvenance["rawSha256"],
                 "Plugin-aware render authority survives document Save/Open after removing live inserts");
@@ -902,7 +902,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto settings = retainedResult["job"].clone();
         parameter(settings, 1, 0);
         parameter(settings, 3, 1);
-        d.original.layers[0].hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        d.original.layers[0].inserts.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
         DesignGraph full(d);
         AudioBuffer<float> tail(1, 1164);
         full.render(tail, 0, 1164);
@@ -930,7 +930,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto layer = makeDesignLayer(source.source, 0, -1, true);
         auto settings = retainedResult["job"].clone();
         put(settings, "state", String::repeatedString("A", 128 * 1024));
-        layer.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
         d.original.layers = {layer};
         auto controls = designParameters(d);
         auto bytes = JSON::toString(controls, true).getNumBytesAsUTF8();
@@ -938,8 +938,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 "Live control messages omit opaque plugin state and bundle descriptors");
         auto changed = d;
         applyDesignParameters(changed, controls);
-        require(changed.original.layers[0].hosted.slots[0].settings ==
-                    d.original.layers[0].hosted.slots[0].settings,
+        require(changed.original.layers[0].inserts.hosted.slots[0].settings ==
+                    d.original.layers[0].inserts.hosted.slots[0].settings,
                 "Compact controls retain opaque authority unchanged");
         auto stale = controls.clone();
         auto staleSlot = stale["layers"][0]["hostedRack"]["slots"][0];
@@ -1007,18 +1007,18 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 auto layer = makeDesignLayer(nativeSource.source, 0, -1, true);
                 initialiseRouting(layer, l);
                 layer.name = "AU delay source";
-                layer.hosted = recalled;
+                layer.inserts.hosted = recalled;
                 auto dry = layer;
                 dry.id = Uuid().toString();
                 dry.name = "Dry reference";
-                dry.hosted = HostedRack();
-                layer.effects = {makeStockEffect("filter")};
+                dry.inserts.hosted = HostedRack();
+                layer.inserts.stock = {makeStockEffect("filter")};
                 d.original.layers = {layer, dry};
                 auto master = retainedResult["job"].clone();
                 parameter(master, 1, 0);
                 parameter(master, 2, 0);
-                d.original.hosted.slots = {{Uuid().toString(), JSON::toString(master, true), false}};
-                d.original.masterEffects = {makeStockEffect("gain")};
+                d.original.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(master, true), false}};
+                d.original.inserts.stock = {makeStockEffect("gain")};
                 d.selectedLayer = layer.id;
                 auto file = root.getChildFile("Native insert QA.soundplus");
                 saveDesignAtomic(file, d);
@@ -1278,9 +1278,9 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         uint64_t sequence = 0;
         for (int i = 0; i < 12; ++i)
         {
-            auto state = JSON::parse(design.original.hosted.slots[0].settings);
+            auto state = JSON::parse(design.original.inserts.hosted.slots[0].settings);
             parameter(state, 0, .2 + .01 * i);
-            design.original.hosted.slots[0].settings = JSON::toString(state, true);
+            design.original.inserts.hosted.slots[0].settings = JSON::toString(state, true);
             sequence = audio.updateDesign(design, gen, monotonicMs());
             pump(35);
             auto row = audio.status();
@@ -1298,9 +1298,9 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     (uint64_t)(int64_t)adopted["heardEdit"] >= sequence,
                 "Actual device clock advances and consumes latest hosted controls");
         auto seek = audio.playDesign("design:" + design.id, preview, 24000, {}, "seek");
-        auto latest = JSON::parse(design.original.hosted.slots[0].settings);
+        auto latest = JSON::parse(design.original.inserts.hosted.slots[0].settings);
         parameter(latest, 0, .42);
-        design.original.hosted.slots[0].settings = JSON::toString(latest, true);
+        design.original.inserts.hosted.slots[0].settings = JSON::toString(latest, true);
         auto pending = audio.updateDesign(design, seek, monotonicMs());
         deadline = Time::getMillisecondCounter() + 10000;
         while (!((uint64_t)(int64_t)audio.status()["playGeneration"] == seek &&
@@ -1347,29 +1347,29 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto originalOwner = track.owner;
         track.bind(secondId);
         track.append(originalOwner, "gain");
-        require(rackSession.document.original.layers[0].effects.size() == 1 &&
-                    rackSession.document.original.layers[1].effects.empty(),
+        require(rackSession.document.original.layers[0].inserts.stock.size() == 1 &&
+                    rackSession.document.original.layers[1].inserts.stock.empty(),
                 "Rack delayed add retains original track owner after selection changes");
         master.append(master.owner, "delay");
-        require(rackSession.document.original.masterEffects.size() == 1 &&
-                    rackSession.document.original.layers[0].effects.size() == 1,
+        require(rackSession.document.original.inserts.stock.size() == 1 &&
+                    rackSession.document.original.layers[0].inserts.stock.size() == 1,
                 "Dedicated master rack does not follow selected track");
         track.bind(firstId);
         track.setParametersExpanded(true);
         track.values[0].setValue(-12, sendNotificationSync);
-        require(std::abs(rackSession.document.original.layers[0].effects[0].parameters[0] + 12) < 1e-8 &&
-                    rackSession.document.original.masterEffects[0].type == "delay",
+        require(std::abs(rackSession.document.original.layers[0].inserts.stock[0].parameters[0] + 12) < 1e-8 &&
+                    rackSession.document.original.inserts.stock[0].type == "delay",
                 "Actual track parameter control cannot edit master rack");
         rackSession.undo();
-        require(rackSession.document.original.layers[0].effects[0].parameters[0] == 0,
+        require(rackSession.document.original.layers[0].inserts.stock[0].parameters[0] == 0,
                 "Independent rack parameter edit supports Undo");
         rackSession.redo();
-        require(std::abs(rackSession.document.original.layers[0].effects[0].parameters[0] + 12) < 1e-8,
+        require(std::abs(rackSession.document.original.layers[0].inserts.stock[0].parameters[0] + 12) < 1e-8,
                 "Independent rack parameter edit supports Redo");
         auto recalled = designFromJson(designToJson(rackSession.document));
-        require(recalled.original.masterEffects[0].id == rackSession.document.original.masterEffects[0].id &&
-                    recalled.original.layers[0].effects[0].id ==
-                        rackSession.document.original.layers[0].effects[0].id,
+        require(recalled.original.inserts.stock[0].id == rackSession.document.original.inserts.stock[0].id &&
+                    recalled.original.layers[0].inserts.stock[0].id ==
+                        rackSession.document.original.layers[0].inserts.stock[0].id,
                 "Separate rack owner/slot identity survives production serialization");
         // R30: actual selectors must request parent layout when parameter height changes.
         for (auto *view : {&track, &master})
@@ -1412,8 +1412,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 "Editor lifecycle setup",
                 [&](auto &d)
                 {
-                    d.original.layers[0].hosted.slots = {{a, JSON::toString(retainedJob, true), false}};
-                    d.original.layers[1].hosted.slots = {{b, JSON::toString(retainedJob, true), false}};
+                    d.original.layers[0].inserts.hosted.slots = {{a, JSON::toString(retainedJob, true), false}};
+                    d.original.layers[1].inserts.hosted.slots = {{b, JSON::toString(retainedJob, true), false}};
                 });
             auto press = [&](const String &name)
             {
@@ -1437,7 +1437,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             require(cancelledEditors == 0, "R29 removing B preserves A editor");
             releaseEditor = true;
             pump(100);
-            require(JSON::parse(rackSession.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+            require(JSON::parse(rackSession.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                             .toString() == "controlled-editor-result",
                     "R29 A state applies after unrelated B removal");
             releaseEditor = false;
@@ -1458,7 +1458,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             rackSession.edit("Hosted height setup",
                              [&](auto &d)
                              {
-                                 d.original.layers[0].hosted.slots = {
+                                 d.original.layers[0].inserts.hosted.slots = {
                                      {a, JSON::toString(empty, true), false},
                                      {b, JSON::toString(retainedJob, true), false}};
                              });
@@ -1505,26 +1505,34 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto externalId = Uuid().toString();
         rackSession.edit("QA external insert",
                          [&](auto &d) {
-                             d.original.layers[1].hosted.slots = {
+                             d.original.layers[1].inserts.hosted.slots = {
                                  {externalId, JSON::toString(retainedJob, true), false}};
                          });
         unified.refresh();
-        require(unified.slots.getNumItems() == 1 && unified.slots.isVisible() &&
+        auto orderedRows = [&]() -> OrderedInsertList *
+        {
+            for (auto *child : unified.getChildren())
+                if (auto *rows = dynamic_cast<OrderedInsertList *>(child))
+                    return rows;
+            return nullptr;
+        };
+        require(unified.slots.getNumItems() == 1 && !unified.slots.isVisible() &&
+                    orderedRows() && orderedRows()->isVisible() && orderedRows()->preferredHeight() == 32 &&
                     !visibleButtons(unified).contains("Remove external insert") &&
-                    visibleButtons(unified).contains("Open or focus live editor"),
-                "Loaded external effect shares the main selector and reveals only primary tools");
+                    visibleButtons(unified).contains("Open live editor"),
+                "Loaded external effect has an actual ordered row and primary tools");
         unified.append(unified.owner, "gain");
         unified.refresh();
         require(unified.slots.getNumItems() == 2,
-                "Stock and external entries coexist in one insert selector");
+                "Stock and external entries coexist in the ordered insert surface");
         unified.slots.setSelectedId(1, sendNotificationSync);
         unified.setParametersExpanded(true);
-        auto externalBefore = rackSession.document.original.layers[1].hosted.slots[0].settings;
+        auto externalBefore = rackSession.document.original.layers[1].inserts.hosted.slots[0].settings;
         unified.values[0].setValue(-9, sendNotificationSync);
-        require(std::abs(rackSession.document.original.layers[1].effects[0].parameters[0] + 9) < 1e-8 &&
-                    rackSession.document.original.layers[1].hosted.slots[0].settings == externalBefore,
+        require(std::abs(rackSession.document.original.layers[1].inserts.stock[0].parameters[0] + 9) < 1e-8 &&
+                    rackSession.document.original.layers[1].inserts.hosted.slots[0].settings == externalBefore,
                 "Shared stock selection edits only its stock effect: " +
-                    String(rackSession.document.original.layers[1].effects[0].parameters[0], 12));
+                    String(rackSession.document.original.layers[1].inserts.stock[0].parameters[0], 12));
         unified.selectExternalSlot(externalId);
         require(!visibleButtons(unified).contains("Show stock insert parameters") &&
                     visibleButtons(unified).contains("Effect actions"),
@@ -1532,11 +1540,11 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         rackSession.edit("QA clear rack",
                          [&](auto &d)
                          {
-                             d.original.layers[1].effects.clear();
-                             d.original.layers[1].hosted.slots.clear();
+                             d.original.layers[1].inserts.stock.clear();
+                             d.original.layers[1].inserts.hosted.slots.clear();
                          });
         unified.refresh();
-        require(visibleButtons(unified) == StringArray{"Add effect"} && unified.preferredHeight() == 60,
+        require(visibleButtons(unified) == StringArray{"Add effect"} && unified.preferredHeight() == 32,
                 "Removing all effects restores the compact empty state without stale tools");
         rackSession.newDesign();
         auto transitionEnd = Time::getMillisecondCounter() + 3000;
@@ -1545,7 +1553,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         require(!rackSession.transitionPending(), "Rack test document transition completes");
         track.append(originalOwner, "reverb");
         require(rackSession.document.original.layers.empty() &&
-                    rackSession.document.original.masterEffects.empty(),
+                    rackSession.document.original.inserts.stock.empty(),
                 "Late rack chooser from previous document cannot adopt");
         track.setSize(306, 280);
         master.setSize(306, 280);
@@ -2333,3 +2341,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
 #include "PluginLiveTests.inc"
 
 #include "NativeViewScaleTests.inc"
+
+#include "OrderedInsertTests.inc"

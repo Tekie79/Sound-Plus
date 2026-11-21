@@ -563,11 +563,11 @@ void prepareReliabilityWorkload(const juce::File &folder)
         l.reverse = i % 3 == 1;
         l.fadeIn = 480;
         l.fadeOut = 960;
-        l.effects = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
+        l.inserts.stock = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
                      sp::makeStockEffect("reverb")};
         d.original.layers.push_back(l);
     }
-    d.original.masterEffects = {sp::makeStockEffect("filter"), sp::makeStockEffect("reverb")};
+    d.original.inserts.stock = {sp::makeStockEffect("filter"), sp::makeStockEffect("reverb")};
     d.selectedLayer = d.original.layers[0].id;
     sp::saveDesignAtomic(folder.getChildFile("workload.soundplus"), d);
 }

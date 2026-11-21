@@ -31,9 +31,9 @@ wait(
                session.document.activeVariation.isNotEmpty();
     },
     "Actual Save Snapshot completes after held native publication");
-require(std::abs(gainOf(session.document.activeMix().layers[0].hosted) - .38) < 1e-6,
+require(std::abs(gainOf(session.document.activeMix().layers[0].inserts.hosted) - .38) < 1e-6,
         "Snapshot contains latest native state, not the pre-capture recipe");
-verifyFresh(session.document.activeMix().layers[0].hosted, .38);
+verifyFresh(session.document.activeMix().layers[0].inserts.hosted, .38);
 session.selectVariation("");
 wait([&] { return session.document.activeVariation.isEmpty() && endpointFor(trackId).isObject(); },
      "Return to Original prepares its correct live incarnation");
@@ -48,9 +48,9 @@ captureHold.deleteFile();
 wait([&] { return session.document.variations.size() > beforeGenerated; },
      "Actual Generate completes after coherent native capture");
 for (size_t n = beforeGenerated; n < session.document.variations.size(); ++n)
-    require(std::abs(gainOf(session.document.variations[n].mix.layers[0].hosted) - .395) < 1e-6,
+    require(std::abs(gainOf(session.document.variations[n].mix.layers[0].inserts.hosted) - .395) < 1e-6,
             "Every generated candidate retains latest captured external state");
-verifyFresh(session.document.variations.back().mix.layers[0].hosted, .395);
+verifyFresh(session.document.variations.back().mix.layers[0].inserts.hosted, .395);
 auto presetFile = work.getChildFile("Actual Effect actions menu.soundplus-insert");
 nativePending(402, .415);
 require(LiveCorrectionTestAccess::savePresetMenu(actualView, layer.id, presetFile),

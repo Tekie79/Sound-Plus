@@ -356,7 +356,7 @@ void prepareMultichannelUI(const juce::File &folder)
     auto l = sp::makeDesignLayer(sp::inspectDesignSource(folder.getChildFile("Mono point.wav")), 0, -1, true);
     sp::initialiseRouting(l, bus);
     l.routing.spatial = true;
-    l.effects = {sp::makeStockEffect("delay")};
+    l.inserts.stock = {sp::makeStockEffect("delay")};
     d.original.layers.push_back(l);
     d.original.masterDb = -12;
     d.name = "Surround motion QA";
@@ -418,8 +418,8 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
             auto isolated = root.getChildFile(layout.id + "-" + type + "-isolated.wav");
             fixture(isolated, layout, signal(layout.size(), 2048, layout.size() - 1));
             auto e = design(isolated, layout);
-            e.original.layers[0].effects = {sp::makeStockEffect(type)};
-            e.original.masterEffects = {sp::makeStockEffect(type)};
+            e.original.layers[0].inserts.stock = {sp::makeStockEffect(type)};
+            e.original.inserts.stock = {sp::makeStockEffect(type)};
             auto pcm = read(e, 44100, .1);
             double leak = 0, power = 0;
             for (int c = 0; c < layout.size(); ++c)
@@ -482,10 +482,10 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
                   hash(juce::File(split.path)) == o.sha256,
               "Split staging failure leaves no partial published set and preserves prior durable output");
         auto controlled = d;
-        controlled.original.layers[0].effects = {sp::makeStockEffect("gain"), sp::makeStockEffect("filter"),
+        controlled.original.layers[0].inserts.stock = {sp::makeStockEffect("gain"), sp::makeStockEffect("filter"),
                                                  sp::makeStockEffect("delay"), sp::makeStockEffect("reverb")};
-        controlled.original.masterEffects = controlled.original.layers[0].effects;
-        for (auto &e : controlled.original.masterEffects)
+        controlled.original.inserts.stock = controlled.original.layers[0].inserts.stock;
+        for (auto &e : controlled.original.inserts.stock)
             e.id = juce::Uuid().toString();
         controlled.takeProcessing = true;
         auto &perf = controlled.original.performance;
@@ -887,7 +887,7 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
     auto &point = spatial.original.layers[0];
     point.routing.spatial = true;
     point.routing.azimuth = -30;
-    point.effects = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay")};
+    point.inserts.stock = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay")};
     auto left = read(spatial);
     double other = 0;
     for (int c = 1; c < 6; ++c)
@@ -895,7 +895,7 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
     check(other < 1e-7 && left.getMagnitude(0, 0, left.getNumSamples()) > .01,
           "Spatial L position retains point identity and defaults LFE off");
     auto lfeDesign = spatial;
-    lfeDesign.original.layers[0].effects.clear();
+    lfeDesign.original.layers[0].inserts.stock.clear();
     lfeDesign.original.layers[0].routing.lfeDb = -6;
     lfeDesign.original.layers[0].routing.lfeCutoff = 200;
     auto lfeWide = read(lfeDesign);

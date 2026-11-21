@@ -13,7 +13,7 @@ for (bool restore : {false, true})
     auto source = selection(wave(work.getChildFile("source"), channelLayout("mono-v1")));
     auto layer = makeDesignLayer(source.source, 0, -1, true);
     initialiseRouting(layer, session.document.original.layout);
-    layer.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+    layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
     session.document.original.layers = {layer};
     session.document.selectedLayer = layer.id;
     auto wait = [&](auto predicate, const String &why)
@@ -31,16 +31,16 @@ for (bool restore : {false, true})
         for (auto &p : work.findChildFiles(File::findFiles, true, "endpoint.json"))
         {
             auto v = loadProcessingJson(p);
-            if (v["binding"]["slot"].toString() == layer.hosted.slots[0].id)
+            if (v["binding"]["slot"].toString() == layer.inserts.hosted.slots[0].id)
                 return v;
         }
         return {};
     };
-    session.openLiveEditor(layer.hosted.slots[0].id);
+    session.openLiveEditor(layer.inserts.hosted.slots[0].id);
     wait([&] { return endpoint().isObject(); }, "Equal-return session prepares actual retained service");
     auto ep = endpoint();
     pump(100);
-    const auto original = session.document.original.layers[0].hosted.slots[0].settings;
+    const auto original = session.document.original.layers[0].inserts.hosted.slots[0].settings;
     auto hold = work.getChildFile("hold-main-snapshots");
     setenv("SOUNDPLUS_LIVE_TEST_HOLD_SNAPSHOT", hold.getFullPathName().toRawUTF8(), 1);
     hold.replaceWithText("coalesce actual Main snapshots");
@@ -48,7 +48,7 @@ for (bool restore : {false, true})
     session.edit("First intent",
                  [&](auto &d)
                  {
-                     auto &s = d.original.layers[0].hosted.slots[0];
+                     auto &s = d.original.layers[0].inserts.hosted.slots[0];
                      auto v = JSON::parse(s.settings);
                      if (restore)
                          put(v, "program", 1);
@@ -64,20 +64,20 @@ for (bool restore : {false, true})
     saveProcessingJson(root.getChildFile(ep["pid"].toString() + ".json"), native);
     pump(120);
     session.edit("Return to earlier recipe",
-                 [&](auto &d) { d.original.layers[0].hosted.slots[0].settings = original; });
+                 [&](auto &d) { d.original.layers[0].inserts.hosted.slots[0].settings = original; });
     auto expectedOrigin =
-        restore ? session.document.original.layers[0].hosted.slots[0].runtimeRestoreOrigin
-                : session.document.original.layers[0].hosted.slots[0].runtimeParameterOrigins.at(0);
+        restore ? session.document.original.layers[0].inserts.hosted.slots[0].runtimeRestoreOrigin
+                : session.document.original.layers[0].inserts.hosted.slots[0].runtimeParameterOrigins.at(0);
     hold.deleteFile();
     unsetenv("SOUNDPLUS_LIVE_TEST_HOLD_SNAPSHOT");
     pump(120);
     {
-        auto attached = session.document.original.layers[0].hosted;
+        auto attached = session.document.original.layers[0].inserts.hosted;
         attached.runtimeEndpoint = File(ep["exchange"].toString())
                                        .getParentDirectory()
                                        .getParentDirectory()
                                        .getChildFile("endpoint.json");
-        attached.runtimeOwnerRack = layer.hosted.id;
+        attached.runtimeOwnerRack = layer.inserts.hosted.id;
         attached.id = ep["rack"].toString();
         HostedRackClient pcm(attached, channelLayout("mono-v1"), 48000, cancel);
         AudioBuffer<float> b(1, 512);
@@ -94,10 +94,10 @@ for (bool restore : {false, true})
          "Equal-return Save waits for capture and ACK");
     auto opened = loadDesign(saved);
     require(std::abs((double)JSON::parse(
-                         opened.original.layers[0].hosted.slots[0].settings)["parameters"][0]["value"] -
+                         opened.original.layers[0].inserts.hosted.slots[0].settings)["parameters"][0]["value"] -
                      .5) < 1e-6,
             "Main capture/Save/reopen preserves newest .5 intent");
-    HostedRackClient fresh(opened.original.layers[0].hosted, channelLayout("mono-v1"), 48000, cancel);
+    HostedRackClient fresh(opened.original.layers[0].inserts.hosted, channelLayout("mono-v1"), 48000, cancel);
     AudioBuffer<float> b(1, 512);
     for (int n = 0; n < 512; ++n)
         b.setSample(0, n, .2f);

@@ -62,7 +62,11 @@ void applyHostedControls(HostedRack &rack, const juce::var &value)
     for (size_t i = 0; i < rack.slots.size(); ++i)
     {
         auto item = (*slots)[(int)i];
-        auto &slot = rack.slots[i];
+        auto found = std::find_if(rack.slots.begin(), rack.slots.end(),
+                                  [&](auto &s) { return s.id == (*slots)[(int)i]["id"].toString(); });
+        if (found == rack.slots.end())
+            throw std::runtime_error("Hosted control slot mismatch");
+        auto &slot = *found;
         if (item["id"].toString() != slot.id || !item["parameters"].isArray())
             throw std::runtime_error("Hosted control slot mismatch");
         auto settings = juce::JSON::parse(slot.settings);
@@ -90,6 +94,25 @@ void stripRack(juce::var rack)
             for (auto key : {"parameters", "bypass", "locked", "parameterLocks"})
                 effect.getDynamicObject()->removeProperty(key);
 }
+void stripChain(juce::var chain, bool retained)
+{
+    if (!chain.isObject())
+        return;
+    chain.getDynamicObject()->removeProperty("bypass");
+    chain.getDynamicObject()->removeProperty("legacyHostedBypass");
+    for (auto &row : *chain["slots"].getArray())
+    {
+        row.getDynamicObject()->removeProperty("bypass");
+        auto settings = row["settings"];
+        settings.getDynamicObject()->removeProperty("parameters");
+        if (row["kind"].toString() == "stock")
+            for (auto key : {"locked", "parameterLocks"})
+                settings.getDynamicObject()->removeProperty(key);
+        else if (retained)
+            for (auto key : {"state", "stateHash", "parameterBaseline", "program", "programName"})
+                settings.getDynamicObject()->removeProperty(key);
+    }
+}
 juce::var rackParameters(const std::vector<StockEffect> &rack)
 {
     juce::Array<juce::var> values;
@@ -115,11 +138,13 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
     {
         auto item = (*values)[(int)i];
         auto *parameters = item["parameters"].getArray();
-        if (rack[i].id != item["id"].toString() || !parameters || parameters->size() != 4)
+        auto at =
+            std::find_if(rack.begin(), rack.end(), [&](auto &s) { return s.id == item["id"].toString(); });
+        if (at == rack.end() || !parameters || parameters->size() != 4)
             throw std::runtime_error("Live insert identity mismatch");
-        rack[i].bypass = (bool)item["bypass"];
+        at->bypass = (bool)item["bypass"];
         for (int p = 0; p < 4; ++p)
-            rack[i].parameters[(size_t)p] = (double)(*parameters)[p];
+            at->parameters[(size_t)p] = (double)(*parameters)[p];
     }
 }
 } // namespace
@@ -143,10 +168,12 @@ juce::String designStructure(const DesignDocument &document)
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
     object->removeProperty("performance");
+    stripChain(mix["insertChain"], document.liveInserts);
     stripRack(mix["masterEffects"]);
     stripHosted(mix["hostedRack"], document.liveInserts);
     for (auto &layer : *mix["layers"].getArray())
     {
+        stripChain(layer["insertChain"], document.liveInserts);
         stripRack(layer["effects"]);
         stripHosted(layer["hostedRack"], document.liveInserts);
         stripLiveRouting(layer["routing"]);
@@ -164,18 +191,20 @@ juce::var designParameters(const DesignDocument &base)
     document.original = resolvePerformance(base.activeMix());
     auto *object = new juce::DynamicObject();
     object->setProperty("masterDb", document.activeMix().masterDb);
+    object->setProperty("chainBypass", document.activeMix().inserts.bypass);
     if (hasHostedInserts(document.activeMix()))
         object->setProperty("hostedControlsVersion", 1);
-    object->setProperty("masterEffects", rackParameters(document.activeMix().masterEffects));
-    if (!document.activeMix().hosted.slots.empty())
-        object->setProperty("hostedRack", hostedControls(document.activeMix().hosted));
+    object->setProperty("masterEffects", rackParameters(document.activeMix().inserts.stock));
+    if (!document.activeMix().inserts.hosted.slots.empty())
+        object->setProperty("hostedRack", hostedControls(document.activeMix().inserts.hosted));
     juce::Array<juce::var> layers;
     for (auto &layer : document.activeMix().layers)
     {
         auto *value = new juce::DynamicObject();
         value->setProperty("id", layer.id);
-        if (!layer.hosted.slots.empty())
-            value->setProperty("hostedRack", hostedControls(layer.hosted));
+        value->setProperty("chainBypass", layer.inserts.bypass);
+        if (!layer.inserts.hosted.slots.empty())
+            value->setProperty("hostedRack", hostedControls(layer.inserts.hosted));
         value->setProperty("gainDb", layer.gainDb);
         value->setProperty("controlGain", layer.controlGain);
         value->setProperty("pan", layer.pan);
@@ -196,7 +225,7 @@ juce::var designParameters(const DesignDocument &base)
         value->setProperty("fadeOutShape", fadeShapeId(layer.fadeOutShape));
         value->setProperty("fadeInPoints", fadePointsToJson(layer.fadeInPoints));
         value->setProperty("fadeOutPoints", fadePointsToJson(layer.fadeOutPoints));
-        value->setProperty("effects", rackParameters(layer.effects));
+        value->setProperty("effects", rackParameters(layer.inserts.stock));
         layers.add(juce::var(value));
     }
     object->setProperty("layers", layers);
@@ -207,9 +236,10 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
     auto changed = document;
     changed.activeMix().performance = {};
     changed.activeMix().masterDb = (double)parameters["masterDb"];
-    applyRack(changed.activeMix().masterEffects, parameters["masterEffects"]);
-    if (!changed.activeMix().hosted.slots.empty())
-        applyHostedControls(changed.activeMix().hosted, parameters["hostedRack"]);
+    changed.activeMix().inserts.bypass = (bool)parameters["chainBypass"];
+    applyRack(changed.activeMix().inserts.stock, parameters["masterEffects"]);
+    if (!changed.activeMix().inserts.hosted.slots.empty())
+        applyHostedControls(changed.activeMix().inserts.hosted, parameters["hostedRack"]);
     auto *layers = parameters["layers"].getArray();
     if (!layers || layers->size() != (int)changed.activeMix().layers.size())
         throw std::runtime_error("Live layer set changed; prepare a graph instead");
@@ -219,6 +249,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         auto value = (*layers)[(int)i];
         if (layer.id != value["id"].toString())
             throw std::runtime_error("Live layer identity mismatch");
+        layer.inserts.bypass = (bool)value["chainBypass"];
         layer.gainDb = (double)value["gainDb"];
         layer.controlGain = value.hasProperty("controlGain") ? (double)value["controlGain"] : 1;
         layer.pan = (double)value["pan"];
@@ -239,9 +270,9 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         layer.fadeOutShape = fadeShapeFromId(value["fadeOutShape"].toString());
         layer.fadeInPoints = fadePointsFromJson(value["fadeInPoints"]);
         layer.fadeOutPoints = fadePointsFromJson(value["fadeOutPoints"]);
-        applyRack(layer.effects, value["effects"]);
-        if (!layer.hosted.slots.empty())
-            applyHostedControls(layer.hosted, value["hostedRack"]);
+        applyRack(layer.inserts.stock, value["effects"]);
+        if (!layer.inserts.hosted.slots.empty())
+            applyHostedControls(layer.inserts.hosted, value["hostedRack"]);
     }
     syncPoolSelection(changed.activeMix());
     validateDesign(changed);

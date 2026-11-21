@@ -3,6 +3,7 @@
 #include "DesignControls.h"
 #include "PerformanceState.h"
 #include "HostedRackView.h"
+#include "OrderedInsertList.h"
 namespace sp
 {
 // Two independent instances are used for the selected track and master. Commands
@@ -21,11 +22,12 @@ class StockRackView final : public juce::Component
              std::initializer_list<juce::Component *>{&heading, &slots, &add, &remove, &up, &down, &bypass,
                                                       &all, &transfer, &reset, &lockSlot, &parameters, &more})
             addAndMakeVisible(c);
+        addAndMakeVisible(orderedList);
         heading.setColour(juce::Label::textColourId, ui::muted);
         heading.setFont(juce::FontOptions(12.f));
         slots.setTitle(master ? "Master insert slots" : "Track insert slots");
         slots.setTextWhenNothingSelected("No inserts");
-        slots.setTooltip("Effects run top to bottom. Stock effects precede plug-ins.");
+        slots.setTooltip("Effects run in the displayed order.");
         slots.onChange = [this]
         {
             externalSelected = slots.getSelectedId() >= 100;
@@ -80,16 +82,7 @@ class StockRackView final : public juce::Component
         { editSlot("Bypass insert", [](auto &fx, size_t i) { fx[i].bypass = !fx[i].bypass; }); };
         all.setToggleable(true);
         all.onClick = [this]
-        {
-            auto target = owner;
-            bool enabled = all.getToggleState();
-            change(target, "Bypass stock rack",
-                   [enabled](auto &fx)
-                   {
-                       for (auto &e : fx)
-                           e.bypass = !enabled;
-                   });
-        };
+        { editChain(owner, "Bypass insert chain", [](auto &c) { c.bypass = !c.bypass; }); };
         lockSlot.setToggleable(true);
         lockSlot.onClick = [this]
         { editSlot("Lock insert", [](auto &fx, size_t i) { fx[i].locked = !fx[i].locked; }); };
@@ -167,6 +160,22 @@ class StockRackView final : public juce::Component
         {
             external = std::make_unique<HostedRackView>(session, isMaster, registry, true);
             addAndMakeVisible(*external);
+            external->onReorder = [this](const HostedRackView::Owner &o, const juce::String &id, int step)
+            {
+                Owner target{o.document, o.variation, o.layer, o.generation};
+                moveInChain(target, {InsertKind::hosted, id}, step, true);
+            };
+            external->chainPosition = [this](const HostedRackView::Owner &o, const juce::String &id)
+            {
+                Owner target{o.document, o.variation, o.layer, o.generation};
+                auto *c = chainFor(target);
+                if (!c)
+                    return std::pair<int, int>{-1, 0};
+                auto rows = resolvedInsertOrder(*c);
+                auto at = std::find(rows.begin(), rows.end(), InsertRef{InsertKind::hosted, id});
+                return std::pair<int, int>{at == rows.end() ? -1 : (int)std::distance(rows.begin(), at),
+                                           (int)rows.size()};
+            };
             external->onHeightChange = [this]
             {
                 resized();
@@ -211,10 +220,10 @@ class StockRackView final : public juce::Component
             target.variation != session.document.activeVariation)
             return nullptr;
         if (target.layer.isEmpty())
-            return isMaster ? &session.document.activeMix().masterEffects : nullptr;
+            return isMaster ? &session.document.activeMix().inserts.stock : nullptr;
         for (auto &l : session.document.activeMix().layers)
             if (l.id == target.layer)
-                return &l.effects;
+                return &l.inserts.stock;
         return nullptr;
     }
     void change(const Owner &target, const juce::String &name,
@@ -231,19 +240,32 @@ class StockRackView final : public juce::Component
     }
     void append(const Owner &target, const juce::String &type)
     {
+        auto fresh = makeStockEffect(type);
+        bool added = false;
         change(target, "Add stock insert",
                [&](auto &fx)
                {
                    if (fx.size() < 8)
-                       fx.push_back(makeStockEffect(type));
+                   {
+                       fx.push_back(fresh);
+                       added = true;
+                   }
                });
+        if (added && owner.document == target.document && owner.variation == target.variation &&
+            owner.layer == target.layer && owner.generation == target.generation)
+        {
+            selectedSlot = fresh.id;
+            externalSelected = false;
+            refresh();
+        }
     }
     int preferredHeight() const
     {
         bool has = slots.getNumItems() > 0;
-        return 60 + (externalSelected && external ? external->preferredHeight()
-                     : has                        ? 32 + (expanded ? parameterCount * 46 : 0)
-                                                  : 0);
+        return 28 + orderedList.preferredHeight() + 4 +
+               (externalSelected && external ? external->preferredHeight()
+                : has                        ? 32 + (expanded ? parameterCount * 46 : 0)
+                                             : 0);
     }
     void selectExternalSlot(const juce::String &id)
     {
@@ -310,24 +332,101 @@ class StockRackView final : public juce::Component
         slots.setSelectedId(externalSelected ? 100 + selectedExternal : picked, juce::dontSendNotification);
         if (!externalSelected)
             selectedSlot = slotId();
-        slots.setTooltip(externalSelected && external
-                             ? external->effectTooltip()
-                             : "Effects run top to bottom. Stock effects precede plug-ins.");
+        slots.setTooltip(externalSelected && external ? external->effectTooltip()
+                                                      : "Effects run in the displayed order.");
         auto *effect = !externalSelected && fx && picked ? &(*fx)[(size_t)picked - 1] : nullptr;
         bool editable = fx && !session.takeBusy() && session.document.activeTake.isEmpty();
         add.setEnabled(editable && (fx->size() < 8 || (external && externalCount < 8)));
-        slots.setVisible(slots.getNumItems() > 0);
+        slots.setVisible(false); // Selection bridge only; the ordered rows are the product surface.
+        auto *chain = chainFor(owner);
+        std::vector<OrderedInsertList::Item> items;
+        if (chain)
+            for (auto &ref : resolvedInsertOrder(*chain))
+            {
+                OrderedInsertList::Item item;
+                item.ref = ref;
+                if (ref.kind == InsertKind::stock)
+                    for (auto &e : chain->stock)
+                        if (e.id == ref.id)
+                        {
+                            item.name = e.type.substring(0, 1).toUpperCase() + e.type.substring(1);
+                            item.bypass = e.bypass;
+                        }
+                if (ref.kind == InsertKind::hosted)
+                    for (auto &e : chain->hosted.slots)
+                        if (e.id == ref.id)
+                        {
+                            auto plugin = juce::JSON::parse(e.settings)["plugin"];
+                            item.name = plugin["name"].toString();
+
+                            item.bypass = e.bypass;
+                            if (chain->hosted.bypass)
+                                item.name += " · group bypassed";
+                            auto path = plugin["path"].toString();
+                            item.unavailable = !path.startsWith("AudioUnit:") && !juce::File(path).exists();
+                            if (!item.unavailable && session.liveInsertProblem(e.id).isNotEmpty())
+                                item.name += " · unavailable";
+                        }
+                items.push_back(item);
+            }
+        auto target = owner;
+        juce::Component::SafePointer<StockRackView> safe(this);
+        orderedList.select = [safe, target](InsertRef ref)
+        {
+            if (safe && safe->rack(target))
+                safe->selectInsert(ref);
+        };
+        orderedList.move = [safe, target](InsertRef ref, int destination)
+        {
+            if (safe)
+                safe->moveInChain(target, ref, destination, false);
+        };
+        orderedList.toggle = [safe, target](InsertRef ref)
+        {
+            if (safe)
+                safe->editChain(target, "Bypass insert",
+                                [&](auto &c)
+                                {
+                                    if (ref.kind == InsertKind::stock)
+                                    {
+                                        for (auto &e : c.stock)
+                                            if (e.id == ref.id)
+                                                e.bypass = !e.bypass;
+                                    }
+                                    else
+                                        for (auto &e : c.hosted.slots)
+                                            if (e.id == ref.id)
+                                                e.bypass = !e.bypass;
+                                });
+        };
+        orderedList.open = [safe, target](InsertRef ref)
+        {
+            if (!safe || !safe->rack(target))
+                return;
+            safe->selectInsert(ref);
+            if (ref.kind == InsertKind::hosted && safe->external)
+                safe->external->openSelectedEditor();
+            else
+                safe->setParametersExpanded(!safe->expanded);
+        };
+        orderedList.setItems(std::move(items),
+                             {externalSelected ? InsertKind::hosted : InsertKind::stock,
+                              externalSelected ? selectedExternalSlot : selectedSlot},
+                             editable);
         add.setLabelVisible(slots.getNumItems() == 0);
         for (auto *button : {&remove, &up, &down, &all, &transfer, &reset, &lockSlot})
             button->setVisible(false);
-        for (auto *button : {&bypass, &parameters, &more})
+        bypass.setVisible(false);
+        for (auto *button : {&parameters, &more})
             button->setVisible(effect != nullptr);
         more.setEnabled(editable && effect);
         if (external)
             external->setVisible(externalSelected);
         remove.setEnabled(editable && effect);
-        up.setEnabled(editable && picked > 1);
-        down.setEnabled(editable && effect && picked < (int)fx->size());
+        auto order = chain ? resolvedInsertOrder(*chain) : std::vector<InsertRef>{};
+        auto pos = std::find(order.begin(), order.end(), InsertRef{InsertKind::stock, selectedSlot});
+        up.setEnabled(editable && effect && pos != order.end() && pos != order.begin());
+        down.setEnabled(editable && effect && pos != order.end() && pos + 1 != order.end());
         lockSlot.setEnabled(editable && effect);
         lockSlot.setToggleState(effect && effect->locked, juce::dontSendNotification);
         bypass.setEnabled(editable && effect);
@@ -335,12 +434,11 @@ class StockRackView final : public juce::Component
         transfer.setEnabled(editable && effect);
         bypass.setToggleState(effect && !effect->bypass, juce::dontSendNotification);
         bypass.setTooltip(effect && effect->bypass ? "Enable effect" : "Bypass effect");
-        bool allOff =
-            fx && !fx->empty() && std::all_of(fx->begin(), fx->end(), [](auto &e) { return e.bypass; });
-        all.setEnabled(editable && fx && !fx->empty());
-        all.setToggleState(allOff, juce::dontSendNotification);
-        all.setTooltip(allOff ? "Enable all stock inserts in this rack"
-                              : "Bypass all stock inserts in this rack");
+        all.setVisible(chain && slots.getNumItems() > 0);
+        all.setEnabled(editable && chain);
+        all.setButtonText(isMaster ? "Master chain enabled" : "Track chain enabled");
+        all.setToggleState(chain && !chain->bypass, juce::dontSendNotification);
+        all.setTooltip(chain && chain->bypass ? "Enable insert chain" : "Bypass insert chain");
         juce::StringArray names;
         std::array<double, 4> lo{}, hi{1, 1, 1, 1};
         if (effect)
@@ -405,22 +503,20 @@ class StockRackView final : public juce::Component
     void resized() override
     {
         auto r = getLocalBounds();
-        heading.setBounds(r.removeFromTop(22));
-        auto row = r.removeFromTop(30);
-        if (slots.getNumItems())
-        {
-            add.setBounds(row.removeFromRight(30));
-            slots.setBounds(row);
-        }
-        else
-            add.setBounds(row);
+        auto header = r.removeFromTop(28);
+        all.setBounds(header.removeFromLeft(all.isVisible() ? 28 : 0));
+        add.setBounds(header.removeFromRight(slots.getNumItems() ? 30 : std::min(130, header.getWidth())));
+        heading.setBounds(header);
+        slots.setBounds(0, 0, 0, 0);
+        orderedList.setBounds(r.removeFromTop(orderedList.preferredHeight()));
         r.removeFromTop(4);
+        auto row = r;
         if (externalSelected && external)
             external->setBounds(r.removeFromTop(external->preferredHeight()));
         else if (slots.getNumItems())
         {
             row = r.removeFromTop(32);
-            for (auto *b : {&bypass, &parameters, &more})
+            for (auto *b : {&parameters, &more})
                 b->setBounds(row.removeFromLeft(32).reduced(2));
             for (int i = 0; expanded && i < parameterCount; ++i)
             {
@@ -444,6 +540,7 @@ class StockRackView final : public juce::Component
                 onHeightChange();
         }
     }
+    OrderedInsertList orderedList;
     std::unique_ptr<HostedRackView> external;
     juce::Label heading;
     IconButton add{"Add effect", ActionIcon::addEffect, true}, remove{"Remove insert", ActionIcon::trash},
@@ -487,14 +584,65 @@ class StockRackView final : public juce::Component
                        }
                });
     }
+    InsertChain *chainFor(const Owner &target)
+    {
+        if (!rack(target))
+            return nullptr;
+        if (target.layer.isEmpty())
+            return &session.document.activeMix().inserts;
+        for (auto &l : session.document.activeMix().layers)
+            if (l.id == target.layer)
+                return &l.inserts;
+        return nullptr;
+    }
+    void editChain(const Owner &target, const juce::String &name, std::function<void(InsertChain &)> fn)
+    {
+        if (!chainFor(target) || session.takeBusy() || session.document.activeTake.isNotEmpty())
+            return;
+        session.edit(name,
+                     [&](auto &)
+                     {
+                         if (auto *c = chainFor(target))
+                             fn(*c);
+                     });
+        refresh();
+    }
+    void selectInsert(InsertRef ref)
+    {
+        auto *c = chainFor(owner);
+        if (!c)
+            return;
+        if (ref.kind == InsertKind::hosted)
+        {
+            selectExternalSlot(ref.id);
+            return;
+        }
+        externalSelected = false;
+        selectedSlot = ref.id;
+        refresh();
+        if (onHeightChange)
+            onHeightChange();
+    }
+    void moveInChain(const Owner &target, InsertRef ref, int destination, bool relative)
+    {
+        editChain(target, "Reorder insert chain",
+                  [&](auto &c)
+                  {
+                      normaliseInsertChain(c);
+                      auto at = std::find(c.order.begin(), c.order.end(), ref);
+                      if (at == c.order.end())
+                          return;
+                      int from = (int)std::distance(c.order.begin(), at);
+                      int to =
+                          std::clamp(relative ? from + destination : destination, 0, (int)c.order.size() - 1);
+                      auto moved = *at;
+                      c.order.erase(at);
+                      c.order.insert(c.order.begin() + to, moved);
+                  });
+    }
     void move(int step)
     {
-        editSlot("Reorder insert",
-                 [=](auto &fx, size_t i)
-                 {
-                     auto j = std::clamp((int)i + step, 0, (int)fx.size() - 1);
-                     std::swap(fx[i], fx[(size_t)j]);
-                 });
+        moveInChain(owner, {InsertKind::stock, selectedSlot}, step, true);
     }
     void showActions()
     {
@@ -508,7 +656,7 @@ class StockRackView final : public juce::Component
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());
         if (auto *fx = rack(target); fx && fx->size() > 1)
-            menu.addItem(6, "Bypass all stock effects", all.isEnabled(), all.getToggleState());
+            menu.addItem(6, "Insert chain enabled", all.isEnabled(), all.getToggleState());
         menu.addSeparator();
         menu.addItem(7, "Remove effect", remove.isEnabled());
         juce::Component::SafePointer<StockRackView> safe(this);
@@ -573,32 +721,8 @@ class StockRackView final : public juce::Component
                                    return;
                                auto layer = targets[(size_t)((choice - 1) / 2)];
                                bool move = (choice % 2) == 0;
-                               safe->session.edit(move ? "Move insert to rack" : "Copy insert to rack",
-                                                  [&](auto &d)
-                                                  {
-                                                      auto *from = safe->rack(source);
-                                                      auto *to = &d.activeMix().masterEffects;
-                                                      if (layer.isNotEmpty())
-                                                      {
-                                                          to = nullptr;
-                                                          for (auto &l : d.activeMix().layers)
-                                                              if (l.id == layer)
-                                                                  to = &l.effects;
-                                                      }
-                                                      if (!from || !to || to->size() >= 8 || from == to)
-                                                          return;
-                                                      for (size_t i = 0; i < from->size(); ++i)
-                                                          if ((*from)[i].id == id)
-                                                          {
-                                                              auto e = (*from)[i];
-                                                              if (!move)
-                                                                  e.id = juce::Uuid().toString();
-                                                              to->push_back(e);
-                                                              if (move)
-                                                                  from->erase(from->begin() + (int)i);
-                                                              break;
-                                                          }
-                                                  });
+                               safe->session.transferInsert(source.layer, {InsertKind::stock, id}, layer,
+                                                            move);
                            });
     }
 };

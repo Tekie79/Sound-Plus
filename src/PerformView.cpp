@@ -480,10 +480,10 @@ void PerformView::refresh()
     for (auto &l : mix.layers)
     {
         signature += l.id + l.name;
-        for (auto &e : l.effects)
+        for (auto &e : l.inserts.stock)
             signature += e.id + e.type;
     }
-    for (auto &e : mix.masterEffects)
+    for (auto &e : mix.inserts.stock)
         signature += e.id + e.type;
     if (signature != assignmentSignature)
     {

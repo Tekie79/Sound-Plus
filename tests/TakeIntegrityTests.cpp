@@ -74,9 +74,9 @@ sp::DesignDocument fixture(const juce::File &root)
     sp::DesignDocument d;
     d.name = "Take integrity QA";
     auto l = sp::makeDesignLayer(sp::inspectDesignSource(f), 0, -1, true);
-    l.effects = {sp::makeStockEffect("delay")};
+    l.inserts.stock = {sp::makeStockEffect("delay")};
     d.original.layers = {l};
-    d.original.masterEffects = {sp::makeStockEffect("reverb")};
+    d.original.inserts.stock = {sp::makeStockEffect("reverb")};
     auto &p = d.original.performance;
     p.macros[0].enabled = true;
     p.macros[0].value = .15;
@@ -233,7 +233,7 @@ void runTakeIntegrityTests(const juce::File &parent, const juce::File &applicati
     // Reader itself rejects live controls even if a stale caller bypasses session/service guards.
     auto altered = d;
     altered.original.layers[0].gainDb = -65;
-    altered.original.masterEffects.clear();
+    altered.original.inserts.stock.clear();
     auto extra = altered.original.layers[0];
     extra.id = juce::Uuid().toString();
     altered.original.layers.push_back(extra);

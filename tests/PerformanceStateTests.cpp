@@ -371,13 +371,16 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     {
         auto l = sp::makeDesignLayer(source, 0, -1, true);
         l.name = "Layer " + juce::String(i + 1);
-        l.effects = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
+        l.inserts.stock = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
                      sp::makeStockEffect("reverb")};
         d.original.layers.push_back(l);
     }
     d.selectedLayer = d.original.layers[0].id;
     auto legacy = sp::designToJson(d);
-    check((int)legacy["version"] == 1, "Neutral designs keep the old manifest version");
+    check((int)legacy["version"] == 9, "Live insert documents use the authoritative ordered-chain manifest");
+    legacy.getDynamicObject()->setProperty("version",1);
+    legacy.getDynamicObject()->setProperty("dsp","stock-sinc32-v1");
+    legacy.getDynamicObject()->setProperty("original",sp::designMixToJson(d.original,true));
     auto old = sp::designFromJson(legacy);
     check(mixText(sp::resolvePerformance(old.original)) == mixText(d.original),
           "Old documents resolve neutrally");
@@ -470,7 +473,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     check(std::abs(legacyWeights[0] - 1 / std::sqrt(3.)) < 1e-12,
           "Legacy saved law retains its exact endpoint behavior, without silent migration");
     auto oldFormat = sp::designToJson(legacyDesign);
-    check((int)oldFormat["version"] == 2 && (int)oldFormat["original"]["performance"]["version"] == 1,
+    check((int)oldFormat["version"] == 9 && (int)oldFormat["original"]["performance"]["version"] == 1,
           "Unmodified legacy performance state stays compatible with the original manifest");
     auto oldReopened = sp::designFromJson(oldFormat);
     check(oldReopened.original.performance.blendLaw == 1 && pcmDifference(legacyDesign, oldReopened) == 0,
@@ -482,7 +485,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
               std::abs(newWeights[2] - newWeights[1]) < 1e-12,
           "New triangular law projects the empty corner onto the occupied opposite edge");
     auto newFormat = sp::designToJson(upgraded);
-    check((int)newFormat["version"] == 3 && newFormat["dsp"].toString() == "stock-perform-v2",
+    check((int)newFormat["version"] == 9 && newFormat["dsp"].toString() == "ordered-inserts-v1",
           "New law has an explicit document/DSP compatibility gate");
     auto newReopened = sp::designFromJson(newFormat);
     check(newReopened.original.performance.blendLaw == 2 && pcmDifference(upgraded, newReopened) == 0,
@@ -533,10 +536,10 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     check(sp::resolvePerformance(mix).layers[1].gainDb == -7.5, "Macro inversion");
     macro.mappings[0].inverted = false;
     auto cutoff = sp::PerformanceMapping{
-        {mix.layers[1].id, mix.layers[1].effects[0].id, "filterLow"}, 100, 10000, "log", false};
+        {mix.layers[1].id, mix.layers[1].inserts.stock[0].id, "filterLow"}, 100, 10000, "log", false};
     sp::addMacroMapping(mix, 0, cutoff);
     macro.value = .5;
-    check(std::abs(sp::resolvePerformance(mix).layers[1].effects[0].parameters[1] - 1000) < 1e-8,
+    check(std::abs(sp::resolvePerformance(mix).layers[1].inserts.stock[0].parameters[1] - 1000) < 1e-8,
           "Frequency interpolation is logarithmic");
     auto structure = sp::designStructure(d);
     mix.performance.x = .8;
@@ -560,10 +563,10 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     check(sp::performanceTargetValue(removed, gain.target) == nullptr,
           "Deleted layer stays unresolved instead of retargeting");
     removed = mix;
-    removed.layers[1].effects.clear();
+    removed.layers[1].inserts.stock.clear();
     check(sp::performanceTargetValue(removed, cutoff.target) == nullptr, "Removed effect stays unresolved");
     removed = mix;
-    removed.layers[1].effects[0].type = "gain";
+    removed.layers[1].inserts.stock[0].type = "gain";
     check(sp::performanceTargetValue(removed, cutoff.target) == nullptr,
           "An incompatible effect with the same ID cannot acquire a cutoff mapping");
     auto manual = mix;
@@ -574,7 +577,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     auto saved = root.getChildFile("performance.soundplus");
     sp::saveDesignAtomic(saved, d);
     auto recall = sp::loadDesign(saved);
-    check((int)sp::designToJson(recall)["version"] == 3,
+    check((int)sp::designToJson(recall)["version"] == 9,
           "Performance documents use the explicit new compatibility gate");
     check(pcmDifference(d, recall) == 0, "Save/reopen retains effective sound");
     auto forged = sp::designToJson(d);
@@ -742,7 +745,7 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
     rampDoc.variations.clear();
     rampDoc.original.performance = {};
     rampDoc.original.layers.resize(1);
-    rampDoc.original.layers[0].effects.clear();
+    rampDoc.original.layers[0].inserts.stock.clear();
     rampDoc.original.masterDb = 0;
     sp::DesignGraph ramp(rampDoc), unchanged(rampDoc);
     juce::AudioBuffer<float> moving(2, 512), steady(2, 512);

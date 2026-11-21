@@ -22,7 +22,7 @@ add_library(soundplus_core STATIC
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/PerformanceState.cpp src/DesignModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
+  src/PerformanceState.cpp src/InsertChain.cpp src/DesignModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -181,6 +181,8 @@ if(BUILD_TESTING)
   add_test(NAME plugin_processing COMMAND SoundPlusTests --plugin-processing "${CMAKE_BINARY_DIR}/plugin-processing-test-output" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
   add_test(NAME plugin_correctness COMMAND SoundPlusTests --plugin-correctness "${CMAKE_BINARY_DIR}/plugin-correctness/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
   add_test(NAME plugin_gate_a COMMAND SoundPlusTests --plugin-gate-a "${CMAKE_BINARY_DIR}/plugin-editor-live/gate-a" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
+  add_test(NAME ordered_inserts COMMAND SoundPlusTests --ordered-inserts "${CMAKE_BINARY_DIR}/ordered-inserts/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
+  set_tests_properties(ordered_inserts PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE)
   add_test(NAME native_view_scale COMMAND SoundPlusTests --native-view-scale)
   add_test(NAME plugin_live COMMAND SoundPlusTests --plugin-live "${CMAKE_BINARY_DIR}/plugin-editor-live/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
   set_tests_properties(plugin_live PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)

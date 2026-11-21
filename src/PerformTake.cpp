@@ -37,7 +37,9 @@ juce::var eventJson(const PerformTake &t)
 juce::var recipeJson(const PerformTake &t)
 {
     auto o = obj();
-    put(o, "mix", designMixToJson(t.recipe));
+    put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
+    if (t.orderedRecipe)
+        put(o, "recipeVersion", 2);
     put(o, "rate", t.sampleRate);
     put(o, "processing", t.processing);
     put(o, "origin", "frame-zero-fresh-history");
@@ -192,6 +194,9 @@ PerformTake takeFromJson(const juce::var &o)
     t.session = o["session"].toString();
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
+    if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2)
+        throw std::runtime_error("Unsupported take insert recipe");
+    t.orderedRecipe = r.hasProperty("recipeVersion");
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
@@ -233,6 +238,10 @@ PerformTake takeFromJson(const juce::var &o)
 }
 void hashTake(PerformTake &t)
 {
+    auto &mix = (const DesignMix &)t.recipe;
+    t.orderedRecipe = t.orderedRecipe || requiresOrderedInserts(mix.inserts) ||
+                      std::any_of(mix.layers.begin(), mix.layers.end(),
+                                  [](auto &l) { return requiresOrderedInserts(l.inserts); });
     t.recipeHash = hash(recipeJson(t));
     auto timeline = obj();
     put(timeline, "events", eventJson(t));

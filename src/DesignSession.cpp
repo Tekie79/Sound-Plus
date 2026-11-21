@@ -33,6 +33,7 @@ bool sameTakes(const DesignDocument &a, const DesignDocument &b)
             auto o = juce::var(new juce::DynamicObject());
             auto *v = o.getDynamicObject();
             v->setProperty("id", t.id);
+            v->setProperty("orderedRecipe", t.orderedRecipe);
             v->setProperty("name", t.name);
             v->setProperty("session", t.session);
             v->setProperty("reason", t.reason);
@@ -367,11 +368,11 @@ bool DesignSession::openLiveEditor(const juce::String &slot)
     if (!liveInserts)
         return false;
     juce::String owner;
-    for (auto &candidate : document.activeMix().hosted.slots)
+    for (auto &candidate : document.activeMix().inserts.hosted.slots)
         if (candidate.id == slot)
             owner = "master";
     for (auto &layer : document.activeMix().layers)
-        for (auto &candidate : layer.hosted.slots)
+        for (auto &candidate : layer.inserts.hosted.slots)
             if (candidate.id == slot)
                 owner = layer.id;
     if (owner.isEmpty())
@@ -390,10 +391,10 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
     auto rack = [&](DesignDocument &d) -> HostedRack *
     {
         if (capture.owner == "master")
-            return &d.activeMix().hosted;
+            return &d.activeMix().inserts.hosted;
         for (auto &l : d.activeMix().layers)
             if (l.id == capture.owner)
-                return &l.hosted;
+                return &l.inserts.hosted;
         return nullptr;
     };
     if ((bool)capture.evidence["editorVisible"] && message == "Opening editor...")
@@ -609,9 +610,9 @@ void DesignSession::stampLiveIntents(int64_t ticks)
             for (auto &slot : rack.slots)
                 previous[slot.id] = &slot;
         };
-        add(liveIntentBase->activeMix().hosted);
+        add(liveIntentBase->activeMix().inserts.hosted);
         for (auto &layer : liveIntentBase->activeMix().layers)
-            add(layer.hosted);
+            add(layer.inserts.hosted);
     }
     auto stamp = [&](HostedRack &rack)
     {
@@ -639,9 +640,9 @@ void DesignSession::stampLiveIntents(int64_t ticks)
                 }
         }
     };
-    stamp(document.activeMix().hosted);
+    stamp(document.activeMix().inserts.hosted);
     for (auto &layer : document.activeMix().layers)
-        stamp(layer.hosted);
+        stamp(layer.inserts.hosted);
 }
 void DesignSession::changed(ChangeImpact impact)
 {
@@ -698,6 +699,15 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
     try
     {
         edit(document);
+        auto normalise = [](DesignMix &m)
+        {
+            normaliseInsertChain(m.inserts);
+            for (auto &l : m.layers)
+                normaliseInsertChain(l.inserts);
+        };
+        normalise(document.original);
+        for (auto &v : document.variations)
+            normalise(v.mix);
         if (before.activeVariation != document.activeVariation || before.activeTake != document.activeTake)
             invalidatePoolWork();
         syncPoolSelection(document.activeMix());
@@ -1659,8 +1669,10 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
         snapshot.activeMix().duration = 0;
         if (hostedStem)
         {
-            snapshot.activeMix().masterEffects.clear();
-            snapshot.activeMix().hosted.slots.clear();
+            snapshot.activeMix().inserts.stock.clear();
+            snapshot.activeMix().inserts.hosted.slots.clear();
+            snapshot.activeMix().inserts.order.clear();
+            snapshot.activeMix().inserts.bypass = false;
             snapshot.activeMix().masterDb = 0;
         }
         snapshot.renderSettings.first = 0;
@@ -1676,5 +1688,91 @@ void DesignSession::copyOriginal(const juce::File &folder)
 {
     if (selectedLayer())
         startOutput(document, true, folder, "original-copy");
+}
+void DesignSession::transferInsert(const juce::String &sourceOwner, InsertRef requested,
+                                   const juce::String &targetOwner, bool move)
+{
+    const auto doc = document.id, var = document.activeVariation;
+    const auto epoch = lifetime;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    withLiveState(
+        [safe, doc, var, epoch, sourceOwner, targetOwner, requested, move]
+        {
+            if (!safe)
+                return;
+            auto owner = [&](const juce::String &id) -> InsertChain *
+            {
+                if (id.isEmpty())
+                    return &safe->document.activeMix().inserts;
+                for (auto &l : safe->document.activeMix().layers)
+                    if (l.id == id)
+                        return &l.inserts;
+                return nullptr;
+            };
+            auto *from = owner(sourceOwner), *to = owner(targetOwner);
+            auto reject = [&](const juce::String &why)
+            {
+                safe->message = "Insert transfer cancelled: " + why;
+                safe->notify();
+            };
+            if (safe->lifetime != epoch || safe->document.id != doc ||
+                safe->document.activeVariation != var || !from || !to)
+            {
+                reject("owner changed");
+                return;
+            }
+            if (safe->takeBusy() || safe->document.activeTake.isNotEmpty())
+            {
+                reject("take context is read-only");
+                return;
+            }
+            if (from == to)
+            {
+                reject("choose another owner");
+                return;
+            }
+            auto order = resolvedInsertOrder(*from);
+            if (std::find(order.begin(), order.end(), requested) == order.end())
+            {
+                reject("slot was removed");
+                return;
+            }
+            if ((requested.kind == InsertKind::stock ? to->stock.size() : to->hosted.slots.size()) >= 8)
+            {
+                reject("destination is full");
+                return;
+            }
+            safe->edit(move ? "Move insert" : "Copy insert",
+                       [&](auto &d)
+                       {
+                           if (requested.kind == InsertKind::stock)
+                           {
+                               auto at = std::find_if(from->stock.begin(), from->stock.end(),
+                                                      [&](auto &s) { return s.id == requested.id; });
+                               auto copied = *at;
+                               if (!move)
+                                   copied.id = juce::Uuid().toString();
+                               to->stock.push_back(copied);
+                               if (move)
+                                   from->stock.erase(at);
+                           }
+                           else
+                           {
+                               auto at = std::find_if(from->hosted.slots.begin(), from->hosted.slots.end(),
+                                                      [&](auto &s) { return s.id == requested.id; });
+                               auto copied = *at;
+                               if (!move)
+                                   copied.id = juce::Uuid().toString();
+                               to->hosted.slots.push_back(copied);
+                               if (move)
+                                   from->hosted.slots.erase(at);
+                           }
+                           if (move && requested.kind == InsertKind::stock)
+                               for (auto &macro : d.activeMix().performance.macros)
+                                   for (auto &m : macro.mappings)
+                                       if (m.target.layer == sourceOwner && m.target.effect == requested.id)
+                                           m.target.layer = targetOwner;
+                       });
+        });
 }
 } // namespace sp

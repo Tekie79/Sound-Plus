@@ -59,6 +59,12 @@ bool LiveInsertSession::accepts(const Capture &capture)
     auto found = generations.find(capture.slot);
     return found != generations.end() && found->second == capture.generation;
 }
+juce::String LiveInsertSession::problem(const juce::String &slot)
+{
+    std::lock_guard lock(mutex);
+    auto at = problems.find(slot);
+    return at == problems.end() ? juce::String() : at->second;
+}
 void LiveInsertSession::trace(const juce::var &state)
 {
     auto event = juce::var(new juce::DynamicObject());
@@ -135,6 +141,7 @@ void LiveInsertSession::run()
                 {
                     std::lock_guard lock(mutex);
                     generations.clear();
+                    problems.clear();
                 }
                 context = root.getFullPathName();
             }
@@ -174,6 +181,10 @@ void LiveInsertSession::run()
                     auto &e = entries[slot.id];
                     if (e.binding.slot.isEmpty())
                     {
+                        {
+                            std::lock_guard lock(mutex);
+                            problems.erase(slot.id);
+                        }
                         e.rack.id = slot.id;
                         e.rack.slots = {slot};
                         e.rack.runtimeControlTicks = next->document.liveControlTicks;
@@ -209,6 +220,10 @@ void LiveInsertSession::run()
                         catch (const std::exception &error)
                         {
                             e.failed = true;
+                            {
+                                std::lock_guard lock(mutex);
+                                problems[e.binding.slot] = error.what();
+                            }
                             juce::MessageManager::callAsync(
                                 [callback = failure, text = juce::String(error.what())] { callback(text); });
                         }
@@ -234,6 +249,10 @@ void LiveInsertSession::run()
                             catch (const std::exception &error)
                             {
                                 e.failed = true;
+                                {
+                                    std::lock_guard lock(mutex);
+                                    problems[e.binding.slot] = error.what();
+                                }
                                 juce::MessageManager::callAsync(
                                     [callback = failure, text = juce::String(error.what())]
                                     { callback(text); });
@@ -246,10 +265,11 @@ void LiveInsertSession::run()
             if (next->document.activeTake.isEmpty())
             {
                 auto &mix = next->document.activeMix();
-                reconcile(mix.hosted, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout,
-                          "master", "Master");
+                reconcile(mix.inserts.hosted,
+                          mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, "master",
+                          "Master");
                 for (auto &layer : mix.layers)
-                    reconcile(layer.hosted,
+                    reconcile(layer.inserts.hosted,
                               mix.layout.id.isEmpty() ? channelLayout("stereo-v1")
                                                       : layer.routing.interpretation,
                               layer.id, layer.name);
@@ -258,6 +278,7 @@ void LiveInsertSession::run()
             {
                 std::lock_guard lock(mutex);
                 std::erase_if(generations, [&](auto &p) { return !wanted.contains(p.first); });
+                std::erase_if(problems, [&](auto &p) { return !wanted.contains(p.first); });
             }
         }
         bool allCaptured = true;
@@ -320,6 +341,10 @@ void LiveInsertSession::run()
             catch (const std::exception &error)
             {
                 e.failed = true;
+                {
+                    std::lock_guard lock(mutex);
+                    problems[e.binding.slot] = error.what();
+                }
                 flushOkay = false;
                 juce::MessageManager::callAsync([callback = failure, text = juce::String(error.what())]
                                                 { callback(text); });

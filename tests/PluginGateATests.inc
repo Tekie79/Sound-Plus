@@ -177,10 +177,10 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
     session.document.original.masterDb = 0;
     auto layer = makeDesignLayer(source.source, 0, -1, true);
     initialiseRouting(layer, bus);
-    layer.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+    layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
     session.document.original.layers = {layer};
     session.document.selectedLayer = layer.id;
-    HostedRackClient live(layer.hosted, bus, 48000, cancel);
+    HostedRackClient live(layer.inserts.hosted, bus, 48000, cancel);
     auto impulse = [&]
     {
         AudioBuffer<float> b(1, 64);
@@ -193,15 +193,15 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
     session.edit("Edit gain",
                  [&](auto &d)
                  {
-                     auto &slot = d.original.layers[0].hosted.slots[0];
+                     auto &slot = d.original.layers[0].inserts.hosted.slots[0];
                      auto v = JSON::parse(slot.settings);
                      parameter(v, 0, .6);
                      slot.settings = JSON::toString(v, true);
                  });
-    live.update(session.document.original.layers[0].hosted);
+    live.update(session.document.original.layers[0].inserts.hosted);
     require(std::abs(impulse() - .15f) < 1e-6, "Live explicit edit .6 is audible");
     session.undo();
-    live.update(session.document.original.layers[0].hosted);
+    live.update(session.document.original.layers[0].inserts.hosted);
     require(std::abs(impulse() - .1875f) < 1e-6,
             "Undo/return to baseline restores deferred opaque .75, not requested .5");
     auto saved = root.getChildFile("Deferred gain.soundplus");
@@ -212,7 +212,7 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
     AudioBuffer<float> fresh(1, dry.getNumSamples());
     graph.render(fresh, 0, fresh.getNumSamples());
     compare(dry, fresh, 1.5);
-    auto finite = JSON::parse(reopened.original.layers[0].hosted.slots[0].settings);
+    auto finite = JSON::parse(reopened.original.layers[0].inserts.hosted.slots[0].settings);
     put(finite, "output", root.getChildFile("fresh-finite.wav").getFullPathName());
     auto restored = child.call(finite, root, 10000);
     compare(dry, read(File(restored["path"].toString())), 1.5);

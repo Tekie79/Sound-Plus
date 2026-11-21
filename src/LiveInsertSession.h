@@ -27,6 +27,7 @@ class LiveInsertSession
     void flush(std::function<void(bool)>);
     bool accepts(const Capture &);
     void trace(const juce::var &);
+    juce::String problem(const juce::String &slot);
 
   private:
     struct Snapshot
@@ -42,7 +43,7 @@ class LiveInsertSession
     std::mutex mutex;
     std::condition_variable wake;
     std::optional<Snapshot> latest;
-    std::map<juce::String, juce::String> generations;
+    std::map<juce::String, juce::String> generations, problems;
     struct EditorRequest
     {
         juce::File root;

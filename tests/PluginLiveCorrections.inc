@@ -84,7 +84,7 @@ setenv("SOUNDPLUS_FIXTURE_SCHEMA", "large", 1);
     auto source = selection(wave(work.getChildFile("source"), channelLayout("mono-v1")));
     auto layer = makeDesignLayer(source.source, 0, -1, true);
     initialiseRouting(layer, session.document.original.layout);
-    layer.hosted.slots = {{Uuid().toString(), JSON::toString(largeJob, true), false}};
+    layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(largeJob, true), false}};
     session.document.original.layers = {layer};
     session.document.selectedLayer = layer.id;
     auto wait = [&](auto test, const String &why)
@@ -109,13 +109,13 @@ setenv("SOUNDPLUS_FIXTURE_SCHEMA", "large", 1);
     };
     wait([&] { return findEndpoint().isObject(); }, "Large native service starts");
     auto ep = findEndpoint();
-    session.openLiveEditor(layer.hosted.slots[0].id);
+    session.openLiveEditor(layer.inserts.hosted.slots[0].id);
     auto native = obj();
     put(native, "sequence", 1);
     put(native, "index", 580);
     put(native, "value", .25);
     saveProcessingJson(root.getChildFile(ep["pid"].toString() + ".json"), native);
-    auto settings = [&] { return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings); };
+    auto settings = [&] { return JSON::parse(session.document.original.layers[0].inserts.hosted.slots[0].settings); };
     wait([&] { return std::abs((double)settings()["parameters"][0]["value"] - .25) < 1e-6; },
          "High-index native edit captured and acknowledged by Main");
     session.edit("High-index Main Gain",
@@ -123,7 +123,7 @@ setenv("SOUNDPLUS_FIXTURE_SCHEMA", "large", 1);
                  {
                      auto v = settings();
                      parameter(v, 580, .6);
-                     d.original.layers[0].hosted.slots[0].settings = JSON::toString(v, true);
+                     d.original.layers[0].inserts.hosted.slots[0].settings = JSON::toString(v, true);
                  });
     auto actual = [&]
     {
@@ -142,7 +142,7 @@ setenv("SOUNDPLUS_FIXTURE_SCHEMA", "large", 1);
     session.save(file);
     wait([&] { return file.existsAsFile() && !session.working; }, "Large-schema open-editor Save completes");
     auto saved = loadDesign(file);
-    auto freshRack = saved.original.layers[0].hosted;
+    auto freshRack = saved.original.layers[0].inserts.hosted;
     HostedRackClient fresh(freshRack, channelLayout("mono-v1"), 48000, cancel);
     auto liveRack = freshRack;
     liveRack.runtimeEndpoint = File(ep["exchange"].toString())
@@ -150,7 +150,7 @@ setenv("SOUNDPLUS_FIXTURE_SCHEMA", "large", 1);
                                    .getParentDirectory()
                                    .getChildFile("endpoint.json");
     liveRack.runtimeOwnerRack = ep["binding"]["rack"].toString();
-    liveRack.id = layer.hosted.slots[0].id;
+    liveRack.id = layer.inserts.hosted.slots[0].id;
     HostedRackClient live(liveRack, channelLayout("mono-v1"), 48000, cancel);
     AudioBuffer<float> a(1, 512), b(1, 512);
     for (int n = 0; n < 512; ++n)

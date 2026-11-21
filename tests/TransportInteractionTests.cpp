@@ -65,13 +65,13 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
         sp::DesignDocument d;
         d.original.masterDb = 0;
         auto layer = sp::makeDesignLayer(sp::inspectDesignSource(tone), 0, -1, true);
-        layer.effects = {sp::makeStockEffect(type)};
+        layer.inserts.stock = {sp::makeStockEffect(type)};
         d.original.layers = {layer};
         sp::DesignGraph reference(d), changed(d);
         reference.seek(24000);
         changed.seek(24000);
         auto structure = sp::designStructure(d);
-        auto &fx = d.original.layers[0].effects[0];
+        auto &fx = d.original.layers[0].inserts.stock[0];
         if (fx.type == "gain")
             fx.parameters[0] = -18;
         if (fx.type == "filter")
@@ -144,12 +144,12 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
             layer.pan = .5 * std::sin(input * .11);
             layer.fadeIn = (int64_t)(480 + 240 * std::sin(input * .09));
             layer.fadeOut = 960;
-            layer.effects[0].parameters[0] = 30 + 1500 * (1 + std::sin(input * .07));
-            layer.effects[1].parameters[0] = 150 + 70 * std::sin(input * .08);
-            layer.effects[1].parameters[1] = .4 + .2 * std::sin(input * .09);
-            layer.effects[1].parameters[2] = .4 + .2 * std::sin(input * .10);
-            layer.effects[2].parameters[0] = .5 + .4 * std::sin(input * .11);
-            document.activeMix().masterEffects[1].parameters[2] = .3 + .2 * std::sin(input * .12);
+            layer.inserts.stock[0].parameters[0] = 30 + 1500 * (1 + std::sin(input * .07));
+            layer.inserts.stock[1].parameters[0] = 150 + 70 * std::sin(input * .08);
+            layer.inserts.stock[1].parameters[1] = .4 + .2 * std::sin(input * .09);
+            layer.inserts.stock[1].parameters[2] = .4 + .2 * std::sin(input * .10);
+            layer.inserts.stock[2].parameters[0] = .5 + .4 * std::sin(input * .11);
+            document.activeMix().inserts.stock[1].parameters[2] = .3 + .2 * std::sin(input * .12);
             auto sequence = audio.updateDesign(document, generation, now);
             sent[sequence] = now;
             library.search(input % 2 ? "effect" : "fixture");
@@ -245,7 +245,7 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
         session.seek(96000);
         auto event = sp::monotonicMs();
         session.edit("Pending seek insert",
-                     [](auto &d) { d.activeMix().layers[0].effects[1].parameters[2] = .85; });
+                     [](auto &d) { d.activeMix().layers[0].inserts.stock[1].parameters[2] = .85; });
         session.poll();
         auto oldSequence = reconciledSequence;
         until([&] { return (uint64_t)(int64_t)audio.status()["heardEdit"] >= oldSequence; },
@@ -269,7 +269,7 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
         entry->setProperty("editToObservedCallbackMs", sp::monotonicMs() - event);
         entry->setProperty("workerReleaseToObservedCallbackMs", sp::monotonicMs() - released);
         entry->setProperty("taggedEditToCallbackMs", audio.status()["editLatencyMs"]);
-        entry->setProperty("parameterValue", session.document.activeMix().layers[0].effects[1].parameters[2]);
+        entry->setProperty("parameterValue", session.document.activeMix().layers[0].inserts.stock[1].parameters[2]);
         pendingEvidence = juce::var(entry);
         session.stop();
     }
@@ -447,7 +447,7 @@ void runTransportInteractionTests(const juce::File &parent, const juce::File &ap
     auto impulse = sp::makeDesignLayer(sp::inspectDesignSource(impulseFile), 0, -1, true);
     auto delay = sp::makeStockEffect("delay");
     delay.parameters = {1000, .5, 1, 0};
-    impulse.effects = {delay};
+    impulse.inserts.stock = {delay};
     tail.original.layers = {impulse};
     auto tailFile = directory.getChildFile("tail.soundplus");
     sp::saveDesignAtomic(tailFile, tail);

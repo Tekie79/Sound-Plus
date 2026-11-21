@@ -164,20 +164,20 @@ void validateLayoutMix(const DesignMix &m, double rate)
         int n = l.routing.interpretation.size();
         matrixWork += n * m.layout.size();
         preparedBytes += (l.source.channels + 2 * n) * 8192. * 4 + 131072 + n * 512 * 4;
-        for (auto &fx : l.effects)
+        for (auto &fx : l.inserts.stock)
             if (fx.type == "reverb")
                 preparedBytes += n * 262144.;
-        work += n * (1 + (int)l.effects.size());
-        for (auto &fx : l.effects)
+        work += n * (1 + (int)l.inserts.stock.size());
+        for (auto &fx : l.inserts.stock)
             if (fx.type == "delay")
                 delayBytes += n * std::ceil(rate * 2) * 4;
     }
-    work += m.layout.size() * (int)m.masterEffects.size();
-    for (auto &fx : m.masterEffects)
+    work += m.layout.size() * (int)m.inserts.stock.size();
+    for (auto &fx : m.inserts.stock)
         if (fx.type == "delay")
             delayBytes += m.layout.size() * std::ceil(rate * 2) * 4;
     preparedBytes += delayBytes + 8 * 1024 * 1024;
-    for (auto &fx : m.masterEffects)
+    for (auto &fx : m.inserts.stock)
         if (fx.type == "reverb")
             preparedBytes += m.layout.size() * 262144.;
     if (matrixWork > 2048 || work > 512 || delayBytes > 128 * 1024 * 1024 ||

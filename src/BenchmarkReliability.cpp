@@ -215,12 +215,12 @@ void Benchmark::reliabilityTick(double now)
                              for (auto &l : m.layers)
                              {
                                  l.gainDb = -60;
-                                 l.effects.clear();
+                                 l.inserts.stock.clear();
                              }
                              auto extra = m.layers.front();
                              extra.id = juce::Uuid().toString();
                              m.layers.push_back(extra);
-                             m.masterEffects.clear();
+                             m.inserts.stock.clear();
                          });
             session.selectTake(id);
         }

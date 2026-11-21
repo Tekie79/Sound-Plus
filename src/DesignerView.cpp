@@ -268,9 +268,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
                         auto copy = layer;
                         copy.id = juce::Uuid().toString();
                         copy.name += " copy";
-                        copy.hosted.id = juce::Uuid().toString();
-                        for (auto &slot : copy.hosted.slots)
-                            slot.id = juce::Uuid().toString();
+                        rekeyInsertChain(copy.inserts);
                         session.edit("Duplicate layer",
                                      [&](auto &d)
                                      {
@@ -1471,11 +1469,11 @@ void DesignerView::preparePerformanceBenchmark()
             addMacroMapping(mix, 1, {{mix.layers[5].id, {}, "pan"}, -.8, .8, "linear", false});
             addMacroMapping(
                 mix, 2,
-                {{mix.layers[6].id, mix.layers[6].effects[0].id, "filterLow"}, 500, 18000, "log", false});
+                {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterLow"}, 500, 18000, "log", false});
             addMacroMapping(
                 mix, 2,
-                {{mix.layers[6].id, mix.layers[6].effects[0].id, "filterHigh"}, 20, 1000, "log", false});
-            addMacroMapping(mix, 3, {{{}, mix.masterEffects[1].id, "reverbWet"}, .05, .45, "linear", false});
+                {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterHigh"}, 20, 1000, "log", false});
+            addMacroMapping(mix, 3, {{{}, mix.inserts.stock[1].id, "reverbWet"}, .05, .45, "linear", false});
             const char *names[]{"Weight", "Spread", "Tone", "Space"};
             for (int i = 0; i < 4; ++i)
             {

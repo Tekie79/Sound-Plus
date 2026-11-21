@@ -85,6 +85,10 @@ class DesignSession final : public juce::Component, private juce::Timer
     void open(const juce::File &);
     void save(const juce::File &);
     bool openLiveEditor(const juce::String &slot);
+    juce::String liveInsertProblem(const juce::String &slot)
+    {
+        return liveInserts ? liveInserts->problem(slot) : juce::String();
+    }
     void withLiveState(std::function<void()>);
     bool hasLiveInserts() const
     {
@@ -144,6 +148,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void endSeekGesture();
     void render(bool selection = false);
     void copyOriginal(const juce::File &);
+    void transferInsert(const juce::String &sourceOwner, InsertRef, const juce::String &targetOwner,
+                        bool move);
     void cancelRender();
     void selectLayer(const juce::String &, bool additive = false);
     void selectVariation(const juce::String &);

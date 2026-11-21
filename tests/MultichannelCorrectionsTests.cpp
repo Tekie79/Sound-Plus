@@ -303,7 +303,7 @@ void legacySplit(const juce::File &root, const juce::File &app)
     s.save(save);
     w.drain();
     auto reopened = sp::loadDesign(save);
-    check((int)sp::designToJson(reopened)["version"] == 6 && reopened.renderSettings.splitMono &&
+    check((int)sp::designToJson(reopened)["version"] == 9 && reopened.renderSettings.splitMono &&
               reopened.renderSettings.layout.isEmpty(),
           "Versioned split metadata survives legacy document reopen");
     s.document = reopened;

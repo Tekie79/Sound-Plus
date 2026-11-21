@@ -117,9 +117,9 @@ void AudioPlaybackService::prepare()
                 if (liveRoot.isNotEmpty() && document.activeTake.isEmpty())
                 {
                     document.liveInserts = true;
-                    document.activeMix().hosted.runtimeEndpoint = juce::File(liveRoot);
+                    document.activeMix().inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                     for (auto &layer : document.activeMix().layers)
-                        layer.hosted.runtimeEndpoint = juce::File(liveRoot);
+                        layer.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                 }
                 result.context = designPlaybackContext(document);
                 result.immutableReplay = selectedTake(document) != nullptr;

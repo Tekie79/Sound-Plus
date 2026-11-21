@@ -228,12 +228,13 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         auto source = selection(wave(work.getChildFile("native-source"), channelLayout("mono-v1"), 288000));
         auto layer = makeDesignLayer(source.source, 0, -1, true);
         initialiseRouting(layer, session.document.original.layout);
-        layer.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
+        layer.inserts.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
         session.document.original.layers = {layer};
         session.document.selectedLayer = layer.id;
-        session.document.original.hosted.slots = {{Uuid().toString(), JSON::toString(job, true), false}};
-        const auto trackId = layer.hosted.slots[0].id;
-        const auto masterId = session.document.original.hosted.slots[0].id;
+        session.document.original.inserts.hosted.slots = {
+            {Uuid().toString(), JSON::toString(job, true), false}};
+        const auto trackId = layer.inserts.hosted.slots[0].id;
+        const auto masterId = session.document.original.inserts.hosted.slots[0].id;
         auto wait = [&](auto predicate, const String &why, int ms = 8000)
         {
             auto until = Time::getMillisecondCounterHiRes() + ms;
@@ -265,8 +266,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         };
         auto value = [&](bool master)
         {
-            auto &slot = master ? session.document.original.hosted.slots[0]
-                                : session.document.original.layers[0].hosted.slots[0];
+            auto &slot = master ? session.document.original.inserts.hosted.slots[0]
+                                : session.document.original.layers[0].inserts.hosted.slots[0];
             return (double)JSON::parse(slot.settings)["parameters"][0]["value"];
         };
         wait([&] { return endpointFor(trackId).isObject() && endpointFor(masterId).isObject(); },
@@ -294,13 +295,15 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait([&] { return saved.existsAsFile() && !session.working; },
              "Save captures state while both native editors remain open");
         auto opened = loadDesign(saved);
-        require(std::abs((double)JSON::parse(
-                             opened.original.layers[0].hosted.slots[0].settings)["parameters"][0]["value"] -
-                         .25) < 1e-6 &&
-                    std::abs((double)JSON::parse(
-                                 opened.original.hosted.slots[0].settings)["parameters"][0]["value"] -
-                             .75) < 1e-6,
-                "Saved open-editor Track/Master values remain independent");
+        require(
+            std::abs(
+                (double)JSON::parse(
+                    opened.original.layers[0].inserts.hosted.slots[0].settings)["parameters"][0]["value"] -
+                .25) < 1e-6 &&
+                std::abs((double)JSON::parse(
+                             opened.original.inserts.hosted.slots[0].settings)["parameters"][0]["value"] -
+                         .75) < 1e-6,
+            "Saved open-editor Track/Master values remain independent");
         DesignGraph freshGraph(opened);
         AudioBuffer<float> rendered(1, 288000);
         freshGraph.render(rendered, 0, 288000);
@@ -331,7 +334,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         session.edit("Inline after native capture",
                      [&](auto &d)
                      {
-                         auto &s = d.original.layers[0].hosted.slots[0];
+                         auto &s = d.original.layers[0].inserts.hosted.slots[0];
                          auto v = JSON::parse(s.settings);
                          parameter(v, 0, .5);
                          s.settings = JSON::toString(v, true);
@@ -342,13 +345,15 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait([&] { return second.existsAsFile() && !session.working; },
              "Inline change after native state is captured coherently");
         auto inlineSaved = loadDesign(second);
-        require(std::abs((double)JSON::parse(
-                             inlineSaved.original.layers[0].hosted.slots[0].settings)["parameterBaseline"][0]
-                                                                                     ["value"] -
-                         .5) < 1e-6,
-                "Inline/native baseline seed advances without opaque replay");
+        require(
+            std::abs((double)JSON::parse(
+                         inlineSaved.original.layers[0].inserts.hosted.slots[0].settings)["parameterBaseline"]
+                                                                                         [0]["value"] -
+                     .5) < 1e-6,
+            "Inline/native baseline seed advances without opaque replay");
         auto beforeOpaque =
-            JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"].toString();
+            JSON::parse(session.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
+                .toString();
         auto opaqueCommand = obj();
         put(opaqueCommand, "sequence", 3);
         put(opaqueCommand, "opaque", .5);
@@ -356,7 +361,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait(
             [&]
             {
-                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                return JSON::parse(
+                           session.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                            .toString() != beforeOpaque;
             },
             "Notified opaque-only native state reaches coherent capture");
@@ -370,7 +376,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait(
             [&]
             {
-                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                return JSON::parse(
+                           session.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                            .toString() == beforeOpaque;
             },
             "Opaque-only native edit has its own Undo state");
@@ -389,7 +396,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait(
             [&]
             {
-                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                return JSON::parse(
+                           session.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                            .toString() != beforeOpaque;
             },
             "Silent opaque changes are retained by periodic observation without inventing a gesture");
@@ -410,7 +418,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         wait(
             [&]
             {
-                return JSON::parse(session.document.original.layers[0].hosted.slots[0].settings)["stateHash"]
+                return JSON::parse(
+                           session.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                            .toString() == beforeOpaque;
             },
             "Notified opaque reset restores the control recipe");
@@ -451,7 +460,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                 session.edit("Continuous hosted Gain",
                              [&](auto &d)
                              {
-                                 auto &slot = d.original.layers[0].hosted.slots[0];
+                                 auto &slot = d.original.layers[0].inserts.hosted.slots[0];
                                  auto v = JSON::parse(slot.settings);
                                  parameter(v, 0, x);
                                  slot.settings = JSON::toString(v, true);
@@ -533,7 +542,7 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         auto other = layer;
         other.id = Uuid().toString();
         other.name = "Different selected layer";
-        other.hosted = HostedRack();
+        other.inserts.hosted = HostedRack();
         other.mute = true;
         session.edit("Add other layer", [&](auto &d) { d.original.layers.push_back(other); });
         session.selectLayer(layer.id);
@@ -561,9 +570,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
              { return session.document.original.layers.size() == 3 && beforeDuplicateSave.existsAsFile(); },
              "Actual Duplicate completes after asynchronous live-state capture");
         auto copy = session.document.original.layers.back();
-        require(copy.name == layer.name + " copy" && copy.hosted.slots.size() == 1,
+        require(copy.name == layer.name + " copy" && copy.inserts.hosted.slots.size() == 1,
                 "Duplicate retains its clicked owner when selection changes before capture completes");
-        const auto duplicateId = copy.hosted.slots[0].id;
+        const auto duplicateId = copy.inserts.hosted.slots[0].id;
         wait([&] { return endpointFor(duplicateId).isObject(); },
              "Duplicate creates an independently owned processor");
         auto duplicateEndpoint = endpointFor(duplicateId);
@@ -577,9 +586,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
         session.edit("Move insert owner",
                      [&](auto &d)
                      {
-                         auto s = d.original.layers[0].hosted.slots[0];
-                         d.original.layers[0].hosted.slots.clear();
-                         d.original.hosted.slots.push_back(s);
+                         auto s = d.original.layers[0].inserts.hosted.slots[0];
+                         d.original.layers[0].inserts.hosted.slots.clear();
+                         d.original.inserts.hosted.slots.push_back(s);
                      });
         wait(
             [&]
@@ -599,6 +608,9 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
                        session.message.containsIgnoreCase("unresponsive");
             },
             "Worker failure is supervised within a finite bound", 10000);
+        require(session.liveInsertProblem(masterId).isNotEmpty() &&
+                    session.liveInsertProblem(trackId).isEmpty(),
+                "Failure feedback is scoped to its actual hosted slot");
         auto blocked = work.getChildFile("Must not certify stale live state.soundplus");
         session.save(blocked);
         pump(200);
@@ -612,6 +624,8 @@ void runPluginLiveTests(const juce::File &base, const juce::File &app, const juc
             },
             "Explicit editor retry reconnects the correct owner with a fresh generation");
         require(std::abs(value(true) - .75) < 1e-6, "Reconnect preserves the latest coherent document state");
+        require(session.liveInsertProblem(masterId).isEmpty(),
+                "Successful explicit reconnect clears stale slot failure feedback");
         ::kill((pid_t)(int)endpointFor(masterId)["pid"], SIGKILL);
         wait(
             [&]

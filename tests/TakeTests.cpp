@@ -79,12 +79,12 @@ sp::DesignDocument fixture(const juce::File &root, double rate = 48000, double s
         auto l = sp::makeDesignLayer(sp::inspectDesignSource(file), 0, -1, true);
         l.name = juce::StringArray{"Impact", "Stepped voice", "Quiet tail", "Ambience"}[slot];
         l.gainDb = seconds > 60 ? -18 : -8;
-        l.effects = {sp::makeStockEffect(slot == 0 ? "delay" : "filter")};
+        l.inserts.stock = {sp::makeStockEffect(slot == 0 ? "delay" : "filter")};
         d.original.layers.push_back(l);
         sp::assignBlendLayer(d.original, slot, l.id);
     }
     d.original.performance.blendEnabled = true;
-    d.original.masterEffects = {sp::makeStockEffect("reverb")};
+    d.original.inserts.stock = {sp::makeStockEffect("reverb")};
     auto &p = d.original.performance;
     for (int i = 0; i < 4; ++i)
     {
@@ -93,12 +93,12 @@ sp::DesignDocument fixture(const juce::File &root, double rate = 48000, double s
         m.reset = .4;
     }
     sp::addMacroMapping(d.original, 0,
-                        {{d.original.layers[0].id, d.original.layers[0].effects[0].id, "delayWet"}, 0, .8});
+                        {{d.original.layers[0].id, d.original.layers[0].inserts.stock[0].id, "delayWet"}, 0, .8});
     sp::addMacroMapping(d.original, 1, {{d.original.layers[1].id, {}, "pan"}, -.8, .8});
     sp::addMacroMapping(
         d.original, 2,
-        {{d.original.layers[2].id, d.original.layers[2].effects[0].id, "filterLow"}, 500, 15000, "log"});
-    sp::addMacroMapping(d.original, 3, {{{}, d.original.masterEffects[0].id, "reverbWet"}, .05, .7});
+        {{d.original.layers[2].id, d.original.layers[2].inserts.stock[0].id, "filterLow"}, 500, 15000, "log"});
+    sp::addMacroMapping(d.original, 3, {{{}, d.original.inserts.stock[0].id, "reverbWet"}, .05, .7});
     sp::validateDesign(d);
     return d;
 }
