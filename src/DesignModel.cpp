@@ -569,6 +569,24 @@ int performanceFormat(const DesignDocument &d)
         return 5;
     return result;
 }
+juce::String historicalStockDsp(const DesignDocument &d)
+{
+    switch (performanceFormat(d))
+    {
+    case 6:
+        return "stock-layout-v2";
+    case 5:
+        return "stock-layout-v1";
+    case 4:
+        return "stock-takes-v1";
+    case 3:
+        return "stock-perform-v2";
+    case 2:
+        return "stock-perform-v1";
+    default:
+        return shapedFades(d) ? "stock-sinc32-v2" : "stock-sinc32-v1";
+    }
+}
 } // namespace
 juce::var designToJson(const DesignDocument &d)
 {
@@ -821,7 +839,21 @@ DesignDocument designFromJson(const juce::var &o)
     validateDesign(d);
     if (hasSourcePools(d) && version < 7)
         throw std::runtime_error("Source pools require document manifest 7");
-    if (version == 7 && designToJson(d)["dsp"].toString() != dsp)
+    auto canonicalChain = [](const juce::var &mix)
+    {
+        if (mix.hasProperty("insertChain"))
+            return true;
+        if (auto *layers = mix["layers"].getArray())
+            for (auto &layer : *layers)
+                if (layer.hasProperty("insertChain"))
+                    return true;
+        return false;
+    };
+    bool modernPools = canonicalChain(o["original"]);
+    if (auto *vs = o["variations"].getArray())
+        for (auto &v : *vs)
+            modernPools |= canonicalChain(v["mix"]);
+    if (version == 7 && (modernPools || hasHostedInserts(d) || historicalStockDsp(d) != dsp))
         throw std::runtime_error("Source pool metadata cannot relabel the DSP contract");
     if (performanceFormat(d) > version)
         throw std::runtime_error("Document processing/metadata requires a newer version");
@@ -1160,7 +1192,13 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d, uint64_
                                             l.sync + 1, l.source.samples);
             }
             if (enabled(varyEffects))
-                for (auto &e : l.inserts.stock)
+                for (auto &ref : resolvedInsertOrder(l.inserts))
+                {
+                    if (ref.kind != InsertKind::stock)
+                        continue;
+                    auto at = std::find_if(l.inserts.stock.begin(), l.inserts.stock.end(),
+                                           [&](auto &e) { return e.id == ref.id; });
+                    auto &e = *at;
                     if (!e.locked)
                     {
                         for (int p = 0; p < (e.type == "gain"     ? 1
@@ -1183,6 +1221,7 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d, uint64_
                                                        e.type == "delay" && p == 1 ? .95 : 1.0);
                             }
                     }
+                }
         }
         syncPoolSelection(v.mix);
         result.push_back(std::move(v));

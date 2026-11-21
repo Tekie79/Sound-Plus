@@ -34,20 +34,29 @@ class OrderedInsertList final : public juce::Component
     }
     void setItems(std::vector<Item> next, InsertRef picked, bool editable)
     {
-        bool changed = next.size() != items.size();
-        for (size_t i = 0; !changed && i < next.size(); ++i)
-            changed = next[i].ref != items[i].ref;
+        // Move the existing Components, not their identities/focus. Removing an
+        // unrelated slot never steals focus from an editor or another panel.
+        auto previous = std::move(rows);
+        rows.clear();
+        auto oldItems = std::move(items);
         items = std::move(next);
         selected = picked;
-        if (changed)
+        for (size_t i = 0; i < items.size(); ++i)
         {
-            rows.clear();
-            for (size_t i = 0; i < items.size(); ++i)
+            std::unique_ptr<Row> row;
+            for (size_t j = 0; j < oldItems.size(); ++j)
+                if (oldItems[j].ref == items[i].ref && previous[j])
+                {
+                    row = std::move(previous[j]);
+                    break;
+                }
+            if (!row)
             {
-                auto row = std::make_unique<Row>(*this, (int)i);
+                row = std::make_unique<Row>(*this, (int)i);
                 content.addAndMakeVisible(*row);
-                rows.push_back(std::move(row));
             }
+            row->setIndex((int)i);
+            rows.push_back(std::move(row));
         }
         for (auto &r : rows)
         {
@@ -55,6 +64,16 @@ class OrderedInsertList final : public juce::Component
             r->repaint();
         }
         resized();
+        for (auto &r : rows)
+            if (r->hasKeyboardFocus(true) && viewport.getHeight() > 0)
+            {
+                int y = viewport.getViewPositionY();
+                if (r->getY() < y)
+                    y = r->getY();
+                else if (r->getBottom() > y + viewport.getHeight())
+                    y = std::max(0, r->getBottom() - viewport.getHeight());
+                viewport.setViewPosition(viewport.getViewPositionX(), y);
+            }
     }
     void resized() override
     {
@@ -98,6 +117,10 @@ class OrderedInsertList final : public juce::Component
                 if (fn)
                     fn(ref);
             };
+        }
+        void setIndex(int n)
+        {
+            index = n;
         }
         void refresh(bool editable)
         {

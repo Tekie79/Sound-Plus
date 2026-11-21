@@ -1,0 +1,21 @@
+{
+  "baseline": "5b81430d84594f0b9f025480cf8d0e3bb522c1ad",
+  "producerSHA256": "f3fda232587732413239a917889cc4a34044e324a87fe5e395fb547b166a7734",
+  "generatorSHA256": "89118350af9996b4900a31f1a540d93c8fc3ff4167837fe62d3d664cc7a648f9",
+  "fixtures": {
+    "generation.soundplus": "8cce28cb81725229800a20f2afc16463eee5b483cac8095ecd5f383beb42383d",
+    "track-take-baseline.wav": "90302c46b2bbe40f763b4f6e0fac1290e0b3b08cf36b1e868a0febf702c9c123",
+    "variation-take-baseline.wav": "90302c46b2bbe40f763b4f6e0fac1290e0b3b08cf36b1e868a0febf702c9c123",
+    "alternate.wav": "cad9f6de7fdd2466e07e00fd86404702275c03d1207b33f0c3cbe6aaca59f838",
+    "master-baseline.wav": "ed90ba6479eb5defb06a6b796408fb1e2f8f43158c7fe88b10c31d9a212d7a6d",
+    "track-baseline.wav": "ed90ba6479eb5defb06a6b796408fb1e2f8f43158c7fe88b10c31d9a212d7a6d",
+    "master.soundplus": "d7abcbed8561d2aec7c76bb077b09bd0289351e4709ec0b3acb05d6f56663db1",
+    "source.wav": "08babbd1188ec3a9c98afd6796da4aa6078b3b5d5d7ad88c55986b89947b0025",
+    "master-take-baseline.wav": "90302c46b2bbe40f763b4f6e0fac1290e0b3b08cf36b1e868a0febf702c9c123",
+    "track.soundplus": "20f20f6346ff96e88dcc8f8af8823a39e26fc2fddd05988b533824d9217081cf",
+    "generation-expected.json": "d85e210ba4d384c9ce67eb4dda658c4cd1da78426da5f509532cb4552a48ecf5",
+    "variation-baseline.wav": "ed90ba6479eb5defb06a6b796408fb1e2f8f43158c7fe88b10c31d9a212d7a6d",
+    "variation.soundplus": "508dd7e2719fe68f3c759a6fb7d6a4b39d0a46165bf4ff7303c0b3e19cb8a402",
+    "LegacyPoolFixture.cpp.txt": "89118350af9996b4900a31f1a540d93c8fc3ff4167837fe62d3d664cc7a648f9"
+  }
+}

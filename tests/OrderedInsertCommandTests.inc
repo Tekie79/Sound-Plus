@@ -14,12 +14,22 @@
     auto &session = view.session;
     session.protectStartupEdits();
     auto doc = document(bus, hosted(bus, .12, 7));
+    doc.original.layers[0].inserts.stock.push_back(makeStockEffect("delay"));
+    normaliseInsertChain(doc.original.layers[0].inserts);
     auto replacement = makeDesignLayer(
         inspectDesignSource(wave(work.getChildFile("native-source"), bus, 48000 * 24)), 0, -1, true);
     doc.original.layers[0].source = replacement.source;
     doc.original.layers[0].region = replacement.region;
     doc.outputFolder = work.getChildFile("Renders").getFullPathName();
     session.document = doc;
+    auto native = doc;
+    native.name = "Ordered focus native QA";
+    native.original.inserts.stock = {makeStockEffect("gain"), makeStockEffect("filter"),
+                                     makeStockEffect("delay")};
+    normaliseInsertChain(native.original.inserts);
+    saveDesignAtomic(work.getChildFile("Focus native QA.soundplus"), native);
+    view.addToDesktop(ComponentPeer::windowIsTemporary);
+    view.setVisible(true);
     const auto layerId = doc.selectedLayer, hostedId = doc.original.layers[0].inserts.hosted.slots[0].id,
                stockId = doc.original.layers[0].inserts.stock[0].id;
     session.selectLayer(layerId);
@@ -75,12 +85,37 @@
     };
     auto moveFirst = [&]
     {
+        rack->setParametersExpanded(false);
         auto *l = list();
         require(l != nullptr, "Actual ordered row surface exists");
         auto *vp = dynamic_cast<Viewport *>(l->getChildComponent(0));
         auto *row = vp ? vp->getViewedComponent()->getChildComponent(0) : nullptr;
-        require(row && row->keyPressed(KeyPress(KeyPress::downKey, ModifierKeys::altModifier, 0)),
-                "Actual row Option-Down command handles keyboard reorder");
+        require(row != nullptr, "Actual focused ordered row exists");
+        row->grabKeyboardFocus();
+        pump(15);
+        auto id = session.document.original.layers[0].inserts.order[0].id;
+        auto key = [&](int code)
+        {
+            require(view.getPeer()->handleKeyPress(KeyPress(code, ModifierKeys::altModifier, 0)),
+                    "Actual peer dispatches focus-owned reorder key");
+            require(Component::getCurrentlyFocusedComponent() == row,
+                    "Production view preserves focused row through reorder");
+        };
+        key(KeyPress::downKey);
+        key(KeyPress::downKey);
+        require(session.document.original.layers[0].inserts.order.back().id == id,
+                "Consecutive Down addresses the SAME actual Track slot");
+        key(KeyPress::upKey);
+        require(view.getPeer()->handleKeyPress(KeyPress(KeyPress::returnKey)) && rack->values[0].isVisible(),
+                "Return reaches that focused slot and opens its stock controls");
+        session.undo();
+        session.undo();
+        session.undo();
+        session.redo();
+        session.undo();
+        require(Component::getCurrentlyFocusedComponent() == row,
+                "Undo/Redo retains stable focused insert identity");
+        key(KeyPress::downKey);
     };
     moveFirst();
     require(session.document.original.layers[0].inserts.order[0].kind == InsertKind::hosted,
@@ -174,4 +209,5 @@
     session.selectVariation("");
     wait([&] { return session.document.activeVariation.isEmpty(); },
          "Return to Original completes owner-bound transition");
+    view.removeFromDesktop();
 }
