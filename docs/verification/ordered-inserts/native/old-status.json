@@ -1,0 +1,11 @@
+{
+  "status": "Blocked: native custom input unconfirmed",
+  "nativeAttempts": [
+    "Active correct-window Dry knob drag",
+    "Dry Mute click"
+  ],
+  "parametersChanged": false,
+  "opaqueHashChanged": false,
+  "cause": "Not established; no scale-policy or vendor-specific assumption",
+  "handoff": "Physically change native Dry/Reverb and confirm displayed value; then PCM, Undo/Redo, Save open, stateful close/reopen, fresh recall/render."
+}

@@ -31,3 +31,11 @@ Optional MIDI-capable audio effects may run with empty MIDI input and discarded 
 Correction-source execution and vendor reruns are recorded separately in the [Live Insert Correctness and Recovery report](LIVE_INSERT_CORRECTIONS_REPORT.md). Owned native-schema/scale and sanitizer tests do not qualify a vendor custom editor or an additional format.
 
 Final correction Release: 30/30 with actual vendor, AUv2 and device branches; final native LV50A and Youlean Track/Master Stereo + exact Rear front-pair reruns pass to the report scope. OldSkoolVerb native custom-input acceptance stays open after renewed unconfirmed gestures. See [new native evidence](verification/live-corrections/native/pcm-recomputed.json); no change to VST2/AUv3 capability status.
+
+## Ordered-chain milestone
+
+The [ordered-inserts report](ORDERED_INSERTS_REPORT.md) supersedes signal-order and rack-bypass descriptions: one canonical typed sequence per Track/Master, eight stock plus eight hosted slots, interleaving supported. Exact same OrderedRack recipe is used live/offline. Track remains before spatial routing, Master before master gain. The owner chain's summed hosted latency is limited to one second; whole-chain bypass preserves that latency and all slot flags, with a 10 ms crossfade and evolving wet history.
+
+Owned noncommutative order and role-impulse tests cover all eight named layouts above, including both Side and Rear. A Stereo-only fixture on a true Mono owner rejects rather than adapting. This expands owned-fixture correctness evidence, not the set of qualified third-party formats/buses. New stock-only frozen take recipes can retain ordered bypass; hosted takes are still rejected. VST2 dependencies/adapter, AUv3 runtime qualification, physical surround, listening and receiver persistence remain open separately.
+
+Final ordered-chain build `d9f62b2`: required **31/31 / 264.24 s**, vendor/AUv2/device enabled. Fresh native LV50A tone/history/reorder/open Save/fresh recall render passes; Youlean Track Stereo, Master Stereo and accepted exact Rear front-pair high/Reset/low/silence reruns pass to the [report's stated scope](ORDERED_INSERTS_REPORT.md). OldSkoolVerb's final custom Dry drag/Dry Mute input remains unconfirmed: parameters/hash/RMS unchanged. No expanded VST2/AUv3 or physical/receiver qualification is implied.

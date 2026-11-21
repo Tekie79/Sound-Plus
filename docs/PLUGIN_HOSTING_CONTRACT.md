@@ -99,3 +99,9 @@ After a block deadline, lease transfer drains outstanding completion before requ
 Registry operation ordering uses a durable counter under the canonical interprocess lock, with legacy arbitrary clock values migrated to epoch zero. Retry publishes only touched targets. Full-scan deletion/presence ordinals reconcile newer observations without stale resurrection; expensive probes remain outside publication locks. Cancellation never publishes a partial registry.
 
 Native-view scale caching is per view and only caches SDK success. Rejected/unhandled values retry; repeated accepted values are suppressed, including success before attachment. Real changes and fresh views still receive their request. The policy is generic, with no vendor-name exception.
+
+## Ordered owner chains
+
+The current live model and persistence use one ordered `InsertChain` per Track/Master, including stock/hosted interleaving and independent whole-chain bypass. The earlier stock-then-hosted stage ordering above describes legacy migration, not a second editable order. See [migration and DSP contract](ORDERED_INSERTS_MIGRATION.md) for manifest 9, frozen-take compatibility, exact routing/PDC, retained services, structural reset policy, aligned ten-millisecond bypass, and legacy external-group bypass preservation. Slot payload-table positions have no signal-order authority; both live and fresh render walk the same typed sequence.
+
+Stage A absence reconciliation is scoped to the actual recursively examined roots (plus the AU enumeration scope), not a global full-scan timestamp. Custom roots outside Default cannot be deleted by a newer scan that never examined them. Presence is monotonically merged before replacing cached equal-version records. Equal-value parameter and explicit restore recipes still dispatch when they carry a newer unconsumed intent; acknowledgments retire only the covered sequence.

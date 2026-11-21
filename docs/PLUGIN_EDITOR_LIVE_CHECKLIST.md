@@ -40,3 +40,14 @@ Minimum native window verified at outer 1040×680 (saved content 1040×648 plus 
 Final unchanged source `35fe786`: awake full gate **29/29 / 226.79 s**; explicit vendor, AU and live-device branches. Prior failed post-scale run coincided with documented clamshell sleep/dark wakes and is not accepted evidence. Awake focused retry 3/3 /108.19 s also passes. Final owned run: **98 checks**. Raw control-to-DSP native n20 p50 4.993 ms/p95 10.773 ms; Main state receipt p50 38.962 ms/p95 50.866 ms. One final coalesced inline event is a single observation, not an independent 40-sample latency distribution. Native both-owner final-helper visibility, distinct generations, positive processed frames and open-editor Save repeated. LV fresh app reopen recalls −6 dB, marker and finalized output. Earlier synthetic periodic opaque Undo assertion was superseded: silent opaque changes now remain observations without an invented gesture.
 
 Latest correction pass: [closure/evidence report](LIVE_INSERT_CORRECTIONS_REPORT.md), final source `a6dedbd`; 30/30 gate, retained live 180 assertions, owned scale contract and focused worker/fixture ASan. LV50A/Youlean rerun on final native binaries. OldSkoolVerb custom-control input remains explicitly unconfirmed/open; its native stateful acceptance is not closed by numerical inline tests.
+
+## Ordered-chain follow-up
+
+See [ordered-inserts report](ORDERED_INSERTS_REPORT.md) for the new source/build-specific execution; all earlier native and ASan entries above remain historical evidence. New acceptance keeps mixed Track/Master order, retained processor identity across reorder/neighbor changes, chain bypass, and legacy migration distinct from native vendor controls. OldSkoolVerb custom input remains open unless an actual native change is confirmed through PCM/state/history/recall. VST2, AUv3, physical surround, listening and receiving-app persistence are not inferred.
+
+- ✓ Final ordered UI `d9f62b2`: stopped drag + Option-Down, playing drag with position/service retained, independent chain/slot bypass, open-editor Save and fresh application recall/render.
+- ✓ Native minimum 1040×680 with Browser and Inspector, keyboard-focus outline and scrolling Master/output access.
+- ✓ LV50A 1.0.0 native/Undo/Redo PCM delta 6 dB; byte-identical finalized fresh-process renders.
+- ✓ Youlean 2.5.15 Track/Stereo Master/exact Rear front-pair high/Reset/low/silence; nine selected decoded-source PCM windows exact.
+- Open: OldSkoolVerb 2.14 actual custom input. Final correct-window Dry drag and Dry Mute click remain unconfirmed; exact physical handoff in report. No scale-policy cause inferred.
+- ✓ Required final Release gate 31/31 /264.24 s; original r3801 user session restored in place with controls/media preserved. Evidence and limitations in ordered-inserts report.

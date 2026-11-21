@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 26: plugin_processing
+1/1 Test #26: plugin_processing ................***Failed   49.47 sec
+FAIL after 0 checks: Removing all effects restores the compact empty state without stale tools
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =  49.47 sec
+
+The following tests FAILED:
+	 26 - plugin_processing (Failed)
+Errors while running CTest

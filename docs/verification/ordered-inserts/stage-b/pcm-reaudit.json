@@ -1,0 +1,263 @@
+{
+  "passed": true,
+  "cases": [
+    {
+      "layout": "mono-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "be1c1236b7485d1203596403e0fab220998f02a3cfe6df33de8fb506d3649a93",
+      "expectedSHA256": "c6e1c93377f05b9a1a46e61f5cbfeeb709683ff53b8d5c5b6fe066d3f81249fe"
+    },
+    {
+      "layout": "mono-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 7.450580596923828e-08,
+      "actualSHA256": "1aca28982e2a276ac71ec4be098a6408c7c0b08c3ffb81d75677f3c86465d61b",
+      "expectedSHA256": "49b2ad36c66502906d7d80c55f917a67807b44d9cac82a145cb4fd0d9aa00958"
+    },
+    {
+      "layout": "mono-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 3.725290298461914e-08,
+      "actualSHA256": "e9ce6b8beda351145428c25243780d5db5fe3deae61994fcb9e196bbb25d7509",
+      "expectedSHA256": "0d3b34cd0db4cde275b344c4b7cda08746832b58ab1f8208056101fb847e051b"
+    },
+    {
+      "layout": "mono-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "d1a14537cdb5c8f1af47360302e187cf258867c27705d05ac61383a079ff4fe5",
+      "expectedSHA256": "92021e8db44eefa47fb1abc2414ece7940a7ee2610c8f2c0b79d74744efdb70e"
+    },
+    {
+      "layout": "stereo-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "d669acc516ba2f2460b87d349efb21021cf1d66931feb07f3a1392ed2d5f928f",
+      "expectedSHA256": "de1b9778e77b3223ff79e4cb4e350fdb8e50d35080369212585f32bf89b38736"
+    },
+    {
+      "layout": "stereo-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 7.450580596923828e-08,
+      "actualSHA256": "30f6157224bc17345d84ba123038b9449078e83b5f2e6cb540fb84611213d426",
+      "expectedSHA256": "aa09052777ebc49ac47c8418932fde23ddd714aeaf76d845bbade929c25c71a0"
+    },
+    {
+      "layout": "stereo-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "abf4e900417e480485ae13ef356bebe3e0cb623cbda4defc0cad7ca2cdfe4fe9",
+      "expectedSHA256": "71d33fd66ff820309d998d8b837bd3149c44b49bfd1d1bbfef22098c7ac0d4c6"
+    },
+    {
+      "layout": "stereo-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "bbedd6a33843546160e12a0034afeae4bbf732ded16f8f14b61179ceee4417b0",
+      "expectedSHA256": "61f1330cf727e1d6000b86448fe7aca12d68731ce227ca606aabe51768625a36"
+    },
+    {
+      "layout": "lcr-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "fd0d1f7b876bca2fd2524e4760775fefb8f1e4406c1fa0d470ef88b76f7c2002",
+      "expectedSHA256": "1d65e11049599ff3145ba32741f42ac120a40d1cb50499883e7645fccb2f592f"
+    },
+    {
+      "layout": "lcr-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 7.450580596923828e-08,
+      "actualSHA256": "76a5ca6d6bece6b929112bd6edd9556e5032a3168b8732ce0acb1ded8489179a",
+      "expectedSHA256": "9f51ecb36d0787b74c60de721b804dcbfd5826952b7cb524529c15b5756c214b"
+    },
+    {
+      "layout": "lcr-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "8ea991d0f042c075f3fd4a281a62eb514a8dc4e0869c57b432abf56ff69ce1b5",
+      "expectedSHA256": "fe9337d046546b9018de5248e8ad9dc43858ba33f295409d980c708261b6ff6e"
+    },
+    {
+      "layout": "lcr-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "81f7efb0b75fed631640b4f69e561c820ff62db16e916f7f3fe6300a8375db0b",
+      "expectedSHA256": "53863944928143c05a4e71000e51560629ba71e3fad3c4696cf5b444a182b67d"
+    },
+    {
+      "layout": "quad-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "7e8e23bb96d7c983a29e947aa82ab2c060644e43780fba0413a4a2fec5c43c8d",
+      "expectedSHA256": "5c9f4c9d07f816d6fdd3cfa4bb92d114f4046afbde9f1c824dc416dd3383c228"
+    },
+    {
+      "layout": "quad-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 7.450580596923828e-08,
+      "actualSHA256": "64c3d5cf83005fa3159a7a5c3a4891056199ab8cca22cf9e1caf5688caeb1fb5",
+      "expectedSHA256": "ab249a5fe89bc9ecc1ff4db959c3e35dfe44f86e6d2ca3d7ed74a1745a1bd78d"
+    },
+    {
+      "layout": "quad-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "b1ad20c8f9bc15dbdde569e466f2a2f4d0b1ff91c8e63bdaeaf5d287e71e7641",
+      "expectedSHA256": "dd715bc6c53569a6db10630406919ada37976d0bafe861522993c8b62df376fe"
+    },
+    {
+      "layout": "quad-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "05e46ec532aa5fd7b8a8b8e149795878ed4c8f32d3e509784a49b2b22bde88b0",
+      "expectedSHA256": "35f47816612157463f3dbf57dc14b500ac4550c8ab2b6d49a0b9c0959a705266"
+    },
+    {
+      "layout": "5.0-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "e1c0e1655cb7bc4c876715f5c223d709eae1813b5e32b8b85bbe53f075f01252",
+      "expectedSHA256": "ea0a1154dd108d0d99be062a78c2753aa89aa206d09536a352931a6a5e02f8bf"
+    },
+    {
+      "layout": "5.0-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 8.940696716308594e-08,
+      "actualSHA256": "39948beb54cdd7ba1d6ae536d90078767d90e8766423fd13342021debb4dad33",
+      "expectedSHA256": "6014dfb952353c11b21d112cac6a86922800536131083d86fc6abe0d09e36fa4"
+    },
+    {
+      "layout": "5.0-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 4.470348358154297e-08,
+      "actualSHA256": "ee4a304f754bc6778d4666b63a35b81c9e54900cc5e5d73d6ef6cd8d9943a0d4",
+      "expectedSHA256": "543021220de13832ac0c02780ba16a6a38eac59bae7307c2efbc358b846f1689"
+    },
+    {
+      "layout": "5.0-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "37789bb30cd601b44b43b937402090f0c26f8b2e3fd883aac883461a7c98413d",
+      "expectedSHA256": "d152867d36f0abf56eb14e1139d905bbc440267975c2b5a632458c4acc9ea3b2"
+    },
+    {
+      "layout": "5.1-side-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "f5879bd01d8f85e9eacd0692447b0e493f9ebecdd3479514752ffd5724f12e6d",
+      "expectedSHA256": "41eb8670406a97cfe4c67b41ab9f3ebcc6e41af89dbdd73a63418fcf17b3f16d"
+    },
+    {
+      "layout": "5.1-side-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 8.940696716308594e-08,
+      "actualSHA256": "0f1049f9de0ab878daf7e9ac512939d26f5b29c0ebf533c64da8ee8e5e6e4901",
+      "expectedSHA256": "7c0e84120b62e0fb73983443a267435160523d71744a6e8dd085cad1caf48ae7"
+    },
+    {
+      "layout": "5.1-side-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "1bb907dbdb123c032ed853312ddaedb913a468098c267b548b7e5c915621d202",
+      "expectedSHA256": "91cf229f87ef2ed93ea15e92492dc266a7af6e36eb4afb92db32567a10d19c09"
+    },
+    {
+      "layout": "5.1-side-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "868c67f0768a9cf97d9f1ae1480a56b46ea7e1b082fbe7cf80e38aa13d100c14",
+      "expectedSHA256": "96216d3833677cdcd0018cf4303d2586aed74745d06187e1139907c55192ec35"
+    },
+    {
+      "layout": "5.1-rear-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "8544c3d882d55326a9acc92172240db584cdfd49a4ba87233230452cb91c61fb",
+      "expectedSHA256": "9eb29279a9cf6a3f0638cbae092fbf1a8019311d3e1415dfce1f920e76a01c44"
+    },
+    {
+      "layout": "5.1-rear-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 8.940696716308594e-08,
+      "actualSHA256": "0969fe99cd8182db54756f8f9abda715de515f2511dc1189ba8a0c8b559c393c",
+      "expectedSHA256": "7c81c92442d3257cddc9badb115c8042e970048ad550d9ef6807afaa0c678133"
+    },
+    {
+      "layout": "5.1-rear-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "6463d346ca02f303273768c19cbfcbde418bdedaa9f787172d34676d0bb8d974",
+      "expectedSHA256": "9731da6e2c7b2d1fec10be5557f3e4a650a536847a78bb3f5d3a0595a2539be4"
+    },
+    {
+      "layout": "5.1-rear-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "ba0ae83f0a12d8e6a4499c5eac24e52f1479d5a3499d34ddabefa79823df8565",
+      "expectedSHA256": "6bf68bc75bf8cb450f02ab894aed59e1e5f57621b07e8c69ad22c1206d72571b"
+    },
+    {
+      "layout": "7.1-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "135e8e129f886bfc41dd17b6b5187157189b7ae808545cfb393bdea99f93d327",
+      "expectedSHA256": "002e615c37c7156023885736d941d498c1973e659712562b4dff15342cce7ed6"
+    },
+    {
+      "layout": "7.1-v1",
+      "trackStockFirst": false,
+      "masterStockFirst": true,
+      "maximumError": 8.940696716308594e-08,
+      "actualSHA256": "92afc48f02e15f2c943d6082326ce3c1816ec3ca54d3638fdcc3a881a6aeaa38",
+      "expectedSHA256": "45da54391add802dc6668b407b5d2c5dea244a977da86c65db535395071c8fe1"
+    },
+    {
+      "layout": "7.1-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": false,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "a0765b04b66cdd49983ba739bd1d3e1804823614592681e78f4de13ac4f2e01d",
+      "expectedSHA256": "713e5137a8af6052c94546e6982ce2442b0324421c144a5c666553742f24e182"
+    },
+    {
+      "layout": "7.1-v1",
+      "trackStockFirst": true,
+      "masterStockFirst": true,
+      "maximumError": 5.960464477539063e-08,
+      "actualSHA256": "65edd9da59b1c328aa72d663645b62a99bb6261434c6e2d195350642dcf86b46",
+      "expectedSHA256": "069d65d6e85d3bce37c5f6a985025c2da8e2dc0cb6bc68b71a3c3725b24d1571"
+    }
+  ],
+  "assertions": 352650,
+  "scope": "Recorded actual versus independently computed expected PCM; no listening/native gesture claim."
+}

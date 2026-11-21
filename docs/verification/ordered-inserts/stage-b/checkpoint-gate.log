@@ -1,0 +1,68 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: pool_corrections
+ 1/31 Test  #1: pool_corrections .................   Passed    6.30 sec
+      Start  2: source_pools
+ 2/31 Test  #2: source_pools .....................   Passed    0.37 sec
+      Start  3: library_playback_search
+ 3/31 Test  #3: library_playback_search ..........   Passed    2.97 sec
+      Start  4: multichannel_corrections
+ 4/31 Test  #4: multichannel_corrections .........   Passed   13.51 sec
+      Start  5: multichannel
+ 5/31 Test  #5: multichannel .....................   Passed    5.23 sec
+      Start  6: take_integrity
+ 6/31 Test  #6: take_integrity ...................   Passed    4.06 sec
+      Start  7: capture_device_lifecycle
+ 7/31 Test  #7: capture_device_lifecycle .........   Passed    4.66 sec
+      Start  8: recorded_takes
+ 8/31 Test  #8: recorded_takes ...................   Passed    8.25 sec
+      Start  9: library_stability
+ 9/31 Test  #9: library_stability ................   Passed    1.37 sec
+      Start 10: waveform_scheduling
+10/31 Test #10: waveform_scheduling ..............   Passed    2.24 sec
+      Start 11: audio_health
+11/31 Test #11: audio_health .....................   Passed    7.76 sec
+      Start 12: waveform_previews
+12/31 Test #12: waveform_previews ................   Passed    0.50 sec
+      Start 13: performance_state
+13/31 Test #13: performance_state ................   Passed    2.98 sec
+      Start 14: designer_view_commands
+14/31 Test #14: designer_view_commands ...........   Passed    0.36 sec
+      Start 15: icon_system
+15/31 Test #15: icon_system ......................   Passed    0.12 sec
+      Start 16: library_and_audio
+16/31 Test #16: library_and_audio ................   Passed    8.94 sec
+      Start 17: library_selection_audition
+17/31 Test #17: library_selection_audition .......   Passed    3.77 sec
+      Start 18: library_performance_regression
+18/31 Test #18: library_performance_regression ...   Passed    6.35 sec
+      Start 19: library_semantic_integrity
+19/31 Test #19: library_semantic_integrity .......   Passed    0.39 sec
+      Start 20: library_similar_integrity
+20/31 Test #20: library_similar_integrity ........   Passed    1.43 sec
+      Start 21: designer_transport
+21/31 Test #21: designer_transport ...............   Passed   15.77 sec
+      Start 22: designer_canvas
+22/31 Test #22: designer_canvas ..................   Passed    0.21 sec
+      Start 23: designer_session
+23/31 Test #23: designer_session .................   Passed    0.12 sec
+      Start 24: designer_workflow
+24/31 Test #24: designer_workflow ................   Passed    9.91 sec
+      Start 25: designer_fades
+25/31 Test #25: designer_fades ...................   Passed    2.45 sec
+      Start 26: plugin_processing
+26/31 Test #26: plugin_processing ................   Passed   68.67 sec
+      Start 27: plugin_correctness
+27/31 Test #27: plugin_correctness ...............   Passed   10.46 sec
+      Start 28: plugin_gate_a
+28/31 Test #28: plugin_gate_a ....................   Passed   16.55 sec
+      Start 29: ordered_inserts
+29/31 Test #29: ordered_inserts ..................   Passed   21.29 sec
+      Start 30: native_view_scale
+30/31 Test #30: native_view_scale ................   Passed    0.01 sec
+      Start 31: plugin_live
+31/31 Test #31: plugin_live ......................   Passed   44.54 sec
+
+100% tests passed, 0 tests failed out of 31
+
+Total Test time (real) = 271.55 sec

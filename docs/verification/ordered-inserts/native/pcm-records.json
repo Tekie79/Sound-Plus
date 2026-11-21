@@ -1,0 +1,182 @@
+[
+  {
+    "label": "lv-initial-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 374912,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144,
+    "sha256": "8bc0ce3a336bf0f55462c8c5d75af08d885124a16da32773b911d9ded11ac262"
+  },
+  {
+    "label": "lv-native-minus12",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 959104,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.018056212998651483,
+    "sha256": "8a6bc83b816a6da02104bea73b3da350953baf0892b5d7030a768abcb749cc72"
+  },
+  {
+    "label": "lv-native-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 2374784,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144,
+    "sha256": "8bc0ce3a336bf0f55462c8c5d75af08d885124a16da32773b911d9ded11ac262"
+  },
+  {
+    "label": "lv-undo-minus12",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 3252864,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.018056212998651483,
+    "sha256": "7e8819551c88a7cd7852c4bc4c061848a27d9180bc9ca0d8f63ab7992a4ceecd"
+  },
+  {
+    "label": "lv-redo-reordered-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-2.f32",
+    "firstFrame": 432256,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144,
+    "sha256": "427c408463c130abd8a0ea9371b54e2a08aa5e11b042c0884fec2237e1071731"
+  },
+  {
+    "label": "lv-chain-bypassed",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-2.f32",
+    "firstFrame": 1414272,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.07071145522983116,
+    "sha256": "94a8a786ee31743629778eb54ce80d21f0d443323d8851a8e5f8b4621c18e106"
+  },
+  {
+    "label": "lv-restored-minus6",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-3.f32",
+    "firstFrame": 475264,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144,
+    "sha256": "e722b4c815b6ded3251996056a02b12aea4067055e4a33aee290ea2a61710ab2"
+  },
+  {
+    "label": "lv-view-closed",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-3.f32",
+    "firstFrame": 1202816,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.036026880338706144,
+    "sha256": "427c408463c130abd8a0ea9371b54e2a08aa5e11b042c0884fec2237e1071731"
+  },
+  {
+    "label": "youlean-track-long-high",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 192000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.2814931609634905,
+    "sha256": "66fbdfef1fda828cd7823c4cbabc573088009cd075547d79af0922185bc6ad67",
+    "reference": "reference-192000.s16"
+  },
+  {
+    "label": "youlean-track-long-low",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 960000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.07071145522983116,
+    "sha256": "94a8a786ee31743629778eb54ce80d21f0d443323d8851a8e5f8b4621c18e106",
+    "reference": "reference-960000.s16"
+  },
+  {
+    "label": "youlean-track-long-silence",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 3648000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.0,
+    "sha256": "fec9afb531a8e036eba1d81651896e1b2c1f78b0234dbadc8e7549563f09407b",
+    "reference": "reference-3648000.s16"
+  },
+  {
+    "label": "youlean-master-long-high",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 192000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.2814931609634905,
+    "sha256": "66fbdfef1fda828cd7823c4cbabc573088009cd075547d79af0922185bc6ad67",
+    "reference": "reference-192000.s16"
+  },
+  {
+    "label": "youlean-master-long-low",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 960000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.07071145522983116,
+    "sha256": "94a8a786ee31743629778eb54ce80d21f0d443323d8851a8e5f8b4621c18e106",
+    "reference": "reference-960000.s16"
+  },
+  {
+    "label": "youlean-master-long-silence",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 3648000,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.0,
+    "sha256": "fec9afb531a8e036eba1d81651896e1b2c1f78b0234dbadc8e7549563f09407b",
+    "reference": "reference-3648000.s16"
+  },
+  {
+    "label": "youlean-rear-long-high",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 192000,
+    "frames": 48000,
+    "channels": 6,
+    "rms": 0.1625201522573099,
+    "sha256": "254987bfda9c50509911370e628d524145b22ace24bd0342ed0011043d3f8e16",
+    "reference": "reference-192000.s16"
+  },
+  {
+    "label": "youlean-rear-long-low",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 960000,
+    "frames": 48000,
+    "channels": 6,
+    "rms": 0.04082527771173319,
+    "sha256": "65eda62cc88056847a280feadc110d7b7a00d8187c1833f0769905763b98b23c",
+    "reference": "reference-960000.s16"
+  },
+  {
+    "label": "youlean-rear-long-silence",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 3648000,
+    "frames": 48000,
+    "channels": 6,
+    "rms": 0.0,
+    "sha256": "87b70eb78776e7b61f70a6fdbd06bddbfb7e877812b593071945976f73a89269",
+    "reference": "reference-3648000.s16"
+  },
+  {
+    "label": "old-before",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 435840,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.06729201627509315,
+    "sha256": "d13fba236394de80512e5c6369e342ba17693a0ba99ca8362a1cda0dcaf7c8d2"
+  },
+  {
+    "label": "old-after",
+    "raw": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/captures/audition-1.f32",
+    "firstFrame": 1765504,
+    "frames": 48000,
+    "channels": 2,
+    "rms": 0.06729201627509315,
+    "sha256": "b9ad79379ed26696ae4a27892bd72b94d41189a3c6164d25dccfc05252f1394b"
+  }
+]

@@ -1,0 +1,797 @@
+[
+  {
+    "generation": "3868e038f1b34720b5c8947683428ead",
+    "binding": {
+      "document": "ccbebeb759f742f696f39f9279f1b409",
+      "incarnation": 1,
+      "variation": "",
+      "owner": "master",
+      "slot": "d6bcc439c1e6403ea79aede3e3c264ff",
+      "rack": "00f75188711b4b718277fcc172083ac7",
+      "label": "Master"
+    },
+    "rack": "d6bcc439c1e6403ea79aede3e3c264ff",
+    "pid": 85121,
+    "rate": 48000.0,
+    "layout": {
+      "id": "stereo-v1",
+      "roles": [
+        "L",
+        "R"
+      ]
+    },
+    "exchange": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/data/live-inserts/72325893150640d1a822d9ef3055f12b/99050ca47b3fd4f27f54c1802fb2cca2b40c48dc1176c181ecc1f7a7566806db/d6bcc439c1e6403ea79aede3e3c264ff/01c53665c742428081cc2c379c594ee9/exchange",
+    "slots": [
+      {
+        "slot": "d6bcc439c1e6403ea79aede3e3c264ff",
+        "plugin": {
+          "name": "Youlean Loudness Meter 2",
+          "vendor": "Youlean",
+          "version": "2.5.15",
+          "format": "VST3",
+          "category": "Fx|Analyzer",
+          "architecture": "arm64+x86_64",
+          "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+          "fingerprint": "3ed43bfed460a0f8c7e821522f77d9e3036f46c6de3e70fa39daf9cc9123f066",
+          "instrument": false,
+          "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"Youlean Loudness Meter 2\" format=\"VST3\" category=\"Fx|Analyzer\"\r\n        manufacturer=\"Youlean\" version=\"2.5.15\" file=\"/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3\"\r\n        uniqueId=\"8eadedc1\" isInstrument=\"0\" fileTime=\"1a0d7cd0608\" infoUpdateTime=\"1a1fa535c48\"\r\n        numInputs=\"24\" numOutputs=\"24\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"49907184\"/>\r\n",
+          "id": "VST3-Youlean Loudness Meter 2-1caa29dc-8eadedc1",
+          "layoutAttempts": [
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129803,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "mono-v1",
+                "roles": [
+                  "C"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 1,
+                    "roles": "Mono",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 1,
+                    "roles": "Mono",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129803,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "stereo-v1",
+                "roles": [
+                  "L",
+                  "R"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 2,
+                    "roles": "Stereo",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 2,
+                    "roles": "Stereo",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129804,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "lcr-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "C"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 3,
+                    "roles": "LCR",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 3,
+                    "roles": "LCR",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129804,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "quad-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "Lb",
+                  "Rb"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-negotiation",
+              "atMs": 1795201129805,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "5.0-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "C",
+                  "Ls",
+                  "Rs"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": false,
+              "reason": "Incompatible main layout 5.0 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-negotiation",
+              "atMs": 1795201129805,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "5.1-side-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "C",
+                  "LFE",
+                  "Ls",
+                  "Rs"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 4,
+                    "roles": "Quadraphonic",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": false,
+              "reason": "Incompatible main layout 5.1 Side or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129806,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "5.1-rear-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "C",
+                  "LFE",
+                  "Lb",
+                  "Rb"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 6,
+                    "roles": "5.1 Surround",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 6,
+                    "roles": "5.1 Surround",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-ready",
+              "atMs": 1795201129807,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "7.1-v1",
+                "roles": [
+                  "L",
+                  "R",
+                  "C",
+                  "LFE",
+                  "Lb",
+                  "Rb",
+                  "Ls",
+                  "Rs"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": true
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-negotiation",
+              "atMs": 1795201129807,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "discrete-4-v1",
+                "roles": [
+                  "D1",
+                  "D2",
+                  "D3",
+                  "D4"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": false,
+              "reason": "Incompatible main layout Discrete 4 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-negotiation",
+              "atMs": 1795201129807,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "discrete-8-v1",
+                "roles": [
+                  "D1",
+                  "D2",
+                  "D3",
+                  "D4",
+                  "D5",
+                  "D6",
+                  "D7",
+                  "D8"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": false,
+              "reason": "Incompatible main layout Discrete 8 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+            },
+            {
+              "protocol": 1,
+              "mode": "scan",
+              "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+              "format": "VST3",
+              "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+              "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+              "stage": "main-bus-negotiation",
+              "atMs": 1795201129808,
+              "architecture": "arm64+x86_64",
+              "declaredBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 24,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "acceptsMidi": false,
+              "producesMidi": false,
+              "requestedLayout": {
+                "id": "discrete-16-v1",
+                "roles": [
+                  "D1",
+                  "D2",
+                  "D3",
+                  "D4",
+                  "D5",
+                  "D6",
+                  "D7",
+                  "D8",
+                  "D9",
+                  "D10",
+                  "D11",
+                  "D12",
+                  "D13",
+                  "D14",
+                  "D15",
+                  "D16"
+                ]
+              },
+              "activeBuses": {
+                "inputs": [
+                  {
+                    "name": "Main Input",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ],
+                "outputs": [
+                  {
+                    "name": "Output",
+                    "channels": 8,
+                    "roles": "Unknown",
+                    "enabled": true
+                  }
+                ]
+              },
+              "accepted": false,
+              "reason": "Incompatible main layout Discrete 16 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+            }
+          ],
+          "diagnostics": {
+            "protocol": 1,
+            "mode": "scan",
+            "path": "/Library/Audio/Plug-Ins/VST3/Youlean Loudness Meter 2.vst3",
+            "format": "VST3",
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-reply.json",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/youlean/scan-diagnostic.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795201129808,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Main Input",
+                  "channels": 24,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Output",
+                  "channels": 24,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": false,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "discrete-16-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8",
+                "D9",
+                "D10",
+                "D11",
+                "D12",
+                "D13",
+                "D14",
+                "D15",
+                "D16"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Main Input",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Output",
+                  "channels": 8,
+                  "roles": "Unknown",
+                  "enabled": true
+                }
+              ]
+            }
+          },
+          "layouts": [
+            "mono-v1",
+            "stereo-v1",
+            "lcr-v1",
+            "quad-v1",
+            "5.1-rear-v1",
+            "7.1-v1"
+          ],
+          "reason": ""
+        }
+      }
+    ]
+  }
+]

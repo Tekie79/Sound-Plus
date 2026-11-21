@@ -1,0 +1,795 @@
+{
+  "generation": "46a2ad684f3348aeba01c5a5d1c22fc4",
+  "binding": {
+    "document": "7acc03a15ecf49bdbe6cc8c2161b5424",
+    "incarnation": 1,
+    "variation": "",
+    "owner": "master",
+    "slot": "9aa4b9383563425ca90328ba8d28e281",
+    "rack": "e38d499c8e144d65af4ef594a5ddd564",
+    "label": "Master"
+  },
+  "rack": "9aa4b9383563425ca90328ba8d28e281",
+  "pid": 85246,
+  "rate": 48000.0,
+  "layout": {
+    "id": "stereo-v1",
+    "roles": [
+      "L",
+      "R"
+    ]
+  },
+  "exchange": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/native/data/live-inserts/0179934bc8744ff19304fac6875b38be/af97e711c66789f87546aca5051b49dd13e3e50926f70cbf91b3984f793dec1f/9aa4b9383563425ca90328ba8d28e281/83627253ffbb4afe87168a63f0eef2fe/exchange",
+  "slots": [
+    {
+      "slot": "9aa4b9383563425ca90328ba8d28e281",
+      "plugin": {
+        "name": "OldSkoolVerb",
+        "vendor": "Voxengo",
+        "version": "2.14",
+        "format": "VST3",
+        "category": "Fx|Reverb",
+        "architecture": "arm64+x86_64",
+        "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+        "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+        "instrument": false,
+        "xml": "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\r\n\r\n<PLUGIN name=\"OldSkoolVerb\" format=\"VST3\" category=\"Fx|Reverb\" manufacturer=\"Voxengo\"\r\n        version=\"2.14\" file=\"/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3\"\r\n        uniqueId=\"10700a49\" isInstrument=\"0\" fileTime=\"19d520a9330\" infoUpdateTime=\"1a1fa421870\"\r\n        numInputs=\"2\" numOutputs=\"2\" isShell=\"0\" hasARAExtension=\"0\"\r\n        uid=\"e6eeb3d\"/>\r\n",
+        "id": "VST3-OldSkoolVerb-c2dd90f-10700a49",
+        "layoutAttempts": [
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795199998279,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "mono-v1",
+              "roles": [
+                "C"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 1,
+                  "roles": "Mono",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 1,
+                  "roles": "Mono",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-ready",
+            "atMs": 1795199998280,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "stereo-v1",
+              "roles": [
+                "L",
+                "R"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": true
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998280,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "lcr-v1",
+              "roles": [
+                "L",
+                "R",
+                "C"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout LCR or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998281,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "quad-v1",
+              "roles": [
+                "L",
+                "R",
+                "Lb",
+                "Rb"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout QUAD or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998281,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "5.0-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout 5.0 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998281,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "5.1-side-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout 5.1 Side or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998282,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "5.1-rear-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Lb",
+                "Rb"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout 5.1 Rear or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998282,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "7.1-v1",
+              "roles": [
+                "L",
+                "R",
+                "C",
+                "LFE",
+                "Lb",
+                "Rb",
+                "Ls",
+                "Rs"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout 7.1 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998283,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "discrete-4-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 4 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998283,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "discrete-8-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 8 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          },
+          {
+            "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+            "format": "VST3",
+            "mode": "scan",
+            "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+            "protocol": 1,
+            "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+            "stage": "main-bus-negotiation",
+            "atMs": 1795199998283,
+            "architecture": "arm64+x86_64",
+            "declaredBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "acceptsMidi": true,
+            "producesMidi": false,
+            "requestedLayout": {
+              "id": "discrete-16-v1",
+              "roles": [
+                "D1",
+                "D2",
+                "D3",
+                "D4",
+                "D5",
+                "D6",
+                "D7",
+                "D8",
+                "D9",
+                "D10",
+                "D11",
+                "D12",
+                "D13",
+                "D14",
+                "D15",
+                "D16"
+              ]
+            },
+            "activeBuses": {
+              "inputs": [
+                {
+                  "name": "Audio In",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ],
+              "outputs": [
+                {
+                  "name": "Audio Out",
+                  "channels": 2,
+                  "roles": "Stereo",
+                  "enabled": true
+                }
+              ]
+            },
+            "accepted": false,
+            "reason": "Incompatible main layout Discrete 16 or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No conversion applied"
+          }
+        ],
+        "diagnostics": {
+          "path": "/Library/Audio/Plug-Ins/VST3/OldSkoolVerb.vst3",
+          "format": "VST3",
+          "mode": "scan",
+          "diagnostic": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-diagnostic.json",
+          "protocol": 1,
+          "reply": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/vendors/OldSkoolVerb/scan/3c70855ebb76411cab0662ba68e37ff1-reply.json",
+          "stage": "main-bus-negotiation",
+          "atMs": 1795199998283,
+          "architecture": "arm64+x86_64",
+          "declaredBuses": {
+            "inputs": [
+              {
+                "name": "Audio In",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Audio Out",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          },
+          "acceptsMidi": true,
+          "producesMidi": false,
+          "requestedLayout": {
+            "id": "discrete-16-v1",
+            "roles": [
+              "D1",
+              "D2",
+              "D3",
+              "D4",
+              "D5",
+              "D6",
+              "D7",
+              "D8",
+              "D9",
+              "D10",
+              "D11",
+              "D12",
+              "D13",
+              "D14",
+              "D15",
+              "D16"
+            ]
+          },
+          "activeBuses": {
+            "inputs": [
+              {
+                "name": "Audio In",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ],
+            "outputs": [
+              {
+                "name": "Audio Out",
+                "channels": 2,
+                "roles": "Stereo",
+                "enabled": true
+              }
+            ]
+          }
+        },
+        "layouts": [
+          "mono-v1",
+          "stereo-v1"
+        ],
+        "reason": ""
+      }
+    }
+  ]
+}

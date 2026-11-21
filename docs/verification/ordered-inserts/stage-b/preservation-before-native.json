@@ -1,0 +1,9 @@
+{
+  "phase": "before final native QA, original catalog closed",
+  "checked": 268,
+  "changed": [
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.json"
+  ],
+  "missing": [],
+  "journalDifference": "Only updated timestamp changed during normal Quit; revision 3801, savedFile and recoverable state unchanged."
+}

@@ -1,0 +1,12 @@
+{
+  "passed": true,
+  "nativeTrimDeltaDb": 5.999999756842893,
+  "undoRedoDeltaDb": 5.999999756842893,
+  "reorderRetainedGeneration": "d0fb73a2fe8946718530f9081156b25a",
+  "freshRendersByteIdentical": true,
+  "renderFrames": 192000,
+  "renderChannels": 2,
+  "renderRate": 48000,
+  "meterWindowsExactDecodedSource": 9,
+  "scope": "Recorded selected pre-monitor PCM; native gestures and meter screenshots described separately. No physical/listening/receiver claim."
+}

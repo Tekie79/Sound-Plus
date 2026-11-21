@@ -1,0 +1,8 @@
+	39 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 3801, Value: Workflow demonstration
+	47 text (settable) Unsaved changes
+	57 button (settable) Perform, Value: On
+	69 slider (settable) Macro 1 value, zero to one, Value: 0.491, Secondary Actions: Delete
+	103 slider (settable) Blend X, zero left to one right, Value: 0.608, Secondary Actions: Delete
+	104 slider (settable) Blend Y, zero top to one bottom, Value: 0.760, Secondary Actions: Delete
+	117 slider (settable) Monitor volume, excluded from render, Value: 0.25, Secondary Actions: Delete
+	118 text (settable) Recovered latest changes

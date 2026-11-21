@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 26: plugin_processing
+1/2 Test #26: plugin_processing ................***Failed   49.59 sec
+FAIL after 0 checks: Loaded external effect shares the main selector and reveals only primary tools
+
+    Start 29: ordered_inserts
+2/2 Test #29: ordered_inserts ..................   Passed   21.30 sec
+
+50% tests passed, 1 tests failed out of 2
+
+Total Test time (real) =  70.90 sec
+
+The following tests FAILED:
+	 26 - plugin_processing (Failed)
+Errors while running CTest
