@@ -1,0 +1,24 @@
+{
+  "protectedFiles": 238,
+  "changedOrMissing": [
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.soundplus.bak",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.json",
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native/designer-autosave/0403deec259f4169857b336246f201da.soundplus"
+  ],
+  "catalogCountsBackupCurrent": [
+    {
+      "roots": 1,
+      "assets": 43
+    },
+    {
+      "roots": 1,
+      "assets": 43
+    }
+  ],
+  "latestId": "0403deec259f4169857b336246f201da",
+  "latestRevision": 3801,
+  "name": "Workflow demonstration",
+  "restorationPolicy": "Original data stays in place. No backup copied over it.",
+  "preQuitToPostQuitCanonicalModelEqual": true,
+  "changedFilesExplanation": "Normal initial Quit retained the latest revision3801 and rewrote legacy manifest8 inserts to ordered manifest9, plus recovery metadata/backup. All235 other protected files (including source media and durable outputs) retain their hashes. No backup restoration."
+}

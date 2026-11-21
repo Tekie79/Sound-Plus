@@ -16,7 +16,7 @@ A legacy external-group bypass is retained independently as `legacyHostedBypass`
 
 ## Frozen takes
 
-Historical frozen take recipes keep their original legacy insert encoding and checksum. They are not silently rehashed to the new live-document layout. Existing stock-only take behavior remains supported. A new stock recipe that needs ordered/bypass semantics has explicit `recipeVersion: 2`; its full ordered chain is part of its checksum. Hosted/plugin-aware take capture remains rejected with the existing explicit guidance to render a durable pass. Expanded Perform and plugin-aware takes remain later milestones.
+Historical frozen take recipes keep their original legacy insert encoding and checksum. They are not silently rehashed to the new live-document layout. Existing stock-only take behavior remains supported. A new stock recipe that needs ordered/bypass semantics has explicit `recipeVersion: 2`; its full ordered chain is part of its checksum. That manifest-9 checkpoint rejected hosted take capture. The subsequent plugin-aware milestone adds explicit manifest `10 / plugin-takes-v1`, recipe version 3 and `plugin-ordered-takes-v1`; see [the current take contract](PERFORMANCE_TAKES_CONTRACT.md). Stock-only take hashes and processing remain unchanged. Expanded Perform beyond four assignments remains a later milestone.
 
 ## DSP order and structural changes
 

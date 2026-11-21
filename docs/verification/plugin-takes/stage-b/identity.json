@@ -1,0 +1,15 @@
+{
+  "revision": "938a219943fd4f81eb0ec552918b9d52546d9242",
+  "uname": "arm64",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.3.2\nBuildVersion:\t\t25D2150\n",
+  "cpu": "Apple M5 Pro",
+  "build": "Release arm64 / ASan OFF / JUCE 8.0.6",
+  "hashes": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "ddc4a4670830adef9c8d2df86bf6380cb2977a4d069e8a7b4bd83186e09a8a05",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAudio": "b4fb9877c2d760eaf3f467fbc5eb9de37fc43d96f43cc1da1d7bff7c894bf6c9",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": "2a5e9b8dfe6b298c1f9490cc7991c1f4dcf97c370011faa9f4b2bd2cca8891a1",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusAI": "f15657f12decb98ef37588cf8f11a14dcffbedb4f47d85f9fa97fa4d5191505b",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "ddea2c470d7b3c895224f0a227366a1c7e0f9e06145f7fc5e065ec3d605e7e98"
+  },
+  "nativeCopyMatches": true
+}

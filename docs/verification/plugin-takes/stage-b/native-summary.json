@@ -1,0 +1,155 @@
+{
+  "takes": [
+    {
+      "document": "native/LV50A take QA.soundplus",
+      "plugin": "LV50A",
+      "pluginVersion": "1.0.0",
+      "bodyEnd": 679424,
+      "events": [
+        {
+          "frame": 414720,
+          "sequence": 1,
+          "generation": 1,
+          "controls": {
+            "x": 0.2,
+            "y": 0.3,
+            "blend": true,
+            "macros": [
+              0.8,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        {
+          "frame": 415744,
+          "sequence": 2,
+          "generation": 1,
+          "controls": {
+            "x": 0.7,
+            "y": 0.8,
+            "blend": true,
+            "macros": [
+              0.8,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      ],
+      "recipeHash": "2f8c6b0e7ca25eaf21c191a943734e72bb1dc438f743fe15345d21e8f174d6be",
+      "eventHash": "789b4b589627fd92db52de1798572cdc5a650f6e5bef99f4e8b64c1a30ea6b5f",
+      "printedSource": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/VST3 motion qualified-take-r4-86831c36.wav",
+      "output": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/VST3 motion qualified-take-r8-6ee69dd5.wav",
+      "outputSha256": "20f7d6a137239a68893e6fea70af9b0fc8ee1bfb331f5ee1e5d275ed9fc6c314"
+    },
+    {
+      "document": "native/AUDelay take QA.soundplus",
+      "plugin": "AUDelay",
+      "pluginVersion": "1.6.0",
+      "bodyEnd": 659456,
+      "events": [
+        {
+          "frame": 628224,
+          "sequence": 1,
+          "generation": 1,
+          "controls": {
+            "x": 0.2,
+            "y": 0.3,
+            "blend": true,
+            "macros": [
+              0.25,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        {
+          "frame": 628736,
+          "sequence": 2,
+          "generation": 1,
+          "controls": {
+            "x": 0.8,
+            "y": 0.3,
+            "blend": true,
+            "macros": [
+              0.25,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              false,
+              false,
+              false
+            ]
+          }
+        },
+        {
+          "frame": 629248,
+          "sequence": 3,
+          "generation": 1,
+          "controls": {
+            "x": 0.8,
+            "y": 0.6,
+            "blend": true,
+            "macros": [
+              0.25,
+              0.5,
+              0.5,
+              0.5
+            ],
+            "enabled": [
+              true,
+              false,
+              false,
+              false
+            ]
+          }
+        }
+      ],
+      "recipeHash": "93676e4a6788ce60a7f1bb7a6df3ed078a718537c59a0d277f6bcebf67abaa4f",
+      "eventHash": "e40be9c706d197d16cb1cc5d421d2dfa7b96d2a3716040e9fab5c798be3e242e",
+      "printedSource": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/AU motion qualified-take-r5-ba08e3c0.wav",
+      "output": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/AU motion qualified-take-r5-ba08e3c0.wav",
+      "outputSha256": "5c88b49f31f85326d1b1d82f0fc209a1dadcac6cd69dbb42d8283480920db518"
+    }
+  ],
+  "lvBefore": "native/VST3 motion qualified-take-r4-86831c36.wav",
+  "lvAfter": "native/VST3 motion qualified-take-r8-6ee69dd5.wav",
+  "lvRendersByteIdentical": true,
+  "liveTrim": [
+    [
+      "Trim",
+      0.25
+    ]
+  ],
+  "frozenTrim": [
+    [
+      "Trim",
+      0.375
+    ]
+  ]
+}

@@ -1,0 +1,454 @@
+[
+  {
+    "entry": "native/LV50A take QA.soundplus",
+    "sha256": "ad30003ce0272148b5cd58135e256ac05353b63ec8c32028426a5d4620f51812"
+  },
+  {
+    "entry": "native/AUDelay take QA.soundplus",
+    "sha256": "5c50bc4f35eba0d49d65e101b9420b15cd8bd4b2decbe6873f144c5e113b30bc"
+  },
+  {
+    "entry": "native/VST3 motion qualified-take-r4-86831c36.wav",
+    "sha256": "20f7d6a137239a68893e6fea70af9b0fc8ee1bfb331f5ee1e5d275ed9fc6c314",
+    "channels": 2,
+    "rate": 48000,
+    "frames": 703424,
+    "rms": 0.03531962677359944
+  },
+  {
+    "entry": "native/VST3 motion qualified-take-r8-6ee69dd5.wav",
+    "sha256": "20f7d6a137239a68893e6fea70af9b0fc8ee1bfb331f5ee1e5d275ed9fc6c314",
+    "channels": 2,
+    "rate": 48000,
+    "frames": 703424,
+    "rms": 0.03531962677359944
+  },
+  {
+    "entry": "native/AU motion qualified-take-r5-ba08e3c0.wav",
+    "sha256": "5c88b49f31f85326d1b1d82f0fc209a1dadcac6cd69dbb42d8283480920db518",
+    "channels": 2,
+    "rate": 48000,
+    "frames": 683456,
+    "rms": 0.030716216093583226
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/Rs.wav",
+    "sha256": "d78417c4da973a1f65b6e335ec20e713602ccb8a10680c3efe0bea35b73a4087",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14018848883686186
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/Mix.wav",
+    "sha256": "78dccb132239014c4e5c3c8f100d987b6495b1ebf142fdc154c08119662d5e65",
+    "channels": 5,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009860578004557
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/Ls.wav",
+    "sha256": "192764b518eb84fea45015aa8d6ae5a3574854de2a416450052a1d37aaeb842a",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14013630909053734
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/L.wav",
+    "sha256": "dd5a9023e48462da994a77e775aaec289ddd959da7af7a5c6c818f829d07f40a",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/C.wav",
+    "sha256": "9a939dc9b86a758717014af530dbb27ab6d005e4c48cec4c209049f6c236deef",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Owned frozen 5.0-v1-take-r1-dda9e138-split/R.wav",
+    "sha256": "599eee59c4e25cd829d7ffa5600c7a76ace44c872927640206d7ae6df30cc24f",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-5.0-v1/Plugin Passes/51926c52b1c54db8b59289532952600a/Raw.wav",
+    "sha256": "78dccb132239014c4e5c3c8f100d987b6495b1ebf142fdc154c08119662d5e65",
+    "channels": 5,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009860578004557
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Owned frozen quad-v1-take-r1-0c6637be-split/Rb.wav",
+    "sha256": "c75339c98f8bdc16176bafe10b1f244fdb5002620af48f5ce717a88574716864",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14013630909053734
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Owned frozen quad-v1-take-r1-0c6637be-split/Lb.wav",
+    "sha256": "405855ee6b61c35a20e4b988bb49c2029f3f05c491119091a33a431d8eb98e9e",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Owned frozen quad-v1-take-r1-0c6637be-split/Mix.wav",
+    "sha256": "20a09575a307533be495193b7883a64e5a12436778c6490583d2fe889576a2ce",
+    "channels": 4,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14007612600404123
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Owned frozen quad-v1-take-r1-0c6637be-split/L.wav",
+    "sha256": "08ad75062ee6d5e91ac00088861c697a7ec589efaea6372836b6371b4817742e",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Owned frozen quad-v1-take-r1-0c6637be-split/R.wav",
+    "sha256": "e84bf03f6b8be6859012a87f01e677d8b4315501a5dbe4a0bcfbf0e96de9f3ce",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-quad-v1/Plugin Passes/d2c966f460ee43e58db9823c748d418b/Raw.wav",
+    "sha256": "20a09575a307533be495193b7883a64e5a12436778c6490583d2fe889576a2ce",
+    "channels": 4,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14007612600404123
+  },
+  {
+    "entry": "owned/Finalized-mono-v1/Owned frozen mono-v1-take-r1-2f4043fa-split/Mix.wav",
+    "sha256": "6f38c1a01f6b238c73536e4fc54a93996845a1ec5cc4ef8f1e09a544df9e31ec",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-mono-v1/Owned frozen mono-v1-take-r1-2f4043fa-split/C.wav",
+    "sha256": "6f38c1a01f6b238c73536e4fc54a93996845a1ec5cc4ef8f1e09a544df9e31ec",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-mono-v1/Plugin Passes/356fe45f9c1641deba7820f904f95ea5/Raw.wav",
+    "sha256": "6f38c1a01f6b238c73536e4fc54a93996845a1ec5cc4ef8f1e09a544df9e31ec",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/Rs.wav",
+    "sha256": "119a0149c0ae54c8dee510eca0b44269dd972fe1d59fbb8f66d56029cd09d7d2",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1403883139887301
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/LFE.wav",
+    "sha256": "054bd5a10f477b9e91c4d099bb4bbd499eed90dd7b4b23dda6052ce835d2fd6f",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14013630909053734
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/Rb.wav",
+    "sha256": "395cd22d257f325688e88105517d58c8cd16015a0de208c4fc7d03580d6868f6",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1402478892064121
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/Lb.wav",
+    "sha256": "049eee9f97d55e093201a5f298fa863bfd64f8c87ac85f40b653f733d640304d",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14018848883686186
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/Mix.wav",
+    "sha256": "9c1be045d36b50017abe7d41edd403f52b76546aa07824fbf01f31d466d4beab",
+    "channels": 8,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401805108724902
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/Ls.wav",
+    "sha256": "55929030182ee5bb017aeb7a726a0024ec37b7871ce0ce8c9f094374a6470a1a",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14031450099246093
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/L.wav",
+    "sha256": "5c24bb8cf7d55912b8b2be066e6825686d9fe7991c27fa33425a85c44cb691e6",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/C.wav",
+    "sha256": "be92333c273a79848d2f5cef048df9609596a727129db9c98322567b62357ce3",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Owned frozen 7.1-v1-take-r1-bb8cd55e-split/R.wav",
+    "sha256": "7c81e78580cee0f6b55959a317b49e56b54211964e5decda19429b2afef16c6f",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-7.1-v1/Plugin Passes/9cd59c475c9540809ad50c0986fd2c13/Raw.wav",
+    "sha256": "9c1be045d36b50017abe7d41edd403f52b76546aa07824fbf01f31d466d4beab",
+    "channels": 8,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401805108724902
+  },
+  {
+    "entry": "owned/Finalized-lcr-v1/Owned frozen lcr-v1-take-r1-8631d8e5-split/Mix.wav",
+    "sha256": "d2c1c036dec431cb13ad37f32a93602c01ef6162887c8000035b47ca8f368ea2",
+    "channels": 3,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005605922829797
+  },
+  {
+    "entry": "owned/Finalized-lcr-v1/Owned frozen lcr-v1-take-r1-8631d8e5-split/L.wav",
+    "sha256": "a2f25c542a8abd5b79ecdd5fbd2f8855a28b2122f29caaaf7e6e78c3e7718eae",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-lcr-v1/Owned frozen lcr-v1-take-r1-8631d8e5-split/C.wav",
+    "sha256": "345ae937416badb2298db6c9db09fbf5b524f05642f918451c025300862708a7",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-lcr-v1/Owned frozen lcr-v1-take-r1-8631d8e5-split/R.wav",
+    "sha256": "b87c2de130ec0246b841a7c043357ac021a8a6678dbffc7e40c1dfbfc462f26e",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-lcr-v1/Plugin Passes/c4831b4e2fa04799b1af7d9c6540d629/Raw.wav",
+    "sha256": "d2c1c036dec431cb13ad37f32a93602c01ef6162887c8000035b47ca8f368ea2",
+    "channels": 3,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005605922829797
+  },
+  {
+    "entry": "owned/Finalized-stereo-v1/Owned frozen stereo-v1-take-r1-b287f850-split/Mix.wav",
+    "sha256": "68c184e13263bf0016be3aea31cf29fdb630c6a86009f212f78f52e5323383b4",
+    "channels": 2,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14003840648888433
+  },
+  {
+    "entry": "owned/Finalized-stereo-v1/Owned frozen stereo-v1-take-r1-b287f850-split/L.wav",
+    "sha256": "9d84d5d1286471bc6ce5f30781785606866c4d1418c06c03f1fa496436761ec2",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-stereo-v1/Owned frozen stereo-v1-take-r1-b287f850-split/R.wav",
+    "sha256": "0b7880e39fe4d63732c6bd97db5b44f2aa86f675302bd5aba664e00a18c671d0",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-stereo-v1/Plugin Passes/e07320a26f6d4911af92654b8384bf8c/Raw.wav",
+    "sha256": "68c184e13263bf0016be3aea31cf29fdb630c6a86009f212f78f52e5323383b4",
+    "channels": 2,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14003840648888433
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/Rs.wav",
+    "sha256": "9a832aa5e0a50c47e5c67876300d32a5e4fb0db3e28f65d4e1397dd5cc092704",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1402478892064121
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/LFE.wav",
+    "sha256": "333329d74513e9ca25cc1b67b821c4077e3b1435a855913735ce8ef5e1942bc9",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14013630909053734
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/Mix.wav",
+    "sha256": "c14d1d4c290fb78621cc9e67de02e736a7ad59a6894a759974f815058467be7a",
+    "channels": 6,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401234973957004
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/Ls.wav",
+    "sha256": "4b80a48e78c68b0bbe4ff06a9864513eb503f7d1d4147bb397c2e23e83b94f43",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14018848883686186
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/L.wav",
+    "sha256": "c2de8897372acf10cbe0558e1258ea53cb6e6f748143298ef5505ed6d770524d",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/C.wav",
+    "sha256": "bf7023280dd1c07769974b9cfff2f659e58757f904223ef26b992a3f9abce34f",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Owned frozen 5.1-side-v1-take-r1-4a0f6c1e-split/R.wav",
+    "sha256": "81a4b86e603c63e203008a99cb0107f050219ccff0cc643a7ca5d29f7e07a9c6",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-5.1-side-v1/Plugin Passes/4beb376ed9ae46039894aae6391fcfc9/Raw.wav",
+    "sha256": "c14d1d4c290fb78621cc9e67de02e736a7ad59a6894a759974f815058467be7a",
+    "channels": 6,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401234973957004
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/LFE.wav",
+    "sha256": "1b9bc681a865ae3279d420fb51e72b580cfc57a9af7c7c0088cdd9621c5a797d",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14013630909053734
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/Rb.wav",
+    "sha256": "73918ff182b952de477af11ec6fae609402dd7dbf3e90709789ac0a51c6e9dfa",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1402478892064121
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/Lb.wav",
+    "sha256": "82dfc5628eaf9360496fedd21e6899853e41adf70d60068b362f82beb9152e83",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14018848883686186
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/Mix.wav",
+    "sha256": "b86a8588a74fcdd301112d147e9d3210fff52fe324711c536e1d2267bd5343aa",
+    "channels": 6,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401234973957004
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/L.wav",
+    "sha256": "1efb0e6690af2ac6b14248bd9a7d125402981472c93e14ec007f8c5a6087aebd",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1400231686990191
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/C.wav",
+    "sha256": "e379f52c2a6b1e9f419e36eed1e881b0632d67f6321fb2baae6b3987bb71fa58",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14009135803392564
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Owned frozen 5.1-rear-v1-take-r1-7d39ff70-split/R.wav",
+    "sha256": "49fec3b836d1c10f36ea7e2df415b8f4e6ef9ffd472b5e0687fe23a5dc1cc85a",
+    "channels": 1,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.14005364262088307
+  },
+  {
+    "entry": "owned/Finalized-5.1-rear-v1/Plugin Passes/94c00f75b2414db884acf33662d788e4/Raw.wav",
+    "sha256": "b86a8588a74fcdd301112d147e9d3210fff52fe324711c536e1d2267bd5343aa",
+    "channels": 6,
+    "rate": 48000,
+    "frames": 4576,
+    "rms": 0.1401234973957004
+  },
+  {
+    "entry": "owned/evidence.json",
+    "sha256": "aa15b15db3b702e4f43dedc842411efde0a256654280c4cbd98f960f9be876b6"
+  },
+  {
+    "entry": "owned/b53ad90c1f76414a8656ee28ccd4d299.f32",
+    "sha256": "c0f5358afa874c2fa98abc2847e8a2fb6b20d1780abae6acce363f4013e5a819"
+  },
+  {
+    "entry": "owned/c42cde8dbe9641baa49ab00289764825.f32",
+    "sha256": "c03d9c7560837a57636f13a4f70c80ae380705f8da013e351c5adea840574b47"
+  }
+]

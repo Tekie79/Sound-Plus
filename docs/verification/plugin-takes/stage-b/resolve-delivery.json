@@ -1,0 +1,77 @@
+{
+  "importAndPlacement": {
+    "result": {
+      "project": "SoundPlus Frozen Plugin Take QA 20261121",
+      "version": "21.1.2.10",
+      "rows": [
+        {
+          "properties": {
+            "File Name": "VST3 motion qualified-take-r8-6ee69dd5.wav",
+            "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/VST3 motion qualified-take-r8-6ee69dd5.wav",
+            "Duration": "00:00:14:15",
+            "Sample Rate": "48000",
+            "Audio Ch": "2",
+            "Audio Bit Depth": "32",
+            "Online Status": "Online"
+          },
+          "placed": 1,
+          "track": 1,
+          "timelineDuration": 351
+        },
+        {
+          "properties": {
+            "File Name": "AU motion qualified-take-r5-ba08e3c0.wav",
+            "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/AU motion qualified-take-r5-ba08e3c0.wav",
+            "Duration": "00:00:14:05",
+            "Sample Rate": "48000",
+            "Audio Ch": "2",
+            "Audio Bit Depth": "32",
+            "Online Status": "Online"
+          },
+          "placed": 1,
+          "track": 2,
+          "timelineDuration": 341
+        }
+      ],
+      "saved": true
+    }
+  },
+  "afterSoundPlusQuitAndProjectReopen": {
+    "result": {
+      "save": true,
+      "close": true,
+      "reopened": "SoundPlus Frozen Plugin Take QA 20261121",
+      "version": "21.1.2.10",
+      "rows": [
+        {
+          "track": 1,
+          "name": "VST3 motion qualified-take-r8-6ee69dd5.wav",
+          "duration": 351,
+          "properties": {
+            "File Name": "VST3 motion qualified-take-r8-6ee69dd5.wav",
+            "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/VST3 motion qualified-take-r8-6ee69dd5.wav",
+            "Sample Rate": "48000",
+            "Audio Ch": "2",
+            "Audio Bit Depth": "32",
+            "Online Status": "Online"
+          }
+        },
+        {
+          "track": 2,
+          "name": "AU motion qualified-take-r5-ba08e3c0.wav",
+          "duration": 341,
+          "properties": {
+            "File Name": "AU motion qualified-take-r5-ba08e3c0.wav",
+            "File Path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/native-b/final-workloads/Finalized/AU motion qualified-take-r5-ba08e3c0.wav",
+            "Sample Rate": "48000",
+            "Audio Ch": "2",
+            "Audio Bit Depth": "32",
+            "Online Status": "Online"
+          }
+        }
+      ]
+    }
+  },
+  "nativeDrag": "Not qualified in this run: connector import/placement is distinct from a native file drag.",
+  "copyPolicy": "Both reopened media items reference the original finalized SoundPlus paths; no copy was observed."
+}
