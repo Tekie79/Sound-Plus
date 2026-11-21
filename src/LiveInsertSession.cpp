@@ -98,8 +98,15 @@ void LiveInsertSession::run()
             wake.wait_for(lock, std::chrono::milliseconds(25));
             events = std::move(traces);
             traces.clear();
-            next = std::move(latest);
-            latest.reset();
+            // Deterministic QA barrier: coalesce Main snapshots while the real
+            // retained service continues running/native publication can be held.
+            const auto hold =
+                juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_LIVE_TEST_HOLD_SNAPSHOT", {});
+            if (hold.isEmpty() || !juce::File(hold).existsAsFile())
+            {
+                next = std::move(latest);
+                latest.reset();
+            }
             for (auto &[id, show] : open)
                 editors[id] = show;
             open.clear();
@@ -207,14 +214,16 @@ void LiveInsertSession::run()
                         }
                     }
                     else if (e.client &&
-                             (e.binding.expected != slot.settings || e.rack.bypass != rack.bypass ||
+                             (e.binding.expected != slot.settings ||
+                              newerHostedIntents(e.rack.slots[0], slot) || e.rack.bypass != rack.bypass ||
                               e.rack.slots[0].bypass != slot.bypass))
                     {
                         auto before = e.rack;
                         e.rack.bypass = rack.bypass;
                         e.rack.slots = {slot};
                         e.rack.runtimeControlTicks = next->document.liveControlTicks;
-                        if (slot.settings == e.pendingSettings && before.bypass == e.rack.bypass &&
+                        if (!newerHostedIntents(before.slots[0], slot) &&
+                            slot.settings == e.pendingSettings && before.bypass == e.rack.bypass &&
                             before.slots[0].bypass == slot.bypass)
                             e.client->acceptCapture(e.rack);
                         else

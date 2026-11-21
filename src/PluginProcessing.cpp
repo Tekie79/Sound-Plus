@@ -478,6 +478,26 @@ void appendRoots(std::vector<juce::File> &roots, const juce::var &saved)
                 roots.push_back(f);
         }
 }
+juce::String discoveryIdentity(juce::File file)
+{
+    char resolved[PATH_MAX]{};
+    if (::realpath(file.getFullPathName().toRawUTF8(), resolved))
+        return juce::String::fromUTF8(resolved);
+    auto parent = file.getParentDirectory();
+    return parent == file
+               ? file.getFullPathName()
+               : juce::File(discoveryIdentity(parent)).getChildFile(file.getFileName()).getFullPathName();
+}
+bool discoveryCovers(const juce::String &root, const juce::String &path)
+{
+    if (path.startsWith("AudioUnit:"))
+        return root == "AudioUnit:";
+    if (root == "AudioUnit:")
+        return false;
+    auto candidate = juce::File(discoveryIdentity(juce::File(path)));
+    auto directory = juce::File(root);
+    return candidate == directory || candidate.isAChildOf(directory);
+}
 } // namespace
 juce::var PluginCatalog::snapshot() const
 {
@@ -513,6 +533,17 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     }
     if (afterSnapshot)
         afterSnapshot();
+    juce::StringArray coverage;
+    if (targetPath.isEmpty())
+    {
+        for (auto &root : roots)
+        {
+            coverage.addIfNotAlreadyThere(discoveryIdentity(root));
+            coverage.addIfNotAlreadyThere(discoveryIdentity(root.getSiblingFile("VST")));
+        }
+        if (registeredAudioUnits)
+            coverage.add("AudioUnit:");
+    }
     juce::Array<juce::var> entries;
     juce::StringArray seen;
     int launched = 0, hits = 0;
@@ -778,6 +809,8 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
     set(result, "cacheHits", hits);
     // Commit only a complete snapshot, including roots. Interrupted scans leave
     // the last complete registry byte-identical, including unvisited candidates.
+    if (beforePublish)
+        beforePublish();
     if (cancel())
         throw QueryCancelled();
     {
@@ -792,25 +825,59 @@ juce::var PluginCatalog::scan(PluginWorker &worker, const std::vector<juce::File
         auto ordinal = [](const juce::var &entry) -> int64_t
         { return (int)entry["registryOrderEpoch"] == 1 ? (int64_t)entry["registryOperation"] : 0; };
         const auto deletionBarrier = (int64_t)latest["fullScanOrdinal"];
+        auto scopes = latest["discoveryCoverage"].isArray() ? *latest["discoveryCoverage"].getArray()
+                                                            : juce::Array<juce::var>();
+        auto absenceOrdinal = [&](const juce::String &path)
+        {
+            int64_t result = 0;
+            for (auto &scope : scopes)
+                if (discoveryCovers(scope["root"].toString(), path))
+                    result = std::max(result, (int64_t)scope["ordinal"]);
+            return result;
+        };
         if (targetPath.isEmpty())
             std::erase_if(reconciled,
                           [&](auto &item)
                           {
-                              return !seen.contains(item.first) && ordinal(item.second) <= operation &&
+                              bool examined = false;
+                              for (auto &scope : coverage)
+                                  examined |= discoveryCovers(scope, item.first);
+                              return examined && !seen.contains(item.first) &&
+                                     ordinal(item.second) <= operation &&
                                      (int64_t)item.second["registryPresenceOrdinal"] <= operation;
                           });
         for (auto &e : entries)
         {
             auto path = e["path"].toString();
             auto current = reconciled.find(path);
-            if (current == reconciled.end() && deletionBarrier > operation)
+            if (current == reconciled.end() && absenceOrdinal(path) > operation)
                 continue; // A newer complete scan explicitly observed it absent.
+            const auto presence =
+                current == reconciled.end() ? 0 : (int64_t)current->second["registryPresenceOrdinal"];
             if (current == reconciled.end() || ordinal(e) >= ordinal(current->second))
                 reconciled[path] = e;
             auto &present = reconciled[path];
             set(present, "registryPresenceOrdinal",
-                (juce::int64)std::max(operation, (int64_t)present["registryPresenceOrdinal"]));
+                (juce::int64)std::max({operation, presence, (int64_t)present["registryPresenceOrdinal"]}));
         }
+        for (auto &scope : coverage)
+        {
+            bool found = false;
+            for (auto &old : scopes)
+                if (old["root"].toString() == scope)
+                {
+                    set(old, "ordinal", (juce::int64)std::max(operation, (int64_t)old["ordinal"]));
+                    found = true;
+                }
+            if (!found)
+            {
+                auto value = object();
+                set(value, "root", scope);
+                set(value, "ordinal", (juce::int64)operation);
+                scopes.add(value);
+            }
+        }
+        set(result, "discoveryCoverage", scopes);
         set(result, "fullScanOrdinal",
             (juce::int64)(targetPath.isEmpty() ? std::max(operation, deletionBarrier) : deletionBarrier));
         juce::Array<juce::var> published;

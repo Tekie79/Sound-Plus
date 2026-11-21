@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 27: plugin_correctness
+1/3 Test #27: plugin_correctness ...............   Passed   11.86 sec
+    Start 28: plugin_gate_a
+2/3 Test #28: plugin_gate_a ....................   Passed   16.57 sec
+    Start 30: plugin_live
+3/3 Test #30: plugin_live ......................***Failed   23.13 sec
+FAIL after 0 checks: Live insert unavailable or reconnecting
+
+
+67% tests passed, 1 tests failed out of 3
+
+Total Test time (real) =  51.57 sec
+
+The following tests FAILED:
+	 30 - plugin_live (Failed)
+Errors while running CTest

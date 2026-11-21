@@ -1,3 +1,4 @@
+#include "PluginIntentReturnTests.inc"
 // B: both worker-side pending intents and pre-worker snapshot coalescing.
 for (bool deliverFirst : {false, true})
 {

@@ -1,0 +1,11 @@
+{
+  "src/HostedRack.h": "f2526adfd8c6cc056a9e51fa02190d11ce5f7aaa814b453a5eb44fd583eac881",
+  "src/HostedRack.cpp": "9952a80d9eafd8aa6bee145b1f1aad5eaaed57cee514b612b7061efbc8f70cdb",
+  "src/LiveInsertSession.cpp": "1b9933658440f6150cabd9e8fa2aed203c5fe3683c8861cca7833ca149fd9ca7",
+  "src/DesignSession.cpp": "090e5fe963198a5ca683080648da35afd799748d8b6f89386e39432d0afcd0c4",
+  "src/PluginProcessing.h": "c68d40a5c9e866133c7a08d0bd4d2e8042f9a69d6a83dae9cbb9b0575a37d6b4",
+  "src/PluginProcessing.cpp": "31c7c9397f5341a78e2cf70246250485aea517ddbdd631e6455a30294f19986c",
+  "tests/PluginIntentReturnTests.inc": "c15eb3e864f28636f65a135073b0cea75a43b550b172a8c14d72987ff66b5e23",
+  "tests/PluginRegistryCoverageTests.inc": "1b2837a0c4f2dc46af47a76adc15dc56c5bf42193036bc69045aa9258bb7f1f6",
+  "tests/PluginCommandCorrections.inc": "e0f073ffc7a771a295e4d5f62673978fc14b3aa025dbe665e2db1f25d38d9a1a"
+}

@@ -11,6 +11,7 @@
 #include "Performance.h"
 #include <iostream>
 #include <cmath>
+#include <future>
 #include <signal.h>
 #include <CoreFoundation/CoreFoundation.h>
 namespace sp

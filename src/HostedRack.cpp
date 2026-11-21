@@ -425,7 +425,8 @@ void HostedRackClient::update(const HostedRack &rack)
             auto after = juce::JSON::parse(rack.slots[i].settings);
             auto row = juce::var(new juce::DynamicObject());
             const bool changedState =
-                before["stateHash"] != after["stateHash"] || before["program"] != after["program"];
+                before["stateHash"] != after["stateHash"] || before["program"] != after["program"] ||
+                rack.slots[i].runtimeRestoreOrigin > impl->configuration.slots[i].runtimeRestoreOrigin;
             if (changedState)
             {
                 impl->pendingState[i] = true;
@@ -438,7 +439,17 @@ void HostedRackClient::update(const HostedRack &rack)
             row.getDynamicObject()->setProperty("restoreSequence", (juce::int64)impl->restoreSequences[i]);
             row.getDynamicObject()->setProperty("restoreTicks", (juce::int64)impl->restoreOrigins[i]);
             for (int n = 0; n < after["parameters"].size(); ++n)
-                if (after["parameters"][n]["value"] != before["parameters"][n]["value"])
+            {
+                const int nativeIndex = (int)after["parameters"][n]["index"];
+                auto nextOrigin = rack.slots[i].runtimeParameterOrigins.find(nativeIndex);
+                auto oldOrigin = impl->configuration.slots[i].runtimeParameterOrigins.find(nativeIndex);
+                const bool newIntent =
+                    nextOrigin != rack.slots[i].runtimeParameterOrigins.end() &&
+                    nextOrigin->second >
+                        (oldOrigin == impl->configuration.slots[i].runtimeParameterOrigins.end()
+                             ? 0
+                             : oldOrigin->second);
+                if (newIntent || after["parameters"][n]["value"] != before["parameters"][n]["value"])
                 {
                     const int index = (int)after["parameters"][n]["index"];
                     auto origin = rack.slots[i].runtimeParameterOrigins.find(index);
@@ -447,6 +458,7 @@ void HostedRackClient::update(const HostedRack &rack)
                                                           : origin->second,
                                                       impl->modelCommand};
                 }
+            }
             juce::Array<juce::var> indices;
             auto origins = juce::var(new juce::DynamicObject());
             for (auto &[index, intent] : impl->pendingIndices[i])

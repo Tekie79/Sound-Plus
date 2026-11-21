@@ -22,6 +22,18 @@ struct HostedRack
     int64_t runtimeControlTicks = 0;
     std::vector<HostedSlot> slots;
 };
+inline bool newerHostedIntents(const HostedSlot &before, const HostedSlot &after)
+{
+    if (after.runtimeRestoreOrigin > before.runtimeRestoreOrigin)
+        return true;
+    for (const auto &[index, origin] : after.runtimeParameterOrigins)
+    {
+        auto at = before.runtimeParameterOrigins.find(index);
+        if (origin > (at == before.runtimeParameterOrigins.end() ? 0 : at->second))
+            return true;
+    }
+    return false;
+}
 juce::var hostedRackJson(const HostedRack &);
 HostedRack hostedRackFromJson(const juce::var &);
 void validateHostedRack(const HostedRack &);

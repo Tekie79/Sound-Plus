@@ -43,8 +43,9 @@ class PluginWorker
 class PluginCatalog
 {
   public:
-    explicit PluginCatalog(juce::File storage, std::function<void()> captured = {})
-        : file(std::move(storage)), afterSnapshot(std::move(captured))
+    explicit PluginCatalog(juce::File storage, std::function<void()> captured = {},
+                           std::function<void()> ready = {})
+        : file(std::move(storage)), afterSnapshot(std::move(captured)), beforePublish(std::move(ready))
     {
     }
     // Worker-thread only. One child per changed candidate. Failed unchanged candidates stay quarantined.
@@ -55,7 +56,7 @@ class PluginCatalog
 
   private:
     juce::File file;
-    std::function<void()> afterSnapshot;
+    std::function<void()> afterSnapshot, beforePublish;
 };
 // Derive delivery from authoritative PCM; never calls a plugin. Atomic directory publication.
 juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, bool normalize, bool split,

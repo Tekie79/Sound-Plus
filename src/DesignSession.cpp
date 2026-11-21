@@ -1540,7 +1540,12 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
                                 juce::String kind)
 {
     if (rendering || replacing)
+    {
+        message = (copy ? "Copy Original" : "Render") + juce::String(" request cancelled: ") +
+                  (rendering ? "another output is still running" : "design context is changing");
+        notify();
         return;
+    }
     if (renderWorker.joinable())
         renderWorker.join();
     auto token = stamp(Operation::output);

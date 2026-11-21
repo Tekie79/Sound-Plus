@@ -12,7 +12,16 @@
     services.status = [] { return obj(); };
     services.stop = [] {};
     services.parameters = [](const auto &, auto, auto) {};
-    services.resolve = [](auto &) {};
+    std::atomic<bool> holdOutput{false}, outputEntered{false}, failOutput{false};
+    services.resolve = [&](auto &)
+    {
+        outputEntered = true;
+        auto end = Time::getMillisecondCounterHiRes() + 8000;
+        while (holdOutput && Time::getMillisecondCounterHiRes() < end)
+            Thread::sleep(1);
+        if (failOutput)
+            throw std::runtime_error("Owned output failure");
+    };
     DesignSession session(work.getChildFile("catalog.sqlite"), services);
     session.document = DesignDocument{};
     session.document.original.layout = channelLayout("mono-v1");
@@ -96,6 +105,57 @@
     b.gainDb = -30;
     b.mute = true;
     session.edit("Add B", [&](auto &d) { d.original.layers.push_back(b); });
+    // A2: both output commands are accepted during held capture. Hold A's actual
+    // output worker while B crosses its capture barrier: B must report a result.
+    holdOutput = true;
+    outputEntered = false;
+    session.selectLayer(a.id);
+    session.render(true);
+    session.selectLayer(b.id);
+    session.render(true);
+    require(LiveCorrectionTestAccess::pending(session) == 2, "Two selected outputs accepted behind capture");
+    release(true);
+    wait([&] { return outputEntered.load() && session.rendering; },
+         "First accepted output owns actual worker");
+    release(true);
+    require(session.message.contains("request cancelled") && session.message.contains("another output"),
+            "Second accepted selected output receives explicit visible busy cancellation");
+    session.render();
+    release(true);
+    require(session.message.contains("request cancelled"),
+            "Ordinary render while output active explicitly rejects");
+    session.copyOriginal(work.getChildFile("Copies"));
+    require(session.message.startsWith("Copy Original request cancelled"),
+            "Original copy cannot silently vanish behind active render");
+    auto docBefore = session.document.id;
+    session.newDesign();
+    release(true);
+    require(session.document.id == docBefore && session.message.contains("finish rendering"),
+            "Context replacement explicitly rejects while output worker owns document");
+    holdOutput = false;
+    wait([&] { return !session.rendering && session.document.outputs.size() == before + 1; },
+         "First output completes exactly once after explicit later rejection");
+    require(session.document.outputs.back().channelProvenance["sources"][0]["layer"].toString() == a.id,
+            "First accepted selected output remains bound to requested A");
+    before = session.document.outputs.size();
+    holdOutput = true;
+    outputEntered = false;
+    session.selectLayer(a.id);
+    session.render();
+    release(true);
+    wait([&] { return outputEntered.load(); }, "Cancellation reaches held actual output worker");
+    session.cancelRender();
+    holdOutput = false;
+    wait([&] { return !session.rendering; }, "Cancelled output completes with failure result");
+    require(session.document.outputs.size() == before,
+            "Cancelled output never publishes a successful artifact");
+    failOutput = true;
+    session.render();
+    release(true);
+    wait([&] { return !session.rendering; }, "Failed output worker completes");
+    failOutput = false;
+    require(session.message.contains("Owned output failure") && session.document.outputs.size() == before,
+            "Worker failure is visible without certifying output");
     session.selectLayer(a.id);
     session.render(true);
     session.selectLayer(b.id);

@@ -132,6 +132,7 @@ void runPluginGateATests(const juce::File &base, const juce::File &app, const ju
         evidence.add(changed);
     }
 
+#include "PluginRegistryCoverageTests.inc"
     PluginCatalog catalog(root.getChildFile("state-registry.json"));
     auto scan = catalog.scan(child, {fixture}, false, cancel);
     auto plugin = scan["entries"][0]["plugins"][0];
