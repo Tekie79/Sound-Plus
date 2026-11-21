@@ -611,11 +611,20 @@ juce::var designToJson(const DesignDocument &d)
         hasChain(d.original) ||
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasChain(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.orderedRecipe; });
-    put(o, "version", ordered ? 9 : hasHostedInserts(d) ? 8 : hasSourcePools(d) ? 7 : performanceFormat(d));
+    bool plugins = std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.pluginAware; }) ||
+                   std::any_of(d.outputs.begin(), d.outputs.end(),
+                               [](auto &o) { return o.processing == "plugin-ordered-takes-v1"; });
+    put(o, "version",
+        plugins               ? 10
+        : ordered             ? 9
+        : hasHostedInserts(d) ? 8
+        : hasSourcePools(d)   ? 7
+                              : performanceFormat(d));
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        ordered                     ? "ordered-inserts-v1"
+        plugins                     ? "plugin-takes-v1"
+        : ordered                   ? "ordered-inserts-v1"
         : hasHostedInserts(d)       ? "hosted-racks-v1"
         : performanceFormat(d) == 6 ? "stock-layout-v2"
         : performanceFormat(d) == 5 ? "stock-layout-v1"
@@ -718,6 +727,8 @@ juce::var designToJson(const DesignDocument &d)
             put(n, "bodyEnd", (juce::int64)v.bodyEnd);
             put(n, "tailPolicy", v.tailPolicy);
         }
+        if (!v.pluginProvenance.isVoid())
+            put(n, "plugins", v.pluginProvenance);
         outputs.add(n);
     }
     put(o, "outputs", outputs);
@@ -727,8 +738,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 9) ||
-        (version == 9   ? dsp != "ordered-inserts-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 10) ||
+        (version == 10  ? dsp != "plugin-takes-v1"
+         : version == 9 ? dsp != "ordered-inserts-v1"
          : version == 8 ? dsp != "hosted-racks-v1"
          : version == 7 ? (int)o["sourcePoolMetadataVersion"] != 1
          : version == 6 ? dsp != "stock-layout-v2"
@@ -802,6 +814,7 @@ DesignDocument designFromJson(const juce::var &o)
             n.eventHash = v["eventHash"].toString();
             n.processing = v["processing"].toString();
             n.sourceProvenance = v["sources"];
+            n.pluginProvenance = v["plugins"];
             n.projectRate = (double)v["projectRate"];
             n.captureRate = (double)v["captureRate"];
             n.capturedFrames = (int64_t)v["capturedFrames"];
@@ -837,6 +850,10 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     validateDesign(d);
+    if (version < 10 && (std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.pluginAware; }) ||
+                         std::any_of(d.outputs.begin(), d.outputs.end(),
+                                     [](auto &o) { return o.processing == "plugin-ordered-takes-v1"; })))
+        throw std::runtime_error("Plugin-aware takes/receipts require document manifest 10");
     if (hasSourcePools(d) && version < 7)
         throw std::runtime_error("Source pools require document manifest 7");
     auto canonicalChain = [](const juce::var &mix)
@@ -1323,8 +1340,11 @@ bool hasHostedInserts(const DesignDocument &d)
     for (auto &v : d.variations)
         if (hasHostedInserts(v.mix))
             return true;
+    for (auto &t : d.takes)
+        if (t.pluginAware)
+            return true;
     for (auto &o : d.outputs)
-        if (o.processing == "hosted-racks-v1")
+        if (o.processing == "hosted-racks-v1" || o.processing == "plugin-ordered-takes-v1")
             return true;
     return false;
 }

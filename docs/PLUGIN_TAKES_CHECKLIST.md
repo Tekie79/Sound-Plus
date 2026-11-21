@@ -7,9 +7,9 @@ Request: attachment 0747e22a-0c25-410e-b5d3-a35f8f64fda0. Starting HEAD a502a69,
 - ✓ A2 canonical stable-ID RNG allocation; reordered effects, locks, macro ownership and legacy behavior.
 - ✓ A3 stable row/subcontrol focus; actual repeated key dispatch, both owners/transport/history/16-slot scrolling/native checks.
 - ✓ Stage A required full gate and reviewable correction commit before Stage B.
-- ○ B1 immutable versioned plugin-aware recipe/provenance, coherent capture/cancellation binding and legacy hash preservation.
-- ○ B2 independent fixed-state capture/replay/render processors, service enforcement, event clock/recovery/failure boundaries.
-- ○ B3 eight named layouts, role impulses/PDC/body/tails, live/offline PCM, finalized interleaved/split receipts.
+- ◉ B1 immutable versioned plugin-aware recipe/provenance, coherent capture/cancellation binding and legacy hash preservation.
+- ◉ B2 independent fixed-state capture/replay/render processors, service enforcement, event clock/recovery/failure boundaries.
+- ◉ B3 eight named layouts, role impulses/PDC/body/tails, live/offline PCM, finalized interleaved/split receipts.
 - ○ B4 clear existing modern take states/read-only controls, matching finalized drag and ordinary print-back.
 - ○ B5 native qualified VST3/AUv2 Record/Stop/audition/Keep/name/save/reopen/render; receiver import/place/save/quit/reopen where available.
 - ○ Final unchanged implementation gate, source/helper identities, portable evidence/report/limitations, latest user session restoration and commits.

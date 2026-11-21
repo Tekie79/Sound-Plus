@@ -370,11 +370,11 @@ class Voice
   public:
     Voice(
         const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {}, int version = 2,
-        const std::function<bool()> &cancelled = [] { return false; })
+        bool fixed = false, const std::function<bool()> &cancelled = [] { return false; })
         : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
           rack(std::make_unique<OrderedRack>(
               l.inserts, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
-              invariant, !layout.id.isEmpty(), cancelled)),
+              invariant, !layout.id.isEmpty(), fixed, cancelled)),
           layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? l.routing.interpretation.size() : 2),
           routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
           previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
@@ -632,7 +632,7 @@ struct DesignGraph::Impl
         block.setSize(channels, 512);
         masterRack = std::make_unique<OrderedRack>(
             mix.inserts, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
-            invariant || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), cancelled);
+            invariant || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), invariant, cancelled);
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -645,7 +645,7 @@ struct DesignGraph::Impl
                                              l.name.toStdString());
                 voices.push_back(std::make_unique<Voice>(
                     l, sampleRate, invariant || !document.activeMix().layout.id.isEmpty(),
-                    document.activeMix().layout, document.activeMix().routingVersion, cancelled));
+                    document.activeMix().layout, document.activeMix().routingVersion, invariant, cancelled));
             }
         int longest = 0;
         for (auto &voice : voices)
@@ -653,6 +653,13 @@ struct DesignGraph::Impl
         for (auto &voice : voices)
             voice->compensate(longest - voice->latency());
         pipelineLatency = longest + masterRack->latency();
+        // v3 records the producer's audible/source clock after PDC priming.
+        // Reapply controls at the same internal graph position, including the
+        // frozen pipeline's lookahead. Historical zero-latency stock recipes
+        // retain their exact event interpretation.
+        if (auto *t = selectedTake(d); t && t->pluginAware)
+            for (auto &event : events)
+                event.frame += pipelineLatency;
     }
     void prime(int64_t first, const std::function<bool()> &cancelled)
     {
@@ -1124,6 +1131,15 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         result.recipeHash = t->recipeHash;
         result.eventHash = t->eventHash;
         result.processing = t->processing;
+        if (t->pluginAware)
+        {
+            auto p = juce::var(new juce::DynamicObject());
+            p.getDynamicObject()->setProperty("frozen", takePluginProvenance(*t));
+            p.getDynamicObject()->setProperty("authority", "single-float-pass-v1");
+            p.getDynamicObject()->setProperty("rawPass", rawPass.getFullPathName());
+            p.getDynamicObject()->setProperty("rawSha256", rawPassHash);
+            result.pluginProvenance = p;
+        }
         result.sourceProvenance = takeToJson(*t)["sources"];
         for (auto &source : *result.sourceProvenance.getArray())
             for (auto &layer : effectiveInput.activeMix().layers)
@@ -1202,6 +1218,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                      (double)(hostedPass ? passRead : reader->consumed()) / totalFrames);
     }
     writer.reset();
+    if (auto *t = selectedTake(d); t && t->pluginAware)
+        verifyTakePlugins(*t);
     if (hostedPass && processingHash(rawPass) != rawPassHash)
         throw std::runtime_error("Retained raw plugin authority changed before publication");
     if (layoutAware)

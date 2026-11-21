@@ -88,11 +88,17 @@ void runPoolCorrectionTests(const juce::File &, const juce::File &, const juce::
 void runNativeViewScaleTests();
 void runOrderedInsertTests(const juce::File &, const juce::File &, const juce::File &, const juce::File &);
 void runRegistryWriter(const juce::File &, const juce::File &, const juce::File &);
+void runPluginTakeTests(const juce::File &, const juce::File &, const juce::File &);
 void runOrderedCorrectionTests(const juce::File &, const juce::File &);
 int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 5 && juce::String(argv[1]) == "--plugin-takes")
+        {
+            runPluginTakeTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--ordered-corrections")
         {
             runOrderedCorrectionTests(juce::File(argv[2]), juce::File(argv[3]));

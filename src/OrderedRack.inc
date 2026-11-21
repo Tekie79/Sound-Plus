@@ -12,6 +12,7 @@ class OrderedRack
     juce::AudioBuffer<float> dry, ring;
     juce::SmoothedValue<float> wet;
     int delay = 0, position = 0, channels = 2;
+    bool fixed = false, initialBypass = false;
     static const StockEffect &stock(const InsertChain &c, const juce::String &id)
     {
         for (auto &s : c.stock)
@@ -42,8 +43,8 @@ class OrderedRack
 
   public:
     OrderedRack(const InsertChain &c, const ChannelLayout &bus, double rate, bool invariant, bool aware,
-                const std::function<bool()> &cancelled)
-        : channels(bus.size())
+                bool immutable, const std::function<bool()> &cancelled)
+        : channels(bus.size()), fixed(immutable), initialBypass(c.bypass)
     {
         negotiateStockBus({bus, bus, false});
         for (auto &ref : resolvedInsertOrder(c))
@@ -57,7 +58,9 @@ class OrderedRack
                     std::make_unique<StockProcessor>(stock(c, ref.id), rate, invariant, channels, aware);
             else
             {
-                step.hosted = std::make_unique<HostedRackClient>(hosted(c, ref.id), bus, rate, cancelled);
+                auto recipe = hosted(c, ref.id);
+                recipe.runtimeFixedState = fixed;
+                step.hosted = std::make_unique<HostedRackClient>(recipe, bus, rate, cancelled);
                 delay += step.hosted->latency();
             }
             steps.push_back(std::move(step));
@@ -76,6 +79,8 @@ class OrderedRack
     }
     void update(const InsertChain &c)
     {
+        if (fixed && c.bypass != initialBypass)
+            throw std::runtime_error("Frozen take chain bypass cannot change");
         auto order = resolvedInsertOrder(c);
         if (order.size() != steps.size())
             throw std::runtime_error("Insert chain topology changed; prepare a graph");

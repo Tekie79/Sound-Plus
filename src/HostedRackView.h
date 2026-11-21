@@ -290,8 +290,9 @@ class HostedRackView final : public juce::Component
             feedback.setText("Live", juce::dontSendNotification);
         updating = false;
         title.setText("Inserts", juce::dontSendNotification);
-        feedback.setTooltip("Effects run in the displayed insert order; Track and Master remain separate. "
-                            "Hosted take recording is not yet qualified.");
+        feedback.setTooltip(
+            "Effects run in the displayed insert order; Track and Master remain separate. "
+            "Perform takes freeze the starting plug-in state; native knob automation is not recorded.");
         resized();
         reportHeight();
     }

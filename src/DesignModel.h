@@ -270,6 +270,7 @@ struct PerformTake
     juce::String id = juce::Uuid().toString(), name = "Untitled take", session, reason;
     juce::String recipeHash, eventHash, processing = "stock-takes-v1";
     FrozenTakeMix recipe;
+    bool pluginAware = false;   // Recipe v3: fixed hosted state, independent frame-zero processors.
     bool orderedRecipe = false; // Recipe version 2; historical recipe hashes keep their legacy encoding.
     double sampleRate = 48000;
     int64_t bodyEnd = 0;
@@ -299,7 +300,7 @@ struct DesignOutput
     int64_t bodyEnd = 0;
     int64_t capturedFrames = 0;
     juce::String tailPolicy;
-    juce::var sourceProvenance;
+    juce::var sourceProvenance, pluginProvenance;
     juce::var channelProvenance, files;
     int outputSetVersion = 0; // Metadata contract; independent of legacy/new DSP.
 };
@@ -371,11 +372,13 @@ PerformControls controlsFromJson(const juce::var &);
 juce::var takeToJson(const PerformTake &);
 PerformTake takeFromJson(const juce::var &);
 void validateTake(const PerformTake &);
+juce::var takePluginProvenance(const PerformTake &);
 void hashTake(PerformTake &);
 PerformTake freezeTake(const DesignDocument &, const juce::String &name);
 const PerformTake *selectedTake(const DesignDocument &);
 DesignDocument takeDocument(const DesignDocument &);
 DesignMix takeDisplayMix(const PerformTake &);
 void verifyTakeSources(const PerformTake &);
+void verifyTakePlugins(const PerformTake &);
 bool recoverTakeDrafts(DesignDocument &);
 } // namespace sp

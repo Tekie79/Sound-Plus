@@ -178,6 +178,9 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
     validateHostedRack(rack);
     validateLayout(layout);
     impl->configuration = rack;
+    if (rack.runtimeFixedState && (rack.runtimeEndpoint != juce::File() || liveDirectory != juce::File()))
+        throw std::runtime_error(
+            "Frozen plugin processors cannot borrow live services or open native editors");
     if (rack.runtimeEndpoint != juce::File())
     {
         if (rack.runtimeOwnerRack.isEmpty())
@@ -315,6 +318,7 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
     auto *job = new juce::DynamicObject();
     job->setProperty("protocol", 1);
     job->setProperty("mode", "rack");
+    job->setProperty("fixedState", rack.runtimeFixedState);
     job->setProperty("rack", hostedRackJson(rack));
     job->setProperty("layout", layoutJson(layout));
     job->setProperty("rate", rate);
@@ -381,6 +385,13 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
 }
 void HostedRackClient::update(const HostedRack &rack)
 {
+    if (impl->configuration.runtimeFixedState)
+    {
+        if (juce::JSON::toString(hostedRackJson(rack), true) !=
+            juce::JSON::toString(hostedRackJson(impl->configuration), true))
+            throw std::runtime_error("Frozen take plugin state cannot be edited");
+        return;
+    }
     validateHostedRack(rack);
     if (impl->composite)
     {
@@ -558,6 +569,8 @@ juce::String HostedRackClient::instanceGeneration() const
 }
 void HostedRackClient::editor(const juce::String &slot, bool open)
 {
+    if (impl->configuration.runtimeFixedState)
+        throw std::runtime_error("Frozen take plugin editor is read-only/unavailable");
     auto v = juce::var(new juce::DynamicObject());
     auto *o = v.getDynamicObject();
     o->setProperty("generation", impl->instance);

@@ -29,6 +29,9 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
     {
         check(e->protocol == sp::HostedRackExchange::magic, "Hosted exchange protocol mismatch");
         auto rack = sp::hostedRackFromJson(job["rack"]);
+        const bool fixed = (bool)job["fixedState"];
+        check(!fixed || job["liveDirectory"].toString().isEmpty(),
+              "Frozen take cannot expose a live editor/control service");
         auto bus = sp::layoutFromJson(job["layout"]);
         auto rate = (double)job["rate"];
         check(rate >= 8000 && rate <= 192000 && bus.size() == e->channels, "Invalid rack bus/rate");
@@ -145,6 +148,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             }
             if (!live && e->controls != controls)
             {
+                check(!fixed, "Frozen take service rejects external plugin control writes");
                 onPluginMessageThread(
                     [&]
                     {

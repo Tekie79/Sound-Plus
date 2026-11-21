@@ -25,6 +25,11 @@ class LiveInsertSession
     void sync(const DesignDocument &, uint64_t);
     void editor(const juce::String &, const juce::File &, const juce::String &, bool = true);
     void flush(std::function<void(bool)>);
+    void suspendEditors(bool value)
+    {
+        editorsSuspended.store(value);
+        wake.notify_one();
+    }
     bool accepts(const Capture &);
     void trace(const juce::var &);
     juce::String problem(const juce::String &slot);
@@ -39,7 +44,7 @@ class LiveInsertSession
     juce::File base;
     Receiver receive;
     std::function<void(juce::String)> failure;
-    std::atomic<bool> quitting{false};
+    std::atomic<bool> quitting{false}, editorsSuspended{false};
     std::mutex mutex;
     std::condition_variable wake;
     std::optional<Snapshot> latest;

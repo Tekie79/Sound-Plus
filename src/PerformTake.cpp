@@ -1,5 +1,6 @@
 #include "DesignModel.h"
 #include "SourcePools.h"
+#include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <set>
 #include <cmath>
@@ -39,7 +40,25 @@ juce::var recipeJson(const PerformTake &t)
     auto o = obj();
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
-        put(o, "recipeVersion", 2);
+        put(o, "recipeVersion", t.pluginAware ? 3 : 2);
+    if (t.pluginAware)
+    {
+        put(o, "pluginPolicy", "fixed-state-independent-frame-zero-v1");
+        put(o, "tailPolicy", "body-input-gate-output-tail-once-v1");
+        put(o, "renderBus",
+            layoutJson(t.recipe->layout.id.isEmpty() ? channelLayout("stereo-v1") : t.recipe->layout));
+        juce::Array<juce::var> sources;
+        for (auto &s : t.sources)
+        {
+            auto v = obj();
+            put(v, "id", s.id);
+            put(v, "sha256", s.sha256);
+            sources.add(v);
+        }
+        put(o, "sources", sources);
+        if (t.poolOrigins.isNotEmpty())
+            put(o, "poolOrigins", juce::JSON::parse(t.poolOrigins));
+    }
     put(o, "rate", t.sampleRate);
     put(o, "processing", t.processing);
     put(o, "origin", "frame-zero-fresh-history");
@@ -194,9 +213,10 @@ PerformTake takeFromJson(const juce::var &o)
     t.session = o["session"].toString();
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
-    if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2)
+    if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
+    t.pluginAware = (int)r["recipeVersion"] == 3;
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
@@ -233,13 +253,17 @@ PerformTake takeFromJson(const juce::var &o)
         t.sources.push_back({v["id"].toString(), v["sha256"].toString(), v["overridePath"].toString(),
                              (int64_t)v["overrideSize"], (int64_t)v["overrideModified"],
                              (int64_t)v["overrideInode"]});
+    if (t.pluginAware &&
+        (r["pluginPolicy"].toString() != "fixed-state-independent-frame-zero-v1" ||
+         r["tailPolicy"].toString() != "body-input-gate-output-tail-once-v1" || hash(r) != t.recipeHash))
+        throw std::runtime_error("Invalid plugin-aware frozen recipe/policy/checksum");
     validateTake(t);
     return t;
 }
 void hashTake(PerformTake &t)
 {
     auto &mix = (const DesignMix &)t.recipe;
-    t.orderedRecipe = t.orderedRecipe || requiresOrderedInserts(mix.inserts) ||
+    t.orderedRecipe = t.orderedRecipe || t.pluginAware || requiresOrderedInserts(mix.inserts) ||
                       std::any_of(mix.layers.begin(), mix.layers.end(),
                                   [](auto &l) { return requiresOrderedInserts(l.inserts); });
     t.recipeHash = hash(recipeJson(t));
@@ -252,11 +276,12 @@ void hashTake(PerformTake &t)
 }
 void validateTake(const PerformTake &t)
 {
-    if (hasHostedInserts((const DesignMix &)t.recipe))
-        throw std::runtime_error("Hosted take recipes require an unsupported plugin-aware capture contract");
+    if (hasHostedInserts((const DesignMix &)t.recipe) != t.pluginAware ||
+        (t.processing == "plugin-ordered-takes-v1") != t.pluginAware || (t.pluginAware && !t.orderedRecipe))
+        throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
-         t.processing != "stock-layout-takes-v2") ||
+         t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -265,10 +290,11 @@ void validateTake(const PerformTake &t)
     if (t.complete &&
         t.bodyEnd != (int64_t)std::ceil((long double)(t.outputFrames - 1) * t.sampleRate / t.captureRate) + 1)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
-    if ((t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
+    if (!t.pluginAware && (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
         throw std::runtime_error("Take layout processing contract mismatch");
     if ((t.processing == "stock-layout-takes-v1" && t.recipe->routingVersion != 1) ||
-        (t.processing == "stock-layout-takes-v2" && t.recipe->routingVersion != 2))
+        ((t.processing == "stock-layout-takes-v2" || (t.pluginAware && t.recipe->layout.id.isNotEmpty())) &&
+         t.recipe->routingVersion != 2))
         throw std::runtime_error("Take spatial processing version mismatch");
     if (t.correctedFrom.isNotEmpty() || t.originalRecipeHash.isNotEmpty() || t.originalEventHash.isNotEmpty())
         if (t.processing != "stock-layout-takes-v2" || t.correctedFrom.isEmpty() ||
@@ -308,20 +334,69 @@ void validateTake(const PerformTake &t)
     }
     validatePoolOrigins(t);
 }
+juce::var takePluginProvenance(const PerformTake &t)
+{
+    if (!t.pluginAware)
+        return {};
+    auto o = obj();
+    put(o, "policy", "fixed-state-independent-frame-zero-v1");
+    put(o, "recipeHash", t.recipeHash);
+    juce::Array<juce::var> owners;
+    auto add = [&](const InsertChain &c, const juce::String &owner, const ChannelLayout &layout)
+    {
+        auto v = obj();
+        put(v, "owner", owner);
+        put(v, "bus", layoutJson(layout));
+        put(v, "chain", insertChainToJson(c));
+        // The receipt carries identities and hashes, not a second large opaque-state copy.
+        for (auto &row : *v["chain"]["slots"].getArray())
+            if (row["kind"].toString() == "hosted")
+            {
+                auto settings = row["settings"];
+                put(row, "stateProvenance", hash(settings));
+                auto summary = obj();
+                put(summary, "plugin", settings["plugin"]);
+                put(summary, "stateHash", settings["stateHash"]);
+                put(summary, "parametersHash", hash(settings["parameters"]));
+                put(summary, "program", settings["program"]);
+                put(row, "settings", summary);
+            }
+        owners.add(v);
+    };
+    auto &m = (const DesignMix &)t.recipe;
+    add(m.inserts, "master", m.layout.id.isEmpty() ? channelLayout("stereo-v1") : m.layout);
+    for (auto &l : m.layers)
+        add(l.inserts, l.id, m.layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation);
+    put(o, "owners", owners);
+    return o;
+}
 PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
 {
-    if (hasHostedInserts(d.activeMix()))
-        throw std::runtime_error(
-            "Hosted insert capture requires a plugin-aware event contract; render a durable pass instead");
-
     PerformTake t;
     t.name = name;
     t.session = d.id;
+    t.pluginAware = hasHostedInserts(d.activeMix());
+    if (t.pluginAware)
+        t.processing = "plugin-ordered-takes-v1";
     auto mix = d.activeMix();
     if (!mix.layout.id.isEmpty())
         mix.routingVersion = 2;
-    if (!d.activeMix().layout.id.isEmpty())
+    if (!t.pluginAware && !d.activeMix().layout.id.isEmpty())
         t.processing = "stock-layout-takes-v2";
+    auto fixed = [](InsertChain &c)
+    {
+        c.hosted.runtimeEndpoint = juce::File();
+        c.hosted.runtimeOwnerRack.clear();
+        c.hosted.runtimeControlTicks = 0;
+        for (auto &s : c.hosted.slots)
+        {
+            s.runtimeParameterOrigins.clear();
+            s.runtimeRestoreOrigin = 0;
+        }
+    };
+    fixed(mix.inserts);
+    for (auto &l : mix.layers)
+        fixed(l.inserts);
     freezePoolOrigins(t, mix);
     t.recipe = std::move(mix);
     t.sampleRate = d.sampleRate;
@@ -331,11 +406,24 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     for (auto &l : t.recipe->layers)
         if (ids.insert(l.source.id).second)
         {
+            FileStamp before, after;
+            if (t.pluginAware &&
+                (!fileStamp(juce::File(l.source.path), before) || before.size != l.source.size ||
+                 before.modified != l.source.modified || before.inode != l.source.inode))
+                throw std::runtime_error("Source changed before plugin-aware recipe freeze");
             auto in = juce::File(l.source.path).createInputStream();
             if (!in)
                 throw std::runtime_error("Take source unavailable: " + l.source.name.toStdString());
             t.sources.push_back({l.source.id, juce::SHA256(*in).toHexString(), {}});
+            if (t.pluginAware && (!fileStamp(juce::File(l.source.path), after) || before.size != after.size ||
+                                  before.modified != after.modified || before.inode != after.inode))
+                throw std::runtime_error("Source changed during plugin-aware recipe freeze");
         }
+    if (t.pluginAware)
+    {
+        verifyTakeSources(t);
+        verifyTakePlugins(t);
+    }
     hashTake(t);
     validateTake(t);
     return t;
@@ -370,16 +458,52 @@ const PerformTake *selectedTake(const DesignDocument &d)
 }
 void verifyTakeSources(const PerformTake &t)
 {
+    std::set<juce::String> checked;
     for (auto &s : t.sources)
     {
-        auto l = std::find_if(t.recipe->layers.begin(), t.recipe->layers.end(),
-                              [&](auto &v) { return v.source.id == s.id; });
-        if (l == t.recipe->layers.end())
+        bool found = false;
+        for (auto &l : t.recipe->layers)
+            if (l.source.id == s.id)
+            {
+                found = true;
+                auto path = s.overridePath.isEmpty() ? l.source.path : s.overridePath;
+                if (checked.insert(path + ":" + s.sha256).second)
+                {
+                    auto in = juce::File(path).createInputStream();
+                    if (!in || juce::SHA256(*in).toHexString() != s.sha256)
+                        throw std::runtime_error("Take source offline or changed: " +
+                                                 l.source.name.toStdString());
+                }
+                if (!t.pluginAware)
+                    break; // Preserve historical stock source-resolution behavior.
+            }
+        if (!found)
             throw std::runtime_error("Take source missing");
-        auto in = juce::File(s.overridePath.isEmpty() ? l->source.path : s.overridePath).createInputStream();
-        if (!in || juce::SHA256(*in).toHexString() != s.sha256)
-            throw std::runtime_error("Take source offline or changed: " + l->source.name.toStdString());
     }
+}
+void verifyTakePlugins(const PerformTake &t)
+{
+    if (!t.pluginAware)
+        return;
+    std::set<juce::String> checked;
+    auto check = [&](const InsertChain &chain)
+    {
+        for (auto &slot : chain.hosted.slots)
+        {
+            auto identity = juce::JSON::parse(slot.settings)["plugin"];
+            auto path = identity["format"].toString() == "AudioUnit" ? identity["bundle"].toString()
+                                                                     : identity["path"].toString();
+            auto expected = identity["fingerprint"].toString();
+            if (expected.isEmpty() || path.isEmpty())
+                throw std::runtime_error("Frozen plugin identity lacks a binary fingerprint");
+            if (checked.insert(path + ":" + expected).second &&
+                pluginFingerprint(juce::File(path)) != expected)
+                throw std::runtime_error("Frozen plugin binary changed during recording");
+        }
+    };
+    check(t.recipe->inserts);
+    for (auto &l : t.recipe->layers)
+        check(l.inserts);
 }
 DesignDocument takeDocument(const DesignDocument &d)
 {

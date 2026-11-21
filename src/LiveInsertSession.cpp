@@ -303,11 +303,13 @@ void LiveInsertSession::run()
                     const auto &request = editors[id];
                     if (request.root.getFullPathName() == context && request.owner == e.binding.owner &&
                         (request.generation.isEmpty() || request.generation == e.binding.generation))
-                        e.client->editor(id, request.show);
+                        e.client->editor(id, request.show && !editorsSuspended.load());
                     editors.erase(id);
                 }
                 if (requestFlush)
                     e.client->capture(captureTicket);
+                if (editorsSuspended.load() && e.editorVisible)
+                    e.client->editor(id, false);
                 auto state = e.client->liveState();
                 if (state["generation"].toString() != e.binding.generation ||
                     (uint64_t)(juce::int64)state["modelSequence"] != e.client->modelSequence())

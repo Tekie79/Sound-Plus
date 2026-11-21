@@ -20,6 +20,7 @@ struct HostedRack
     juce::File runtimeEndpoint;
     juce::String runtimeOwnerRack;
     int64_t runtimeControlTicks = 0;
+    bool runtimeFixedState = false; // Frozen take processor; never borrowed or exposed to native edits.
     std::vector<HostedSlot> slots;
 };
 inline bool newerHostedIntents(const HostedSlot &before, const HostedSlot &after)

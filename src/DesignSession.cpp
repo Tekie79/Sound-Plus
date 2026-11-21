@@ -34,6 +34,7 @@ bool sameTakes(const DesignDocument &a, const DesignDocument &b)
             auto *v = o.getDynamicObject();
             v->setProperty("id", t.id);
             v->setProperty("orderedRecipe", t.orderedRecipe);
+            v->setProperty("pluginAware", t.pluginAware);
             v->setProperty("name", t.name);
             v->setProperty("session", t.session);
             v->setProperty("reason", t.reason);
@@ -359,12 +360,19 @@ void DesignSession::syncLive()
     if (!liveInserts)
         return;
     document.liveInserts = true;
+    liveInserts->suspendEditors(takeBusy() || document.activeTake.isNotEmpty());
     if (liveAudio)
         liveAudio->liveInsertRoot(liveInserts->rootFor(document, lifetime));
     liveInserts->sync(document, lifetime);
 }
 bool DesignSession::openLiveEditor(const juce::String &slot)
 {
+    if (takeBusy() || document.activeTake.isNotEmpty())
+    {
+        message = "Plugin state is frozen for this take; return to Live Design to edit";
+        notify();
+        return false;
+    }
     if (!liveInserts)
         return false;
     juce::String owner;
@@ -427,6 +435,11 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
         deferredNativeCaptures[capture.slot] = std::move(capture);
         return;
     }
+    if (takeBusy() && !takeCapturingPlugins)
+    {
+        deferredNativeCaptures[capture.slot] = std::move(capture);
+        return;
+    }
     const bool observedOnly = (bool)capture.evidence["opaqueObservation"],
                historyNative = capture.native && !observedOnly;
     const auto historyRevision = document.revision;
@@ -435,6 +448,9 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
     liveApplying = true;
     liveSuppressHistory = !historyNative || merge;
     liveInvalidateRedo = historyNative;
+    const auto previousMutation = takeMutation;
+    if (takeState == TakeState::arming && takeCapturingPlugins)
+        takeMutation = true;
     edit("Plugin edit",
          [&](auto &d)
          {
@@ -443,6 +459,7 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
                  if (slot.id == capture.slot)
                      slot.settings = capture.settings;
          });
+    takeMutation = previousMutation;
     liveApplying = false;
     liveSuppressHistory = liveInvalidateRedo = false;
     if (observedOnly)
@@ -468,18 +485,20 @@ void DesignSession::drainLiveCaptures()
     for (auto &[id, capture] : pending)
         receiveLive(std::move(capture));
 }
-void DesignSession::withLiveState(std::function<void()> continuation)
+void DesignSession::withLiveState(std::function<void()> continuation, std::function<void()> rejected)
 {
     auto safe = juce::Component::SafePointer<DesignSession>(this);
     if (!flushLive(
-            [safe, continuation]
+            [safe, continuation, rejected]
             {
                 if (safe)
-                    safe->withLiveState(continuation);
-            }))
+                    safe->withLiveState(continuation, rejected);
+            },
+            false, rejected))
         continuation();
 }
-bool DesignSession::flushLive(std::function<void()> continuation, bool allowFailure)
+bool DesignSession::flushLive(std::function<void()> continuation, bool allowFailure,
+                              std::function<void()> rejected)
 {
     if (gesture)
         endGesture();
@@ -495,11 +514,13 @@ bool DesignSession::flushLive(std::function<void()> continuation, bool allowFail
     if (liveCommands.size() >= 128)
     {
         message = "Pending command cancelled: queue is full";
+        if (rejected)
+            rejected();
         notify();
         return true;
     }
     liveCommands.push_back({lifetime, document.id, document.activeVariation, document.activeTake,
-                            std::move(continuation), allowFailure});
+                            std::move(continuation), allowFailure, std::move(rejected)});
     runLiveCommands();
     return true;
 }
@@ -511,7 +532,10 @@ void DesignSession::runLiveCommands()
     if (command.incarnation != lifetime || command.document != document.id ||
         command.variation != document.activeVariation || command.take != document.activeTake)
     {
+        auto rejected = command.rejected;
         liveCommands.pop_front();
+        if (rejected)
+            rejected();
         message = "Pending command cancelled: design context changed";
         notify();
         runLiveCommands();
@@ -568,6 +592,8 @@ void DesignSession::finishLiveCommand(bool success)
     }
     else
     {
+        if (command.rejected)
+            command.rejected();
         message = matches ? "Live insert unavailable; pending command cancelled. Last checkpoint retained."
                           : "Pending command cancelled: design context changed";
         notify();

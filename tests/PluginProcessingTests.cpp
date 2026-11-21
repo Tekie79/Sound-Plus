@@ -709,11 +709,13 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             auto master = result["job"].clone();
             parameter(master, 1, 0);
             parameter(master, 2, 23. / 256.);
-            design.original.inserts.hosted.slots.push_back({Uuid().toString(), JSON::toString(master, true), false});
+            design.original.inserts.hosted.slots.push_back(
+                {Uuid().toString(), JSON::toString(master, true), false});
             auto recalled = designFromJson(designToJson(design));
             require((int)designToJson(recalled)["version"] == 9 &&
                         recalled.original.layers[0].inserts.hosted.id == rack.id &&
-                        recalled.original.inserts.hosted.slots[0].id == design.original.inserts.hosted.slots[0].id,
+                        recalled.original.inserts.hosted.slots[0].id ==
+                            design.original.inserts.hosted.slots[0].id,
                     "Hosted graph persists independently owned opaque slots in version 9");
             DesignGraph compensated(recalled);
             AudioBuffer<float> actual(l.size(), 4099);
@@ -902,7 +904,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto settings = retainedResult["job"].clone();
         parameter(settings, 1, 0);
         parameter(settings, 3, 1);
-        d.original.layers[0].inserts.hosted.slots = {{Uuid().toString(), JSON::toString(settings, true), false}};
+        d.original.layers[0].inserts.hosted.slots = {
+            {Uuid().toString(), JSON::toString(settings, true), false}};
         DesignGraph full(d);
         AudioBuffer<float> tail(1, 1164);
         full.render(tail, 0, 1164);
@@ -1357,7 +1360,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         track.bind(firstId);
         track.setParametersExpanded(true);
         track.values[0].setValue(-12, sendNotificationSync);
-        require(std::abs(rackSession.document.original.layers[0].inserts.stock[0].parameters[0] + 12) < 1e-8 &&
+        require(std::abs(rackSession.document.original.layers[0].inserts.stock[0].parameters[0] + 12) <
+                        1e-8 &&
                     rackSession.document.original.inserts.stock[0].type == "delay",
                 "Actual track parameter control cannot edit master rack");
         rackSession.undo();
@@ -1408,13 +1412,14 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     return job;
                 });
             auto a = Uuid().toString(), b = Uuid().toString();
-            rackSession.edit(
-                "Editor lifecycle setup",
-                [&](auto &d)
-                {
-                    d.original.layers[0].inserts.hosted.slots = {{a, JSON::toString(retainedJob, true), false}};
-                    d.original.layers[1].inserts.hosted.slots = {{b, JSON::toString(retainedJob, true), false}};
-                });
+            rackSession.edit("Editor lifecycle setup",
+                             [&](auto &d)
+                             {
+                                 d.original.layers[0].inserts.hosted.slots = {
+                                     {a, JSON::toString(retainedJob, true), false}};
+                                 d.original.layers[1].inserts.hosted.slots = {
+                                     {b, JSON::toString(retainedJob, true), false}};
+                             });
             auto press = [&](const String &name)
             {
                 for (auto *c : editView.getChildren())
@@ -1437,7 +1442,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
             require(cancelledEditors == 0, "R29 removing B preserves A editor");
             releaseEditor = true;
             pump(100);
-            require(JSON::parse(rackSession.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
+            require(JSON::parse(
+                        rackSession.document.original.layers[0].inserts.hosted.slots[0].settings)["stateHash"]
                             .toString() == "controlled-editor-result",
                     "R29 A state applies after unrelated B removal");
             releaseEditor = false;
@@ -1516,8 +1522,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     return rows;
             return nullptr;
         };
-        require(unified.slots.getNumItems() == 1 && !unified.slots.isVisible() &&
-                    orderedRows() && orderedRows()->isVisible() && orderedRows()->preferredHeight() == 32 &&
+        require(unified.slots.getNumItems() == 1 && !unified.slots.isVisible() && orderedRows() &&
+                    orderedRows()->isVisible() && orderedRows()->preferredHeight() == 32 &&
                     !visibleButtons(unified).contains("Remove external insert") &&
                     visibleButtons(unified).contains("Open live editor"),
                 "Loaded external effect has an actual ordered row and primary tools");
@@ -1530,7 +1536,8 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         auto externalBefore = rackSession.document.original.layers[1].inserts.hosted.slots[0].settings;
         unified.values[0].setValue(-9, sendNotificationSync);
         require(std::abs(rackSession.document.original.layers[1].inserts.stock[0].parameters[0] + 9) < 1e-8 &&
-                    rackSession.document.original.layers[1].inserts.hosted.slots[0].settings == externalBefore,
+                    rackSession.document.original.layers[1].inserts.hosted.slots[0].settings ==
+                        externalBefore,
                 "Shared stock selection edits only its stock effect: " +
                     String(rackSession.document.original.layers[1].inserts.stock[0].parameters[0], 12));
         unified.selectExternalSlot(externalId);
@@ -2343,3 +2350,5 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
 #include "NativeViewScaleTests.inc"
 
 #include "OrderedInsertTests.inc"
+
+#include "PluginTakeTests.inc"

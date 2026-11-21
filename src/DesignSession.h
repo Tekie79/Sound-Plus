@@ -89,7 +89,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     {
         return liveInserts ? liveInserts->problem(slot) : juce::String();
     }
-    void withLiveState(std::function<void()>);
+    void withLiveState(std::function<void()>, std::function<void()> rejected = {});
     bool hasLiveInserts() const
     {
         return liveInserts != nullptr;
@@ -231,6 +231,10 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool takeMutation = false, takeReadPending = false;
     double takeStartedAt = 0;
     juce::File takeCheckpoint;
+    bool takeCapturingPlugins = false;
+    juce::String takeBoundary;
+    void prepareTake(Stamp);
+    void rejectArmingTake(const juce::String &, const juce::String &);
     void pollTake(const juce::var &);
     void restoreTakeDrafts();
     void selectContextOutput();
@@ -248,6 +252,7 @@ class DesignSession final : public juce::Component, private juce::Timer
         juce::String document, variation, take;
         std::function<void()> continuation;
         bool allowFailure = false;
+        std::function<void()> rejected;
     };
     std::deque<LiveCommand> liveCommands;
     bool liveSuppressHistory = false, liveInvalidateRedo = false;
@@ -261,7 +266,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     int64_t liveHistoryRevision = -1;
     void syncLive();
     void receiveLive(LiveInsertSession::Capture);
-    bool flushLive(std::function<void()>, bool allowFailure = false);
+    bool flushLive(std::function<void()>, bool allowFailure = false, std::function<void()> rejected = {});
     std::map<juce::String, LiveInsertSession::Capture> deferredNativeCaptures;
     void drainLiveCaptures();
     void notify();

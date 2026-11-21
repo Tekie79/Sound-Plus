@@ -7,6 +7,26 @@ namespace sp
 {
 namespace
 {
+juce::String takeBoundarySignature(const DesignDocument &d)
+{
+    auto m = designMixToJson(d.activeMix());
+    auto owner = [](juce::var c)
+    {
+        if (auto *slots = c["slots"].getArray())
+            for (auto &row : *slots)
+                if (row["kind"].toString() == "hosted")
+                {
+                    auto identity = juce::var(new juce::DynamicObject());
+                    for (auto key : {"id", "format", "path", "fingerprint", "version"})
+                        identity.getDynamicObject()->setProperty(key, row["settings"]["plugin"][key]);
+                    row.getDynamicObject()->setProperty("settings", identity);
+                }
+    };
+    owner(m["insertChain"]);
+    for (auto &l : *m["layers"].getArray())
+        owner(l["insertChain"]);
+    return juce::JSON::toString(m, true);
+}
 bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
 {
     if (!t.complete || o.kind != "take-render" || o.recipeHash != t.recipeHash ||
@@ -25,6 +45,11 @@ bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)
         if (policy != t.recipe->routingVersion)
             return false;
     }
+    if (t.pluginAware && (juce::JSON::toString(o.pluginProvenance["frozen"], true) !=
+                              juce::JSON::toString(takePluginProvenance(t), true) ||
+                          o.pluginProvenance["authority"].toString() != "single-float-pass-v1" ||
+                          o.pluginProvenance["rawSha256"].toString().length() != 64))
+        return false;
     auto *sources = o.sourceProvenance.getArray();
     if (!sources || sources->size() != (int)t.sources.size())
         return false;
@@ -51,9 +76,10 @@ void DesignSession::recordTake()
 {
     if (takeBusy() || replacing || working || rendering || document.activeMix().layers.empty())
         return;
-    if (hasHostedInserts(document.activeMix()))
+    const bool plugins = hasHostedInserts(document.activeMix());
+    if (plugins && (liveFlushing || !liveCommands.empty()))
     {
-        message = "Hosted insert take capture is not yet qualified; render a durable pass instead";
+        message = "Finish the pending insert action before recording";
         notify();
         return;
     }
@@ -93,6 +119,49 @@ void DesignSession::recordTake()
     lastOutput = juce::File();
     message = "Arming take: verifying sources and fresh effect history";
     auto token = stamp(Operation::take);
+    takeBoundary = takeBoundarySignature(document);
+    takeCapturingPlugins = plugins;
+    auto id = captureId;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    auto prepare = [safe, token, id]
+    {
+        if (safe && safe->accepts(token) && safe->takeState == TakeState::arming && safe->captureId == id)
+            safe->prepareTake(token);
+    };
+    if (plugins)
+        withLiveState(prepare,
+                      [safe, id]
+                      {
+                          if (safe)
+                              safe->rejectArmingTake(
+                                  id, "Coherent native-state capture failed or context changed");
+                      });
+    else
+        prepare();
+    notify();
+}
+void DesignSession::rejectArmingTake(const juce::String &id, const juce::String &reason)
+{
+    if (captureId != id || takeState != TakeState::arming)
+        return;
+    stamp(Operation::take);
+    services.reserveTake(false);
+    takeCapturingPlugins = false;
+    takeState = TakeState::incomplete;
+    takeUndoBase.reset();
+    active = false;
+    message = "Incomplete take before audio start: " + reason;
+    notify();
+}
+void DesignSession::prepareTake(Stamp token)
+{
+    if (takeBoundarySignature(document) != takeBoundary)
+    {
+        rejectArmingTake(captureId, "Source/recipe changed while capturing native state");
+        return;
+    }
+    takeCapturingPlugins = false;
+    takeUndoBase = History{document, selectedIds, "Record take"};
     auto d = document;
     auto id = captureId;
     auto file = takeCheckpoint;
@@ -100,7 +169,10 @@ void DesignSession::recordTake()
     enqueue(token,
             [safe, d, id, file, resolve = services.resolve]() mutable
             {
+                auto boundary = takeBoundarySignature(d);
                 resolve(d);
+                if (hasHostedInserts(d.activeMix()) && takeBoundarySignature(d) != boundary)
+                    throw std::runtime_error("Source/recipe changed during plugin-aware arming");
                 auto t = freezeTake(d, "Take " + juce::String(d.takes.size() + 1));
                 if (!t.recipe->layout.id.isEmpty())
                 {
@@ -158,6 +230,7 @@ void DesignSession::stopTake(bool cancel)
         return;
     if (cancel || takeState == TakeState::arming)
     {
+        takeCapturingPlugins = false;
         services.reserveTake(false);
         stamp(Operation::take);
         ++*previewSerial;

@@ -29,10 +29,10 @@ void DesignerView::refreshTakes()
     takeContext.setTooltip(takeContext.getText());
     takeContext.setEnabled(!session.takeBusy());
     recordTake.setTooltip(hasHostedInserts(session.document.activeMix())
-                              ? "Hosted insert capture is not yet qualified; render a durable pass instead"
+                              ? "Record Perform controls through a frozen starting plug-in state. Native "
+                                "knob automation is not recorded."
                               : "Record a performance take");
-    recordTake.setEnabled(!hasHostedInserts(session.document.activeMix()) && !session.takeBusy() &&
-                          session.document.activeTake.isEmpty() &&
+    recordTake.setEnabled(!session.takeBusy() && session.document.activeTake.isEmpty() &&
                           !session.document.activeMix().layers.empty() && !session.rendering &&
                           !session.working && !session.transitionPending());
     stopTake.setEnabled(session.takeBusy());
@@ -87,8 +87,10 @@ void DesignerView::refreshTakes()
     takeStatus.setTooltip(t && t->processing == "stock-layout-takes-v1"
                               ? "Original spatial engine, frozen. Take options can create a corrected "
                                 "spatial copy; the original and its outputs remain unchanged."
-                          : t && !t->complete
-                              ? t->reason
+                          : t && !t->complete ? t->reason
+                          : t && t->pluginAware
+                              ? "Frozen plug-in state. Independent processors rebuild frame-zero history; "
+                                "native knob automation is not recorded."
                               : "Take capture starts at frame zero; replay and render rebuild "
                                 "complete history. 120 seconds /8192 applied events maximum.");
     updating = previous;

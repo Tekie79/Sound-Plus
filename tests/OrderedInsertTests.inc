@@ -362,8 +362,14 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
     auto recalledTake = takeFromJson(takeToJson(take));
     require(recalledTake.orderedRecipe && recalledTake.recipe->layers[0].inserts.bypass,
             "Stock bypass take preserves its explicit versioned frozen chain");
-    fails([&] { freezeTake(d, "Hosted take remains restricted"); },
-          "Plugin-aware take restriction remains explicit");
+    auto hostedTake = freezeTake(d, "Hosted ordered take");
+    require(hostedTake.pluginAware && hostedTake.processing == "plugin-ordered-takes-v1" &&
+                (int)takeToJson(hostedTake)["recipe"]["recipeVersion"] == 3,
+            "Hosted takes require their explicit version-three recipe contract");
+    auto forged = hostedTake;
+    forged.pluginAware = false;
+    forged.processing = "stock-takes-v1";
+    fails([&] { validateTake(forged); }, "Hosted recipes cannot masquerade as historical stock takes");
     {
         auto work = root.getChildFile("owner-commands");
         work.createDirectory();

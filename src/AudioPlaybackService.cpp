@@ -117,9 +117,12 @@ void AudioPlaybackService::prepare()
                 if (liveRoot.isNotEmpty() && document.activeTake.isEmpty())
                 {
                     document.liveInserts = true;
-                    document.activeMix().inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
-                    for (auto &layer : document.activeMix().layers)
-                        layer.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
+                    if (result.mode != "record")
+                    {
+                        document.activeMix().inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
+                        for (auto &layer : document.activeMix().layers)
+                            layer.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
+                    }
                 }
                 result.context = designPlaybackContext(document);
                 result.immutableReplay = selectedTake(document) != nullptr;
@@ -155,6 +158,8 @@ void AudioPlaybackService::prepare()
                     document.outputSelections.clear();
                     document.sampleRate = t.sampleRate;
                     document.renderSettings.tailSeconds = 0;
+                    document.liveInserts =
+                        false; // Independent processors from the frozen state, never live endpoints.
                     document.takeProcessing = true;
                     document.original.duration = std::min<int64_t>(mixDuration(t.recipe, t.sampleRate),
                                                                    (int64_t)(t.sampleRate * maxTakeSeconds));
@@ -219,7 +224,10 @@ void AudioPlaybackService::prepare()
         catch (const std::exception &error)
         {
             if (result.capture)
+            {
+                result.capture->deviceFailure(juce::String("Recording preparation failed: ") + error.what());
                 result.capture->finish(0, false);
+            }
             result.stream.reset();
             result.error = error.what();
         }
@@ -409,8 +417,11 @@ void AudioPlaybackService::produce()
         catch (const std::exception &failure)
         {
             captureRequestActive = false;
-            if (core.capture())
+            if (auto capture = core.capture())
+            {
+                capture->deviceFailure(juce::String("Recording processor failed: ") + failure.what());
                 core.finishTake(false);
+            }
             core.stop();
             id.clear();
             error = failure.what();
@@ -522,6 +533,19 @@ void AudioPlaybackService::checkpoints()
                 auto n = c->count.load();
                 auto p = c->phase.load();
                 auto t = c->snapshot();
+                if (t.complete && t.pluginAware)
+                {
+                    try
+                    {
+                        verifyTakeSources(t);
+                        verifyTakePlugins(t);
+                    }
+                    catch (const std::exception &e)
+                    {
+                        c->deviceFailure(juce::String("Frozen recipe verification failed: ") + e.what());
+                        t = c->snapshot(); // Persist an explicit recoverable Incomplete checkpoint.
+                    }
+                }
                 DesignDocument d;
                 d.id = t.session;
                 d.name = "Recoverable take checkpoint";
