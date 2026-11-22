@@ -17,6 +17,7 @@ class DesignGraph
     void updateParameters(const juce::var &);
     int64_t injectMidi(const juce::String &, MidiPacket);
     void midiPanic(const juce::String &);
+    juce::var nativeMeters() const;
     int layers() const;
     int64_t position() const;
     double rate() const;
@@ -46,6 +47,7 @@ class DesignReader
     int64_t endFrame() const;
     int64_t injectMidi(const juce::String &, MidiPacket);
     void midiPanic(const juce::String &);
+    juce::var nativeMeters() const;
     int layers() const;
 
   private:

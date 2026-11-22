@@ -1,4 +1,5 @@
 #include "NativeEffects.h"
+#include <NativePresetsData.h>
 #include <cmath>
 #include <set>
 namespace sp
@@ -268,6 +269,35 @@ juce::String effectName(const StockEffect &e)
 {
     return e.nativeVersion ? nativeDefinition(e).name
                            : e.type.substring(0, 1).toUpperCase() + e.type.substring(1);
+}
+juce::var nativeFactoryPresets(const juce::String &type)
+{
+    auto data = juce::JSON::parse(juce::String::fromUTF8(NativePresetData::nativeeffectspresets_json,
+                                                         NativePresetData::nativeeffectspresets_jsonSize));
+    if (data["format"].toString() != "SoundPlus native factory presets" || (int)data["version"] != 1)
+        throw std::runtime_error("Unsupported factory preset metadata");
+    juce::Array<juce::var> out;
+    if (auto *rows = data["presets"].getArray())
+        for (auto &row : *rows)
+            if (row["type"].toString() == type)
+            {
+                auto effect = makeStockEffect(type);
+                auto &definition = nativeDefinition(effect);
+                auto *values = row["values"].getDynamicObject();
+                if (!values)
+                    throw std::runtime_error("Missing factory preset values");
+                for (auto &value : values->getProperties())
+                {
+                    auto id = value.name.toString();
+                    auto at = std::find_if(definition.parameters.begin(), definition.parameters.end(),
+                                           [&](auto &p) { return p.id == id; });
+                    if (at == definition.parameters.end())
+                        throw std::runtime_error("Unknown factory preset target");
+                    effect.nativeValues[(size_t)(at - definition.parameters.begin())] = (double)value.value;
+                }
+                out.add(nativePresetJson(effect, row["name"].toString()));
+            }
+    return out;
 }
 juce::var nativePresetJson(const StockEffect &e, const juce::String &name)
 {

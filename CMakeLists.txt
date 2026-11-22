@@ -15,6 +15,7 @@ set(ORT_DIR "${CMAKE_SOURCE_DIR}/vendor/onnxruntime-1.22.1")
 if(NOT EXISTS "${ORT_DIR}/build/native/include/onnxruntime_cxx_api.h")
   message(FATAL_ERROR "Run python3 scripts/fetch_runtime.py to install the pinned native AI runtime")
 endif()
+juce_add_binary_data(NativePresets HEADER_NAME NativePresetsData.h NAMESPACE NativePresetData SOURCES resources/native-effects-presets.json)
 juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resources/clap-model.json)
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
@@ -31,7 +32,7 @@ target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
   JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="0.1.0")
 target_link_libraries(soundplus_core PUBLIC SQLite::SQLite3
-  juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons
+  juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons NativePresets
   "-framework CoreServices" "-framework Foundation" "-framework AVFoundation")
 target_compile_options(soundplus_core PRIVATE -Wall -Wextra -Wpedantic)
 juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"

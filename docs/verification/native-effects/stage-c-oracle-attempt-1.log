@@ -1,0 +1,15 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 2: native_effects
+1/1 Test #2: native_effects ...................***Failed    0.40 sec
+EQ independent impulse/response/phase maximum error 9.35295e-08
+FAIL after 0 checks: Transient shaper independent step/envelope oracle
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.41 sec
+
+The following tests FAILED:
+	  2 - native_effects (Failed)
+Errors while running CTest

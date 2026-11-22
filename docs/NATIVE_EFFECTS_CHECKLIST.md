@@ -8,8 +8,8 @@ Start/reviewed HEAD:54ed393caa5fdaa47a399333f20e3833b3181606. Clean tree and no 
 
 ✓ B Four-band parametric EQ plus HP/LP, filter modes and independent numerical/PCM tests;4/4 targeted suites passed in6.37s, independent scalar/response oracle max error9.35295e-8; verified commit/push.
 
-◉ C Compressor, expander/gate, lookahead peak limiter, transient shaper, saturation; editable presets, all insert owners and automation; independent DSP/PDC/partition tests; verified commit/push.
+✓ C Compressor, expander/gate, lookahead peak limiter, transient shaper, saturation; editable presets, all insert owners and automation; independent DSP/PDC/partition tests;9/9 targeted suites55.95s and native continuous-edit pass (48k/512, zero underruns); verified commit/push.
 
-○ D Native normal/minimum Edit/Browser/Inspector, presets/keyboard/automation/Undo/Save/Quit/Reopen; full unchanged Release Mac vendor/AUv2/device gate, performance and preservation audit; report/roadmap and final commit/push.
+◉ D Native normal/minimum Edit/Browser/Inspector, presets/keyboard/automation/Undo/Save/Quit/Reopen; full unchanged Release Mac vendor/AUv2/device gate, performance and preservation audit; report/roadmap and final commit/push.
 
 Human listening, physical surround/controller loopback and Resolve receiver persistence remain separate qualifications; future delay/reverb/creative algorithms/pads/providers are excluded.

@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: native_effects
+1/2 Test  #2: native_effects ...................   Passed    0.79 sec
+    Start 38: ordered_inserts
+2/2 Test #38: ordered_inserts ..................   Passed   34.33 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =  35.13 sec

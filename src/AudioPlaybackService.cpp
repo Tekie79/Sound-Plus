@@ -498,6 +498,8 @@ void AudioPlaybackService::produce()
         object->setProperty("monitorSolo", core.monitorSolo.load());
         object->setProperty("design", core.designPlaying());
         object->setProperty("designLayers", core.designLayers());
+        if (auto *stream = core.producerStream())
+            object->setProperty("nativeMeters", stream->nativeMeters());
         object->setProperty("producerMaxMs", core.producerMaxMs());
         object->setProperty("error", error);
         object->setProperty("playbackContext", context);

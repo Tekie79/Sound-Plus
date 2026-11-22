@@ -57,6 +57,10 @@ class PcmStream
     {
         return designReader ? designReader->producedFrame() : outputFrame;
     }
+    juce::var nativeMeters() const
+    {
+        return designReader ? designReader->nativeMeters() : juce::var();
+    }
     void discardTo(int64_t sourceFrame);
     std::atomic<uint64_t> heardEdit{0};
     std::atomic<double> editLatencyMs{0};

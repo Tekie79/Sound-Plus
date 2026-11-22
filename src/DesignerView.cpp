@@ -1348,6 +1348,9 @@ void DesignerView::timerCallback()
     if (session.readyOutput() != previousOutput)
         refresh();
     auto state = audio.status();
+    for (auto *rack : {trackRack.get(), sourceRack.get(), masterRack.get()})
+        if (rack)
+            rack->updateMeters(state["nativeMeters"]);
     refreshTakes();
     if (session.document.activeTake.isNotEmpty())
         perform->refresh();
@@ -2385,6 +2388,51 @@ void DesignerView::benchmarkEndGesture()
     if (benchmarkStockPhase >= 0)
         (benchmarkStockPhase >= 3 ? masterRack : trackRack)->values[0].onDragEnd();
     benchmarkStockPhase = -1;
+    if (benchmarkNativeSlider)
+        benchmarkNativeSlider->onDragEnd();
+    benchmarkNativeSlider = nullptr;
+    benchmarkNativePhase = -1;
+}
+void DesignerView::benchmarkNativeControls(int phase, double value)
+{
+    static const juce::StringArray types{"parametric-eq", "compressor", "expander",
+                                         "peak-limiter",  "transient",  "saturation"};
+    static const juce::StringArray parameters{"b1-gain", "threshold",     "threshold",
+                                              "ceiling", "attack-amount", "drive"};
+    if (!juce::isPositiveAndBelow(phase, types.size()))
+        return;
+    if (phase != benchmarkNativePhase)
+    {
+        benchmarkEndGesture();
+        session.selectLayer(session.document.activeMix().layers.front().id);
+        auto *fx = trackRack->rack(trackRack->owner);
+        if (!fx)
+            return;
+        for (size_t i = 0; i < fx->size(); ++i)
+            if ((*fx)[i].type == types[phase])
+                trackRack->slots.setSelectedId((int)i + 1, juce::sendNotificationSync);
+        trackRack->setParametersExpanded(true);
+        benchmarkNativeSlider = trackRack->nativePanel.measurementSlider(parameters[phase]);
+        if (!benchmarkNativeSlider)
+            return;
+        benchmarkNativePhase = phase;
+        benchmarkNativeSlider->onDragStart();
+    }
+    if (benchmarkNativeSlider)
+    {
+        auto lo = benchmarkNativeSlider->getMinimum(), hi = benchmarkNativeSlider->getMaximum();
+        if (phase == 1 || phase == 2)
+        {
+            lo = -40;
+            hi = -8;
+        }
+        if (phase == 3)
+        {
+            lo = -12;
+            hi = -1;
+        }
+        benchmarkNativeSlider->setValue(lo + (hi - lo) * value, juce::sendNotificationSync);
+    }
 }
 void DesignerView::benchmarkStockControls(int phase, double value)
 {

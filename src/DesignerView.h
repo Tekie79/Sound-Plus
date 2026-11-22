@@ -49,6 +49,9 @@ class DesignerView final : public juce::Component,
     void preparePerformanceBenchmark();
     bool benchmarkWorkspaceSwitch();
     void benchmarkStockControls(int phase, double value);
+    void benchmarkNativeControls(int phase, double value);
+    int benchmarkNativePhase = -1;
+    juce::Slider *benchmarkNativeSlider = nullptr;
     juce::var benchmarkSelectionCommands();
     void commitNames();
     void setBrowserVisible(bool visible)

@@ -1,0 +1,21 @@
+{
+  "qualification": "Native real-device producer/control test, not physical DAC/listening latency",
+  "success": true,
+  "device": "MacBook Pro Speakers",
+  "rate": 48000.0,
+  "buffer": 512,
+  "gestureInputs": 453,
+  "heardEditSequence": 365,
+  "frames": 625152,
+  "underruns": 0,
+  "sameGraphAndHelper": true,
+  "sampledLatestEditLatencyMs": {
+    "p50": 55.57641661167145,
+    "p95": 69.42729163169861,
+    "max": 81.402583360672
+  },
+  "audioHelperPeakResidentBytes": 52494336,
+  "audioHelperCpuSeconds": 0.993456,
+  "producerMaxMs": 1.429750025272369,
+  "source": "stage-c-native-continuous-edit.json"
+}

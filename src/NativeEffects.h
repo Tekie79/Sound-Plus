@@ -35,6 +35,7 @@ bool effectParameterLocked(const StockEffect &, int);
 void toggleEffectParameterLock(StockEffect &, int);
 juce::String effectName(const StockEffect &);
 // Presets contain settings/locks, never owner IDs, media or generated audio.
+juce::var nativeFactoryPresets(const juce::String &type);
 juce::var nativePresetJson(const StockEffect &, const juce::String &name);
 void applyNativePreset(StockEffect &, const juce::var &);
 } // namespace sp

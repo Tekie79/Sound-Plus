@@ -91,6 +91,17 @@ class OrderedRack
         wet.reset(rate, .01);
         wet.setCurrentAndTargetValue(c.bypass ? 0.f : 1.f);
     }
+    void appendMeters(juce::Array<juce::var> &rows) const
+    {
+        for (auto &step : steps)
+            if (step.native)
+            {
+                auto row = juce::var(new juce::DynamicObject());
+                row.getDynamicObject()->setProperty("id", step.ref.id);
+                row.getDynamicObject()->setProperty("reductionDb", step.native->gainReductionDb());
+                rows.add(row);
+            }
+    }
     int latency() const
     {
         return delay;

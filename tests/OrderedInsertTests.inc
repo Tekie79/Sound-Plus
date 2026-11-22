@@ -137,6 +137,26 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
                 "Track chains included in immutable plugin take4");
         auto back = takeFromJson(takeToJson(frozen));
         require(back.recipeHash == frozen.recipeHash, "Multitrack plugin take hash roundtrip");
+        auto beforeNative = render(257);
+        std::array<InsertChain *, 5> nativeOwners{
+            &multitrack.original.layers[0].inserts, &findTrack(multitrack.original, a)->inserts,
+            &findTrack(multitrack.original, b)->inserts, &findTrack(multitrack.original, g)->inserts,
+            &multitrack.original.inserts};
+        for (size_t i = 0; i < nativeOwners.size(); ++i)
+        {
+            auto limiter = makeStockEffect("peak-limiter");
+            limiter.nativeValues[0] = 0;
+            limiter.nativeValues[2] = (double)(i + 1);
+            nativeOwners[i]->stock.push_back(limiter);
+            normaliseInsertChain(*nativeOwners[i]);
+        }
+        require(maxDiff(beforeNative, render(61)) < 2e-6,
+                "Native Clip/unequal Track/Group/Master lookahead aligns with hosted7/19/11/13 and automated "
+                "filter");
+        auto nativeTake = freezeTake(multitrack, "Native plus hosted");
+        require((int)takeToJson(nativeTake)["recipe"]["recipeVersion"] == 6 &&
+                    takeFromJson(takeToJson(nativeTake)).recipeHash == nativeTake.recipeHash,
+                "Mixed native/hosted frozen recipe6 retains canonical state");
     }
     {
         auto bus = channelLayout("mono-v1");

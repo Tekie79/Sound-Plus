@@ -1,0 +1,14 @@
+{
+  "format": "SoundPlus native factory presets", "version": 1,
+  "presets": [
+    {"type":"parametric-eq","name":"Impact","values":{"hp-enabled":1,"hp-frequency":35,"b1-frequency":100,"b1-gain":3,"b2-frequency":500,"b2-gain":-2}},
+    {"type":"parametric-eq","name":"Atmosphere","values":{"hp-enabled":1,"hp-frequency":70,"b4-type":2,"b4-frequency":6000,"b4-gain":-3}},
+    {"type":"compressor","name":"Impact","values":{"threshold":-18,"ratio":4,"attack":20,"release":100,"knee":6}},
+    {"type":"compressor","name":"Machinery","values":{"threshold":-24,"ratio":3,"attack":8,"release":180,"knee":8}},
+    {"type":"expander","name":"Clean space","values":{"threshold":-45,"ratio":6,"hold":40,"release":150,"range":60}},
+    {"type":"peak-limiter","name":"Safe peaks","values":{"ceiling":-1,"lookahead":5,"release":120}},
+    {"type":"transient","name":"Impact","values":{"attack-amount":5,"sustain-amount":-3,"fast":1,"slow":30}},
+    {"type":"saturation","name":"Creature","values":{"drive":15,"mix":0.35,"output":-9}},
+    {"type":"saturation","name":"Machinery","values":{"drive":9,"mode":1,"mix":0.5,"output":-6}}
+  ]
+}

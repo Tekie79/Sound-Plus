@@ -254,6 +254,7 @@ void Benchmark::save(bool success, const juce::String &error)
 void Benchmark::timerCallback()
 {
     const auto now = monotonicMs();
+    if(plan["mode"].toString()=="native-effects"){nativeEffectsTick(now);return;}
     if(plan["mode"].toString()=="semantic-designer-reliability")
     {reliabilityTick(now);return;}
     int total = 0, done = 0;
@@ -1690,6 +1691,40 @@ void Benchmark::controlTick(int total, int done, double now)
             }
         }
         save(true);
+    }
+}
+void Benchmark::nativeEffectsTick(double now)
+{
+    if(now-startMs>60000){save(false,"Native effects benchmark timed out");return;}
+    if(!designer)return;
+    if(phase==0)
+    {
+        if(designer->session.working||designer->session.document.name!="Native Effects QA")return;
+        view.audio.gain(.04f);designer->session.play();phase=1;return;
+    }
+    auto state=view.audio.status();
+    if(state["error"].toString().isNotEmpty()){save(false,state["error"].toString());return;}
+    if(phase==1)
+    {
+        if(!(bool)state["playing"]||!(bool)state["design"])return;
+        controls.getDynamicObject()->setProperty("audioAtStart",state);audioDispatch=now;phase=2;return;
+    }
+    if(!(bool)state["playing"]){save(false,"Native editing interrupted playback");return;}
+    double elapsed=now-audioDispatch;
+    if(elapsed<12000&&now-lastDesignerInput>=25)
+    {
+        designer->benchmarkNativeControls(std::min(5,(int)(elapsed/2000)),.5+.45*std::sin(elapsed*.006));
+        lastDesignerInput=now;++index;
+        auto row=juce::var(new juce::DynamicObject());row.getDynamicObject()->setProperty("elapsedMs",elapsed);row.getDynamicObject()->setProperty("heardEdit",state["heardEdit"]);row.getDynamicObject()->setProperty("editLatencyMs",state["editLatencyMs"]);row.getDynamicObject()->setProperty("producerMaxMs",state["producerMaxMs"]);samples.add(row);
+        if(index%20==0)view.benchmarkSearch(index%40==0?"source":"texture");
+    }
+    if(elapsed>=12000&&!designerGestureEnded){designer->benchmarkEndGesture();designerGestureEnded=true;}
+    if(elapsed>=13000)
+    {
+        auto before=controls["audioAtStart"];
+        bool ok=(int64_t)state["frames"]>(int64_t)before["frames"]+240000 && state["graphEpoch"]==before["graphEpoch"] && state["helperPid"]==before["helperPid"] && (int64_t)state["underruns"]==(int64_t)before["underruns"] && (int64_t)state["heardEdit"]>(int64_t)before["heardEdit"]+100 && index>300;
+        controls.getDynamicObject()->setProperty("nativeGestureInputs",index);controls.getDynamicObject()->setProperty("audioAtEnd",state);controls.getDynamicObject()->setProperty("sameGraphAndHelperNoUnderruns",ok);
+        save(ok,ok?juce::String():"Native continuous-edit stability assertion failed");
     }
 }
 } // namespace sp

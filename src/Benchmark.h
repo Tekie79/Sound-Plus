@@ -36,6 +36,7 @@ class Benchmark final : private juce::Timer
     void controlTick(int total, int done, double now);
     void selectionAuditionTick(double now);
     void semanticTick(double now);
+    void nativeEffectsTick(double now);
     void referenceTick(double now);
     Asset exampleSource;
     AudioReference exampleLast;

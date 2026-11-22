@@ -534,6 +534,10 @@ class Voice
     {
         rack->automate(a, frame);
     }
+    void appendMeters(juce::Array<juce::var> &rows) const
+    {
+        rack->appendMeters(rows);
+    }
     int latency() const
     {
         return rack->latency();
@@ -953,7 +957,8 @@ struct DesignGraph::Impl
         // Reapply controls at the same internal graph position, including the
         // frozen pipeline's lookahead. Historical zero-latency stock recipes
         // retain their exact event interpretation.
-        if (auto *t = selectedTake(d); t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
+        if (auto *t = selectedTake(d);
+            t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
             for (auto &event : events)
                 event.frame += pipelineLatency;
     }
@@ -1037,6 +1042,16 @@ struct DesignGraph::Impl
         }
     }
 };
+juce::var DesignGraph::nativeMeters() const
+{
+    juce::Array<juce::var> rows;
+    impl->masterRack->appendMeters(rows);
+    for (auto &voice : impl->voices)
+        voice->appendMeters(rows);
+    for (auto &track : impl->tracks)
+        track->rack->appendMeters(rows);
+    return rows;
+}
 DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled)
     : DesignGraph(d, cancelled, nullptr)
 {
@@ -1184,6 +1199,10 @@ struct DesignReader::Impl : juce::AudioSource
         graph.render(*b.buffer, b.startSample, b.numSamples);
     }
 };
+juce::var DesignReader::nativeMeters() const
+{
+    return impl->graph.nativeMeters();
+}
 DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
                            double tail, const std::function<bool()> &cancelled, int64_t warmup)
     : DesignReader(d, outputRate, first, last, tail, cancelled, warmup, nullptr)
@@ -1458,7 +1477,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         p.getDynamicObject()->setProperty("instruments", instruments);
         result.sourceProvenance = p;
     }
-    if (hasNativeEffects(effectiveInput.activeMix())) result.processing = "native-effects-v1";
+    if (hasNativeEffects(effectiveInput.activeMix()))
+        result.processing = "native-effects-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

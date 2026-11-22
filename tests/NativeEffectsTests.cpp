@@ -5,6 +5,9 @@
 #include <iostream>
 #include <juce_dsp/juce_dsp.h>
 #include <complex>
+#include "StockRackView.h"
+#include "AudioStream.h"
+#include <deque>
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace
 {
@@ -28,6 +31,8 @@ template <class F> void rejects(F f, const char *why)
 }
 } // namespace
 #include "NativeEqTests.inc"
+#include "NativeDynamicsTests.inc"
+#include "NativeIntegrationTests.inc"
 void runNativeEffectsTests(const juce::File &base)
 {
     using namespace sp;
@@ -43,6 +48,14 @@ void runNativeEffectsTests(const juce::File &base)
         changed.nativeValues[0] = def.parameters[0].minimum;
         nativeEffectFromJson(changed, json);
         check(changed.nativeValues == e.nativeValues, "Canonical keyed round trip");
+        auto factory = nativeFactoryPresets(def.type);
+        check(factory.size() > 0, "Native factory presets are editable metadata");
+        for (int n = 0; n < factory.size(); ++n)
+        {
+            auto selected = e;
+            applyNativePreset(selected, factory[n]);
+            validateNativeEffect(selected);
+        }
         auto preset = nativePresetJson(e, "User editable");
         auto id = changed.id;
         applyNativePreset(changed, preset);
@@ -100,5 +113,50 @@ void runNativeEffectsTests(const juce::File &base)
     }
     if (nativeDSPAvailable("parametric-eq"))
         eqTests();
+    if (nativeDSPAvailable("compressor"))
+    {
+        dynamicsTests(base);
+        nativeIntegration(base);
+        sp::NativeEffectTestAccess::view(base);
+    }
     std::cout << "Native effect foundation checks passed\n";
+}
+void prepareNativeEffectsUI(const juce::File &dir)
+{
+    using namespace sp;
+    dir.createDirectory();
+    auto file = dir.getChildFile("Native source.wav");
+    if (file.existsAsFile())
+        throw std::runtime_error("Use a fresh native QA fixture directory");
+    juce::WavAudioFormat wav;
+    auto stream = file.createOutputStream();
+    std::unique_ptr<juce::AudioFormatWriter> writer(
+        wav.createWriterFor(stream.release(), 48000, 1, 24, {}, 0));
+    juce::AudioBuffer<float> b(1, 48000 * 40);
+    for (int n = 0; n < b.getNumSamples(); ++n)
+        b.setSample(0, n, .4f * std::sin(n * .07f) * (n % 24000 < 1000 ? 1.f : .3f));
+    check(writer && writer->writeFromAudioSampleBuffer(b, 0, b.getNumSamples()),
+          "Native UI source generated");
+    writer.reset();
+    DesignDocument d;
+    d.name = "Native Effects QA";
+    d.original.layout = channelLayout("stereo-v1");
+    d.original.masterDb = 0;
+    d.original.layers = {makeDesignLayer(inspectDesignSource(file), 0, -1, true)};
+    initialiseRouting(d.original.layers[0], d.original.layout);
+    enableTrackSchema(d.original);
+    auto &t = d.original.tracks[0];
+    t.name = "Impact texture";
+    for (auto &def : nativeEffectDefinitions())
+        t.inserts.stock.push_back(makeStockEffect(def.type));
+    normaliseInsertChain(t.inserts);
+    d.selectedLayer = d.original.layers[0].id;
+    d.selectedTrack = t.id;
+    d.outputFolder = dir.getChildFile("Renders").getFullPathName();
+    saveDesignAtomic(dir.getChildFile("Native Effects QA.soundplus"), d);
+    auto plan = juce::var(new juce::DynamicObject());
+    plan.getDynamicObject()->setProperty("mode", "native-effects");
+    plan.getDynamicObject()->setProperty("designFile",
+                                         dir.getChildFile("Native Effects QA.soundplus").getFullPathName());
+    dir.getChildFile("plan.json").replaceWithText(juce::JSON::toString(plan, true));
 }

@@ -7,6 +7,7 @@ namespace sp
 // Inspector owns scrolling; no nested scrolling or per-effect automation lanes.
 class NativeParameterPanel final : public juce::Component
 {
+    friend struct NativeEffectTestAccess;
     struct Row
     {
         int index = 0;
@@ -23,13 +24,59 @@ class NativeParameterPanel final : public juce::Component
         std::vector<std::unique_ptr<Row>> rows;
     };
     std::vector<std::unique_ptr<Group>> groups;
-    juce::String key;
+    juce::String key, meterId;
+    struct ReductionMeter : juce::Component
+    {
+        double value = 0;
+        std::unique_ptr<juce::AccessibilityHandler> createAccessibilityHandler() override
+        {
+            return std::make_unique<juce::AccessibilityHandler>(*this, juce::AccessibilityRole::progressBar);
+        }
+        void paint(juce::Graphics &g) override
+        {
+            auto r = getLocalBounds().toFloat().reduced(2, 5);
+            g.setColour(ui::line);
+            g.fillRoundedRectangle(r, 2);
+            g.setColour(ui::accent.withAlpha(.65f));
+            g.fillRoundedRectangle(r.withWidth(r.getWidth() * (float)std::clamp(value / 48., 0., 1.)), 2);
+        }
+    } meter;
+    bool hasMeter = false;
     bool refreshing = false, dragging = false;
 
   public:
+    juce::Slider *measurementSlider(const juce::String &id)
+    {
+        auto type = key.fromFirstOccurrenceOf(":", false, false).upToLastOccurrenceOf(":", false, false);
+        auto *definition = nativeDefinition(type);
+        if (!definition)
+            return nullptr;
+        for (auto &g : groups)
+            for (auto &r : g->rows)
+                if (definition->parameters[(size_t)r->index].id == id)
+                {
+                    g->expanded = true;
+                    resized();
+                    if (onHeightChange)
+                        onHeightChange();
+                    return &r->slider;
+                }
+        return nullptr;
+    }
     std::function<void(int, double)> onValue;
     std::function<void(int)> onLock;
     std::function<void()> onBegin, onEnd, onHeightChange;
+    void updateMeters(const juce::var &rows)
+    {
+        double value = 0;
+        if (auto *array = rows.getArray())
+            for (auto &row : *array)
+                if (row["id"].toString() == meterId)
+                    value = (double)row["reductionDb"];
+        meter.value = value;
+        meter.setTitle("Gain reduction " + juce::String(value, 1) + " dB");
+        meter.repaint();
+    }
     void bind(const StockEffect *e, bool editable)
     {
         if (!e || !e->nativeVersion)
@@ -39,6 +86,12 @@ class NativeParameterPanel final : public juce::Component
         }
         setVisible(true);
         auto &d = nativeDefinition(*e);
+        meterId = e->id;
+        hasMeter = e->type == "compressor" || e->type == "expander" || e->type == "peak-limiter";
+        if (meter.getParentComponent() != this)
+            addAndMakeVisible(meter);
+        meter.setVisible(hasMeter);
+        meter.setDescription("Gain reduction in prepared audio, ahead of the device cursor");
         auto next = e->id + ":" + d.type + ":" + juce::String(d.version);
         if (key != next)
         {
@@ -148,7 +201,7 @@ class NativeParameterPanel final : public juce::Component
     }
     int preferredHeight() const
     {
-        int h = 0;
+        int h = hasMeter ? 20 : 0;
         for (auto &g : groups)
             h += 30 + (g->expanded ? (int)g->rows.size() * 46 : 0);
         return h;
@@ -156,6 +209,8 @@ class NativeParameterPanel final : public juce::Component
     void resized() override
     {
         auto area = getLocalBounds();
+        if (hasMeter)
+            meter.setBounds(area.removeFromTop(20));
         for (auto &g : groups)
         {
             g->header.setBounds(area.removeFromTop(28));

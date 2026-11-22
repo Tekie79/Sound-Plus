@@ -13,6 +13,9 @@ namespace sp
 // retain owner/slot IDs; a popup never follows a later track selection.
 class StockRackView final : public juce::Component
 {
+    friend struct NativeEffectTestAccess;
+    friend class DesignerView;
+
   public:
     struct Owner
     {
@@ -245,6 +248,10 @@ class StockRackView final : public juce::Component
     Owner owner;
     juce::ComboBox slots;
     std::array<juce::Slider, 4> values;
+    void updateMeters(const juce::var &rows)
+    {
+        nativePanel.updateMeters(rows);
+    }
     void bind(const juce::String &layer)
     {
         Owner next{session.document.id, session.document.activeVariation, isMaster ? juce::String() : layer,
@@ -400,7 +407,7 @@ class StockRackView final : public juce::Component
                     for (auto &e : chain->stock)
                         if (e.id == ref.id)
                         {
-                            item.name = e.type.substring(0, 1).toUpperCase() + e.type.substring(1);
+                            item.name = effectName(e);
                             item.bypass = e.bypass;
                         }
                 if (ref.kind == InsertKind::hosted)
@@ -722,6 +729,11 @@ class StockRackView final : public juce::Component
             menu.addSeparator();
             menu.addItem(8, "Save preset…");
             menu.addItem(9, "Load preset…");
+            auto factory = nativeFactoryPresets(at->type);
+            juce::PopupMenu presets;
+            for (int i = 0; i < factory.size(); ++i)
+                presets.addItem(20 + i, factory[i]["name"].toString());
+            menu.addSubMenu("Presets", presets);
         }
         menu.addSeparator();
         menu.addItem(7, "Remove effect", remove.isEnabled());
@@ -735,6 +747,17 @@ class StockRackView final : public juce::Component
                                    safe->owner.generation != target.generation || safe->selectedSlot != id ||
                                    safe->externalSelected)
                                    return;
+                               if (choice >= 20)
+                               {
+                                   safe->editSlot("Apply effect preset",
+                                                  [&](auto &fx, size_t i)
+                                                  {
+                                                      auto presets = nativeFactoryPresets(fx[i].type);
+                                                      if (choice - 20 < presets.size())
+                                                          applyNativePreset(fx[i], presets[choice - 20]);
+                                                  });
+                                   return;
+                               }
                                switch (choice)
                                {
                                case 8:
