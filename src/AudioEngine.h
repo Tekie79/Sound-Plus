@@ -26,7 +26,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     void sendStatus();
     InputTimelineClock inputClock;
     MidiInputService midiInput{inputClock};
-    AudioPlaybackService playback;
+    AudioPlaybackService playback{&midiInput};
     InputRecordingService inputRecorder{inputClock, &playback.core.underruns};
     MacAudioInput inputDevice{inputRecorder};
     juce::AudioDeviceManager devices;

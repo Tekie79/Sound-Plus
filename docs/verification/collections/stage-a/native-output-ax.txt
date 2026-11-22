@@ -1,0 +1,52 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Designer
+	2 button Choose reference file, Help: Use a local audio file as a temporary search reference. You can also drop one file here.
+	3 button Add existing sound folders, Help: Add Folder
+	4 text (settable) 1 results  ·  1 indexed  ·  1 ready
+	5 button Rescan, Help: Reconcile all sources. Unchanged audio headers are reused.
+	6 text entry area (settable) Search library, Secondary Actions: Delete
+	7 button (settable) Pause Indexing, Value: Off
+	8 text (settable) Filename search
+	9 outline
+		10 container
+			11 container RECORDING / LOCATION
+			12 container DURATION
+			13 container CHANNELS
+			14 container RATE
+			15 container STATUS
+			16 container MATCH
+		17 row Sampled tone.wav, 1.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/a0ac07cb5b5543cf9f5cafd832988e5b/native-fixtures/Sampled tone.wav
+			18 row Sampled tone.wav, 1.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/a0ac07cb5b5543cf9f5cafd832988e5b/native-fixtures/Sampled tone.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/a0ac07cb5b5543cf9f5cafd832988e5b/native-fixtures/Sampled tone.wav
+	19 text (settable) Value: Local AI disabled for this session, Help: 
+Model: clap-htsat-unfused-q8-c28f2883575e
+Preprocessing: soundplus-clap48k-slaney-repeatpad-sinc32-v1
+Paired CLAP · 512 dimensions · cosine ranking · native CPU inference
+
+	20 outline
+		21 row All recordings
+		22 row /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/a0ac07cb5b5543cf9f5cafd832988e5b/native-fixtures Online, 1 recordings
+	23 text (settable) Choose a recording to listen
+	24 pop up button (settable) Other matching moments
+	25 button Per-channel source waveforms
+	26 text (settable)
+	27 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	28 button Previous recording
+	29 button Next recording
+	30 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	31 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	32 toggle button (settable, boolean) Add 250 milliseconds of audition context, Value: off, Help: Adds 250 ms before and after the range, clamped to the recording. Stored match boundaries stay unchanged.
+	33 text (settable) Listen
+	34 slider (settable) Audition volume, Value: 70%, Secondary Actions: Delete
+	35 pop up button (settable) Audio output device, Value: MacBook Pro Speakers
+	36 pop up button (settable) Audition channels, Value: Analysis Mix (all channels), Help: Analysis Mix reproduces the encoder's all-channel mono average; opposite polarity can cancel. Select a pair present in the recording to inspect original channels. Changing this switches the current audition.
+	37 button Reconnect Audio
+	38 text (settable)
+	39 close button
+	40 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	41 minimize button
+	42 text SoundPlus
+43 menu bar
+	44 SoundPlus
+
+The focused UI element is 1 button Designer

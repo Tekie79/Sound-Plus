@@ -335,6 +335,7 @@ void AuditionCore::service(int ahead)
 }
 void AuditionCore::render(float *const *out, int channels, int frames, uint64_t outputHostNs) noexcept
 {
+    callbackFrames.store(frames, std::memory_order_relaxed);
     for (int c = 0; c < channels; ++c)
         if (out[c])
             std::fill_n(out[c], frames, 0.0f);

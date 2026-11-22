@@ -13,7 +13,7 @@ namespace sp
 class AudioPlaybackService
 {
   public:
-    AudioPlaybackService();
+    explicit AudioPlaybackService(MidiInputService * = nullptr);
     ~AudioPlaybackService();
     void request(juce::var command, double outputRate);
     void stop(uint64_t generation);
@@ -53,10 +53,12 @@ class AudioPlaybackService
         core.render(out, channels, frames, hostNs);
     }
     AuditionCore core;
-    MidiInputService *midiInput = nullptr;
+    MidiInputService *const midiInput;
 
   private:
     friend struct AudioEngineTestAccess;
+    friend struct MidiLatencyTestAccess;
+    std::atomic<int> midiAheadOverride{0}; // Controlled benchmark compares the old 1536-frame policy.
     CaptureDeviceLifecycle deviceLifecycle;
     std::atomic<uint64_t> deviceTicket{0};
     std::atomic<bool> reservationPending{false};

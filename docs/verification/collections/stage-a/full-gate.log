@@ -1,0 +1,82 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: midi_responsiveness
+ 1/38 Test  #1: midi_responsiveness ..............   Passed   46.30 sec
+      Start  2: midi_sequencing
+ 2/38 Test  #2: midi_sequencing ..................   Passed    0.11 sec
+      Start  3: audio_input_recording
+ 3/38 Test  #3: audio_input_recording ............   Passed    0.51 sec
+      Start  4: multitrack_automation
+ 4/38 Test  #4: multitrack_automation ............   Passed    0.80 sec
+      Start  5: pool_corrections
+ 5/38 Test  #5: pool_corrections .................   Passed    5.67 sec
+      Start  6: source_pools
+ 6/38 Test  #6: source_pools .....................   Passed    0.36 sec
+      Start  7: library_playback_search
+ 7/38 Test  #7: library_playback_search ..........   Passed    2.67 sec
+      Start  8: multichannel_corrections
+ 8/38 Test  #8: multichannel_corrections .........   Passed   12.97 sec
+      Start  9: multichannel
+ 9/38 Test  #9: multichannel .....................   Passed    7.83 sec
+      Start 10: take_integrity
+10/38 Test #10: take_integrity ...................   Passed    4.01 sec
+      Start 11: capture_device_lifecycle
+11/38 Test #11: capture_device_lifecycle .........   Passed    4.69 sec
+      Start 12: recorded_takes
+12/38 Test #12: recorded_takes ...................   Passed    9.12 sec
+      Start 13: library_stability
+13/38 Test #13: library_stability ................   Passed    1.36 sec
+      Start 14: waveform_scheduling
+14/38 Test #14: waveform_scheduling ..............   Passed    2.02 sec
+      Start 15: audio_health
+15/38 Test #15: audio_health .....................   Passed    8.15 sec
+      Start 16: waveform_previews
+16/38 Test #16: waveform_previews ................   Passed    0.46 sec
+      Start 17: performance_state
+17/38 Test #17: performance_state ................   Passed    3.22 sec
+      Start 18: designer_view_commands
+18/38 Test #18: designer_view_commands ...........   Passed    0.37 sec
+      Start 19: icon_system
+19/38 Test #19: icon_system ......................   Passed    0.13 sec
+      Start 20: library_and_audio
+20/38 Test #20: library_and_audio ................   Passed    9.60 sec
+      Start 21: library_selection_audition
+21/38 Test #21: library_selection_audition .......   Passed    3.75 sec
+      Start 22: library_performance_regression
+22/38 Test #22: library_performance_regression ...   Passed    7.04 sec
+      Start 23: library_semantic_integrity
+23/38 Test #23: library_semantic_integrity .......   Passed    0.40 sec
+      Start 24: library_similar_integrity
+24/38 Test #24: library_similar_integrity ........   Passed    1.26 sec
+      Start 25: designer_transport
+25/38 Test #25: designer_transport ...............   Passed   16.12 sec
+      Start 26: designer_canvas
+26/38 Test #26: designer_canvas ..................   Passed    0.20 sec
+      Start 27: designer_session
+27/38 Test #27: designer_session .................   Passed    0.11 sec
+      Start 28: designer_workflow
+28/38 Test #28: designer_workflow ................   Passed    9.71 sec
+      Start 29: designer_fades
+29/38 Test #29: designer_fades ...................   Passed    2.42 sec
+      Start 30: midi_instruments
+30/38 Test #30: midi_instruments .................   Passed   25.89 sec
+      Start 31: plugin_processing
+31/38 Test #31: plugin_processing ................   Passed   68.16 sec
+      Start 32: plugin_correctness
+32/38 Test #32: plugin_correctness ...............   Passed   10.49 sec
+      Start 33: plugin_gate_a
+33/38 Test #33: plugin_gate_a ....................   Passed   16.89 sec
+      Start 34: ordered_corrections
+34/38 Test #34: ordered_corrections ..............   Passed    0.13 sec
+      Start 35: plugin_takes
+35/38 Test #35: plugin_takes .....................   Passed   29.75 sec
+      Start 36: ordered_inserts
+36/38 Test #36: ordered_inserts ..................   Passed   29.86 sec
+      Start 37: native_view_scale
+37/38 Test #37: native_view_scale ................   Passed    0.01 sec
+      Start 38: plugin_live
+38/38 Test #38: plugin_live ......................   Passed   42.72 sec
+
+100% tests passed, 0 tests failed out of 38
+
+Total Test time (real) = 385.30 sec

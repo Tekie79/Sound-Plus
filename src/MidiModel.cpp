@@ -414,76 +414,100 @@ std::vector<MidiPacket> compileMidi(const DesignMix &m, const juce::String &trac
             e.getDynamicObject()->removeProperty("id");
         return juce::JSON::toString(v);
     };
-    for (size_t i = 1; i < clips.size(); ++i)
-        if (clips[i].track == track && !clips[i - 1].mute && !clips[i].mute && clips[i].origin.isNotEmpty() &&
-            clips[i].origin == clips[i - 1].origin &&
-            clips[i - 1].start + clips[i - 1].length == clips[i].start &&
-            clips[i - 1].offset + clips[i - 1].length == clips[i].offset && clips[i].loopLength == 0 &&
-            payload(clips[i]) == payload(clips[i - 1]))
+    // Unrelated tracks, overlapping independent clips and other origins must not interrupt a
+    // continuation chain. IDs in the unchanged payload include note tie identities; edited notes
+    // or controllers form a different chain. No persistence or historical recipe is rewritten.
+    std::map<std::pair<juce::String, juce::String>, std::vector<size_t>> continuations;
+    std::vector<size_t> originalOrder(clips.size());
+    for (size_t i = 0; i < clips.size(); ++i)
+    {
+        originalOrder[i] = i;
+        const auto &c = clips[i];
+        if (c.track == track && !c.mute && c.origin.isNotEmpty() && c.loopLength == 0)
+            continuations[{c.origin, payload(c)}].push_back(i);
+    }
+    for (const auto &[key, members] : continuations)
+        for (size_t n = 1; n < members.size(); ++n)
         {
-            clips[i].start = clips[i - 1].start;
-            clips[i].offset = clips[i - 1].offset;
-            clips[i].length += clips[i - 1].length;
-            clips[i - 1].mute = true;
-        }
-    for (auto &c : clips)
-        if (c.track == track && !c.mute)
-        {
-            int64_t period = c.loopLength ? c.loopLength : std::max<int64_t>(1, c.offset + c.length);
-            int64_t firstLoop = c.offset / period, lastLoop = (c.offset + c.length - 1) / period;
-            for (int64_t loop = firstLoop; loop <= lastLoop; ++loop)
+            const auto left = members[n - 1], right = members[n];
+            if (clips[left].start + clips[left].length == clips[right].start &&
+                clips[left].offset + clips[left].length == clips[right].offset)
             {
-                auto left = std::max(c.offset, loop * period),
-                     right = std::min(c.offset + c.length, (loop + 1) * period);
-                auto scope = midiIdentity((c.origin.isEmpty() ? c.id : c.origin) + ":" + juce::String(loop));
-                for (auto &n : c.notes)
-                {
-                    auto a = std::max(left, loop * period + n.tick),
-                         b = std::min(right, loop * period + n.tick + n.duration);
-                    if (b <= a)
-                        continue;
-                    auto voice = midiIdentity((n.tie.isEmpty() ? n.id : n.tie) + ":" + juce::String(loop));
-                    add(c.start + a - c.offset, 0x90 + n.channel - 1, n.pitch, n.velocity, voice, scope);
-                    add(c.start + b - c.offset, 0x80 + n.channel - 1, n.pitch, n.releaseVelocity, voice,
-                        scope);
-                }
-                std::map<std::pair<int, int>, const MidiControl *> chase;
-                for (auto &e : c.controls)
-                {
-                    auto at = loop * period + e.tick;
-                    if (at < left)
-                    {
-                        auto key = std::pair(e.channel, e.type == "bend"      ? 128
-                                                        : e.type == "program" ? 129
-                                                                              : e.number);
-                        auto it = chase.find(key);
-                        if (it == chase.end() || it->second->tick <= e.tick)
-                            chase[key] = &e;
-                    }
-                    if (at >= left && at < right)
-                    {
-                        int status = e.type == "bend" ? 0xe0 : e.type == "program" ? 0xc0 : 0xb0;
-                        int a = e.type == "bend" ? (e.value & 127) : e.type == "program" ? e.value : e.number;
-                        int b = e.type == "bend" ? (e.value >> 7) : e.value;
-                        add(c.start + at - c.offset, status + e.channel - 1, a, b, 0, scope);
-                    }
-                }
-                for (auto &[key, e] : chase)
-                {
-                    int status = e->type == "bend" ? 0xe0 : e->type == "program" ? 0xc0 : 0xb0;
-                    add(c.start + left - c.offset, status + e->channel - 1,
-                        e->type == "bend"      ? (e->value & 127)
-                        : e->type == "program" ? e->value
-                                               : e->number,
-                        e->type == "bend" ? (e->value >> 7) : e->value, 0, scope);
-                }
-                for (int ch = 0; ch < 16; ++ch)
-                {
-                    add(c.start + right - c.offset, 0xb0 + ch, 64, 0, 0, scope, 1);
-                    add(c.start + right - c.offset, 0xe0 + ch, 0, 64, 0, scope, 1);
-                }
+                clips[right].start = clips[left].start;
+                clips[right].offset = clips[left].offset;
+                clips[right].length += clips[left].length;
+                originalOrder[right] = originalOrder[left];
+                clips[left].mute = true;
             }
         }
+    // Restore the unsplit ordering for simultaneous independent events after joining.
+    std::vector<size_t> ordered;
+    for (size_t i = 0; i < clips.size(); ++i)
+        if (clips[i].track == track && !clips[i].mute)
+            ordered.push_back(i);
+    std::stable_sort(ordered.begin(), ordered.end(),
+                     [&](size_t a, size_t b)
+                     {
+                         return clips[a].start != clips[b].start ? clips[a].start < clips[b].start
+                                                                 : originalOrder[a] < originalOrder[b];
+                     });
+    for (auto index : ordered)
+    {
+        const auto &c = clips[index];
+        int64_t period = c.loopLength ? c.loopLength : std::max<int64_t>(1, c.offset + c.length);
+        int64_t firstLoop = c.offset / period, lastLoop = (c.offset + c.length - 1) / period;
+        for (int64_t loop = firstLoop; loop <= lastLoop; ++loop)
+        {
+            auto left = std::max(c.offset, loop * period),
+                 right = std::min(c.offset + c.length, (loop + 1) * period);
+            auto scope = midiIdentity((c.origin.isEmpty() ? c.id : c.origin) + ":" + juce::String(loop));
+            for (auto &n : c.notes)
+            {
+                auto a = std::max(left, loop * period + n.tick),
+                     b = std::min(right, loop * period + n.tick + n.duration);
+                if (b <= a)
+                    continue;
+                auto voice = midiIdentity((n.tie.isEmpty() ? n.id : n.tie) + ":" + juce::String(loop));
+                add(c.start + a - c.offset, 0x90 + n.channel - 1, n.pitch, n.velocity, voice, scope);
+                add(c.start + b - c.offset, 0x80 + n.channel - 1, n.pitch, n.releaseVelocity, voice, scope);
+            }
+            std::map<std::pair<int, int>, const MidiControl *> chase;
+            for (auto &e : c.controls)
+            {
+                auto at = loop * period + e.tick;
+                if (at < left)
+                {
+                    auto key = std::pair(e.channel, e.type == "bend"      ? 128
+                                                    : e.type == "program" ? 129
+                                                                          : e.number);
+                    auto it = chase.find(key);
+                    if (it == chase.end() || it->second->tick <= e.tick)
+                        chase[key] = &e;
+                }
+                if (at >= left && at < right)
+                {
+                    int status = e.type == "bend" ? 0xe0 : e.type == "program" ? 0xc0 : 0xb0;
+                    int a = e.type == "bend" ? (e.value & 127) : e.type == "program" ? e.value : e.number;
+                    int b = e.type == "bend" ? (e.value >> 7) : e.value;
+                    add(c.start + at - c.offset, status + e.channel - 1, a, b, 0, scope);
+                }
+            }
+            for (auto &[key, e] : chase)
+            {
+                int status = e->type == "bend" ? 0xe0 : e->type == "program" ? 0xc0 : 0xb0;
+                add(c.start + left - c.offset, status + e->channel - 1,
+                    e->type == "bend"      ? (e->value & 127)
+                    : e->type == "program" ? e->value
+                                           : e->number,
+                    e->type == "bend" ? (e->value >> 7) : e->value, 0, scope);
+            }
+            for (int ch = 0; ch < 16; ++ch)
+            {
+                add(c.start + right - c.offset, 0xb0 + ch, 64, 0, 0, scope, 1);
+                add(c.start + right - c.offset, 0xe0 + ch, 0, 64, 0, scope, 1);
+            }
+        }
+    }
     auto order = [](const MidiPacket &p) {
         return p.flags ? 0 : ((p.status & 0xf0) == 0x80 ? 1 : (p.status & 0xf0) == 0x90 ? 3 : 2);
     };

@@ -33,3 +33,11 @@ VersionSPR4 bounded exchange carries up to 16,416 short events with offsets in t
 ## Takes and output
 
 New MIDI frozen recipes use version5 / `midi-instrument-takes-v1`, capturing immutable score, tempo, Instrument identity/state, referenced sampler sources/hashes and the existing Track/Group/Master graph. Recipe 1–4 encoding/hashes remain unchanged. Native live/offline use the same scheduler and sampler; hosted output uses the existing single authoritative float pass for metering/normalization/delivery. Monitoring remains independent of export. Source/output paths and existing Resolve-referenced finalized WAVs remain durable.
+
+## Live responsiveness correction (2026-11-22)
+
+Untouched ordinary split fragments compile as one articulation within their stable track/origin and unchanged note/controller payload, requiring both timeline and source-offset adjacency. Interleaving other tracks or independent clips cannot break that continuation. Changed contents and deliberately separated fragments compile independently. Serialized project/recipe identities are unchanged.
+
+Active connected MIDI monitoring uses callback-aware producer lookahead capped at the existing1536-frame target, with a12ms safety floor plus callback frames,256 minimum. The safety floor grows with observed producer maximum. Non-MIDI Library/audio production retains1536. This bounded policy reduces some virtual acquisition→applied scheduling delays; it does not qualify a physical keyboard or DAC/acoustic latency. Larger buffers and high rates can retain the cap and its prior limitation.
+
+`MidiInputService::status().schedulingLatency` reports event count,8192-event bounded window, p50/p95/p99 and maximum acquisition→applied milliseconds. Source timestamps and actual applied frames remain separately journaled. Invalid clocks defer scheduling; stale/overflow/panic handling remains fail-closed. Telemetry sorting and journals run off the audio callback. See `COLLECTIONS_STAGE_A_REPORT.md` for paired controlled measurements, rejected6ms pilot and separate native-device evidence.

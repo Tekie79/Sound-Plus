@@ -9,6 +9,8 @@
 #include "InputRecording.h"
 namespace sp
 {
+// Monitoring policy only. Preparation and scheduling remain on the PCM producer.
+int midiLookaheadFrames(double outputRate, int callbackFrames, double producerMaxMs);
 // Single producer / single consumer. All decoding and resampling run in fill().
 class PcmStream
 {
@@ -292,6 +294,7 @@ class AuditionCore
     }
     std::atomic<float> preMonitorPeak{0};
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};
+    std::atomic<int> callbackFrames{512};
 
   private:
     std::unique_ptr<PcmStream> stream;

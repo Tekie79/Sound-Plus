@@ -6,7 +6,14 @@
 
 namespace sp
 {
-AudioPlaybackService::AudioPlaybackService()
+int midiLookaheadFrames(double rate, int callbackFrames, double producerMaxMs)
+{
+    const auto safetyMs = std::clamp(2 * producerMaxMs + 2., 12., 100.);
+    // Do not trade the established buffer policy for more latency on large callbacks.
+    return std::min(
+        1536, std::max(256, std::clamp(callbackFrames, 1, 16384) + (int)std::ceil(rate * safetyMs / 1000.)));
+}
+AudioPlaybackService::AudioPlaybackService(MidiInputService *input) : midiInput(input)
 {
     preparer = std::thread([this] { prepare(); });
     producer = std::thread([this] { produce(); });
@@ -222,7 +229,12 @@ void AudioPlaybackService::prepare()
                         : channelLayout(request.command["sourceLayoutOverride"].toString()),
                     loop, position);
             }
-            result.stream->fill(1536, cancelled);
+            const bool midi = midiInput && midiInput->monitoringActive();
+            const int ahead = midi ? (midiAheadOverride.load()
+                                          ? midiAheadOverride.load()
+                                          : midiLookaheadFrames(request.rate, core.callbackFrames.load(), 0))
+                                   : 1536;
+            result.stream->fill(ahead, cancelled);
             if (cancelled())
                 throw QueryCancelled();
         }
@@ -416,7 +428,13 @@ void AudioPlaybackService::produce()
             }
             if (midiInput)
                 midiInput->service(core.producerStream());
-            core.service(1536);
+            int ahead = 1536;
+            if (midiInput && midiInput->monitoringActive() && core.producerStream())
+                ahead = midiAheadOverride.load()
+                            ? midiAheadOverride.load()
+                            : midiLookaheadFrames(core.producerStream()->outputRate(),
+                                                  core.callbackFrames.load(), core.producerMaxMs());
+            core.service(ahead);
             if (auto capture = core.capture();
                 capture && (capture->phase == TakeCapture::recording || capture->checkpointFailed))
             {

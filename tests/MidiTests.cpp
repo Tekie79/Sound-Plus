@@ -8,6 +8,7 @@
 #include "MultitrackEditor.h"
 #include "PluginProcessing.h"
 #include "DesignLive.h"
+#include "MidiContinuationFixture.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <deque>
 #include <iostream>
@@ -154,6 +155,64 @@ void runMidiTests(const juce::File &base)
     rejects([&] { sp::validateDesign(bad); }, "Invalid MIDI channels rejected");
     auto mono = sp::channelLayout("mono-v1");
     auto file = sample(root, "constant", .25f);
+    for (double rate : {44100., 48000., 96000.})
+        for (int fragments : {2, 3})
+        {
+            auto fixture = sp::qa::continuationFixture(rate);
+            auto &before = fixture.document;
+            auto expected = sp::compileMidi(before.original, fixture.owner, rate);
+            auto frozenBefore = sp::freezeTake(before, "Continuation history");
+            auto changed = fixture;
+            sp::splitMidiClip(changed.document, changed.clip, 256);
+            auto right = changed.document.selectedMidiClip;
+            if (fragments == 3)
+                sp::splitMidiClip(changed.document, right, 640);
+            sp::qa::interleave(changed);
+            auto after = sp::compileMidi(changed.document.original, fixture.owner, rate);
+            check(sp::qa::sameMidi(expected, after),
+                  "Interleaved tracks and same-track overlaps preserve split notes/controllers/identities");
+            auto savedSplit = root.getChildFile("interleaved-" + juce::String(rate) + "-" +
+                                                juce::String(fragments) + ".soundplus");
+            sp::saveDesignAtomic(savedSplit, changed.document);
+            check(sp::qa::sameMidi(expected,
+                                   sp::compileMidi(sp::loadDesign(savedSplit).original, fixture.owner, rate)),
+                  "Interleaved continuation survives real project Save/reopen");
+            check(sp::takeFromJson(sp::takeToJson(frozenBefore)).recipeHash == frozenBefore.recipeHash,
+                  "Existing recipe5 continuation snapshot hash is unchanged by compilation");
+            auto controls = instrument(file, mono);
+            controls.attack = .004;
+            controls.release = .003;
+            sp::NativeSampler reference(controls, mono, rate), joined(controls, mono, rate);
+            auto originalPcm = renderSampler(reference, expected, 1200, 47);
+            auto splitPcm = renderSampler(joined, after, 1200, 13);
+            check(difference(originalPcm, splitPcm) < 1e-7,
+                  "Interleaved split native sampler PCM and envelopes match independent partitions");
+            auto separated = changed.document;
+            sp::moveMidiClip(separated, right, fixture.owner, 300, false);
+            check(!sp::qa::sameMidi(expected, sp::compileMidi(separated.original, fixture.owner, rate)),
+                  "Deliberately separated fragments never merge across a timeline gap");
+            auto &editedFragment = *sp::findMidiClip(changed.document.original, right);
+            auto controllerEdit = changed.document;
+            sp::findMidiClip(controllerEdit.original, right)->controls.front().value = 0;
+            check(!sp::qa::sameMidi(expected, sp::compileMidi(controllerEdit.original, fixture.owner, rate)),
+                  "Controller edits form a distinct continuation payload");
+            auto quantized = changed.document;
+            sp::quantizeMidiNotes(*sp::findMidiClip(quantized.original, right), {}, sp::midiPpq / 4, .5);
+            check(!sp::qa::sameMidi(expected, sp::compileMidi(quantized.original, fixture.owner, rate)),
+                  "Quantize changes cannot be falsely merged into untouched fragments");
+            sp::transposeMidiNotes(editedFragment, {}, 1);
+            check(
+                !sp::qa::sameMidi(expected, sp::compileMidi(changed.document.original, fixture.owner, rate)),
+                "Edited notes invalidate continuation even with unchanged origin");
+            controls.sampleLoop = true;
+            controls.release = .15;
+            sp::NativeSampler independent(controls, mono, rate);
+            auto editedEvents = sp::compileMidi(changed.document.original, fixture.owner, rate);
+            auto tail = renderSampler(independent, editedEvents, (int)(rate * .25), 47);
+            check(independent.activeVoices() == 0 &&
+                      tail.getMagnitude(0, tail.getNumSamples() - 100, 100) == 0,
+                  "Edited split releases notes safely while an older voice still rings");
+        }
     auto settings = instrument(file, mono);
     settings.attack = 4. / 48000;
     settings.decay = 4. / 48000;
@@ -370,6 +429,32 @@ void runMidiTests(const juce::File &base)
     session.undo();
     check(session.document.selectedMidiClip.isNotEmpty() && session.document.original.midiClips.size() == 2,
           "Timeline Undo restores MIDI selection coherently");
+    {
+        auto f = sp::qa::continuationFixture(48000);
+        auto expected = sp::compileMidi(f.document.original, f.owner, 48000);
+        session.document = f.document;
+        session.selectMidiClip(f.clip);
+        session.document.playhead = 256;
+        timeline.keyPressed(juce::KeyPress('e', juce::ModifierKeys::commandModifier, 0));
+        session.edit("Interleaved Track B",
+                     [&](auto &d)
+                     {
+                         auto copy = f;
+                         copy.document = d;
+                         sp::qa::interleave(copy);
+                         d = copy.document;
+                     });
+        check(sp::qa::sameMidi(expected, sp::compileMidi(session.document.original, f.owner, 48000)),
+              "Actual timeline Split command preserves continuation with interleaved Track B");
+        session.undo();
+        session.undo();
+        check(sp::qa::sameMidi(expected, sp::compileMidi(session.document.original, f.owner, 48000)),
+              "Actual session Undo restores unsplit articulation");
+        session.redo();
+        session.redo();
+        check(sp::qa::sameMidi(expected, sp::compileMidi(session.document.original, f.owner, 48000)),
+              "Actual session Redo preserves interleaved continuation");
+    }
     // Real CoreMIDI virtual endpoint, controlled shared output clock. This is not a physical keyboard.
     MIDIClientRef midiClient = 0;
     MIDIEndpointRef source = 0;

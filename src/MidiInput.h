@@ -34,6 +34,10 @@ class MidiInputService
     {
         return capturing.load();
     }
+    bool monitoringActive() const
+    {
+        return accepting.load() && monitorRequested.load();
+    }
     void receiveForTest(uint64_t hostNs, uint8_t status, uint8_t a, uint8_t b) noexcept;
     static std::vector<MidiClip> clips(const std::vector<CapturedMidi> &, const juce::StringArray &owners,
                                        int64_t first, int64_t last, const MidiTiming &, double rate,
@@ -48,6 +52,7 @@ class MidiInputService
     mach_timebase_info_data_t timebase{};
     std::atomic<bool> capturing{false};
     std::atomic<bool> accepting{false}, changed{false}, overflow{false};
+    std::atomic<bool> monitorRequested{false};
     std::atomic<uint64_t> epoch{1};
     struct Raw
     {
@@ -77,6 +82,9 @@ class MidiInputService
     std::map<juce::String, std::pair<uint64_t, int64_t>> softwareNotes;
     uint64_t noteSequence = 1;
     uint64_t late = 0, maxLate = 0, receivedCount = 0;
+    std::array<double, 8192> schedulingDelayMs{};
+    uint64_t schedulingCount = 0;
+    double schedulingMaxMs = 0;
     static void input(const MIDIPacketList *, void *, void *);
     static void notify(const MIDINotification *, void *);
     void receive(uint64_t, uint8_t, uint8_t, uint8_t) noexcept;

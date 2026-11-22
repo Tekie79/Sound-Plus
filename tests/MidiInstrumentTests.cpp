@@ -2,6 +2,7 @@
 #include "PluginProcessing.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
+#include "MidiContinuationFixture.h"
 #include <iostream>
 namespace
 {
@@ -96,6 +97,46 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
     rejects([&] { worker.call(effectJob, root, 20000); },
             "Actual instrument remains rejected by ordinary effects purpose");
     auto r = rackFor(settings);
+    for (double rate : {44100., 48000., 96000.})
+        for (int fragments : {2, 3})
+        {
+            auto f = sp::qa::continuationFixture(rate);
+            sp::InstrumentSlot instrument;
+            instrument.version = 1;
+            instrument.format = plugin["format"].toString();
+            instrument.identifier = plugin["id"].toString();
+            instrument.hostedInstrument.hosted = r;
+            sp::findTrack(f.document.original, f.owner)->instrument = instrument;
+            auto otherInstrument = instrument;
+            otherInstrument.id = juce::Uuid().toString();
+            otherInstrument.hostedInstrument.hosted.id = juce::Uuid().toString();
+            otherInstrument.hostedInstrument.hosted.slots.front().id = juce::Uuid().toString();
+            sp::findTrack(f.document.original, f.other)->instrument = otherInstrument;
+            sp::findTrack(f.document.original, f.other)->mute = true; // Isolate Track A's PCM oracle.
+            auto altered = f;
+            sp::splitMidiClip(altered.document, f.clip, 256);
+            if (fragments == 3)
+                sp::splitMidiClip(altered.document, altered.document.selectedMidiClip, 640);
+            sp::qa::interleave(altered);
+            sp::DesignGraph reference(f.document), joined(altered.document);
+            juce::AudioBuffer<float> originalPcm(1, 1250), splitPcm(1, 1250);
+            reference.render(originalPcm, 0, 1250);
+            for (int at = 0; at < 1250; at += 47)
+                joined.render(splitPcm, at, std::min(47, 1250 - at));
+            for (int n = 0; n < 1250; ++n)
+            {
+                auto voice = [&](int on, int off, double velocity)
+                {
+                    return n < on    ? 0.
+                           : n < off ? .25 * velocity / 127
+                                     : .25 * velocity / 127 * std::max(0., 1 - (n - off) / 64.);
+                };
+                const auto expected = voice(16, 900, 100) + voice(128, 192, 64) + voice(1024, 1088, 64);
+                check(std::abs(originalPcm.getSample(0, n) - expected) < 2e-5 &&
+                          std::abs(originalPcm.getSample(0, n) - splitPcm.getSample(0, n)) < 1e-7,
+                      "Interleaved split hosted Instrument matches independent sustain/release/PDC oracle");
+            }
+        }
     auto a = render(r, 47), b = render(r, 7);
     for (int c = 0; c < 2; ++c)
         for (int n = 0; n < 200; ++n)

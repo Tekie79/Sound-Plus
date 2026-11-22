@@ -47,6 +47,7 @@ MidiInputService::MidiInputService(InputTimelineClock &c) : clock(c)
 MidiInputService::~MidiInputService()
 {
     accepting = false;
+    monitorRequested = false;
     if (port)
         MIDIPortDispose(port);
     if (client)
@@ -127,8 +128,13 @@ void MidiInputService::receive(uint64_t host, uint8_t status, uint8_t a, uint8_t
     auto frame = c.hostNs && c.rate > 0
                      ? c.frame + (int64_t)std::llround(((long double)host - c.hostNs) * c.rate / 1.e9L)
                      : 0;
-    ring[w % capacity] = {
-        epoch.load(std::memory_order_relaxed), host, c.generation, std::max<int64_t>(0, frame), status, a, b};
+    ring[w % capacity] = {epoch.load(std::memory_order_relaxed),
+                          host,
+                          c.hostNs && c.rate > 0 ? c.generation : 0,
+                          std::max<int64_t>(0, frame),
+                          status,
+                          a,
+                          b};
     write.store(w + 1, std::memory_order_release);
 }
 void MidiInputService::receiveForTest(uint64_t host, uint8_t status, uint8_t a, uint8_t b) noexcept
@@ -140,6 +146,7 @@ void MidiInputService::configure(const juce::var &v)
     if (capturing.load())
         throw std::runtime_error("Stop MIDI recording before changing input");
     accepting = false;
+    monitorRequested = false;
     if (port)
     {
         MIDIPortDispose(port);
@@ -170,6 +177,8 @@ void MidiInputService::configure(const juce::var &v)
     if (owners.size() > 16)
         throw std::runtime_error("At most16 MIDI input owners");
     error.clear();
+    schedulingCount = 0;
+    schedulingMaxMs = 0;
     endpoint = 0;
     if (uid.isEmpty())
         return;
@@ -187,6 +196,7 @@ void MidiInputService::configure(const juce::var &v)
         throw std::runtime_error("CoreMIDI input connection failed");
     }
     accepting = true;
+    monitorRequested = !monitored.isEmpty();
 }
 void MidiInputService::software(const juce::var &v)
 {
@@ -261,6 +271,8 @@ void MidiInputService::begin(const juce::var &v)
     overflow = false;
     error.clear();
     late = maxLate = receivedCount = 0;
+    schedulingCount = 0;
+    schedulingMaxMs = 0;
     nextCheckpoint = 0;
     try
     {
@@ -524,6 +536,12 @@ void MidiInputService::service(PcmStream *stream)
             continue;
         ++receivedCount;
         auto c = clock.read();
+        if (!c.hostNs || c.rate <= 0)
+        {
+            if (recording)
+                break;
+            continue;
+        }
         if (raw.generation != c.generation || (recording && raw.generation != generation))
         {
             if (recording && raw.generation > generation)
@@ -578,6 +596,9 @@ void MidiInputService::service(PcmStream *stream)
             for (auto &o : monitored)
                 applied = std::max(applied, stream->injectMidi(o, p));
         p.frame = applied;
+        const auto delayMs = std::max<int64_t>(0, applied - raw.acquired) * 1000. / c.rate;
+        schedulingDelayMs[schedulingCount++ % schedulingDelayMs.size()] = delayMs;
+        schedulingMaxMs = std::max(schedulingMaxMs, delayMs);
         if (recording)
         {
             if (events.size() >= (size_t)eventLimit)
@@ -664,6 +685,20 @@ juce::var MidiInputService::status()
     put(v, "events", (juce::int64)receivedCount);
     put(v, "lateEvents", (juce::int64)late);
     put(v, "maxLateFrames", (juce::int64)maxLate);
+    auto latency = obj();
+    auto count = std::min<uint64_t>(schedulingCount, schedulingDelayMs.size());
+    std::vector<double> sorted(schedulingDelayMs.begin(), schedulingDelayMs.begin() + (ptrdiff_t)count);
+    std::sort(sorted.begin(), sorted.end());
+    auto percentile = [&](double p)
+    { return sorted.empty() ? 0. : sorted[(size_t)std::ceil(p * (sorted.size() - 1))]; };
+    put(latency, "policy", "acquisition-to-applied-v1");
+    put(latency, "events", (juce::int64)schedulingCount);
+    put(latency, "window", (int)count);
+    put(latency, "p50Ms", percentile(.5));
+    put(latency, "p95Ms", percentile(.95));
+    put(latency, "p99Ms", percentile(.99));
+    put(latency, "maximumMs", schedulingMaxMs);
+    put(v, "schedulingLatency", latency);
     put(v, "availableDevices", devices());
     return v;
 }

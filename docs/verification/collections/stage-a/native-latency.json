@@ -1,0 +1,15 @@
+{
+  "scope": "Fresh app + MacBook Pro Speakers + owned CoreMIDI virtual source; source/project timing only, no physical keyboard/DAC loopback qualification",
+  "projectRate": 48000.0,
+  "events": 186,
+  "lateEvents": 186,
+  "p50Ms": 39.125,
+  "p95Ms": 42.895833333333336,
+  "p99Ms": 44.666666666666664,
+  "maximumMs": 44.666666666666664,
+  "complete": true,
+  "journal": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/midi-native/recorded-midi/8be4fe0e5e1e43ea9886e4bd6138c7e1.midi-partial.json",
+  "sha256": "a786528f6f5140ae82f754afd65b5c632aace78b994210ae38f4a5ce06e221f4",
+  "humanListening": false,
+  "nativeStopAdopted": true
+}

@@ -8,7 +8,6 @@ namespace sp
 AudioEngine::AudioEngine(bool connectHardware) : hardware(connectHardware)
 {
     playback.core.inputClock = &inputClock;
-    playback.midiInput = &midiInput;
     if (!hardware)
         return;
     int noSig = 1;
