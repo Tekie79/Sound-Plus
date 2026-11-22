@@ -1,4 +1,5 @@
 #include "DesignLive.h"
+#include "TrackModel.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
 #include <juce_cryptography/juce_cryptography.h>
@@ -182,6 +183,25 @@ juce::String designStructure(const DesignDocument &document)
                                 "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
             layer.getDynamicObject()->removeProperty(key);
     }
+    if (resolved.activeMix().trackSchema)
+    {
+        auto edit = mix["trackEdit"];
+        edit.getDynamicObject()->removeProperty("masterAutomation");
+        juce::Array<juce::var> rows;
+        for (auto track : *edit["tracks"].getArray())
+        {
+            if (track["kind"].toString() == "folder")
+                continue;
+            for (auto key : {"name", "parent", "mute", "solo", "collapsed", "colour", "volumeDb", "pan",
+                             "spatial", "azimuth", "width", "automation"})
+                track.getDynamicObject()->removeProperty(key);
+            stripChain(track["insertChain"], document.liveInserts);
+            rows.add(track);
+        }
+        std::sort(rows.begin(), rows.end(),
+                  [](const auto &a, const auto &b) { return a["id"].toString() < b["id"].toString(); });
+        edit.getDynamicObject()->setProperty("tracks", rows);
+    }
     auto text = juce::JSON::toString(mix, true);
     return juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
 }
@@ -229,6 +249,33 @@ juce::var designParameters(const DesignDocument &base)
         layers.add(juce::var(value));
     }
     object->setProperty("layers", layers);
+    if (document.activeMix().trackSchema)
+    {
+        object->setProperty("automationControlsVersion", 1);
+        object->setProperty("masterAutomation", automationLaneJson(document.activeMix().masterAutomation));
+        juce::Array<juce::var> tracks;
+        for (auto &track : document.activeMix().tracks)
+        {
+            auto v = juce::var(new juce::DynamicObject());
+            auto *o = v.getDynamicObject();
+            o->setProperty("id", track.id);
+            o->setProperty("parent", track.parent);
+            o->setProperty("mute", track.mute);
+            o->setProperty("solo", track.solo);
+            o->setProperty("volumeDb", track.volumeDb);
+            o->setProperty("pan", track.pan);
+            o->setProperty("spatial", track.spatial);
+            o->setProperty("azimuth", track.azimuth);
+            o->setProperty("width", track.width);
+            o->setProperty("automation", automationLaneJson(track.automation));
+            o->setProperty("chainBypass", track.inserts.bypass);
+            o->setProperty("effects", rackParameters(track.inserts.stock));
+            if (!track.inserts.hosted.slots.empty())
+                o->setProperty("hostedRack", hostedControls(track.inserts.hosted));
+            tracks.add(v);
+        }
+        object->setProperty("tracks", tracks);
+    }
     return juce::var(object);
 }
 void applyDesignParameters(DesignDocument &document, const juce::var &parameters)
@@ -273,6 +320,50 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
         applyRack(layer.inserts.stock, value["effects"]);
         if (!layer.inserts.hosted.slots.empty())
             applyHostedControls(layer.inserts.hosted, value["hostedRack"]);
+    }
+    if (changed.activeMix().trackSchema)
+    {
+        if ((int)parameters["automationControlsVersion"] != 1 || !parameters["tracks"].isArray())
+            throw std::runtime_error("Missing versioned track controls");
+        auto &mix = changed.activeMix();
+        auto *rows = parameters["tracks"].getArray();
+        // Folder rows are metadata; processable owners must retain exactly their topology.
+        for (auto &track : mix.tracks)
+            if (track.kind != TrackKind::folder && std::none_of(rows->begin(), rows->end(), [&](auto &v)
+                                                                { return v["id"].toString() == track.id; }))
+                throw std::runtime_error("Track controls owner mismatch");
+        std::erase_if(mix.tracks, [](auto &t) { return t.kind == TrackKind::folder; });
+        std::set<juce::String> seen;
+        for (auto &v : *rows)
+        {
+            auto id = v["id"].toString();
+            if (!seen.insert(id).second)
+                throw std::runtime_error("Duplicate track controls");
+            auto *track = findTrack(mix, id);
+            if (!track)
+            {
+                DesignTrack folder;
+                folder.id = id;
+                folder.kind = TrackKind::folder;
+                folder.layout = channelLayout("stereo-v1");
+                mix.tracks.push_back(folder);
+                track = &mix.tracks.back();
+            }
+            track->parent = v["parent"].toString();
+            track->mute = (bool)v["mute"];
+            track->solo = (bool)v["solo"];
+            track->volumeDb = (double)v["volumeDb"];
+            track->pan = (double)v["pan"];
+            track->spatial = (bool)v["spatial"];
+            track->azimuth = (double)v["azimuth"];
+            track->width = (double)v["width"];
+            track->automation = automationLaneFromJson(v["automation"]);
+            track->inserts.bypass = (bool)v["chainBypass"];
+            applyRack(track->inserts.stock, v["effects"]);
+            if (!track->inserts.hosted.slots.empty())
+                applyHostedControls(track->inserts.hosted, v["hostedRack"]);
+        }
+        mix.masterAutomation = automationLaneFromJson(parameters["masterAutomation"]);
     }
     syncPoolSelection(changed.activeMix());
     validateDesign(changed);

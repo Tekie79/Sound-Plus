@@ -1,0 +1,79 @@
+{
+  "afterRevision": 25,
+  "undoRevision": 26,
+  "rate": 48000.0,
+  "afterPoints": [
+    {
+      "id": "c21019a307af455aaaf09758e635bb22",
+      "frame": 0,
+      "value": -18.0,
+      "hold": false
+    },
+    {
+      "id": "c2bb54d521b1421fae52f9213e81869f",
+      "frame": 24000,
+      "value": 0.0,
+      "hold": false
+    },
+    {
+      "id": "2999ab8c316c4fe7b0dd34fe397155d0",
+      "frame": 48000,
+      "value": 0.0,
+      "hold": false
+    },
+    {
+      "id": "26b6db2048ab4b9b859f04272f6c7e45",
+      "frame": 67200,
+      "value": -56.108108108108105,
+      "hold": false
+    },
+    {
+      "id": "85aea4473a464b98b09a1e0dcb595ded",
+      "frame": 322560,
+      "value": -48.443684895833336,
+      "hold": false
+    },
+    {
+      "id": "d7f4f190bf7c4a8ebb7e1eb41df89225",
+      "frame": 323584,
+      "value": -48.443684895833336,
+      "hold": false
+    },
+    {
+      "id": "1ac0c9e25c334ab0b6eda5363ada919b",
+      "frame": 328384,
+      "value": -56.108108108108105,
+      "hold": false
+    }
+  ],
+  "afterOneUndoPoints": [
+    {
+      "id": "c21019a307af455aaaf09758e635bb22",
+      "frame": 0,
+      "value": -18.0,
+      "hold": false
+    },
+    {
+      "id": "c2bb54d521b1421fae52f9213e81869f",
+      "frame": 24000,
+      "value": 0.0,
+      "hold": false
+    },
+    {
+      "id": "2999ab8c316c4fe7b0dd34fe397155d0",
+      "frame": 48000,
+      "value": 0.0,
+      "hold": false
+    },
+    {
+      "id": "26b6db2048ab4b9b859f04272f6c7e45",
+      "frame": 67200,
+      "value": -56.108108108108105,
+      "hold": false
+    }
+  ],
+  "retainedOriginalPointsEqual": true,
+  "returnFrames": 4800,
+  "returnMs": 100,
+  "humanListening": false
+}

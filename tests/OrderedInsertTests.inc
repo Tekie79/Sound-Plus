@@ -73,6 +73,61 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
         d.selectedLayer = layer.id;
         return d;
     };
+    // New owner boundaries: unequal Track latencies -> Group -> Master, project automation.
+    {
+        auto bus = channelLayout("mono-v1");
+        auto multitrack = document(bus, hosted(bus, 0, 7));
+        multitrack.original.layers[0].inserts = {};
+        enableTrackSchema(multitrack.original);
+        auto a = multitrack.original.tracks[0].id, b = addTrack(multitrack.original, TrackKind::audio),
+             g = addTrack(multitrack.original, TrackKind::groupBus);
+        copyClip(multitrack, multitrack.original.layers[0].id, b, 0);
+        findTrack(multitrack.original, a)->inserts.hosted.slots = {hosted(bus, 0, 7)};
+        findTrack(multitrack.original, b)->inserts.hosted.slots = {hosted(bus, 0, 19)};
+        findTrack(multitrack.original, g)->inserts.hosted.slots = {hosted(bus, 0, 11)};
+        multitrack.original.inserts.hosted.slots = {hosted(bus, 0, 13)};
+        routeTrack(multitrack.original, a, g);
+        routeTrack(multitrack.original, b, g);
+        addAutomationPoint(multitrack.original, a, {{}, "volume"}, 0, 20 * std::log10(.5), 48000);
+        addAutomationPoint(multitrack.original, a, {{}, "volume"}, 8192, 20 * std::log10(.5), 48000);
+        auto source = read(File(multitrack.original.layers[0].source.path));
+        auto render = [&](int size)
+        {
+            DesignGraph graph(multitrack);
+            AudioBuffer<float> output(1, 8192);
+            for (int n = 0; n < 8192; n += size)
+                graph.render(output, n, std::min(size, 8192 - n));
+            return output;
+        };
+        auto actual = render(257), partition = render(61);
+        double error = 0, partitionError = 0;
+        for (int n = 0; n < 8192; ++n)
+        {
+            error = std::max(error, (double)std::abs(actual.getSample(0, n) - source.getSample(0, n) * 1.5f));
+            partitionError = std::max(partitionError,
+                                      (double)std::abs(actual.getSample(0, n) - partition.getSample(0, n)));
+        }
+        require(error < 2e-6 && partitionError < 2e-6,
+                "Unequal Track7/19 Group11 Master13 PDC, simultaneous sum and project Volume oracle");
+        auto filter = makeStockEffect("filter");
+        findTrack(multitrack.original, g)->inserts.stock.push_back(filter);
+        normaliseInsertChain(findTrack(multitrack.original, g)->inserts);
+        addAutomationPoint(multitrack.original, g, {filter.id, "parameter-1"}, 17, 60, 48000);
+        addAutomationPoint(multitrack.original, g, {filter.id, "parameter-1"}, 4017, 12000, 48000);
+        actual = render(257);
+        partition = render(61);
+        partitionError = 0;
+        for (int n = 0; n < 8192; ++n)
+            partitionError = std::max(partitionError,
+                                      (double)std::abs(actual.getSample(0, n) - partition.getSample(0, n)));
+        require(partitionError < 2e-6,
+                "Non-grid Group filter points schedule across hosted prefix and arbitrary blocks");
+        auto frozen = freezeTake(multitrack, "Multitrack fixed plugins");
+        require(frozen.pluginAware && frozen.trackRecipe && frozen.orderedRecipe,
+                "Track chains included in immutable plugin take4");
+        auto back = takeFromJson(takeToJson(frozen));
+        require(back.recipeHash == frozen.recipeHash, "Multitrack plugin take hash roundtrip");
+    }
     for (auto id :
          {"mono-v1", "stereo-v1", "lcr-v1", "quad-v1", "5.0-v1", "5.1-side-v1", "5.1-rear-v1", "7.1-v1"})
     {

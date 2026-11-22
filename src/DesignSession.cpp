@@ -1,4 +1,5 @@
 #include "DesignSession.h"
+#include "TrackModel.h"
 #include "PerformanceState.h"
 #include "DesignLive.h"
 #include "Performance.h"
@@ -34,6 +35,7 @@ bool sameTakes(const DesignDocument &a, const DesignDocument &b)
             auto *v = o.getDynamicObject();
             v->setProperty("id", t.id);
             v->setProperty("orderedRecipe", t.orderedRecipe);
+            v->setProperty("trackRecipe", t.trackRecipe);
             v->setProperty("pluginAware", t.pluginAware);
             v->setProperty("name", t.name);
             v->setProperty("session", t.session);
@@ -383,6 +385,10 @@ bool DesignSession::openLiveEditor(const juce::String &slot)
         for (auto &candidate : layer.inserts.hosted.slots)
             if (candidate.id == slot)
                 owner = layer.id;
+    for (auto &t : document.activeMix().tracks)
+        for (auto &s : t.inserts.hosted.slots)
+            if (s.id == slot)
+                owner = t.id;
     if (owner.isEmpty())
         return false;
     syncLive();
@@ -400,9 +406,8 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
     {
         if (capture.owner == "master")
             return &d.activeMix().inserts.hosted;
-        for (auto &l : d.activeMix().layers)
-            if (l.id == capture.owner)
-                return &l.inserts.hosted;
+        if (auto *c = ownerInserts(d.activeMix(), capture.owner))
+            return &c->hosted;
         return nullptr;
     };
     if ((bool)capture.evidence["editorVisible"] && message == "Opening editor...")
@@ -616,12 +621,19 @@ void DesignSession::restoreDerivedState()
 }
 void DesignSession::reconcileSelection(const DesignDocument *before)
 {
+    if (document.activeMix().trackSchema && document.selectedTrack != "master" &&
+        !findTrack(document.activeMix(), document.selectedTrack))
+        document.selectedTrack.clear();
     if (before && (before->selectedLayer != document.selectedLayer ||
                    before->activeVariation != document.activeVariation))
         selectedIds.clear();
     std::erase_if(selectedIds, [&](const auto &id) { return !layerById(document, id); });
-    if (layerById(document, document.selectedLayer))
+    if (auto *clip = layerById(document, document.selectedLayer))
+    {
         selectedIds.insert(document.selectedLayer);
+        if (document.activeMix().trackSchema)
+            document.selectedTrack = clip->trackId;
+    }
     else
         document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
 }
@@ -637,6 +649,8 @@ void DesignSession::stampLiveIntents(int64_t ticks)
                 previous[slot.id] = &slot;
         };
         add(liveIntentBase->activeMix().inserts.hosted);
+        for (auto &t : liveIntentBase->activeMix().tracks)
+            add(t.inserts.hosted);
         for (auto &layer : liveIntentBase->activeMix().layers)
             add(layer.inserts.hosted);
     }
@@ -667,6 +681,8 @@ void DesignSession::stampLiveIntents(int64_t ticks)
         }
     };
     stamp(document.activeMix().inserts.hosted);
+    for (auto &t : document.activeMix().tracks)
+        stamp(t.inserts.hosted);
     for (auto &layer : document.activeMix().layers)
         stamp(layer.inserts.hosted);
 }
@@ -730,6 +746,8 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
             normaliseInsertChain(m.inserts);
             for (auto &l : m.layers)
                 normaliseInsertChain(l.inserts);
+            for (auto &t : m.tracks)
+                normaliseInsertChain(t.inserts);
         };
         normalise(document.original);
         for (auto &v : document.variations)
@@ -1145,6 +1163,7 @@ void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool e
              if (!d.activeMix().layout.id.isEmpty())
                  initialiseRouting(layer, d.activeMix().layout, pair >= 0);
              layer.placement = std::max<int64_t>(0, placement < 0 ? d.playhead : placement);
+             attachClip(d, layer);
              d.selectedLayer = layer.id;
              d.activeMix().layers.push_back(std::move(layer));
          });
@@ -1159,15 +1178,16 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
         return;
     protectStartupEdits();
     auto token = stamp(Operation::import);
+    const auto targetTrack = document.selectedTrack;
     working = true;
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,
-            [safe, files, placement]
+            [safe, files, placement, targetTrack]
             {
                 std::vector<Asset> sources;
                 for (auto &file : files)
                     sources.push_back(inspectDesignSource(juce::File(file)));
-                return [safe, sources = std::move(sources), placement]
+                return [safe, sources = std::move(sources), placement, targetTrack]
                 {
                     if (!safe)
                         return;
@@ -1194,6 +1214,7 @@ void DesignSession::addExternals(const juce::StringArray &files, int64_t placeme
                                 if (!d.activeMix().layout.id.isEmpty())
                                     initialiseRouting(layer, d.activeMix().layout);
                                 layer.placement = placement;
+                                attachClip(d, layer, targetTrack);
                                 d.selectedLayer = layer.id;
                                 d.activeMix().layers.push_back(std::move(layer));
                             }
@@ -1267,6 +1288,8 @@ void DesignSession::selectLayer(const juce::String &id, bool additive)
         document.selectedLayer = id;
     else if (!selectedIds.contains(document.selectedLayer))
         document.selectedLayer = selectedIds.empty() ? juce::String() : *selectedIds.begin();
+    if (auto *clip = selectedLayer(); clip && document.activeMix().trackSchema)
+        document.selectedTrack = clip->trackId;
     notify();
 }
 void DesignSession::selectVariation(const juce::String &id)
@@ -1315,6 +1338,15 @@ void DesignSession::generate(uint64_t seed)
          });
 }
 
+std::optional<int64_t> DesignSession::automationFrame() const
+{
+    auto state = services.status();
+    if (!active || previewWaiting || !(bool)state["playing"] ||
+        state["id"].toString() != "design:" + document.id ||
+        (uint64_t)(int64_t)state["playGeneration"] != expectedGeneration)
+        return {};
+    return std::max<int64_t>(0, (int64_t)state["sourceSample"]);
+}
 bool DesignSession::ownsPlayback() const
 {
     return active || previewWaiting;
@@ -1689,6 +1721,7 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
         if (!layer)
             return;
         auto chosen = *layer;
+        rebaseAutomation(snapshot.activeMix(), chosen.placement);
         chosen.placement = 0;
         chosen.mute = chosen.solo = false;
         snapshot.activeMix().layers = {chosen};
@@ -1700,6 +1733,7 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
             snapshot.activeMix().inserts.order.clear();
             snapshot.activeMix().inserts.bypass = false;
             snapshot.activeMix().masterDb = 0;
+            snapshot.activeMix().masterAutomation = {};
         }
         snapshot.renderSettings.first = 0;
         snapshot.renderSettings.last = -1;
@@ -1730,10 +1764,7 @@ void DesignSession::transferInsert(const juce::String &sourceOwner, InsertRef re
             {
                 if (id.isEmpty())
                     return &safe->document.activeMix().inserts;
-                for (auto &l : safe->document.activeMix().layers)
-                    if (l.id == id)
-                        return &l.inserts;
-                return nullptr;
+                return ownerInserts(safe->document.activeMix(), id);
             };
             auto *from = owner(sourceOwner), *to = owner(targetOwner);
             auto reject = [&](const juce::String &why)

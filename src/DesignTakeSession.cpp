@@ -25,6 +25,9 @@ juce::String takeBoundarySignature(const DesignDocument &d)
     owner(m["insertChain"]);
     for (auto &l : *m["layers"].getArray())
         owner(l["insertChain"]);
+    if (auto *tracks = m["trackEdit"]["tracks"].getArray())
+        for (auto &t : *tracks)
+            owner(t["insertChain"]);
     return juce::JSON::toString(m, true);
 }
 bool matchingTakeOutput(const PerformTake &t, const DesignOutput &o)

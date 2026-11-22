@@ -40,7 +40,9 @@ juce::var recipeJson(const PerformTake &t)
     auto o = obj();
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
-        put(o, "recipeVersion", t.pluginAware ? 3 : 2);
+        put(o, "recipeVersion", t.trackRecipe ? 4 : t.pluginAware ? 3 : 2);
+    if (t.trackRecipe)
+        put(o, "trackPolicy", "project-automation-before-perform-v1");
     if (t.pluginAware)
     {
         put(o, "pluginPolicy", "fixed-state-independent-frame-zero-v1");
@@ -213,10 +215,14 @@ PerformTake takeFromJson(const juce::var &o)
     t.session = o["session"].toString();
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
-    if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3)
+    if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3 &&
+        (int)r["recipeVersion"] != 4)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
-    t.pluginAware = (int)r["recipeVersion"] == 3;
+    t.trackRecipe = (int)r["recipeVersion"] == 4;
+    t.pluginAware = (int)r["recipeVersion"] == 3 || (t.trackRecipe && r.hasProperty("pluginPolicy"));
+    if (t.trackRecipe && r["trackPolicy"].toString() != "project-automation-before-perform-v1")
+        throw std::runtime_error("Unsupported track take policy");
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
@@ -263,7 +269,8 @@ PerformTake takeFromJson(const juce::var &o)
 void hashTake(PerformTake &t)
 {
     auto &mix = (const DesignMix &)t.recipe;
-    t.orderedRecipe = t.orderedRecipe || t.pluginAware || requiresOrderedInserts(mix.inserts) ||
+    t.orderedRecipe = t.orderedRecipe || t.trackRecipe || t.pluginAware ||
+                      requiresOrderedInserts(mix.inserts) ||
                       std::any_of(mix.layers.begin(), mix.layers.end(),
                                   [](auto &l) { return requiresOrderedInserts(l.inserts); });
     t.recipeHash = hash(recipeJson(t));
@@ -277,11 +284,16 @@ void hashTake(PerformTake &t)
 void validateTake(const PerformTake &t)
 {
     if (hasHostedInserts((const DesignMix &)t.recipe) != t.pluginAware ||
-        (t.processing == "plugin-ordered-takes-v1") != t.pluginAware || (t.pluginAware && !t.orderedRecipe))
+        (!t.trackRecipe && (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
+        (t.pluginAware && !t.orderedRecipe))
         throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
+    if (t.trackRecipe != t.recipe->trackSchema ||
+        (t.processing == "track-automation-takes-v1") != t.trackRecipe)
+        throw std::runtime_error("Track take processing contract mismatch");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
-         t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1") ||
+         t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1" &&
+         t.processing != "track-automation-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -290,7 +302,8 @@ void validateTake(const PerformTake &t)
     if (t.complete &&
         t.bodyEnd != (int64_t)std::ceil((long double)(t.outputFrames - 1) * t.sampleRate / t.captureRate) + 1)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
-    if (!t.pluginAware && (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
+    if (!t.trackRecipe && !t.pluginAware &&
+        (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
         throw std::runtime_error("Take layout processing contract mismatch");
     if ((t.processing == "stock-layout-takes-v1" && t.recipe->routingVersion != 1) ||
         ((t.processing == "stock-layout-takes-v2" || (t.pluginAware && t.recipe->layout.id.isNotEmpty())) &&
@@ -365,6 +378,10 @@ juce::var takePluginProvenance(const PerformTake &t)
     };
     auto &m = (const DesignMix &)t.recipe;
     add(m.inserts, "master", m.layout.id.isEmpty() ? channelLayout("stereo-v1") : m.layout);
+    if (t.trackRecipe)
+        for (auto &track : m.tracks)
+            if (track.kind != TrackKind::folder)
+                add(track.inserts, track.id, track.layout);
     for (auto &l : m.layers)
         add(l.inserts, l.id, m.layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation);
     put(o, "owners", owners);
@@ -383,6 +400,12 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
         mix.routingVersion = 2;
     if (!t.pluginAware && !d.activeMix().layout.id.isEmpty())
         t.processing = "stock-layout-takes-v2";
+    t.trackRecipe = mix.trackSchema;
+    if (t.trackRecipe)
+    {
+        t.processing = "track-automation-takes-v1";
+        t.orderedRecipe = true;
+    }
     auto fixed = [](InsertChain &c)
     {
         c.hosted.runtimeEndpoint = juce::File();
@@ -395,6 +418,8 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
         }
     };
     fixed(mix.inserts);
+    for (auto &track : mix.tracks)
+        fixed(track.inserts);
     for (auto &l : mix.layers)
         fixed(l.inserts);
     freezePoolOrigins(t, mix);
@@ -502,6 +527,8 @@ void verifyTakePlugins(const PerformTake &t)
         }
     };
     check(t.recipe->inserts);
+    for (auto &track : t.recipe->tracks)
+        check(track.inserts);
     for (auto &l : t.recipe->layers)
         check(l.inserts);
 }

@@ -1,0 +1,12 @@
+{
+  "name": "Workflow demonstration",
+  "revision": 3801,
+  "latestPayloadEqualsProtected": true,
+  "mediaFilesVerified": 37,
+  "changedMedia": [],
+  "catalogCounts": {
+    "roots": 1,
+    "assets": 43
+  },
+  "olderSnapshotCopiedOverLatest": false
+}

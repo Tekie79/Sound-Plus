@@ -1,3 +1,4 @@
+#include "TrackModel.h"
 #include "NativeViewScale.h"
 #include "PluginProcessPanel.h"
 #include "DesignSession.h"

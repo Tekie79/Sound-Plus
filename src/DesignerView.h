@@ -1,5 +1,6 @@
 #pragma once
 #include "DesignSession.h"
+#include "MultitrackEditor.h"
 #include "Waveform.h"
 #include "UIComponents.h"
 #include "DesignControls.h"
@@ -80,6 +81,8 @@ class DesignerView final : public juce::Component,
     uint64_t lastHeardEdit = 0;
     struct Canvas;
     std::unique_ptr<Canvas> canvas;
+    std::unique_ptr<MultitrackEditor> tracks;
+    IconButton addTrackButton{"Add track", ActionIcon::addLayer};
     std::unique_ptr<PerformView> perform;
     std::unique_ptr<SourcePoolView> alternatives;
     void choosePoolFiles(const juce::String &layer, const juce::String &relocate = {});
@@ -199,7 +202,7 @@ class DesignerView final : public juce::Component,
     std::unique_ptr<juce::Component> makeRoutingPanel();
     void channelPopup();
     void monitorPopup();
-    std::unique_ptr<StockRackView> trackRack, masterRack;
+    std::unique_ptr<StockRackView> trackRack, masterRack, sourceRack;
     juce::Slider monitor;
     juce::Label sourceInfo, layerName, pitchInfo;
     juce::String candidateSignature, lastComparison, comparisonDocument;

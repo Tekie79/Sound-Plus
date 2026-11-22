@@ -1,0 +1,21 @@
+{
+  "focusedRoot": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/tests/f87ee592b67440379bdbdb656d96e137",
+  "cases": [
+    {
+      "recipeVersion": 3,
+      "bodyEnd": 29696,
+      "events": 10,
+      "underruns": 0,
+      "captureReplayMaxError": 0.0,
+      "checkpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/tests/f87ee592b67440379bdbdb656d96e137/fd3bc5e2bdad4a45b88b986c05b932a6.soundplus"
+    },
+    {
+      "recipeVersion": 4,
+      "bodyEnd": 30208,
+      "events": 9,
+      "underruns": 0,
+      "captureReplayMaxError": 0.0,
+      "checkpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/tests/f87ee592b67440379bdbdb656d96e137/1d6d05e39e0e46678abb3a4803de7c16.soundplus"
+    }
+  ]
+}

@@ -339,8 +339,18 @@ void runPluginTakeTests(const juce::File &base, const juce::File &app, const juc
             require(!loadDesign(File(t.checkpoint)).takes.back().complete,
                     "Crashed helper checkpoint incomplete");
         }
-        for (bool changeSource : {false, true})
+        for (int captureMode : {0, 1, 2})
         {
+            bool changeSource = captureMode == 2;
+            if (captureMode == 1)
+            {
+                enableTrackSchema(d.original);
+                auto owner = d.original.tracks.front().id;
+                findTrack(d.original, owner)->inserts.stock.push_back(makeStockEffect("gain"));
+                addAutomationPoint(d.original, owner, {{}, "volume"}, 0, -9, 48000);
+                addAutomationPoint(d.original, owner, {{}, "volume"}, 4800, -3, 48000);
+                addAutomationPoint(d.original, owner, {{}, "volume"}, 20000, -12, 48000);
+            }
             auto t = freezeTake(d, "Native plugin capture");
             t.checkpoint = root.getChildFile(t.id + ".soundplus").getFullPathName();
             d.takes = {t};
@@ -401,7 +411,15 @@ void runPluginTakeTests(const juce::File &base, const juce::File &app, const juc
                         "Changed source persists explicit Incomplete, no false Ready");
                 break;
             }
-            require(stored.complete && stored.events.size() > 0, "Actual helper durable events");
+            require(stored.complete && stored.events.size() > 0,
+                    "Actual helper durable events: " + JSON::toString(audio.status(), true));
+            if (captureMode == 1)
+                require(stored.bodyEnd >= 12000,
+                        "Automation must not starve the device-consumed clock during 550ms of controls: " +
+                            JSON::toString(audio.status(), true));
+            if (captureMode == 1)
+                require(stored.trackRecipe && stored.recipe->tracks.front().automation.curves.size() == 1,
+                        "Actual device-kept recipe4 retains hidden Track automation");
             checkpoint.activeTake = stored.id;
             checkpoint.renderSettings.tailSeconds = 0;
             auto replay = renderRoles(checkpoint, 512);
@@ -422,6 +440,7 @@ void runPluginTakeTests(const juce::File &base, const juce::File &app, const juc
             auto row = obj();
             put(row, "deviceCapture", audio.status());
             put(row, "captureReplayError", error);
+            put(row, "trackRecipe", stored.trackRecipe);
             put(row, "checkpoint", t.checkpoint);
             put(row, "raw", raw.getFullPathName());
             evidence.add(row);

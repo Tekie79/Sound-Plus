@@ -1,0 +1,82 @@
+{
+  "method": "Agent observations from actual cua_repl interactions; not a raw accessibility-tree dump. Saved point data and screenshots are retained separately.",
+  "qaDataDirectory": "build/multitrack/native",
+  "nativeMinimumOuter": [
+    1040,
+    680
+  ],
+  "savedJuceContentBounds": [
+    1040,
+    648
+  ],
+  "browserVisible": true,
+  "inspectorVisible": true,
+  "observedActions": [
+    {
+      "action": "Create Audio Track from native Add track menu",
+      "revision": 8
+    },
+    {
+      "action": "Double-click header, type Native empty, Return",
+      "revision": 10
+    },
+    {
+      "action": "Undo first drag-in, add Gain while Track has no clips",
+      "revision": 13
+    },
+    {
+      "action": "Library native drag-in to existing Audio Track",
+      "revision": 14
+    },
+    {
+      "action": "Second independent Library clip on the same Track",
+      "revision": 16
+    },
+    {
+      "action": "Native cross-track canvas drag",
+      "revision": 17
+    },
+    {
+      "action": "Command-Z restores cross-track move",
+      "subsequentRevisionAfterLaneExpansion": 19
+    },
+    {
+      "action": "Double-click automation point; Command-A/Return; numeric time .1 seconds/value -20 dB; native Undo",
+      "revisions": [
+        3,
+        4,
+        5
+      ]
+    },
+    {
+      "action": "Successful Touch pass during playback; one native Undo",
+      "revisions": [
+        22,
+        25,
+        26
+      ]
+    },
+    {
+      "action": "Quit/relaunch reopens saved clips, named Track, insert and automation",
+      "reopenedRevision": 27
+    },
+    {
+      "action": "Track selection exposes Track/Master inserts; clip selection outlines only the clip",
+      "evidence": [
+        "minimum.jpg",
+        "minimum-track.jpg",
+        "desktop.jpg"
+      ]
+    }
+  ],
+  "touchWrittenFrames": [
+    322560,
+    323584
+  ],
+  "touchReturnFrame": 328384,
+  "touchReturnMs": 100,
+  "originalPointsRetainedAfterUndo": true,
+  "monitorMutedDuringTouch": true,
+  "humanListening": false,
+  "nativeReceivingAppQualification": false
+}

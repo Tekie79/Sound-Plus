@@ -6,6 +6,9 @@ class OrderedRack
     {
         InsertRef ref;
         std::unique_ptr<StockProcessor> stock;
+        StockEffect base;
+        std::array<AutomationTarget, 4> targets;
+        AutomationTarget bypassTarget;
         std::unique_ptr<HostedRackClient> hosted;
     };
     std::vector<Step> steps;
@@ -13,6 +16,8 @@ class OrderedRack
     juce::SmoothedValue<float> wet;
     int delay = 0, position = 0, channels = 2;
     bool fixed = false, initialBypass = false;
+    const CompiledAutomation *automation = nullptr;
+    int64_t automationInput = 0;
     static const StockEffect &stock(const InsertChain &c, const juce::String &id)
     {
         for (auto &s : c.stock)
@@ -54,8 +59,13 @@ class OrderedRack
             Step step;
             step.ref = ref;
             if (ref.kind == InsertKind::stock)
-                step.stock =
-                    std::make_unique<StockProcessor>(stock(c, ref.id), rate, invariant, channels, aware);
+            {
+                step.base = stock(c, ref.id);
+                for (int p = 0; p < 4; ++p)
+                    step.targets[(size_t)p] = {ref.id, "parameter-" + juce::String(p)};
+                step.bypassTarget = {ref.id, "bypass"};
+                step.stock = std::make_unique<StockProcessor>(step.base, rate, invariant, channels, aware);
+            }
             else
             {
                 auto recipe = hosted(c, ref.id);
@@ -90,11 +100,19 @@ class OrderedRack
             if (s.ref != order[i])
                 throw std::runtime_error("Insert order changed; prepare a graph");
             if (s.stock)
-                s.stock->update(stock(c, s.ref.id));
+            {
+                s.base = stock(c, s.ref.id);
+                s.stock->update(s.base);
+            }
             else
                 s.hosted->update(hosted(c, s.ref.id));
         }
         wet.setTargetValue(c.bypass ? 0.f : 1.f);
+    }
+    void automate(const CompiledAutomation &snapshot, int64_t inputFrame)
+    {
+        automation = &snapshot;
+        automationInput = inputFrame;
     }
     void process(juce::AudioBuffer<float> &b, int count)
     {
@@ -111,11 +129,35 @@ class OrderedRack
                 position = (position + 1) % delay;
         }
         // Whole-chain bypass never changes slot flags or freezes wet history.
+        int prefix = 0;
         for (auto &s : steps)
-            if (s.stock)
+        {
+            if (s.stock && automation)
+            {
+                for (int offset = 0; offset < count;)
+                {
+                    auto frame = std::max<int64_t>(0, automationInput + offset - prefix);
+                    int n = automation->untilBoundary(frame, count - offset);
+                    auto phase = automation->segmentFrame(frame);
+                    auto effect = s.base;
+                    for (int p = 0; p < 4; ++p)
+                        effect.parameters[(size_t)p] =
+                            automation->value(s.targets[(size_t)p], effect.parameters[(size_t)p], phase);
+                    effect.bypass = automation->value(s.bypassTarget, effect.bypass ? 1 : 0, frame) >= .5;
+                    s.stock->update(effect);
+                    juce::AudioBuffer<float> slice(b.getArrayOfWritePointers(), channels, offset, n);
+                    s.stock->process(slice, n);
+                    offset += n;
+                }
+            }
+            else if (s.stock)
                 s.stock->process(b, count);
             else
+            {
                 s.hosted->process(b, count);
+                prefix += s.hosted->latency();
+            }
+        }
         for (int n = 0; n < count; ++n)
         {
             auto amount = wet.getNextValue();

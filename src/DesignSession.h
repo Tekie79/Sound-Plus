@@ -119,6 +119,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void navigateMarker(int direction);
     void stop();
     bool ownsPlayback() const;
+    std::optional<int64_t> automationFrame() const;
     enum class TakeState
     {
         idle,

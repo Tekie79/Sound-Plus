@@ -1,6 +1,7 @@
 #include "DesignModel.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
+#include "TrackModel.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <cmath>
@@ -69,6 +70,8 @@ std::vector<StockEffect> effectsFrom(const juce::var &value)
 juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
 {
     auto o = object();
+    if (mix.trackSchema)
+        put(o, "trackEdit", tracksToJson(mix));
     if (!mix.layout.id.isEmpty())
     {
         put(o, "busLayout", layoutJson(mix.layout));
@@ -93,6 +96,8 @@ juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
     {
         auto v = object();
         put(v, "id", l.id);
+        if (mix.trackSchema)
+            put(v, "track", l.trackId);
         put(v, "name", l.name);
         put(v, "external", l.external);
         auto s = object();
@@ -191,6 +196,7 @@ DesignMix mixFrom(const juce::var &o)
     {
         DesignLayer l;
         l.id = v["id"].toString();
+        l.trackId = v["track"].toString();
         l.name = v["name"].toString();
         l.external = (bool)v["external"];
         auto s = v["source"];
@@ -265,6 +271,8 @@ DesignMix mixFrom(const juce::var &o)
             normaliseInsertChain(l.inserts);
         mix.layers.push_back(std::move(l));
     }
+    if (o.hasProperty("trackEdit"))
+        tracksFromJson(mix, o["trackEdit"]);
     return mix;
 }
 juce::var renderJson(const DesignRenderSettings &s)
@@ -614,8 +622,13 @@ juce::var designToJson(const DesignDocument &d)
     bool plugins = std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.pluginAware; }) ||
                    std::any_of(d.outputs.begin(), d.outputs.end(),
                                [](auto &o) { return o.processing == "plugin-ordered-takes-v1"; });
+    bool tracks =
+        d.original.trackSchema ||
+        std::any_of(d.variations.begin(), d.variations.end(), [](auto &v) { return v.mix.trackSchema; }) ||
+        std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.trackRecipe; });
     put(o, "version",
-        plugins               ? 10
+        tracks                ? 11
+        : plugins             ? 10
         : ordered             ? 9
         : hasHostedInserts(d) ? 8
         : hasSourcePools(d)   ? 7
@@ -623,7 +636,8 @@ juce::var designToJson(const DesignDocument &d)
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        plugins                     ? "plugin-takes-v1"
+        tracks                      ? "multitrack-automation-v1"
+        : plugins                   ? "plugin-takes-v1"
         : ordered                   ? "ordered-inserts-v1"
         : hasHostedInserts(d)       ? "hosted-racks-v1"
         : performanceFormat(d) == 6 ? "stock-layout-v2"
@@ -640,6 +654,8 @@ juce::var designToJson(const DesignDocument &d)
     put(o, "original", mixJson(d.original));
     put(o, "activeVariation", d.activeVariation);
     put(o, "selectedLayer", d.selectedLayer);
+    if (tracks)
+        put(o, "selectedTrack", d.selectedTrack);
     put(o, "playhead", (juce::int64)d.playhead);
     if (!d.markers.empty())
     {
@@ -738,17 +754,18 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 10) ||
-        (version == 10  ? dsp != "plugin-takes-v1"
-         : version == 9 ? dsp != "ordered-inserts-v1"
-         : version == 8 ? dsp != "hosted-racks-v1"
-         : version == 7 ? (int)o["sourcePoolMetadataVersion"] != 1
-         : version == 6 ? dsp != "stock-layout-v2"
-         : version == 5 ? dsp != "stock-layout-v1"
-         : version == 4 ? dsp != "stock-takes-v1"
-         : version == 3 ? dsp != "stock-perform-v2"
-         : version == 2 ? dsp != "stock-perform-v1"
-                        : (dsp != "stock-sinc32-v1" && dsp != "stock-sinc32-v2")))
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 11) ||
+        (version == 11   ? dsp != "multitrack-automation-v1"
+         : version == 10 ? dsp != "plugin-takes-v1"
+         : version == 9  ? dsp != "ordered-inserts-v1"
+         : version == 8  ? dsp != "hosted-racks-v1"
+         : version == 7  ? (int)o["sourcePoolMetadataVersion"] != 1
+         : version == 6  ? dsp != "stock-layout-v2"
+         : version == 5  ? dsp != "stock-layout-v1"
+         : version == 4  ? dsp != "stock-takes-v1"
+         : version == 3  ? dsp != "stock-perform-v2"
+         : version == 2  ? dsp != "stock-perform-v1"
+                         : (dsp != "stock-sinc32-v1" && dsp != "stock-sinc32-v2")))
         throw std::runtime_error("Unsupported SoundPlus design version");
     DesignDocument d;
     d.outputFolder = o["outputFolder"].toString();
@@ -759,6 +776,7 @@ DesignDocument designFromJson(const juce::var &o)
     d.original = mixFrom(o["original"]);
     d.activeVariation = o["activeVariation"].toString();
     d.selectedLayer = o["selectedLayer"].toString();
+    d.selectedTrack = o["selectedTrack"].toString();
     d.playhead = integer(o, "playhead");
     if (auto *markers = o["markers"].getArray())
     {
@@ -850,6 +868,11 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     validateDesign(d);
+    if (version < 11 &&
+        (d.original.trackSchema ||
+         std::any_of(d.variations.begin(), d.variations.end(), [](auto &v) { return v.mix.trackSchema; }) ||
+         std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.trackRecipe; })))
+        throw std::runtime_error("Multitrack automation requires document manifest11");
     if (version < 10 && (std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.pluginAware; }) ||
                          std::any_of(d.outputs.begin(), d.outputs.end(),
                                      [](auto &o) { return o.processing == "plugin-ordered-takes-v1"; })))
@@ -926,6 +949,7 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
     };
     auto mix = [&](const DesignMix &m)
     {
+        validateTracks(m, d.sampleRate);
         validateLayoutMix(m, d.sampleRate);
         validatePerformance(m);
         if (m.layers.size() > 64 || m.duration < 0 || m.duration > d.sampleRate * 3600)
@@ -944,6 +968,17 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
                 ++services;
             hostedSlots += layer.inserts.hosted.slots.size();
             for (auto &slot : layer.inserts.hosted.slots)
+                stateBytes += slot.settings.getNumBytesAsUTF8();
+        }
+        for (auto &track : m.tracks)
+        {
+            resolvedInsertOrder(track.inserts);
+            rack(track.inserts.stock);
+            validateHostedRack(track.inserts.hosted);
+            if (!track.inserts.hosted.slots.empty())
+                ++services;
+            hostedSlots += track.inserts.hosted.slots.size();
+            for (auto &slot : track.inserts.hosted.slots)
                 stateBytes += slot.settings.getNumBytesAsUTF8();
         }
         if (services > 16 || hostedSlots > 64 || stateBytes > 24 * 1024 * 1024)
@@ -1330,8 +1365,11 @@ void resolveDesignSources(DesignDocument &d, const juce::File &catalog)
 }
 bool hasHostedInserts(const DesignMix &mix)
 {
-    return !mix.inserts.hosted.slots.empty() || std::any_of(mix.layers.begin(), mix.layers.end(), [](auto &l)
-                                                            { return !l.inserts.hosted.slots.empty(); });
+    return !mix.inserts.hosted.slots.empty() ||
+           std::any_of(mix.tracks.begin(), mix.tracks.end(),
+                       [](auto &t) { return !t.inserts.hosted.slots.empty(); }) ||
+           std::any_of(mix.layers.begin(), mix.layers.end(),
+                       [](auto &l) { return !l.inserts.hosted.slots.empty(); });
 }
 bool hasHostedInserts(const DesignDocument &d)
 {

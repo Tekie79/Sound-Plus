@@ -268,6 +268,9 @@ void LiveInsertSession::run()
                 reconcile(mix.inserts.hosted,
                           mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, "master",
                           "Master");
+                for (auto &t : mix.tracks)
+                    if (t.kind != TrackKind::folder)
+                        reconcile(t.inserts.hosted, t.layout, t.id, t.name);
                 for (auto &layer : mix.layers)
                     reconcile(layer.inserts.hosted,
                               mix.layout.id.isEmpty() ? channelLayout("stereo-v1")

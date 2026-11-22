@@ -120,6 +120,8 @@ void AudioPlaybackService::prepare()
                     if (result.mode != "record")
                     {
                         document.activeMix().inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
+                        for (auto &track : document.activeMix().tracks)
+                            track.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                         for (auto &layer : document.activeMix().layers)
                             layer.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                     }

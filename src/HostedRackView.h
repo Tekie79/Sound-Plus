@@ -1,4 +1,5 @@
 #pragma once
+#include "TrackModel.h"
 #include "DesignSession.h"
 #include "PluginProcessing.h"
 #include "UIComponents.h"
@@ -485,14 +486,15 @@ class HostedRackView final : public juce::Component
             return nullptr;
         if (o.layer.isEmpty())
             return isMaster ? &session.document.activeMix().inserts.hosted : nullptr;
-        for (auto &l : session.document.activeMix().layers)
-            if (l.id == o.layer)
-                return &l.inserts.hosted;
+        if (auto *c = ownerInserts(session.document.activeMix(), o.layer))
+            return &c->hosted;
         return nullptr;
     }
     ChannelLayout bus(const Owner &o)
     {
         auto &mix = session.document.activeMix();
+        if (auto *t = findTrack(mix, o.layer))
+            return t->layout;
         if (mix.layout.id.isEmpty())
             return channelLayout("stereo-v1");
         if (o.layer.isEmpty())
@@ -951,10 +953,17 @@ class HostedRackView final : public juce::Component
         juce::PopupMenu menu;
         std::vector<juce::String> ids{juce::String()};
         juce::StringArray names{"Master"};
+        if (session.document.activeMix().trackSchema)
+            for (auto &t : session.document.activeMix().tracks)
+                if (t.kind != TrackKind::folder)
+                {
+                    ids.push_back(t.id);
+                    names.add(t.name);
+                }
         for (auto &l : session.document.activeMix().layers)
         {
             ids.push_back(l.id);
-            names.add(l.name);
+            names.add(session.document.activeMix().trackSchema ? "Clip / " + l.name : l.name);
         }
         for (int i = 0; i < names.size(); ++i)
         {

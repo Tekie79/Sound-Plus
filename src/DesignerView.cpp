@@ -45,6 +45,33 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     canvas = std::make_unique<Canvas>(*this);
+    tracks = std::make_unique<MultitrackEditor>(
+        session, [this](const Asset &a) { return peakPool->get(a); }, preferences);
+    tracks->onRowsChanged = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->setSize(std::max(280, canvasViewport.getWidth() - 14),
+                            std::max(canvasViewport.getHeight() - 2, tracks->contentHeight()));
+    };
+    tracks->onAssetDrop = [this](juce::var v, int64_t frame)
+    {
+        try
+        {
+            auto captured = designFromJson(juce::JSON::parse(v.toString()));
+            session.beginGesture();
+            for (auto &c : captured.original.layers)
+                session.add(c.source, c.region.startSample, c.region.endSample, c.external,
+                            c.routing.needsSelection ? -3 : c.region.auditionPair, frame);
+            session.endGesture();
+        }
+        catch (const std::exception &e)
+        {
+            session.cancelGesture();
+            session.message = e.what();
+        }
+    };
+    addAndMakeVisible(addTrackButton);
+    addTrackButton.onClick = [this] { tracks->addTrackMenu(addTrackButton); };
     perform = std::make_unique<PerformView>(session, peakPool);
     perform->setMacroPanelWidth(preferences.getIntValue("performMacroWidth", PerformView::defaultMacroWidth));
     perform->onMacroWidthChanged = [this](int width) { preferences.setValue("performMacroWidth", width); };
@@ -125,20 +152,57 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     for (auto *control : {&zoomIn, &zoomOut, &fitAll, &fitSelected, &snap, &snapOptions, &scrub, &verticalIn,
                           &verticalOut, &accurate})
         addAndMakeVisible(control);
-    zoomIn.onClick = [this] { canvas->zoom(1.5); };
-    zoomOut.onClick = [this] { canvas->zoom(1 / 1.5); };
-    verticalIn.onClick = [this] { canvas->zoomVertical(1.25); };
-    verticalOut.onClick = [this] { canvas->zoomVertical(1 / 1.25); };
+    zoomIn.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->zoom(1.5);
+        else
+            canvas->zoom(1.5);
+    };
+    zoomOut.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->zoom(1 / 1.5);
+        else
+            canvas->zoom(1 / 1.5);
+    };
+    verticalIn.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->zoomVertical(1.25);
+        else
+            canvas->zoomVertical(1.25);
+    };
+    verticalOut.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->zoomVertical(1 / 1.25);
+        else
+            canvas->zoomVertical(1 / 1.25);
+    };
     canvas->onRowsChanged = [this]
     {
         canvas->setSize(std::max(280, canvasViewport.getWidth() - 14),
                         std::max(canvasViewport.getHeight() - 2, canvas->contentHeight()));
     };
-    fitAll.onClick = [this] { canvas->fitDesign(); };
-    fitSelected.onClick = [this] { canvas->fitSelection(); };
+    fitAll.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->fitDesign();
+        else
+            canvas->fitDesign();
+    };
+    fitSelected.onClick = [this]
+    {
+        if (session.document.activeMix().trackSchema)
+            tracks->fitSelection();
+        else
+            canvas->fitSelection();
+    };
     snap.onClick = [this]
     {
         canvas->snapping.enabled = !canvas->snapping.enabled;
+        tracks->snapping.enabled = canvas->snapping.enabled;
         snap.setToggleState(canvas->snapping.enabled, juce::dontSendNotification);
     };
     snap.setToggleState(canvas->snapping.enabled, juce::dontSendNotification);
@@ -146,6 +210,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     scrub.onClick = [this]
     {
         canvas->audibleScrub = !canvas->audibleScrub;
+        tracks->audibleScrub = canvas->audibleScrub;
         scrub.setToggleState(canvas->audibleScrub, juce::dontSendNotification);
     };
     scrub.setTooltip("Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms "
@@ -572,6 +637,13 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     slider(
         "Fade out", "Fade out (seconds)", 0, 5, .001, [](auto &l) { return (double)l.fadeOut; },
         [](auto &l, double v) { l.fadeOut = (int64_t)std::llround(v); }, lockFadeOut);
+    section("SOURCE INSERTS");
+    sourceRack = std::make_unique<StockRackView>(
+        session, false, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
+    inspector.addAndMakeVisible(*sourceRack);
+    sourceRack->setBounds(8, inspectorY, 306, 280);
+    sourceRack->onHeightChange = [this] { layoutInspector(); };
+    inspectorY += 288;
     section("TRACK INSERTS");
     trackRack = std::make_unique<StockRackView>(
         session, false, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
@@ -650,6 +722,8 @@ void DesignerView::section(const juce::String &name)
         label = "Mix";
     else if (label == "fades")
         label = "Fades";
+    else if (label == "source inserts")
+        label = "Clip source inserts";
     else if (label == "track inserts")
         label = "Track inserts";
     else if (label == "master inserts")
@@ -693,6 +767,24 @@ void DesignerView::layoutInspector()
     inspector.sections.clear();
     for (auto &g : groups)
     {
+        const bool multitrack = session.document.activeMix().trackSchema;
+        const bool clipSection = g.name == "LAYER" || g.name == "SOURCE & TIMING" || g.name == "MIX" ||
+                                 g.name == "FADES" || g.name == "SOURCE INSERTS";
+        auto *track = findTrack(session.document.activeMix(), session.document.selectedTrack);
+        bool hidden =
+            (g.name == "SOURCE INSERTS" && !multitrack) ||
+            (multitrack && !session.selectedLayer() && clipSection) ||
+            (multitrack && g.name == "TRACK INSERTS" && (!track || track->kind == TrackKind::folder));
+        g.header->setVisible(!hidden);
+        if (hidden)
+        {
+            for (auto &[c, b] : g.children)
+            {
+                juce::ignoreUnused(b);
+                c->setVisible(false);
+            }
+            continue;
+        }
         int top = y;
         g.header->setBounds(12, y + 4, 302, 34);
         g.header->setToggleState(g.open, juce::dontSendNotification);
@@ -709,16 +801,18 @@ void DesignerView::layoutInspector()
                              session.document.activeMix().layout.id.isEmpty();
         if (noSourceError)
             height -= 28;
-        if (g.name == "TRACK INSERTS" || g.name == "MASTER INSERTS")
+        if (g.name == "TRACK INSERTS" || g.name == "MASTER INSERTS" || g.name == "SOURCE INSERTS")
         {
-            auto *editor = g.name == "TRACK INSERTS" ? trackRack.get() : masterRack.get();
+            auto *editor = g.name == "TRACK INSERTS"    ? trackRack.get()
+                           : g.name == "SOURCE INSERTS" ? sourceRack.get()
+                                                        : masterRack.get();
             if (editor)
                 height = editor->preferredHeight();
         }
         for (auto &[child, bounds] : g.children)
         {
             auto positioned = bounds;
-            if (child == trackRack.get() || child == masterRack.get())
+            if (child == trackRack.get() || child == masterRack.get() || child == sourceRack.get())
                 positioned.setHeight(static_cast<StockRackView *>(child)->preferredHeight());
             else if (child == alternatives.get())
                 positioned.setHeight(alternatives->preferredHeight());
@@ -952,8 +1046,14 @@ void DesignerView::toggle(const juce::String &name, std::function<bool(const Des
 }
 void DesignerView::updateEffects()
 {
+    if (sourceRack)
+        sourceRack->bind(session.document.activeMix().trackSchema ? session.document.selectedLayer
+                                                                  : juce::String());
     if (trackRack)
-        trackRack->bind(session.document.selectedLayer);
+        trackRack->bind(session.document.activeMix().trackSchema
+                            ? (session.document.selectedTrack == "master" ? juce::String()
+                                                                          : session.document.selectedTrack)
+                            : session.document.selectedLayer);
     if (masterRack)
         masterRack->bind({});
 }
@@ -1142,6 +1242,14 @@ void DesignerView::refresh()
     readyOutputs.setVisible(readyOutputs.getNumItems() > 0);
     outputInfo.setVisible(readyOutputs.getNumItems() == 0);
     readyOutputs.setTooltip(outputInfo.getTooltip());
+    if (session.document.activeMix().trackSchema)
+    {
+        if (canvasViewport.getViewedComponent() != tracks.get())
+            canvasViewport.setViewedComponent(tracks.get(), false);
+        tracks->refresh();
+    }
+    else if (canvasViewport.getViewedComponent() != canvas.get())
+        canvasViewport.setViewedComponent(canvas.get(), false);
     canvas->syncSelectors();
     canvas->onRowsChanged();
     canvas->repaint();
@@ -1164,6 +1272,8 @@ void DesignerView::refresh()
     snapshotButton.setEnabled(!frozen);
     editWorkspace.setEnabled(!frozen);
     canvas->setEnabled(!frozen);
+    tracks->setEnabled(!frozen);
+    addTrackButton.setEnabled(!frozen);
     inspector.setEnabled(!frozen && !session.transitionPending());
     render.setEnabled(!session.takeBusy() && !session.rendering &&
                       (selectedTake(d) ? selectedTake(d)->complete : !d.activeMix().layers.empty()));
@@ -1262,10 +1372,16 @@ void DesignerView::timerCallback()
             const auto top = canvasViewport.getViewPositionY();
             const auto bottom = top + canvasViewport.getHeight();
             auto &layers = session.document.activeMix().layers;
-            for (int i = 0; i < (int)layers.size(); ++i)
-                if (canvas->viewport.rowTop(i) + canvas->viewport.rowHeight(i) >= top - 100 &&
-                    canvas->viewport.rowTop(i) < bottom + 100)
-                    visibleLayers.push_back(layers[(size_t)i].source);
+            if (session.document.activeMix().trackSchema)
+            {
+                for (auto &clip : layers)
+                    visibleLayers.push_back(clip.source);
+            }
+            else
+                for (int i = 0; i < (int)layers.size(); ++i)
+                    if (canvas->viewport.rowTop(i) + canvas->viewport.rowHeight(i) >= top - 100 &&
+                        canvas->viewport.rowTop(i) < bottom + 100)
+                        visibleLayers.push_back(layers[(size_t)i].source);
         }
     }
     if (alternatives)
@@ -1281,6 +1397,8 @@ void DesignerView::timerCallback()
     }
     perform->updateTransport(state);
     canvas->repaint();
+    if (session.document.activeMix().trackSchema)
+        tracks->transportTick();
     repaint();
 }
 void DesignerView::paint(juce::Graphics &g)
@@ -1344,6 +1462,8 @@ void DesignerView::resized()
     tx += 28;
     takeStatus.setBounds(tx, 96, std::max(0, getWidth() - tx - 12), 30);
     canvasViewport.setVisible(!performMode);
+    addTrackButton.setVisible(!performMode);
+    addTrackButton.setBounds(456, 55, 30, 32);
     inspect.setVisible(!performMode);
     for (auto *button :
          {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
@@ -1370,6 +1490,9 @@ void DesignerView::resized()
         x += 32;
     }
     canvasViewport.setBounds(12, 136, std::max(280, creative - 24), getHeight() - 340);
+    if (session.document.activeMix().trackSchema)
+        tracks->setSize(std::max(280, canvasViewport.getWidth() - 14),
+                        std::max(canvasViewport.getHeight() - 2, tracks->contentHeight()));
     int toolX = 16;
     for (auto *button :
          {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
@@ -1469,12 +1592,18 @@ void DesignerView::preparePerformanceBenchmark()
             mix.performance.blendEnabled = true;
             addMacroMapping(mix, 0, {{mix.layers[4].id, {}, "gain"}, -36, -12, "linear", false});
             addMacroMapping(mix, 1, {{mix.layers[5].id, {}, "pan"}, -.8, .8, "linear", false});
-            addMacroMapping(
-                mix, 2,
-                {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterLow"}, 500, 18000, "log", false});
-            addMacroMapping(
-                mix, 2,
-                {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterHigh"}, 20, 1000, "log", false});
+            addMacroMapping(mix, 2,
+                            {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterLow"},
+                             500,
+                             18000,
+                             "log",
+                             false});
+            addMacroMapping(mix, 2,
+                            {{mix.layers[6].id, mix.layers[6].inserts.stock[0].id, "filterHigh"},
+                             20,
+                             1000,
+                             "log",
+                             false});
             addMacroMapping(mix, 3, {{{}, mix.inserts.stock[1].id, "reverbWet"}, .05, .45, "linear", false});
             const char *names[]{"Weight", "Spread", "Tone", "Space"};
             for (int i = 0; i < 4; ++i)

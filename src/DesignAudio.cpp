@@ -1,4 +1,5 @@
 #include "DesignAudio.h"
+#include "TrackModel.h"
 #include "SourcePools.h"
 #include "ProcessorBusContract.h"
 #include "DesignLive.h"
@@ -506,6 +507,10 @@ class Voice
                                              block.getSample(k, n) * matrixGains[c][k].getNextValue());
             }
     }
+    void automate(const CompiledAutomation &a, int64_t frame)
+    {
+        rack->automate(a, frame);
+    }
     int latency() const
     {
         return rack->latency();
@@ -608,6 +613,215 @@ struct DesignGraph::Impl
     int pipelineLatency = 0;
     bool primed = false;
     juce::AudioBuffer<float> block{2, 512};
+    struct TrackNode
+    {
+        DesignTrack track;
+        ChannelLayout bus, destinationBus;
+        LayerRouting route;
+        std::array<std::array<juce::SmoothedValue<float>, 16>, 16> matrixGains;
+        std::unique_ptr<OrderedRack> rack;
+        std::unique_ptr<CompiledAutomation> automation;
+        std::vector<Voice *> clips;
+        juce::AudioBuffer<float> pcm, alignment, legacyClips;
+        ChannelMatrix legacyConversion{};
+        bool legacyInput = false;
+        bool audible = true, volumeAutomated = false;
+        int destination = -1, inputLatency = 0, outputLatency = -1, alignFrames = 0, alignPosition = 0;
+        juce::SmoothedValue<float> gain;
+    };
+    std::vector<std::unique_ptr<TrackNode>> tracks;
+    std::vector<int> trackOrder;
+    std::unique_ptr<CompiledAutomation> masterAutomation;
+    int masterInputLatency = 0;
+    void prepareTracks(bool fixed, const std::function<bool()> &cancelled)
+    {
+        auto &mix = document.activeMix();
+        masterAutomation = std::make_unique<CompiledAutomation>(mix, "master");
+        for (auto &t : mix.tracks)
+        {
+            if (t.kind == TrackKind::folder)
+                continue;
+            if (t.kind == TrackKind::midiInstrument)
+            {
+                if (t.instrument.has_value())
+                    throw std::runtime_error("MIDI instrument processing is a subsequent increment");
+                continue;
+            }
+            auto node = std::make_unique<TrackNode>();
+            node->track = t;
+            node->audible = trackAudible(mix, t.id);
+            auto *volume = automationCurve(t.automation, {{}, "volume"});
+            node->volumeAutomated = volume && volume->read;
+            node->bus = t.layout;
+            node->rack =
+                std::make_unique<OrderedRack>(t.inserts, t.layout, sampleRate, true, true, fixed, cancelled);
+            node->automation = std::make_unique<CompiledAutomation>(mix, t.id);
+            node->pcm.setSize(t.layout.size(), 512);
+            node->pcm.clear();
+            node->legacyInput = mix.layout.id.isEmpty() && t.layout != channelLayout("stereo-v1");
+            if (node->legacyInput)
+            {
+                node->legacyClips.setSize(2, 512);
+                node->legacyConversion = conversionMatrix(channelLayout("stereo-v1"), t.layout);
+            }
+            node->gain.reset(sampleRate, .005);
+            node->gain.setCurrentAndTargetValue(juce::Decibels::decibelsToGain((float)t.volumeDb));
+            for (auto &clip : mix.layers)
+                if (clip.trackId == t.id)
+                    for (auto &v : voices)
+                        if (v->id() == clip.id)
+                        {
+                            node->clips.push_back(v.get());
+                            node->inputLatency = std::max(node->inputLatency, v->latency());
+                        }
+            for (auto *v : node->clips)
+                v->compensate(node->inputLatency - v->latency());
+            tracks.push_back(std::move(node));
+        }
+        for (auto &node : tracks)
+        {
+            if (node->track.output.isNotEmpty())
+            {
+                for (size_t i = 0; i < tracks.size(); ++i)
+                    if (tracks[i]->track.id == node->track.output)
+                        node->destination = (int)i;
+                if (node->destination < 0)
+                    throw std::runtime_error("Required output Group Bus is unavailable");
+            }
+            node->destinationBus =
+                node->destination < 0 ? designLayout(document) : tracks[(size_t)node->destination]->bus;
+            node->route.interpretation = node->bus;
+            for (int c = 0; c < node->bus.size(); ++c)
+                node->route.inputs.push_back(c);
+            auto matrix = trackMatrix(node->track, node->destinationBus, node->track.pan, node->track.azimuth,
+                                      node->track.width);
+            for (int c = 0; c < node->destinationBus.size(); ++c)
+                for (int k = 0; k < node->bus.size(); ++k)
+                {
+                    node->matrixGains[(size_t)c][(size_t)k].reset(sampleRate, .005);
+                    node->matrixGains[(size_t)c][(size_t)k].setCurrentAndTargetValue(matrix[c][k]);
+                }
+        }
+        std::function<int(int)> latency = [&](int index)
+        {
+            auto &node = *tracks[(size_t)index];
+            if (node.outputLatency >= 0)
+                return node.outputLatency;
+            for (size_t i = 0; i < tracks.size(); ++i)
+                if (tracks[i]->destination == index)
+                    node.inputLatency = std::max(node.inputLatency, latency((int)i));
+            node.outputLatency = node.inputLatency + node.rack->latency();
+            trackOrder.push_back(index);
+            return node.outputLatency;
+        };
+        for (size_t i = 0; i < tracks.size(); ++i)
+            masterInputLatency = std::max(masterInputLatency, latency((int)i));
+        // Only root outputs determine Master alignment; nested intermediate buses are not summed again.
+        masterInputLatency = 0;
+        for (auto &node : tracks)
+            if (node->destination < 0)
+                masterInputLatency = std::max(masterInputLatency, node->outputLatency);
+        int64_t allocated = 0;
+        for (auto &node : tracks)
+        {
+            int destinationLatency =
+                node->destination < 0 ? masterInputLatency : tracks[(size_t)node->destination]->inputLatency;
+            node->alignFrames = destinationLatency - node->outputLatency;
+            allocated += (int64_t)node->alignFrames * node->destinationBus.size();
+            if (allocated > 48 * 1024 * 1024 || destinationLatency > sampleRate * 8)
+                throw std::runtime_error("Multitrack compensation exceeds bounded processing budget");
+            if (node->alignFrames)
+            {
+                node->alignment.setSize(node->destinationBus.size(), node->alignFrames);
+                node->alignment.clear();
+            }
+        }
+        pipelineLatency = masterInputLatency + masterRack->latency();
+    }
+    void refreshTracks()
+    {
+        if (!masterAutomation)
+            return;
+        auto &mix = document.activeMix();
+        masterAutomation = std::make_unique<CompiledAutomation>(mix, "master");
+        for (auto &n : tracks)
+        {
+            n->track = *findTrack(mix, n->track.id);
+            n->automation = std::make_unique<CompiledAutomation>(mix, n->track.id);
+            n->audible = trackAudible(mix, n->track.id);
+            auto *c = automationCurve(n->track.automation, {{}, "volume"});
+            n->volumeAutomated = c && c->read;
+            n->gain.setTargetValue(juce::Decibels::decibelsToGain((float)n->track.volumeDb));
+            n->rack->update(n->track.inserts);
+        }
+    }
+    void renderTracks(int frames)
+    {
+        for (auto &node : tracks)
+            node->pcm.clear();
+        for (int index : trackOrder)
+        {
+            auto &node = *tracks[(size_t)index];
+            if (node.legacyInput)
+                node.legacyClips.clear();
+            for (auto *clip : node.clips)
+            {
+                clip->automate(*node.automation, cursor);
+                clip->add(node.legacyInput ? node.legacyClips : node.pcm, 0, frames, cursor, inputEnd);
+            }
+            if (node.legacyInput)
+                for (int c = 0; c < node.bus.size(); ++c)
+                    for (int k = 0; k < 2; ++k)
+                        if (node.legacyConversion[c][k])
+                            node.pcm.addFrom(c, 0, node.legacyClips, k, 0, frames,
+                                             node.legacyConversion[c][k]);
+            node.rack->automate(*node.automation, cursor - node.inputLatency);
+            node.rack->process(node.pcm, frames);
+            ChannelMatrix matrix{};
+            int matrixEnd = 0;
+            for (int n = 0; n < frames; ++n)
+            {
+                const auto frame = std::max<int64_t>(0, cursor + n - node.outputLatency);
+                if (n >= matrixEnd)
+                {
+                    auto time = node.automation->segmentFrame(frame);
+                    node.route.spatial = node.track.spatial;
+                    node.route.azimuth = node.automation->value({{}, "azimuth"}, node.track.azimuth, time);
+                    node.route.width = node.automation->value({{}, "width"}, node.track.width, time);
+                    auto pan = node.automation->value({{}, "pan"}, node.track.pan, time);
+                    matrix = trackMatrix(node.track, node.destinationBus, pan, node.route.azimuth,
+                                         node.route.width);
+                    for (int c = 0; c < node.destinationBus.size(); ++c)
+                        for (int k = 0; k < node.bus.size(); ++k)
+                            node.matrixGains[(size_t)c][(size_t)k].setTargetValue(matrix[c][k]);
+                    matrixEnd = n + node.automation->untilBoundary(frame, frames - n);
+                }
+                float gain = node.volumeAutomated
+                                 ? juce::Decibels::decibelsToGain((float)node.automation->value(
+                                       {{}, "volume"}, node.track.volumeDb, frame))
+                                 : node.gain.getNextValue();
+                if (!node.audible)
+                    gain = 0;
+                for (int c = 0; c < node.destinationBus.size(); ++c)
+                {
+                    float value = 0;
+                    for (int k = 0; k < node.bus.size(); ++k)
+                        value += node.matrixGains[(size_t)c][(size_t)k].getNextValue() *
+                                 node.pcm.getSample(k, n) * gain;
+                    if (node.alignFrames)
+                    {
+                        auto delayed = node.alignment.getSample(c, node.alignPosition);
+                        node.alignment.setSample(c, node.alignPosition, value);
+                        value = delayed;
+                    }
+                    auto &destination = node.destination < 0 ? block : tracks[(size_t)node.destination]->pcm;
+                    destination.addSample(c, n, value);
+                }
+                if (node.alignFrames)
+                    node.alignPosition = (node.alignPosition + 1) % node.alignFrames;
+            }
+        }
+    }
     explicit Impl(const DesignDocument &d, const std::function<bool()> &cancelled,
                   const DesignDocument *effectiveInput)
         : sampleRate(d.sampleRate), master(d.activeMix().masterDb),
@@ -643,9 +857,12 @@ struct DesignGraph::Impl
                 if (!document.activeMix().layout.id.isEmpty() && l.routing.needsSelection)
                     throw std::runtime_error("Choose supported source channels in Routing for: " +
                                              l.name.toStdString());
-                voices.push_back(std::make_unique<Voice>(
-                    l, sampleRate, invariant || !document.activeMix().layout.id.isEmpty(),
-                    document.activeMix().layout, document.activeMix().routingVersion, invariant, cancelled));
+                auto layout = document.activeMix().layout;
+                if (document.activeMix().trackSchema && layout.id.isNotEmpty())
+                    layout = findTrack(document.activeMix(), l.trackId)->layout;
+                voices.push_back(std::make_unique<Voice>(l, sampleRate, invariant || !layout.id.isEmpty(),
+                                                         layout, document.activeMix().routingVersion,
+                                                         invariant, cancelled));
             }
         int longest = 0;
         for (auto &voice : voices)
@@ -653,11 +870,13 @@ struct DesignGraph::Impl
         for (auto &voice : voices)
             voice->compensate(longest - voice->latency());
         pipelineLatency = longest + masterRack->latency();
+        if (document.activeMix().trackSchema)
+            prepareTracks(invariant, cancelled);
         // v3 records the producer's audible/source clock after PDC priming.
         // Reapply controls at the same internal graph position, including the
         // frozen pipeline's lookahead. Historical zero-latency stock recipes
         // retain their exact event interpretation.
-        if (auto *t = selectedTake(d); t && t->pluginAware)
+        if (auto *t = selectedTake(d); t && (t->pluginAware || t->trackRecipe))
             for (auto &event : events)
                 event.frame += pipelineLatency;
     }
@@ -692,6 +911,7 @@ struct DesignGraph::Impl
                 masterGain.setTargetValue(
                     juce::Decibels::decibelsToGain((float)document.activeMix().masterDb));
                 masterRack->update(document.activeMix().inserts);
+                refreshTracks();
             }
             int n = std::min(512, count - done);
             if (nextEvent < events.size())
@@ -703,12 +923,25 @@ struct DesignGraph::Impl
                     voice->verify();
                 lastVerified = cursor;
             }
-            for (auto &voice : voices)
-                voice->add(block, 0, n, cursor, inputEnd);
+            if (masterAutomation)
+                renderTracks(n);
+            else
+                for (auto &voice : voices)
+                    voice->add(block, 0, n, cursor, inputEnd);
+            if (masterAutomation)
+                masterRack->automate(*masterAutomation, cursor - masterInputLatency);
             masterRack->process(block, n);
             for (int i = 0; i < n; ++i)
             {
                 auto gain = masterGain.getNextValue();
+                if (masterAutomation)
+                {
+                    auto *curve = automationCurve(document.activeMix().masterAutomation, {{}, "volume"});
+                    if (curve && curve->read)
+                        gain = juce::Decibels::decibelsToGain((float)masterAutomation->value(
+                            {{}, "volume"}, document.activeMix().masterDb,
+                            std::max<int64_t>(0, cursor + i - pipelineLatency)));
+                }
                 for (int c = 0; c < block.getNumChannels(); ++c)
                     block.setSample(c, i, block.getSample(c, i) * gain);
             }
@@ -745,6 +978,7 @@ void DesignGraph::updateParameters(const juce::var &parameters)
     impl->masterGain.setTargetValue(
         juce::Decibels::decibelsToGain((float)impl->document.activeMix().masterDb));
     impl->masterRack->update(impl->document.activeMix().inserts);
+    impl->refreshTracks();
 }
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)
@@ -1080,6 +1314,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     DesignOutput result;
     result.path = target.getFullPathName();
     result.samples = totalFrames;
+    if (effectiveInput.activeMix().trackSchema)
+        result.processing = "multitrack-automation-v1";
     if (hostedPass)
     {
         result.processing = "hosted-racks-v1";

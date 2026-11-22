@@ -114,7 +114,7 @@ struct SourcePool
 constexpr size_t maxPoolEntries = 64;
 struct DesignLayer
 {
-    juce::String id = juce::Uuid().toString(), name;
+    juce::String id = juce::Uuid().toString(), name, trackId;
     Asset source;
     LayerRouting routing;
     bool external = false, mute = false, solo = false, reverse = false, locked = false;
@@ -129,12 +129,64 @@ struct DesignLayer
     InsertChain inserts; // Source-channel chain before spatial/matrix routing.
     std::optional<SourcePool> pool;
 };
+enum class TrackKind
+{
+    audio,
+    midiInstrument,
+    folder,
+    groupBus,
+    master
+};
+struct AutomationTarget
+{
+    juce::String instance, parameter = "volume";
+    bool operator==(const AutomationTarget &) const = default;
+};
+struct AutomationPoint
+{
+    juce::String id = juce::Uuid().toString();
+    int64_t frame = 0;
+    double value = 0;
+    bool hold = false; // Outgoing segment. Discrete targets always hold.
+};
+struct AutomationCurve
+{
+    AutomationTarget target;
+    bool read = true;
+    std::vector<AutomationPoint> points;
+};
+struct AutomationLane
+{
+    bool expanded = false, touch = false;
+    AutomationTarget shown, armed; // Display, write target and stored read curves are independent.
+    std::vector<AutomationCurve> curves;
+};
+struct InstrumentSlot
+{
+    juce::String id = juce::Uuid().toString(), format, identifier, state;
+};
+struct DesignTrack
+{
+    juce::String id = juce::Uuid().toString(), name = "Audio", parent, output;
+    TrackKind kind = TrackKind::audio;
+    ChannelLayout layout;
+    bool mute = false, solo = false, collapsed = false, spatial = false;
+    uint32_t colour = 0;
+    double volumeDb = 0, pan = 0, azimuth = 0, width = 60;
+    InsertChain inserts; // Clip-source compatibility chains stay on clips, before their routing.
+    std::optional<InstrumentSlot>
+        instrument; // Reserved dedicated instrument identity/state; never an audio effect slot.
+    AutomationLane automation;
+};
 struct DesignMix
 {
     ChannelLayout layout;   // Empty retains the legacy stereo contract verbatim.
     int routingVersion = 2; // Version1 remains immutable in historical layout-aware takes.
     PerformanceState performance;
-    std::vector<DesignLayer> layers;
+    std::vector<DesignLayer> layers; // Persistent audio clips; old IDs and source-stage semantics retained.
+    bool trackSchema = false;
+    std::vector<DesignTrack> tracks;
+    AutomationLane masterAutomation;
     InsertChain inserts; // Summed bus chain before master gain.
     double masterDb = -6;
     int64_t duration = 0; // Zero means the complete audible layer extent.
@@ -270,6 +322,7 @@ struct PerformTake
     juce::String id = juce::Uuid().toString(), name = "Untitled take", session, reason;
     juce::String recipeHash, eventHash, processing = "stock-takes-v1";
     FrozenTakeMix recipe;
+    bool trackRecipe = false;   // Recipe v4 freezes independent tracks/clips/project-time automation.
     bool pluginAware = false;   // Recipe v3: fixed hosted state, independent frame-zero processors.
     bool orderedRecipe = false; // Recipe version 2; historical recipe hashes keep their legacy encoding.
     double sampleRate = 48000;
@@ -312,7 +365,7 @@ struct DesignMarker
 struct DesignDocument
 {
     juce::String id = juce::Uuid().toString(), name = "Untitled design", activeVariation, selectedLayer,
-                 outputFolder, activeTake;
+                 outputFolder, activeTake, selectedTrack;
     int64_t revision = 1, playhead = 0;
     double sampleRate = 48000;
     int64_t liveControlTicks = 0; // Transient UI control-event clock.

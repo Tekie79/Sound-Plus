@@ -1,5 +1,6 @@
 #pragma once
 #include "DesignSession.h"
+#include "TrackModel.h"
 #include "DesignControls.h"
 #include "PerformanceState.h"
 #include "HostedRackView.h"
@@ -221,9 +222,8 @@ class StockRackView final : public juce::Component
             return nullptr;
         if (target.layer.isEmpty())
             return isMaster ? &session.document.activeMix().inserts.stock : nullptr;
-        for (auto &l : session.document.activeMix().layers)
-            if (l.id == target.layer)
-                return &l.inserts.stock;
+        if (auto *c = ownerInserts(session.document.activeMix(), target.layer))
+            return &c->stock;
         return nullptr;
     }
     void change(const Owner &target, const juce::String &name,
@@ -284,6 +284,8 @@ class StockRackView final : public juce::Component
             for (auto &l : session.document.activeMix().layers)
                 if (l.id == owner.layer)
                     name = l.name;
+        if (auto *t = findTrack(session.document.activeMix(), owner.layer))
+            name = t->name;
         heading.setText(name, juce::dontSendNotification);
         if (external)
             external->refresh();
@@ -590,10 +592,7 @@ class StockRackView final : public juce::Component
             return nullptr;
         if (target.layer.isEmpty())
             return &session.document.activeMix().inserts;
-        for (auto &l : session.document.activeMix().layers)
-            if (l.id == target.layer)
-                return &l.inserts;
-        return nullptr;
+        return ownerInserts(session.document.activeMix(), target.layer);
     }
     void editChain(const Owner &target, const juce::String &name, std::function<void(InsertChain &)> fn)
     {
@@ -702,10 +701,17 @@ class StockRackView final : public juce::Component
         juce::PopupMenu menu;
         std::vector<juce::String> targets{juce::String()};
         juce::StringArray names{"Master"};
+        if (session.document.activeMix().trackSchema)
+            for (auto &t : session.document.activeMix().tracks)
+                if (t.kind != TrackKind::folder)
+                {
+                    targets.push_back(t.id);
+                    names.add(t.name);
+                }
         for (auto &l : session.document.activeMix().layers)
         {
             targets.push_back(l.id);
-            names.add(l.name);
+            names.add(session.document.activeMix().trackSchema ? "Clip / " + l.name : l.name);
         }
         for (int i = 0; i < names.size(); ++i)
         {

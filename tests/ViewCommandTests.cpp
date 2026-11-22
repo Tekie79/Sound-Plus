@@ -152,6 +152,24 @@ struct DesignerViewTestAccess
             check(view.canvasViewport.getRight() < view.inspectorViewport.getX(),
                   "Minimum layout keeps Browser-side canvas separate from Inspector");
         }
+        auto legacyDocument = view.session.document;
+        view.session.edit("Materialize QA tracks",
+                          [](auto &document)
+                          {
+                              enableTrackSchema(document.activeMix());
+                              document.selectedLayer.clear();
+                              document.selectedTrack = addTrack(document.activeMix(), TrackKind::audio);
+                          });
+        view.refresh();
+        for (auto &g : view.groups)
+        {
+            if (g.name == "LAYER" || g.name == "SOURCE & TIMING" || g.name == "MIX" || g.name == "FADES")
+                check(!g.header->isVisible(), "Empty Track hides clip-only Inspector groups");
+            if (g.name == "TRACK INSERTS")
+                check(g.header->isVisible(), "Empty Track exposes real insert owner immediately");
+        }
+        view.session.document = legacyDocument;
+        view.refresh();
         select(2);
         view.compare.onClick();
         view.session.open(saved);
