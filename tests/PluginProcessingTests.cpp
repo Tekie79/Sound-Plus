@@ -489,9 +489,21 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                 .getChildFile(
                     "SoundPlusInstrumentFixture_artefacts/Release/VST3/SoundPlus QA Instrument.vst3");
         PluginCatalog instruments(root.getChildFile("instrument.json"));
-        auto negative = instruments.scan(child, {instrument}, false, cancelled);
-        require(negative["entries"][0]["plugins"][0]["reason"].toString().isNotEmpty(),
-                "Actual instrument class is rejected without optional-MIDI false positives");
+        auto discovered = instruments.scan(child, {instrument}, false, cancelled);
+        auto actualInstrument = discovered["entries"][0]["plugins"][0];
+        require((bool)actualInstrument["instrument"] && actualInstrument["reason"].toString().isEmpty() &&
+                    pluginCandidateRows(discovered, channelLayout("stereo-v1"), {}, false, false).isEmpty() &&
+                    pluginCandidateRows(discovered, channelLayout("stereo-v1"), {}, false, true).size() == 1,
+                "Accepted actual Instrument is available only in the dedicated Instrument picker");
+        auto wrongPurpose = obj();
+        put(wrongPurpose, "mode", "describe");
+        put(wrongPurpose, "plugin", actualInstrument);
+        put(wrongPurpose, "instrument", false);
+        put(wrongPurpose, "rate", 48000);
+        put(wrongPurpose, "block", 512);
+        put(wrongPurpose, "layout", layoutJson(channelLayout("stereo-v1")));
+        fails([&] { child.call(wrongPurpose, root, 20000); },
+              "Ordinary effect processing still rejects an actual Instrument class");
         auto rows = pluginCandidateRows(reprobed, channelLayout("5.1-side-v1"), "Stereo", true);
         require(rows.size() == 1 && rows[0]["status"].toString().isNotEmpty() && !(bool)rows[0]["canInsert"],
                 "Attention view exposes incompatible/failed stereo class on 5.1 bus");
