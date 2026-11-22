@@ -6,9 +6,9 @@ Start/reviewed HEAD:54ed393caa5fdaa47a399333f20e3833b3181606. Clean tree and no 
 
 ✓ A Offline Library availability, versioned canonical native parameter definitions/state, stable automation IDs, dynamic UI, latency/take compatibility foundation; 9/9 targeted suites passed in50.37s; independent foundation commit/push.
 
-◉ B Four-band parametric EQ plus HP/LP, filter modes and independent numerical/PCM tests; verified commit/push.
+✓ B Four-band parametric EQ plus HP/LP, filter modes and independent numerical/PCM tests;4/4 targeted suites passed in6.37s, independent scalar/response oracle max error9.35295e-8; verified commit/push.
 
-○ C Compressor, expander/gate, lookahead peak limiter, transient shaper, saturation; editable presets, all insert owners and automation; independent DSP/PDC/partition tests; verified commit/push.
+◉ C Compressor, expander/gate, lookahead peak limiter, transient shaper, saturation; editable presets, all insert owners and automation; independent DSP/PDC/partition tests; verified commit/push.
 
 ○ D Native normal/minimum Edit/Browser/Inspector, presets/keyboard/automation/Undo/Save/Quit/Reopen; full unchanged Release Mac vendor/AUv2/device gate, performance and preservation audit; report/roadmap and final commit/push.
 

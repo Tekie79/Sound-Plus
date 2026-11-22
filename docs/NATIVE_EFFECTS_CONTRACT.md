@@ -21,3 +21,9 @@ Offline full files and saved regions remain visible in All Sounds, Favorites and
 ## Qualification boundaries
 
 Stage A establishes persistence, UI/automation adapters and graph latency plumbing before new DSP is enabled. Algorithm-specific contracts and executed numerical/PCM evidence follow in the stage reports. Peak limiting must not be labelled true-peak without a separately verified reconstruction/oversampling mode. Human listening, physical surround and receiving-app persistence remain separate from numerical/native checks.
+
+## EQ v1
+
+Four independently enabled Bell/Low Shelf/High Shelf/Notch bands have stable enable/type/frequency/Q/gain IDs, plus enabled HP/LP stages with frequency/Q and one to four cascaded biquads (12/24/36/48dB per octave), and output trim. Slopes describe repeated user-Q sections, not an undocumented Butterworth alignment. Shelves use resonance Q. Requested frequency is retained in metadata and clamped to49% of the actual processing rate. Audio roles/channels remain independent. Ten-millisecond parameter smoothing and twenty-millisecond coefficient interpolation preserve state; coefficient targets update on a continuous32-sample phase independent of caller block partition. Individual bypass ramps aligned dry/wet while wet history continues.
+
+The transfer functions follow the [W3C Audio EQ Cookbook](https://www.w3.org/TR/audio-eq-cookbook/). Independent tests use the separate JUCE coefficient factory, scalar Direct Form I impulse recurrence and complex z-domain response/phase, rather than the production coefficient/state implementation. Fresh tests cover all six filter modes,44.1/48/96k,1/32/61/257/512-sample partitioning and rapid/extreme frequency/Q sweeps. Stage B maximum measured impulse error was9.35295e-8; the four-suite compatibility/automation/view gate passed in6.37s. Native UI inspection and the final whole-application gate remain Stage D acceptance items.

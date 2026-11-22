@@ -3,6 +3,8 @@
 #include "TrackModel.h"
 #include "DesignLive.h"
 #include <iostream>
+#include <juce_dsp/juce_dsp.h>
+#include <complex>
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace
 {
@@ -25,6 +27,7 @@ template <class F> void rejects(F f, const char *why)
     check(rejected, why);
 }
 } // namespace
+#include "NativeEqTests.inc"
 void runNativeEffectsTests(const juce::File &base)
 {
     using namespace sp;
@@ -68,7 +71,8 @@ void runNativeEffectsTests(const juce::File &base)
         auto encoded = designToJson(d);
         check((int)encoded["version"] == 15, "New manifest gate");
         auto decoded = designFromJson(encoded);
-        check(juce::JSON::toString(designToJson(decoded), true) == juce::JSON::toString(encoded, true), "Native document exact canonical round trip");
+        check(juce::JSON::toString(designToJson(decoded), true) == juce::JSON::toString(encoded, true),
+              "Native document exact canonical round trip");
         auto take = freezeTake(d, "Native frozen");
         auto t = takeToJson(take);
         check((int)t["recipe"]["recipeVersion"] == 6, "New take epoch");
@@ -94,5 +98,7 @@ void runNativeEffectsTests(const juce::File &base)
               "Legacy encoding untouched");
         check((int)json["version"] < 15, "Legacy never acquires new epoch");
     }
+    if (nativeDSPAvailable("parametric-eq"))
+        eqTests();
     std::cout << "Native effect foundation checks passed\n";
 }
