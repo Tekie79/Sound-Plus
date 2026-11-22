@@ -700,6 +700,17 @@ void validateTracks(const DesignMix &m, double rate)
                     "Organizational folders have no audio processing");
         require(t.kind == TrackKind::midiInstrument || !t.instrument.has_value(),
                 "Only MIDI-instrument tracks own an Instrument slot");
+        if (t.input)
+        {
+            require(t.kind == TrackKind::audio && t.input->deviceUID.isNotEmpty(),
+                    "Only Audio Tracks own physical inputs");
+            validateLayout(t.input->layout);
+            require(t.input->channels.size() == (size_t)t.input->layout.size(),
+                    "Input role/channel count mismatch");
+            std::set<int> channels;
+            for (int c : t.input->channels)
+                require(c >= 0 && c < 16 && channels.insert(c).second, "Invalid physical input channel");
+        }
     }
     for (auto &t : m.tracks)
     {
@@ -778,6 +789,19 @@ juce::var tracksToJson(const DesignMix &m)
         put(x, "azimuth", t.azimuth);
         put(x, "width", t.width);
         put(x, "insertChain", insertChainToJson(t.inserts));
+        if (t.input)
+        {
+            auto input = obj();
+            put(input, "version", 1);
+            put(input, "deviceUID", t.input->deviceUID);
+            put(input, "deviceName", t.input->deviceName);
+            put(input, "layout", layoutJson(t.input->layout));
+            juce::Array<juce::var> channels;
+            for (int c : t.input->channels)
+                channels.add(c);
+            put(input, "channels", channels);
+            put(x, "input", input);
+        }
         if (t.instrument)
         {
             auto slot = obj();
@@ -820,6 +844,19 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
         t.azimuth = (double)x["azimuth"];
         t.width = (double)x["width"];
         t.inserts = insertChainFromJson(x["insertChain"]);
+        if (x.hasProperty("input"))
+        {
+            auto v = x["input"];
+            require((int)v["version"] == 1 && v["channels"].isArray() && v["channels"].size() <= 16,
+                    "Invalid Audio Track input configuration");
+            TrackInput input;
+            input.deviceUID = v["deviceUID"].toString();
+            input.deviceName = v["deviceName"].toString();
+            input.layout = layoutFromJson(v["layout"]);
+            for (auto &c : *v["channels"].getArray())
+                input.channels.push_back((int)c);
+            t.input = std::move(input);
+        }
         if (x.hasProperty("instrument"))
         {
             auto slot = x["instrument"];

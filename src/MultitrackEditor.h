@@ -31,6 +31,7 @@ class MultitrackEditor final : public juce::Component,
     void renameTrack(const juce::String &, const juce::String &);
     void moveClip(const juce::String &, const juce::String &, int64_t, bool copy);
     void splitSelected();
+    void inputMenu(const juce::String &, juce::Component &);
     void mouseDown(const juce::MouseEvent &) override;
     void mouseDrag(const juce::MouseEvent &) override;
     void mouseUp(const juce::MouseEvent &) override;

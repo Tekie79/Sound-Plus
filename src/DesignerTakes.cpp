@@ -32,7 +32,8 @@ void DesignerView::refreshTakes()
                               ? "Record Perform controls through a frozen starting plug-in state. Native "
                                 "knob automation is not recorded."
                               : "Record a performance take");
-    recordTake.setEnabled(!session.takeBusy() && session.document.activeTake.isEmpty() &&
+    recordTake.setEnabled(!session.inputBusy() && !session.takeBusy() &&
+                          session.document.activeTake.isEmpty() &&
                           !session.document.activeMix().layers.empty() && !session.rendering &&
                           !session.working && !session.transitionPending());
     stopTake.setEnabled(session.takeBusy());

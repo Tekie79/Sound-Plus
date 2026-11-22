@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 1: audio_input_recording
+1/1 Test #1: audio_input_recording ............***Failed    1.03 sec
+FAIL after 0 checks: Input capture cannot exceed the one-hour project transport envelope
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   1.03 sec
+
+The following tests FAILED:
+	  1 - audio_input_recording (Failed)
+Errors while running CTest

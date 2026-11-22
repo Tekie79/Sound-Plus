@@ -145,6 +145,7 @@ struct DesignLayer
     InsertChain inserts; // Source-channel chain before spatial/matrix routing.
     std::optional<SourcePool> pool;
     std::optional<SplitHistory> splitHistory;
+    juce::var recordingOrigin; // Immutable source-capture receipt, distinct from Perform events.
 };
 SourceTiming sourceTiming(const DesignLayer &);
 bool usesSplitHistory(const DesignLayer &);
@@ -185,6 +186,12 @@ struct InstrumentSlot
 {
     juce::String id = juce::Uuid().toString(), format, identifier, state;
 };
+struct TrackInput
+{
+    juce::String deviceUID, deviceName;
+    std::vector<int> channels;
+    ChannelLayout layout;
+};
 struct DesignTrack
 {
     juce::String id = juce::Uuid().toString(), name = "Audio", parent, output;
@@ -197,6 +204,7 @@ struct DesignTrack
     std::optional<InstrumentSlot>
         instrument; // Reserved dedicated instrument identity/state; never an audio effect slot.
     AutomationLane automation;
+    std::optional<TrackInput> input; // Configuration only. Arm and monitoring never reopen automatically.
 };
 struct DesignMix
 {

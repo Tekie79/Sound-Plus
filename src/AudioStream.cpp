@@ -333,7 +333,7 @@ void AuditionCore::service(int ahead)
         it = retired.erase(it);
     }
 }
-void AuditionCore::render(float *const *out, int channels, int frames) noexcept
+void AuditionCore::render(float *const *out, int channels, int frames, uint64_t outputHostNs) noexcept
 {
     for (int c = 0; c < channels; ++c)
         if (out[c])
@@ -344,6 +344,8 @@ void AuditionCore::render(float *const *out, int channels, int frames) noexcept
     hazard.store(p);
     if (p && active.load() == p)
     {
+        if (inputClock && outputHostNs && p->isDesign())
+            inputClock->publish({outputHostNs, p->transportGeneration, p->sourceSample(), p->originalRate()});
         const int read = p->read(out, channels, frames, gain, volume.load(std::memory_order_relaxed),
                                  p->isDesign() ? &monitorMapping : nullptr,
                                  p->isDesign() ? monitorSolo.load(std::memory_order_relaxed) : -1);

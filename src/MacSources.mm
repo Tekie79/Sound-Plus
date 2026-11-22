@@ -2,11 +2,24 @@
 #include "Catalog.h"
 #import <Foundation/Foundation.h>
 #import <AppKit/AppKit.h>
+#import <AVFoundation/AVFoundation.h>
 #include <CoreServices/CoreServices.h>
 #include <sys/mount.h>
 #include <filesystem>
 namespace sp
 {
+void requestAudioInputPermission(std::function<void(bool)> completion)
+{
+    auto deliver = [completion = std::move(completion)](bool granted)
+    {
+        dispatch_async(dispatch_get_main_queue(), ^{ completion(granted); });
+    };
+    auto status = [AVCaptureDevice authorizationStatusForMediaType:AVMediaTypeAudio];
+    if (status == AVAuthorizationStatusNotDetermined)
+        [AVCaptureDevice requestAccessForMediaType:AVMediaTypeAudio completionHandler:^(BOOL granted) { deliver((bool)granted); }];
+    else
+        deliver(status == AVAuthorizationStatusAuthorized);
+}
 juce::var powerAndThermalState()
 {
     auto state=juce::var(new juce::DynamicObject());

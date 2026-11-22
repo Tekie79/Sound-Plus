@@ -5,6 +5,7 @@
 #include "SerialWorker.h"
 #include "SourcePools.h"
 #include "LiveInsertSession.h"
+#include "InputRecording.h"
 #include <set>
 #include <deque>
 
@@ -26,6 +27,8 @@ struct DesignSessionServices
     std::function<void()> stop;
     std::function<void(bool)> finishTake;
     std::function<void(bool)> reserveTake;
+    std::function<void(juce::var)> inputCommand;
+    std::function<void(std::function<void(bool)>)> inputPermission;
     // Optional controlled capture service, same completion boundary as the native service.
     std::function<void(std::function<void(bool)>)> captureLive;
     bool automaticRecovery = true, timers = true;
@@ -95,6 +98,31 @@ class DesignSession final : public juce::Component, private juce::Timer
         return liveInserts != nullptr;
     }
     void closeWhenSafe(std::function<void()>);
+    bool inputBusy() const
+    {
+        return inputOperation.isNotEmpty();
+    }
+    bool inputArmed(const juce::String &id) const
+    {
+        return armedInputs.contains(id);
+    }
+    bool inputMonitored(const juce::String &id) const
+    {
+        return monitoredInputs.contains(id);
+    }
+    bool inputReady() const;
+    float inputPeak(const juce::String &) const;
+    juce::var inputStatus() const
+    {
+        return services.status()["inputRecording"];
+    }
+    void configureTrackInput(const juce::String &, TrackInput);
+    void armInputTrack(const juce::String &, bool);
+    void monitorInputTrack(const juce::String &, bool);
+    void startInputRecording();
+    void stopInputRecording(bool cancel = false);
+    void recoverInputRecording(const juce::File &);
+    void findInputRecoveries(std::function<void(juce::Array<juce::var>)>);
     void add(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0,
              int64_t placement = -1);
     void addExternal(const juce::File &, int64_t placement = -1);
@@ -185,6 +213,8 @@ class DesignSession final : public juce::Component, private juce::Timer
         output,
         autosave,
         take,
+        input,
+        inputRecoveryList,
         count
     };
     struct Stamp
@@ -230,6 +260,21 @@ class DesignSession final : public juce::Component, private juce::Timer
     std::optional<PerformControls> takeGestureStart;
     std::optional<History> takeUndoBase;
     bool takeMutation = false, takeReadPending = false;
+    std::set<juce::String> armedInputs, monitoredInputs, pendingInputArms;
+    juce::String inputOperation, inputDocument, inputVariation, inputArmContext, inputLastPhase;
+    uint64_t inputIncarnation = 0, inputProcessGeneration = 0, inputControlSerial = 0;
+    bool inputMutation = false, inputReadPending = false, inputStopRequested = false,
+         inputCancelRequested = false;
+    bool inputConfigPending = false;
+    std::function<void()> inputClose;
+    void pollInput(const juce::var &);
+    void updateInputDevice();
+    void applyInputReceipt(juce::var);
+    void finishInputContext();
+    juce::File inputRecordingRoot() const
+    {
+        return directory.getChildFile("recorded-audio");
+    }
     double takeStartedAt = 0;
     juce::File takeCheckpoint;
     bool takeCapturingPlugins = false;

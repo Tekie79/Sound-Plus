@@ -1,0 +1,260 @@
+{
+  "isolatedCatalog": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native",
+  "captures": [
+    {
+      "id": "acaeebcaae1d4469870029fe00dc987f",
+      "state": "cancelled",
+      "frames": 377657,
+      "partial": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.acaeebcaae1d4469870029fe00dc987f.partial",
+      "diagnostics": {
+        "inputCallbacks": 740,
+        "inputOverruns": 0,
+        "monitorDrops": 0,
+        "maxInputPushUsSinceDeviceOpen": 10.0,
+        "maxNativeInputCallbackUsSinceDeviceOpen": 11.166,
+        "outputUnderruns": 0,
+        "ringSlots": 32,
+        "maxCallbackFrames": 4096
+      },
+      "finalized": false
+    },
+    {
+      "id": "02e5f259d1c04e4287fc60fab3ee6ea2",
+      "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/receipt.json",
+      "state": "complete",
+      "originalState": "incomplete",
+      "device": {
+        "uid": "BuiltInMicrophoneDevice",
+        "name": "MacBook Pro Microphone",
+        "rate": 48000.0,
+        "channels": 1,
+        "latency": 26,
+        "safety": 48,
+        "names": [
+          "1"
+        ],
+        "layout": {
+          "id": "mono-v1",
+          "roles": [
+            "C"
+          ]
+        }
+      },
+      "frames": 2679990,
+      "placement": 1,
+      "firstDeviceFrame": 609658,
+      "firstAcquisitionHostNs": 337266735498208,
+      "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/Recording-1.wav",
+      "sha256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7",
+      "rawEqualsWavData": true,
+      "rms": 0.007765617953917082,
+      "peak": 0.15012535452842712,
+      "diagnostics": null,
+      "finalized": true
+    },
+    {
+      "id": "68b5423c7e744e829d96fd5b41861cd2",
+      "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/receipt.json",
+      "state": "recovered",
+      "originalState": "recording",
+      "device": {
+        "uid": "BuiltInMicrophoneDevice",
+        "name": "MacBook Pro Microphone",
+        "rate": 48000.0,
+        "channels": 1,
+        "latency": 26,
+        "safety": 48,
+        "names": [
+          "1"
+        ],
+        "layout": {
+          "id": "mono-v1",
+          "roles": [
+            "C"
+          ]
+        }
+      },
+      "frames": 1039492,
+      "placement": 3168256,
+      "firstDeviceFrame": 2501524,
+      "firstAcquisitionHostNs": 338319217344917,
+      "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/Recording-1.wav",
+      "sha256": "997d9ec9ef4978b6d9310a77b1ccd2d49c8e8df058d20cae3ad2e8965f801325",
+      "rawEqualsWavData": true,
+      "rms": 0.0014751707091435855,
+      "peak": 0.01148922462016344,
+      "diagnostics": {
+        "inputCallbacks": 2032,
+        "inputOverruns": 0,
+        "monitorDrops": 0,
+        "maxInputPushUsSinceDeviceOpen": 10.0,
+        "maxNativeInputCallbackUsSinceDeviceOpen": 11.875,
+        "outputUnderruns": 0,
+        "ringSlots": 32,
+        "maxCallbackFrames": 4096
+      },
+      "finalized": true
+    },
+    {
+      "id": "6bc5235dd2554ae3a1e0c0c34e10c2d7",
+      "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/receipt.json",
+      "state": "complete",
+      "originalState": null,
+      "device": {
+        "uid": "BuiltInMicrophoneDevice",
+        "name": "MacBook Pro Microphone",
+        "rate": 48000.0,
+        "channels": 1,
+        "latency": 26,
+        "safety": 48,
+        "names": [
+          "1"
+        ],
+        "layout": {
+          "id": "mono-v1",
+          "roles": [
+            "C"
+          ]
+        }
+      },
+      "frames": 805177,
+      "placement": 3168257,
+      "firstDeviceFrame": 42199,
+      "firstAcquisitionHostNs": 338587644501249,
+      "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/Recording-1.wav",
+      "sha256": "ed962413e973a8f45cc4c3f6208873a7a527dc886682c047d5b9d97d8fd36f8d",
+      "rawEqualsWavData": true,
+      "rms": 0.0014146258803469898,
+      "peak": 0.011166057549417019,
+      "diagnostics": {
+        "inputCallbacks": 1577,
+        "inputOverruns": 0,
+        "monitorDrops": 0,
+        "maxInputPushUsSinceDeviceOpen": 10.0,
+        "maxNativeInputCallbackUsSinceDeviceOpen": 10.75,
+        "outputUnderruns": 0,
+        "ringSlots": 32,
+        "maxCallbackFrames": 4096
+      },
+      "finalized": true
+    },
+    {
+      "id": "a6846ca86cb746deadf8fab50de14fc0",
+      "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/receipt.json",
+      "state": "complete",
+      "originalState": "incomplete",
+      "device": {
+        "uid": "BuiltInMicrophoneDevice",
+        "name": "MacBook Pro Microphone",
+        "rate": 48000.0,
+        "channels": 1,
+        "latency": 26,
+        "safety": 48,
+        "names": [
+          "1"
+        ],
+        "layout": {
+          "id": "mono-v1",
+          "roles": [
+            "C"
+          ]
+        }
+      },
+      "frames": 489092,
+      "placement": 2679296,
+      "firstDeviceFrame": 327060,
+      "firstAcquisitionHostNs": 338273915932333,
+      "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/Recording-1.wav",
+      "sha256": "62f0940ccfa0da689cf02d76bf5d35119ee2277521cee9805019d1d8c674c76e",
+      "rawEqualsWavData": true,
+      "rms": 0.0014942398153296003,
+      "peak": 0.010164138861000538,
+      "diagnostics": {
+        "inputCallbacks": 960,
+        "inputOverruns": 0,
+        "monitorDrops": 0,
+        "maxInputPushUsSinceDeviceOpen": 10.0,
+        "maxNativeInputCallbackUsSinceDeviceOpen": 10.75,
+        "outputUnderruns": 0,
+        "ringSlots": 32,
+        "maxCallbackFrames": 4096
+      },
+      "finalized": true
+    },
+    {
+      "id": "c7f5337470ec49039423541af0ec3f2c",
+      "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/receipt.json",
+      "state": "recovered",
+      "originalState": "incomplete",
+      "device": {
+        "uid": "BuiltInMicrophoneDevice",
+        "name": "MacBook Pro Microphone",
+        "rate": 48000.0,
+        "channels": 1,
+        "latency": 26,
+        "safety": 48,
+        "names": [
+          "1"
+        ],
+        "layout": {
+          "id": "mono-v1",
+          "roles": [
+            "C"
+          ]
+        }
+      },
+      "frames": 795503,
+      "placement": 4208641,
+      "firstDeviceFrame": 40605,
+      "firstAcquisitionHostNs": 338425884210416,
+      "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/Recording-1.wav",
+      "sha256": "2671a1785acab1558c0c0b4c9fd67fbd5c47a688c50dbd21d40e9ac78202a1b3",
+      "rawEqualsWavData": true,
+      "rms": 0.0026934192430684654,
+      "peak": 0.03200832009315491,
+      "diagnostics": {
+        "inputCallbacks": 1557,
+        "inputOverruns": 0,
+        "monitorDrops": 0,
+        "maxInputPushUsSinceDeviceOpen": 7.333,
+        "maxNativeInputCallbackUsSinceDeviceOpen": 11.541,
+        "outputUnderruns": 0,
+        "ringSlots": 32,
+        "maxCallbackFrames": 4096
+      },
+      "finalized": true
+    }
+  ],
+  "crashChecks": {
+    "helper": {
+      "acknowledgedBeforeKill": 1027204,
+      "recoveredPrefix": 1039492,
+      "state": "recovered",
+      "originalState": "recording",
+      "rawEqualsWavData": true
+    },
+    "app": {
+      "acknowledgedBeforeKill": 784751,
+      "recoveredPrefix": 795503,
+      "state": "recovered",
+      "originalState": "incomplete",
+      "rawEqualsWavData": true
+    }
+  },
+  "savedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/native-final.soundplus",
+  "savedRevision": 10,
+  "savedClips": 7,
+  "screenshots": {
+    "native-minimum.jpg": [
+      1040,
+      680
+    ],
+    "native-large.jpg": [
+      1207,
+      768
+    ]
+  },
+  "humanListening": false,
+  "physicalStereoSeparateInputsSurround": false,
+  "physicalLatencyLoopback": false
+}

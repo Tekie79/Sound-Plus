@@ -1,0 +1,146 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Add existing sound folders, Help: Add Folder
+	2 text entry area (settable) Search library, Secondary Actions: Delete
+	3 text (settable) All sources
+	4 outline
+		5 row clip-001.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav
+			6 row clip-001.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav
+		7 row clip-002.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-002.wav
+			8 row clip-002.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-002.wav
+		9 row clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+			10 row clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+		11 row clip-004.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-004.wav
+			12 row clip-004.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-004.wav
+		13 row clip-005.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav
+			14 row clip-005.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav
+		15 row clip-006.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav
+			16 row clip-006.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav
+		17 row clip-007.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-007.wav
+			18 row clip-007.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-007.wav
+		19 row clip-008.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-008.wav
+			20 row clip-008.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-008.wav
+		21 row clip-009.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-009.wav
+			22 row clip-009.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-009.wav
+		23 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	24 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	25 button Per-channel source waveforms
+	26 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	27 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	28 container Library sidebar divider
+	29 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 4, Value: Multitrack QA
+	30 button Render Design, Help: Render Design (Command-R)
+	31 button Render settings
+	32 button Render selected layer
+	33 button Choose permanent output folder
+	34 button Library
+	35 button (settable) Browser, Help: Hide sound browser, Value: On
+	36 button Design · STEREO (legacy), Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	37 text (settable) Unsaved changes
+	38 button New design, Help: New design (Command-N)
+	39 button Open design, Help: Open design (Command-O)
+	40 button Save design, Help: Save design (Command-S)
+	41 button Recover autosave
+	42 button Undo, Help: Undo (Command-Z)
+	43 button Redo, Help: Redo (Shift-Command-Z)
+	44 button Add source
+	45 button Duplicate layer, Help: Duplicate layer (Command-D)
+	46 button Remove layer, Help: Remove layer (Delete / Backspace)
+	47 button Move layer down
+	48 button Add track
+	49 button (settable) Edit, Value: On
+	50 button (settable) Perform, Value: Off
+	51 button (settable) Hide layer inspector, Value: On
+	52 button Zoom out
+	53 button Zoom in (Command-wheel)
+	54 button Decrease track height
+	55 button Increase track height (Command-Option-wheel)
+	56 button Fit design
+	57 button Fit selected layers
+	58 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	59 button Snap targets and grid
+	60 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	61 button (settable) Layer, Value: On
+	62 text entry area (settable) Value: source.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multitrack-tests/458c4d7748454ef99b2beb4b1c4a0045/source.wav
+48000 Hz, 1 source channels, revision 1
+external-f732c71b3ac74776be9106a59b22cd76
+	63 button Relink / replace source
+	64 button (settable) Alternatives, Help: Optional alternate sources for this layer. One source remains the default., Value: Off
+	65 button Add alternatives, Help: Choose alternate files or drag sounds/regions from Library here. Maximum 64 entries per layer, including the initial source.
+	66 pop up button (settable) Layer source channel mapping, Value: Original mono
+	67 button Per-channel waveforms
+	68 button (settable) Mute, Value: Off
+	69 button (settable) Solo, Value: Off
+	70 button (settable) Lock entire layer for variations, Value: Off
+	71 button (settable) Source, Value: Off
+	72 button (settable) Mix, Value: On
+	73 text (settable) Gain
+	74 slider (settable) Layer gain (dB), Value: 0.0, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	75 button (settable) Lock Gain for variations, Value: Off
+	76 text (settable) Pan / balance
+	77 slider (settable) Mono pan / stereo balance, Value: 0.00, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	78 button (settable) Lock Pan / balance for variations, Value: Off
+	79 text (settable) Rate / pitch linked
+	80 slider (settable) Linked rate (%); pitch follows rate, Value: 100.0, Secondary Actions: Delete
+	81 button (settable) Lock Rate / pitch linked for variations, Value: Off
+	82 text (settable)
+	83 toggle button (settable, boolean) Reverse, Value: off
+	84 button (settable) Lock Reverse for variations, Value: Off
+	85 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	86 container Multitrack Edit timeline
+	87 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: source.wav
+	88 button Track colour
+	89 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: On
+	90 button (settable) Mute track, Value: Off
+	91 button (settable) Solo track, Value: Off
+	92 button (settable) Disarm audio input: source.wav, Value: On, Help: MacBook Pro Microphone / MONO. Input options and raw monitoring are in Track options. Monitoring starts off.
+	93 button Track options
+	94 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	95 container Automation lane
+	96 button (settable) Read, Value: On
+	97 button (settable) Touch, Value: Off
+	98 button Pan, Help: Show curve: Pan / . Stable instance
+	99 text (settable) 0.00
+	100 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Textures
+	101 button Track colour
+	102 button (settable) Folder disclosure, Help: Expand / collapse folder, Value: On
+	103 button (settable) Mute track, Value: Off
+	104 button (settable) Solo track, Value: Off
+	105 button Track options
+	106 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Empty Audio
+	107 button Track colour
+	108 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	109 button (settable) Mute track, Value: Off
+	110 button (settable) Solo track, Value: Off
+	111 button (settable) Arm audio input: Empty Audio, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
+	112 button Track options
+	113 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	114 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
+	115 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	116 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	117 button Generate 5
+	118 button Variation bounds and enabled parameters
+	119 pop up button (settable) Original and variation candidates, Value: Original
+	120 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	121 button Copy Original to Project
+	122 text (settable) /Users/harvest/Music/SoundPlus/Renders
+	123 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
+	124 button Record armed Audio Tracks (R), Help: Record armed Audio Tracks from the playhead (R). Stop finalizes source WAVs; Escape cancels and retains a recoverable prefix. Monitoring starts off.
+	125 button Audio recording options
+	126 button Go to start (Home)
+	127 button Previous marker
+	128 button Next marker
+	129 button Go to end (End)
+	130 button Add marker (M)
+	131 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	132 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	133 slider (settable) Monitor volume, excluded from render, Value: 0.12, Secondary Actions: Delete
+	134 text (settable) Recorded audio added; Undo keeps the source files
+	135 close button
+	136 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	137 minimize button
+	138 text SoundPlus
+139 menu bar
+	140 SoundPlus
+
+The focused UI element is 86 container Multitrack Edit timeline

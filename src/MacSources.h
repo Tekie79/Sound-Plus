@@ -10,6 +10,7 @@ namespace sp
 void makeAudioProcessBackground();
 void configurePluginServiceApplication();
 void activateDesktopApplication();
+void requestAudioInputPermission(std::function<void(bool)>);
 juce::var powerAndThermalState();
 struct VolumeLocation
 {

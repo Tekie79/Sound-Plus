@@ -183,9 +183,11 @@ juce::String designStructure(const DesignDocument &document)
         stripRack(layer["effects"]);
         stripHosted(layer["hostedRack"], document.liveInserts);
         stripLiveRouting(layer["routing"]);
-        for (const char *key : {"controlGain", "name", "first", "last", "placement", "sync", "fadeIn",
-                                "fadeOut", "gainDb", "pan", "rate", "reverse", "locked", "locks", "colour",
-                                "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints"})
+        for (const char *key :
+             {"controlGain", "name",         "first",        "last",          "placement",
+              "sync",        "fadeIn",       "fadeOut",      "gainDb",        "pan",
+              "rate",        "reverse",      "locked",       "locks",         "colour",
+              "fadeInShape", "fadeOutShape", "fadeInPoints", "fadeOutPoints", "recordingOrigin"})
             layer.getDynamicObject()->removeProperty(key);
     }
     if (resolved.activeMix().trackSchema)
@@ -198,7 +200,7 @@ juce::String designStructure(const DesignDocument &document)
             if (track["kind"].toString() == "folder")
                 continue;
             for (auto key : {"name", "parent", "mute", "solo", "collapsed", "colour", "volumeDb", "pan",
-                             "spatial", "azimuth", "width", "automation"})
+                             "spatial", "azimuth", "width", "automation", "input"})
                 track.getDynamicObject()->removeProperty(key);
             stripChain(track["insertChain"], document.liveInserts);
             rows.add(track);

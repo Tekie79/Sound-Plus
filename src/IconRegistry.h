@@ -73,6 +73,8 @@ enum class ActionIcon
     marker,
     previousMarker,
     nextMarker,
+    record,
+    microphone,
     count
 };
 namespace icons

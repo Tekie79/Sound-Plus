@@ -22,13 +22,38 @@ struct MultitrackEditor::Header final : juce::Component
     juce::String id;
     juce::Label name;
     IconButton expand{"Show automation", ActionIcon::chevron}, mute{"Mute track", ActionIcon::mute},
-        solo{"Solo track", ActionIcon::solo}, more{"Track options", ActionIcon::settings};
+        solo{"Solo track", ActionIcon::solo}, more{"Track options", ActionIcon::settings},
+        arm{"Arm Audio Track", ActionIcon::microphone};
     ui::ColourSwatchButton colour{"Track colour"};
     juce::Slider level;
     bool syncing = false;
-    Header(MultitrackEditor &e, juce::String track) : editor(e), id(std::move(track))
+    bool volumeGesture = false;
+    const uint64_t incarnation;
+    const juce::String document, variation;
+    bool contextValid() const
     {
-        for (auto *c : std::initializer_list<juce::Component *>{&name, &expand, &mute, &solo, &more, &colour})
+        return editor.session.documentGeneration() == incarnation && editor.session.document.id == document &&
+               editor.session.document.activeVariation == variation;
+    }
+    void finishInteraction()
+    {
+        if (volumeGesture)
+        {
+            volumeGesture = false;
+            if (contextValid())
+                editor.session.endGesture();
+        }
+    }
+    ~Header() override
+    {
+        finishInteraction();
+    }
+    Header(MultitrackEditor &e, juce::String track)
+        : editor(e), id(std::move(track)), incarnation(e.session.documentGeneration()),
+          document(e.session.document.id), variation(e.session.document.activeVariation)
+    {
+        for (auto *c :
+             std::initializer_list<juce::Component *>{&name, &expand, &mute, &solo, &more, &colour, &arm})
             addAndMakeVisible(c);
         if (id != "master")
         {
@@ -39,11 +64,18 @@ struct MultitrackEditor::Header final : juce::Component
             level.setDoubleClickReturnValue(true, 0);
             level.setTitle("Track base volume");
             level.setTooltip("Track base volume (dB); enabled Volume automation takes precedence.");
-            level.onDragStart = [this] { editor.session.beginGesture(); };
-            level.onDragEnd = [this] { editor.session.endGesture(); };
+            level.onDragStart = [this]
+            {
+                if (contextValid())
+                {
+                    volumeGesture = true;
+                    editor.session.beginGesture();
+                }
+            };
+            level.onDragEnd = [this] { finishInteraction(); };
             level.onValueChange = [this]
             {
-                if (!syncing)
+                if (!syncing && contextValid())
                     editor.session.edit("Track volume",
                                         [&](auto &d)
                                         {
@@ -55,9 +87,16 @@ struct MultitrackEditor::Header final : juce::Component
         name.addMouseListener(this, false);
         name.setEditable(false, id != "master");
         name.setTooltip("Double-click to rename. Drag empty header space to reorder.");
-        name.onTextChange = [this] { editor.renameTrack(id, name.getText()); };
-        for (auto *b : {&expand, &mute, &solo})
+        name.onTextChange = [this]
+        {
+            if (contextValid())
+                editor.renameTrack(id, name.getText());
+        };
+        for (auto *b : {&expand, &mute, &solo, &arm})
             b->setToggleable(true);
+        arm.onClick = [this] { editor.session.armInputTrack(id, !editor.session.inputArmed(id)); };
+        arm.setTooltip("Arm raw audio recording. Choose the device/channels and optional monitoring in Track "
+                       "options. Monitoring starts off.");
         expand.onClick = [this]
         {
             editor.session.editMetadata("Track disclosure",
@@ -115,11 +154,12 @@ struct MultitrackEditor::Header final : juce::Component
     {
         name.setBounds(8, 4, getWidth() - 38, 26);
         colour.setBounds(getWidth() - 28, 5, 24, 24);
-        level.setBounds(10, 63, getWidth() - 20, 16);
-        expand.setBounds(6, 34, 26, 26);
-        mute.setBounds(36, 34, 26, 26);
-        solo.setBounds(66, 34, 26, 26);
-        more.setBounds(getWidth() - 30, 34, 26, 26);
+        level.setBounds(10, 63, getWidth() - 20, 12);
+        expand.setBounds(4, 34, 24, 24);
+        mute.setBounds(30, 34, 24, 24);
+        solo.setBounds(56, 34, 24, 24);
+        arm.setBounds(82, 34, 24, 24);
+        more.setBounds(getWidth() - 28, 34, 24, 24);
     }
     void sync()
     {
@@ -143,7 +183,30 @@ struct MultitrackEditor::Header final : juce::Component
         more.setVisible(t != nullptr);
         mute.setToggleState(t && t->mute, juce::dontSendNotification);
         solo.setToggleState(t && t->solo, juce::dontSendNotification);
+        level.setEnabled(!editor.session.inputBusy());
+        mute.setEnabled(!editor.session.inputBusy());
+        solo.setEnabled(!editor.session.inputBusy());
+        arm.setVisible(t && t->kind == TrackKind::audio);
+        arm.setEnabled(!editor.session.inputBusy() && !editor.session.takeBusy());
+        arm.setToggleState(editor.session.inputArmed(id), juce::dontSendNotification);
+        arm.setButtonText((editor.session.inputArmed(id) ? "Disarm audio input: " : "Arm audio input: ") +
+                          (t ? t->name : juce::String()));
+        if (t && t->input)
+            arm.setTooltip(t->input->deviceName + " / " + layoutName(t->input->layout) +
+                           ". Input options and raw monitoring are in Track options. Monitoring starts off.");
         repaint();
+    }
+    void paint(juce::Graphics &g) override
+    {
+        if (editor.session.inputArmed(id))
+        {
+            auto b = juce::Rectangle<float>(10.f, (float)getHeight() - 3, (float)getWidth() - 20, 2.f);
+            g.setColour(ui::line);
+            g.fillRoundedRectangle(b, 1);
+            g.setColour(ui::accent);
+            g.fillRoundedRectangle(
+                b.withWidth(b.getWidth() * std::clamp(editor.session.inputPeak(id), 0.f, 1.f)), 1);
+        }
     }
     void mouseDown(const juce::MouseEvent &e) override
     {
@@ -163,7 +226,7 @@ MultitrackEditor::MultitrackEditor(DesignSession &s, Peaks p, juce::PropertiesFi
 {
     setWantsKeyboardFocus(true);
     setTitle("Multitrack Edit timeline");
-    height = std::clamp(prefs.getDoubleValue("trackRowHeight", 86), 64.0, 200.0);
+    height = std::clamp(prefs.getDoubleValue("trackRowHeight", 86), 86.0, 200.0);
     viewport.pixelsPerSecond = preferences.getDoubleValue("trackTimelineScale", 100);
     viewport.startSeconds = preferences.getDoubleValue("trackTimelineStart", 0);
     refresh();
@@ -186,7 +249,7 @@ void MultitrackEditor::updateRows()
         auto *l = automationLane(session.document.activeMix(), id);
         y += (float)height + (l && l->expanded ? 126 : 0);
     }
-    viewport.header = std::clamp(getWidth() * .27f, 136.f, 190.f);
+    viewport.header = std::clamp(getWidth() * .27f, 160.f, 190.f);
     viewport.width = (float)getWidth();
 }
 int MultitrackEditor::contentHeight() const
@@ -234,7 +297,10 @@ void MultitrackEditor::refresh()
     }
     for (auto *h : headers)
     {
-        h->setVisible(std::find(rows.begin(), rows.end(), h->id) != rows.end());
+        bool visible = std::find(rows.begin(), rows.end(), h->id) != rows.end();
+        if (!visible)
+            h->finishInteraction();
+        h->setVisible(visible);
         h->sync();
     }
     for (auto *l : lanes)
@@ -255,6 +321,8 @@ void MultitrackEditor::refresh()
 }
 void MultitrackEditor::transportTick()
 {
+    for (auto *h : headers)
+        h->sync();
     for (auto *l : lanes)
         l->refresh();
     repaint();
@@ -466,7 +534,7 @@ void MultitrackEditor::zoom(double f)
 }
 void MultitrackEditor::zoomVertical(double f)
 {
-    height = std::clamp(height * f, 64.0, 200.0);
+    height = std::clamp(height * f, 86.0, 200.0);
     preferences.setValue("trackRowHeight", height);
     refresh();
 }
@@ -546,6 +614,12 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
     auto *t = findTrack(session.document.activeMix(), id);
     if (!t)
         return;
+    if (t->kind == TrackKind::audio)
+    {
+        m.addItem(400, juce::String::fromUTF8("Audio input…"), !session.inputBusy());
+        m.addItem(401, "Raw input monitoring", session.inputArmed(id), session.inputMonitored(id));
+        m.addSeparator();
+    }
     m.addItem(1, "Move up");
     m.addItem(2, "Move down");
     m.addItem(3,
@@ -588,12 +662,26 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
                   t->spatial);
     }
     juce::Component::SafePointer<MultitrackEditor> safe(this);
+    auto incarnation = session.documentGeneration();
+    auto document = session.document.id;
+    auto variation = session.document.activeVariation;
     m.showMenuAsync(
         juce::PopupMenu::Options().withTargetComponent(anchor),
-        [safe, id, folders, buses](int n)
+        [safe, id, folders, buses, incarnation, document, variation](int n)
         {
-            if (!safe || !n)
+            if (!safe || !n || safe->session.documentGeneration() != incarnation ||
+                safe->session.document.id != document || safe->session.document.activeVariation != variation)
                 return;
+            if (n == 400)
+            {
+                safe->inputMenu(id, *safe);
+                return;
+            }
+            if (n == 401)
+            {
+                safe->session.monitorInputTrack(id, !safe->session.inputMonitored(id));
+                return;
+            }
             safe->session.edit(
                 "Track organization / routing",
                 [&](auto &d)
@@ -622,6 +710,59 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
                                                                         "5.1-rear-v1", "7.1-v1"}[n - 300]);
                 });
         });
+}
+void MultitrackEditor::inputMenu(const juce::String &owner, juce::Component &anchor)
+{
+    juce::PopupMenu menu;
+    std::vector<TrackInput> choices;
+    auto devices = session.inputStatus()["availableDevices"];
+    if (auto *a = devices.getArray())
+        for (auto &d : *a)
+        {
+            juce::PopupMenu inputs;
+            int count = (int)d["channels"];
+            auto add = [&](std::vector<int> channels, const ChannelLayout &layout, const juce::String &name)
+            {
+                choices.push_back({d["uid"].toString(), d["name"].toString(), std::move(channels), layout});
+                inputs.addItem((int)choices.size(), name);
+            };
+            for (int c = 0; c < count; ++c)
+                add({c}, channelLayout("mono-v1"),
+                    juce::String::fromUTF8("Mono · ") + (d["names"][c].toString().isEmpty()
+                                                             ? "Input " + juce::String(c + 1)
+                                                             : d["names"][c].toString()));
+            for (int c = 0; c + 1 < count; c += 2)
+                add({c, c + 1}, channelLayout("stereo-v1"),
+                    juce::String::fromUTF8("Stereo · ") + juce::String(c + 1) + juce::String::fromUTF8("–") +
+                        juce::String(c + 2));
+            if (d["layout"].isObject())
+            {
+                auto layout = layoutFromJson(d["layout"]);
+                if (layout.size() > 2)
+                {
+                    std::vector<int> channels;
+                    for (int c = 0; c < layout.size(); ++c)
+                        channels.push_back(c);
+                    add(channels, layout, layoutName(layout));
+                }
+            }
+            menu.addSubMenu(d["name"].toString(), inputs);
+        }
+    if (choices.empty())
+        menu.addItem(0, "No compatible input devices", false);
+    auto incarnation = session.documentGeneration();
+    auto doc = session.document.id;
+    auto variation = session.document.activeVariation;
+    juce::Component::SafePointer<MultitrackEditor> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
+                       [safe, owner, choices, incarnation, doc, variation](int n)
+                       {
+                           if (safe && n > 0 && n <= (int)choices.size() &&
+                               safe->session.documentGeneration() == incarnation &&
+                               safe->session.document.id == doc &&
+                               safe->session.document.activeVariation == variation)
+                               safe->session.configureTrackInput(owner, choices[(size_t)n - 1]);
+                       });
 }
 void MultitrackEditor::fadeMenu(const juce::String &id, bool in)
 {
@@ -820,7 +961,7 @@ void MultitrackEditor::mouseDrag(const juce::MouseEvent &e)
     }
     if (hit == CanvasTarget::rowResize)
     {
-        height = std::clamp(capturedHeight + e.y - anchor.y, 64., 200.);
+        height = std::clamp(capturedHeight + e.y - anchor.y, 86., 200.);
         refresh();
         return;
     }

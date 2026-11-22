@@ -4,6 +4,7 @@
 #include "DesignLive.h"
 #include "Performance.h"
 #include "SourcePools.h"
+#include "MacSources.h"
 #include <cmath>
 
 namespace sp
@@ -84,6 +85,8 @@ DesignSessionServices nativeServices(AudioClient &audio)
     services.stop = [&audio] { audio.stop(); };
     services.finishTake = [&audio](bool cancel) { audio.finishTake(cancel); };
     services.reserveTake = [&audio](bool reserve) { audio.reserveTake(reserve); };
+    services.inputCommand = [&audio](juce::var command) { audio.inputCommand(std::move(command)); };
+    services.inputPermission = [](auto done) { requestAudioInputPermission(std::move(done)); };
     return services;
 }
 } // namespace
@@ -121,6 +124,10 @@ DesignSession::DesignSession(juce::File file, DesignSessionServices supplied)
         services.now = [] { return monotonicMs(); };
     if (!services.reserveTake)
         services.reserveTake = [](bool) {};
+    if (!services.inputCommand)
+        services.inputCommand = [](auto) { throw std::runtime_error("Input recording service unavailable"); };
+    if (!services.inputPermission)
+        services.inputPermission = [](auto done) { done(false); };
     if (!services.post)
         services.post = [](auto callback) { juce::MessageManager::callAsync(std::move(callback)); };
     if (!services.write)
@@ -297,6 +304,8 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                         }
                         if (token.kind == Operation::preview)
                             safe->previewWaiting = false;
+                        if (token.kind == Operation::input)
+                            safe->finishInputContext();
                         // Source verification also uses this operation serial. A rejected
                         // relocation leaves an existing complete take and its audition intact.
                         if (token.kind == Operation::take && safe->takeBusy())
@@ -314,6 +323,8 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
     if (!accepted)
     {
         finishOperation(token);
+        if (token.kind == Operation::input)
+            finishInputContext();
         if (token.kind == Operation::take && takeBusy())
         {
             services.reserveTake(false);
@@ -707,6 +718,12 @@ void DesignSession::changed(ChangeImpact impact)
 void DesignSession::edit(const juce::String &label, const std::function<void(DesignDocument &)> &edit,
                          ChangeImpact impact)
 {
+    if (inputBusy() && !inputMutation && !liveApplying && impact != ChangeImpact::metadata)
+    {
+        message = "Stop input recording before editing the design";
+        notify();
+        return;
+    }
     if (takeBusy() && !takeMutation)
     {
         if (takeState != TakeState::recording)
@@ -876,7 +893,7 @@ void DesignSession::cancelGesture()
 void DesignSession::undo()
 {
     invalidatePoolWork();
-    if (takeBusy())
+    if (takeBusy() || inputBusy())
     {
         message = "Stop recording before Undo";
         notify();
@@ -909,7 +926,7 @@ void DesignSession::undo()
 void DesignSession::redo()
 {
     invalidatePoolWork();
-    if (takeBusy())
+    if (takeBusy() || inputBusy())
         return;
     if (replacing)
         return;
@@ -951,7 +968,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
             },
             (bool)close))
         return;
-    if (takeBusy())
+    if (takeBusy() || inputBusy())
     {
         message = "Stop or cancel the take before closing or changing designs";
         notify();
@@ -1070,6 +1087,12 @@ void DesignSession::open(const juce::File &file)
 }
 void DesignSession::closeWhenSafe(std::function<void()> close)
 {
+    if (inputBusy())
+    {
+        inputClose = std::move(close);
+        stopInputRecording();
+        return;
+    }
     cancelRender();
     rendering = false;
     transition({}, false, std::move(close));
@@ -1428,6 +1451,11 @@ void DesignSession::schedulePreview(const juce::String &mode)
 }
 void DesignSession::play()
 {
+    if (inputBusy())
+    {
+        stopInputRecording();
+        return;
+    }
     if (takeBusy())
     {
         stopTake();
@@ -1449,7 +1477,7 @@ void DesignSession::play()
 }
 void DesignSession::playAccurate()
 {
-    if (takeBusy())
+    if (takeBusy() || inputBusy())
         return;
     if (performanceMix().layers.empty() || replacing)
         return;
@@ -1465,6 +1493,11 @@ void DesignSession::playAccurate()
 }
 void DesignSession::stop()
 {
+    if (inputBusy())
+    {
+        stopInputRecording();
+        return;
+    }
     if (takeBusy())
     {
         message = "Recording owns transport; use Stop or Cancel Take";
@@ -1485,6 +1518,12 @@ void DesignSession::stop()
 }
 void DesignSession::seek(int64_t frame)
 {
+    if (inputBusy())
+    {
+        message = "Stop input recording before seeking";
+        notify();
+        return;
+    }
     if (takeBusy() || document.activeTake.isNotEmpty())
     {
         message = "Take playback starts at frame zero with full history";
@@ -1498,7 +1537,7 @@ void DesignSession::seek(int64_t frame)
 }
 void DesignSession::beginSeekGesture(bool audible)
 {
-    if (takeBusy() || document.activeTake.isNotEmpty())
+    if (takeBusy() || inputBusy() || document.activeTake.isNotEmpty())
         return;
     seekWasPlaying = active;
     seekGesture = true;
@@ -1546,6 +1585,7 @@ void DesignSession::timerCallback()
     }
     auto state = services.status();
     auto now = services.now();
+    pollInput(state);
     pollTake(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;
@@ -1569,8 +1609,17 @@ void DesignSession::timerCallback()
         lastAudioUpdate = now;
         if (active && document.activeTake.isEmpty())
         {
-            if (publishedStructure == designStructure(document))
-                services.parameters(document, expectedGeneration, lastEdit);
+            auto controls = document;
+            if (inputBusy())
+                controls.activeMix().duration = (int64_t)std::llround(document.sampleRate * 3600);
+            if (publishedStructure == designStructure(controls))
+                services.parameters(controls, expectedGeneration, lastEdit);
+            else if (inputBusy())
+            {
+                stopInputRecording(true);
+                message =
+                    "Playback topology changed during input recording; source prefix retained for recovery";
+            }
             else
                 schedulePreview("update");
         }

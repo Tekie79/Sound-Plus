@@ -1,0 +1,44 @@
+{
+  "receivingDevice": {
+    "uid": "BuiltInMicrophoneDevice",
+    "name": "MacBook Pro Microphone",
+    "rate": 48000.0,
+    "channels": 1,
+    "latency": 26,
+    "safety": 48,
+    "names": [
+      "1"
+    ],
+    "layout": {
+      "id": "mono-v1",
+      "roles": [
+        "C"
+      ]
+    }
+  },
+  "receipt": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/receipt.json",
+  "source": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/Recording-1.wav",
+  "state": "complete",
+  "frames": 2679990,
+  "placement": 1,
+  "firstDeviceFrame": 609658,
+  "firstAcquisitionHostNs": 337266735498208,
+  "format": [
+    3,
+    1,
+    48000,
+    192000,
+    4,
+    32
+  ],
+  "rms": 0.007765617953917082,
+  "peak": 0.15012535452842712,
+  "rawEqualsWavData": true,
+  "sha256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7",
+  "receiptHashMatches": true,
+  "nativeSavedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/native-mono.soundplus",
+  "savedRevision": 5,
+  "clipCount": 3,
+  "humanListening": false,
+  "physicalRoundTripCalibration": false
+}

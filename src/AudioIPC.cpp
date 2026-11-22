@@ -167,7 +167,7 @@ bool AudioClient::stopIfOwned(const juce::String &id, uint64_t generation)
 uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
                                  const juce::File &capture, const juce::String &mode)
 {
-    if (captureOwned || (captureReserved && mode != "record"))
+    if (inputOwned || captureOwned || (captureReserved && mode != "record"))
         return 0;
     if (mode == "record")
         captureOwned = true;
@@ -191,6 +191,28 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
     o->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);
     enqueue(m);
     return generation;
+}
+void AudioClient::inputCommand(juce::var v)
+{
+    auto command = v["command"].toString();
+    if (!command.startsWith("input_"))
+        throw std::runtime_error("Invalid input command");
+    std::lock_guard lock(mutex);
+    if (outgoing.size() >= 16)
+        throw std::runtime_error("Audio command queue is busy; retry the input action");
+    if (command == "input_record")
+    {
+        if (captureBusy())
+            throw std::runtime_error("Another recording owns transport");
+        inputOperation = v["plan"]["id"].toString();
+        inputOwned = true;
+    }
+    if (command == "input_finish")
+    {
+        desiredPlaying = false;
+        desiredId.clear();
+    }
+    enqueueLocked(std::move(v));
 }
 uint64_t AudioClient::updateDesign(const DesignDocument &document, uint64_t generation, double eventMs)
 {
@@ -468,6 +490,13 @@ void AudioClient::run()
                         }
                         std::lock_guard lock(mutex);
                         latest = state;
+                        auto recording = state["inputRecording"];
+                        auto phase = recording["state"].toString();
+                        if ((recording["id"].toString() == inputOperation &&
+                             (phase == "complete" || phase == "incomplete" || phase == "cancelled")) ||
+                            (recording["request"].toString() == inputOperation &&
+                             recording["error"].toString().isNotEmpty()))
+                            inputOwned = false;
                         if ((bool)state["captureLifecycleFailed"] && captureReserved &&
                             (uint64_t)(int64_t)state["deviceReservationId"] == captureReservationId.load())
                             captureOwned = false;
@@ -570,6 +599,7 @@ void AudioClient::run()
                 healthEvents.remove(0);
             outgoing.clear();
             captureOwned = false;
+            inputOwned = false;
             desiredPlaying = false;
             desiredId.clear();
             latest = message("status");

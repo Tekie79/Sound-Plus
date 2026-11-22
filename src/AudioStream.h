@@ -6,12 +6,14 @@
 #include <vector>
 #include "DesignAudio.h"
 #include "SerialWorker.h"
+#include "InputRecording.h"
 namespace sp
 {
 // Single producer / single consumer. All decoding and resampling run in fill().
 class PcmStream
 {
   public:
+    uint64_t transportGeneration = 0;
     PcmStream(const juce::File &, double outputRate, int64_t sourceStart = 0, int64_t sourceEnd = -1,
               int auditionPair = 0, ChannelLayout interpretation = {}, bool loop = false,
               int64_t initialPosition = -1);
@@ -120,7 +122,10 @@ class PcmStream
     {
         return designReader ? designReader->layers() : 0;
     }
-    bool hasHostedServices() const { return hostedServices; }
+    bool hasHostedServices() const
+    {
+        return hostedServices;
+    }
     double producerMaxMs() const
     {
         return maxFillMs;
@@ -159,6 +164,7 @@ class PcmStream
 class AuditionCore
 {
   public:
+    InputTimelineClock *inputClock = nullptr;
     AuditionCore()
     {
         for (auto &m : monitorMapping)
@@ -213,7 +219,7 @@ class AuditionCore
     {
         return stream ? stream->editLatencyMs.load() : 0;
     }
-    void render(float *const *, int channels, int frames) noexcept;
+    void render(float *const *, int channels, int frames, uint64_t outputHostNs = 0) noexcept;
     bool playing() const
     {
         return stream && !stream->ended();

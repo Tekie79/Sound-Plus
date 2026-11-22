@@ -141,6 +141,8 @@ juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
             put(v, "splitHistory", h);
         }
         put(v, "name", l.name);
+        if (!l.recordingOrigin.isVoid())
+            put(v, "recordingOrigin", l.recordingOrigin);
         put(v, "external", l.external);
         auto s = object();
         put(s, "id", l.source.id);
@@ -248,6 +250,7 @@ DesignMix mixFrom(const juce::var &o)
                                           (bool)h["ownsTail"], integer(h, "frames")};
         }
         l.name = v["name"].toString();
+        l.recordingOrigin = v["recordingOrigin"];
         l.external = (bool)v["external"];
         auto s = v["source"];
         l.source.id = s["id"].toString();
@@ -728,8 +731,19 @@ juce::var designToJson(const DesignDocument &d)
         hasSplit(d.original) ||
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasSplit(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasSplit(t.recipe); });
+    auto hasInput = [](const DesignMix &m)
+    {
+        return std::any_of(m.tracks.begin(), m.tracks.end(), [](auto &t) { return t.input.has_value(); }) ||
+               std::any_of(m.layers.begin(), m.layers.end(),
+                           [](auto &l) { return !l.recordingOrigin.isVoid(); });
+    };
+    bool inputs =
+        hasInput(d.original) ||
+        std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
+        std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        continuations         ? 12
+        inputs                ? 13
+        : continuations       ? 12
         : tracks              ? 11
         : plugins             ? 10
         : ordered             ? 9
@@ -857,7 +871,7 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 12) ||
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 13) ||
         (version >= 11   ? dsp != "multitrack-automation-v1"
          : version == 10 ? dsp != "plugin-takes-v1"
          : version == 9  ? dsp != "ordered-inserts-v1"
@@ -971,6 +985,17 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     validateDesign(d);
+    auto hasInput = [](const DesignMix &m)
+    {
+        return std::any_of(m.tracks.begin(), m.tracks.end(), [](auto &t) { return t.input.has_value(); }) ||
+               std::any_of(m.layers.begin(), m.layers.end(),
+                           [](auto &l) { return !l.recordingOrigin.isVoid(); });
+    };
+    if (version < 13 &&
+        (hasInput(d.original) ||
+         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
+         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); })))
+        throw std::runtime_error("Audio input configuration/recordings require document manifest13");
     auto hasContinuation = [](const DesignMix &m) {
         return std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return l.splitHistory.has_value(); });
@@ -1135,6 +1160,12 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
                 }
             }
             validatePool(l, m.layout);
+            if (!l.recordingOrigin.isVoid() &&
+                (!m.trackSchema || (int)l.recordingOrigin["version"] != 1 ||
+                 l.recordingOrigin["id"].toString().isEmpty() ||
+                 !juce::File::isAbsolutePath(l.recordingOrigin["receipt"].toString()) ||
+                 juce::JSON::toString(l.recordingOrigin, true).getNumBytesAsUTF8() > 4096))
+                throw std::runtime_error("Invalid source-recording provenance");
             if (l.id.isEmpty() || ids.contains(l.id))
                 throw std::runtime_error("Duplicate or empty layer identity");
             ids.add(l.id);

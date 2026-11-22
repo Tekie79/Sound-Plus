@@ -19,6 +19,8 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
+  src/InputRecording.cpp
+  src/DesignInputSession.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
@@ -29,10 +31,11 @@ target_compile_definitions(soundplus_core PUBLIC
   JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="0.1.0")
 target_link_libraries(soundplus_core PUBLIC SQLite::SQLite3
   juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons
-  "-framework CoreServices" "-framework Foundation")
+  "-framework CoreServices" "-framework Foundation" "-framework AVFoundation")
 target_compile_options(soundplus_core PRIVATE -Wall -Wextra -Wpedantic)
 juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
-  BUNDLE_ID "org.soundplus.workstation" MICROPHONE_PERMISSION_ENABLED FALSE)
+  BUNDLE_ID "org.soundplus.workstation" MICROPHONE_PERMISSION_ENABLED TRUE
+  MICROPHONE_PERMISSION_TEXT "SoundPlus uses your microphone or audio interface only when you arm an Audio Track or enable input monitoring.")
 juce_add_console_app(SoundPlusPlugin PRODUCT_NAME "SoundPlusPlugin")
 target_sources(SoundPlusPlugin PRIVATE src/PluginWorkerMain.cpp)
 target_compile_definitions(SoundPlusPlugin PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_PLUGINHOST_AU=1)
@@ -54,7 +57,7 @@ target_link_libraries(SoundPlusAI PRIVATE soundplus_core "${ORT_DIR}/runtimes/os
 target_compile_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
-target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp)
+target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp src/MacAudioInput.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
 target_sources(SoundPlus PRIVATE src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
@@ -88,6 +91,9 @@ if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   target_sources(SoundPlusTests PRIVATE tests/PlaybackSearchTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/InputRecordingTests.cpp)
+  add_test(NAME audio_input_recording COMMAND SoundPlusTests --audio-input "${CMAKE_BINARY_DIR}/audio-input-tests")
+  set_tests_properties(audio_input_recording PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   target_sources(SoundPlusTests PRIVATE tests/SourcePoolTests.cpp tests/PoolCorrectionTests.cpp)
   add_test(NAME multitrack_automation COMMAND SoundPlusTests --multitrack "${CMAKE_BINARY_DIR}/multitrack-tests")
   set_tests_properties(multitrack_automation PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
@@ -105,7 +111,7 @@ if(BUILD_TESTING)
   set_tests_properties(multichannel PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   add_test(NAME take_integrity COMMAND SoundPlusTests --take-integrity "${CMAKE_BINARY_DIR}/take-integrity-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(take_integrity PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
-  target_sources(SoundPlusTests PRIVATE tests/DeviceCaptureTests.cpp src/AudioEngine.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/DeviceCaptureTests.cpp src/AudioEngine.cpp src/MacAudioInput.cpp)
   add_test(NAME capture_device_lifecycle COMMAND SoundPlusTests --device-capture "${CMAKE_BINARY_DIR}/device-capture-output")
   set_tests_properties(capture_device_lifecycle PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   target_sources(SoundPlusTests PRIVATE tests/IconTests.cpp tests/PerformanceStateTests.cpp tests/WaveformPreviewTests.cpp tests/ReliabilityTests.cpp tests/AudioHealthTests.cpp tests/TakeTests.cpp src/LibraryView.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)

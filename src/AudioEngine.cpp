@@ -7,6 +7,7 @@ namespace sp
 {
 AudioEngine::AudioEngine(bool connectHardware) : hardware(connectHardware)
 {
+    playback.core.inputClock = &inputClock;
     if (!hardware)
         return;
     int noSig = 1;
@@ -19,6 +20,8 @@ AudioEngine::AudioEngine(bool connectHardware) : hardware(connectHardware)
 AudioEngine::~AudioEngine()
 {
     stopTimer();
+    inputDevice.close();
+    inputRecorder.interrupt("Audio helper closed; retained input recordings require recovery");
     if (hardware)
     {
         devices.removeAudioCallback(this);
@@ -26,9 +29,11 @@ AudioEngine::~AudioEngine()
     }
 }
 void AudioEngine::audioDeviceIOCallbackWithContext(const float *const *, int, float *const *out, int channels,
-                                                   int frames, const juce::AudioIODeviceCallbackContext &)
+                                                   int frames,
+                                                   const juce::AudioIODeviceCallbackContext &context)
 {
-    playback.render(out, channels, frames);
+    playback.render(out, channels, frames, context.hostTimeNs ? *context.hostTimeNs : 0);
+    inputRecorder.monitor(out, channels, frames, playback.core.volume.load(std::memory_order_relaxed));
 }
 void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice *device)
 {
@@ -40,12 +45,16 @@ void AudioEngine::audioDeviceAboutToStart(juce::AudioIODevice *device)
 }
 void AudioEngine::audioDeviceStopped()
 {
+    if (inputRecorder.busy())
+        inputRecorder.fault(InputRecordingService::deviceLost);
     deviceRate = 0;
     playback.deviceFault(CaptureDeviceLifecycle::stopped);
     deviceChanged = true;
 }
 void AudioEngine::audioDeviceError(const juce::String &error)
 {
+    if (inputRecorder.busy())
+        inputRecorder.fault(InputRecordingService::deviceLost);
     playback.deviceFault(CaptureDeviceLifecycle::error, &error);
     deviceChanged = true;
 }
@@ -65,6 +74,63 @@ void AudioEngine::command(const juce::var &message)
     }
     if (!hello)
         return;
+    if (name.startsWith("input_"))
+    {
+        try
+        {
+            if (name == "input_device" || name == "input_record")
+                inputError.clear();
+            if (name == "input_device")
+            {
+                inputConfigSerial = (uint64_t)(int64_t)message["serial"];
+                if (inputRecorder.busy())
+                    throw std::runtime_error("Stop input recording before changing its device");
+                auto uid = message["uid"].toString();
+                if (uid.isEmpty())
+                {
+                    inputDevice.close();
+                    inputRecorder.configure({});
+                }
+                else if (!inputDevice.isOpen() || inputRecorder.status()["device"]["uid"].toString() != uid)
+                    inputDevice.open(uid);
+            }
+            else if (name == "input_record")
+            {
+                inputRequest = message["plan"]["id"].toString();
+                if (!inputDevice.isOpen() || playback.captureBusy())
+                    throw std::runtime_error("Input device must be ready; Perform capture must be stopped");
+                auto plan = inputPlanFromJson(message["plan"]);
+                if (plan.generation != requestedGeneration)
+                    throw std::runtime_error("Input recording/playback generation mismatch");
+                inputUnderrunBaseline = playback.core.underruns.load();
+                inputRecorder.start(std::move(plan));
+            }
+            else if (name == "input_finish")
+            {
+                inputRecorder.finish(message["id"].toString(), (bool)message["cancel"]);
+                lastPlay = juce::var();
+                playback.stop(requestedGeneration);
+            }
+            else if (name == "input_monitor")
+            {
+                inputMonitorError.clear();
+                std::vector<InputTrackPlan> tracks;
+                if (message["plan"].isObject())
+                    tracks = inputPlanFromJson(message["plan"]).tracks;
+                if (!inputRecorder.setMonitoring(tracks, deviceRate.load()))
+                    inputMonitorError = "Raw input monitoring requires matching input/output rates; "
+                                        "recording still uses the actual input rate";
+            }
+        }
+        catch (const std::exception &e)
+        {
+            if (name == "input_monitor")
+                inputMonitorError = e.what();
+            else
+                inputError = e.what();
+        }
+        return;
+    }
     if (name == "reserve_capture")
     {
         auto id = (uint64_t)(int64_t)message["reservationId"];
@@ -137,7 +203,7 @@ void AudioEngine::command(const juce::var &message)
     }
     if (name == "device" || name == "device_rate" || name == "device_buffer" || name == "device_channels")
     {
-        if (playback.captureBusy())
+        if (playback.captureBusy() || inputRecorder.busy())
         {
             deviceError = "Stop recording before changing the audio device";
             return;
@@ -224,6 +290,19 @@ void AudioEngine::handleDeviceChanges()
 }
 void AudioEngine::timerCallback()
 {
+    inputDevice.poll();
+    if (hardware && ticks % 400 == 0)
+        availableInputs = MacAudioInput::devices();
+    if (inputRecorder.busy() && playback.core.underruns.load() > inputUnderrunBaseline)
+        inputRecorder.interrupt("Playback underrun during input capture; retained prefix requires recovery");
+    if (inputRecorder.busy())
+    {
+        auto state = playback.status();
+        if ((uint64_t)(int64_t)state["playGeneration"] == requestedGeneration &&
+            state["error"].toString().isNotEmpty())
+            inputRecorder.interrupt(
+                "Playback processing failed during input capture; retained source prefix requires recovery");
+    }
     handleDeviceChanges();
     char bytes[8192];
     for (int budget = 0; budget < 128; ++budget)
@@ -291,6 +370,14 @@ void AudioEngine::sendStatus()
     object->setProperty("deviceFaultEpoch", (juce::int64)playback.deviceFaultEpoch());
     object->setProperty("deviceReservationId", (juce::int64)deviceReservationId);
     object->setProperty("outputs", outputs);
+    auto inputState = inputRecorder.status();
+    inputState.getDynamicObject()->setProperty("availableDevices", availableInputs);
+    inputState.getDynamicObject()->setProperty("open", inputDevice.isOpen());
+    inputState.getDynamicObject()->setProperty("error", inputError);
+    inputState.getDynamicObject()->setProperty("monitorError", inputMonitorError);
+    inputState.getDynamicObject()->setProperty("request", inputRequest);
+    inputState.getDynamicObject()->setProperty("configurationSerial", (juce::int64)inputConfigSerial);
+    object->setProperty("inputRecording", inputState);
     object->setProperty("peakResidentBytes", performance.json()["peakResidentBytes"]);
     object->setProperty("cpuSeconds", performance.json()["cpuSeconds"]);
     if (deviceError.isNotEmpty())

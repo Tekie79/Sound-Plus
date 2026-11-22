@@ -47,9 +47,9 @@ class AudioPlaybackService
         return deviceLifecycle.diagnostic(deviceTicket.load());
     }
     juce::var status();
-    void render(float *const *out, int channels, int frames) noexcept
+    void render(float *const *out, int channels, int frames, uint64_t hostNs = 0) noexcept
     {
-        core.render(out, channels, frames);
+        core.render(out, channels, frames, hostNs);
     }
     AuditionCore core;
 

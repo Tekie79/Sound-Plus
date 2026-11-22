@@ -1,0 +1,5 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 123, 137
+~	91 button (settable) Arm audio input: source.wav, Value: Off, Help: MacBook Pro Microphone / MONO. Input options and raw monitoring are in Track options. Monitoring starts off.
++	140 text SoundPlus
+The focused UI element is 85 container Multitrack Edit timeline

@@ -1,0 +1,18 @@
+{
+  "id": "baf223f5a49d4f77bcdec4ec397c7e35",
+  "stateAfterEscape": "cancelled",
+  "retainedFrames": 1010642,
+  "diagnostics": {
+    "inputCallbacks": 1978,
+    "inputOverruns": 0,
+    "monitorDrops": 0,
+    "maxInputPushUsSinceDeviceOpen": 10.583,
+    "maxNativeInputCallbackUsSinceDeviceOpen": 11.083,
+    "outputUnderruns": 0,
+    "ringSlots": 32,
+    "maxCallbackFrames": 4096
+  },
+  "finalizedDirectoryExists": false,
+  "timelineClipInserted": false,
+  "unchangedClipCount": 7
+}

@@ -8,7 +8,7 @@
 #include "DesignModel.h"
 namespace sp
 {
-constexpr int protocolVersion = 10;
+constexpr int protocolVersion = 11;
 constexpr size_t maxHostedControlBytes = 2 * 1024 * 1024;
 juce::var message(const juce::String &command);
 // Single-writer, nonblocking socket; bounded250ms completion, never called by audio callbacks.
@@ -40,9 +40,10 @@ class AudioClient
     void deviceChannels(int);
     void finishTake(bool cancel = false);
     void reserveTake(bool reserve);
+    void inputCommand(juce::var);
     bool captureBusy() const
     {
-        return captureOwned.load() || captureReserved.load();
+        return captureOwned.load() || captureReserved.load() || inputOwned.load();
     }
     float monitorGain() const
     {
@@ -58,6 +59,8 @@ class AudioClient
     juce::File executable, liveRoot;
     std::atomic<bool> quitting{false}, restartRequested{false};
     std::atomic<bool> captureOwned{false}, captureReserved{false};
+    std::atomic<bool> inputOwned{false};
+    juce::String inputOperation;
     std::atomic<uint64_t> captureReservationId{0};
     std::atomic<float> targetGain{0.7f};
     std::thread worker;

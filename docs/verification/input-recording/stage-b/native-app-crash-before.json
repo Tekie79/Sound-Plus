@@ -1,0 +1,73 @@
+{
+  "mainPID": 19118,
+  "journal": {
+    "version": 1,
+    "state": "recording",
+    "reason": "Interrupted recordings require deliberate recovery",
+    "plan": {
+      "id": "c7f5337470ec49039423541af0ec3f2c",
+      "document": "803fb3b44c0544a5ab66e030a65f20ff",
+      "variation": "",
+      "deviceUID": "BuiltInMicrophoneDevice",
+      "root": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio",
+      "projectRate": 48000.0,
+      "start": 4208640,
+      "generation": 5,
+      "tracks": [
+        {
+          "owner": "febc48f964464659912c4d657dacbb56",
+          "name": "Empty Audio",
+          "layout": {
+            "id": "mono-v1",
+            "roles": [
+              "C"
+            ]
+          },
+          "channels": [
+            0
+          ]
+        }
+      ]
+    },
+    "device": {
+      "uid": "BuiltInMicrophoneDevice",
+      "name": "MacBook Pro Microphone",
+      "rate": 48000.0,
+      "channels": 1,
+      "latency": 26,
+      "safety": 48,
+      "names": [
+        "1"
+      ],
+      "layout": {
+        "id": "mono-v1",
+        "roles": [
+          "C"
+        ]
+      }
+    },
+    "frames": 784751,
+    "placement": 4208641,
+    "firstDeviceFrame": 40605,
+    "firstAcquisitionHostNs": 338425884210416,
+    "clockPolicy": "input-acquisition-host-time-v1",
+    "latencyPolicy": "HAL input timestamps already identify acquisition time; no duplicate latency subtraction",
+    "sources": [
+      {
+        "raw": "source-0.f32",
+        "peak": 0.032008320093155
+      }
+    ],
+    "diagnostics": {
+      "inputCallbacks": 1536,
+      "inputOverruns": 0,
+      "monitorDrops": 0,
+      "maxInputPushUsSinceDeviceOpen": 7.333,
+      "maxNativeInputCallbackUsSinceDeviceOpen": 11.541,
+      "outputUnderruns": 0,
+      "ringSlots": 32,
+      "maxCallbackFrames": 4096
+    }
+  },
+  "partial": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.c7f5337470ec49039423541af0ec3f2c.partial"
+}

@@ -1,0 +1,10 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 window Secondary Actions: Raise
+		2 Recover interrupted: Empty Audio · acaeeb
+	3 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	4 text SoundPlus
+5 menu bar
+	6 SoundPlus
+
+The focused UI element is 1 window Secondary Actions: Raise

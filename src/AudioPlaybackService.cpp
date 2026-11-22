@@ -371,6 +371,8 @@ void AudioPlaybackService::produce()
                     bool prepared = next->stream && next->error.isEmpty();
                     if (!prepared)
                         captureRequestActive = false;
+                    if (next->stream)
+                        next->stream->transportGeneration = next->generation;
                     core.adopt(std::move(next->stream));
                     if (next->capture && prepared)
                         next->capture->phase = TakeCapture::recording;

@@ -1,0 +1,74 @@
+{
+  "mainPID": 19118,
+  "helperPID": 19119,
+  "journal": {
+    "version": 1,
+    "state": "recording",
+    "reason": "Interrupted recordings require deliberate recovery",
+    "plan": {
+      "id": "68b5423c7e744e829d96fd5b41861cd2",
+      "document": "803fb3b44c0544a5ab66e030a65f20ff",
+      "variation": "",
+      "deviceUID": "BuiltInMicrophoneDevice",
+      "root": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio",
+      "projectRate": 48000.0,
+      "start": 3168256,
+      "generation": 3,
+      "tracks": [
+        {
+          "owner": "febc48f964464659912c4d657dacbb56",
+          "name": "Empty Audio",
+          "layout": {
+            "id": "mono-v1",
+            "roles": [
+              "C"
+            ]
+          },
+          "channels": [
+            0
+          ]
+        }
+      ]
+    },
+    "device": {
+      "uid": "BuiltInMicrophoneDevice",
+      "name": "MacBook Pro Microphone",
+      "rate": 48000.0,
+      "channels": 1,
+      "latency": 26,
+      "safety": 48,
+      "names": [
+        "1"
+      ],
+      "layout": {
+        "id": "mono-v1",
+        "roles": [
+          "C"
+        ]
+      }
+    },
+    "frames": 1027204,
+    "placement": 3168256,
+    "firstDeviceFrame": 2501524,
+    "firstAcquisitionHostNs": 338319217344917,
+    "clockPolicy": "input-acquisition-host-time-v1",
+    "latencyPolicy": "HAL input timestamps already identify acquisition time; no duplicate latency subtraction",
+    "sources": [
+      {
+        "raw": "source-0.f32",
+        "peak": 0.011489224620163
+      }
+    ],
+    "diagnostics": {
+      "inputCallbacks": 2008,
+      "inputOverruns": 0,
+      "monitorDrops": 0,
+      "maxInputPushUsSinceDeviceOpen": 10.0,
+      "maxNativeInputCallbackUsSinceDeviceOpen": 11.875,
+      "outputUnderruns": 0,
+      "ringSlots": 32,
+      "maxCallbackFrames": 4096
+    }
+  },
+  "partial": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.68b5423c7e744e829d96fd5b41861cd2.partial"
+}

@@ -67,6 +67,9 @@ class DesignerView final : public juce::Component,
     friend struct DesignerViewTestAccess;
     friend struct TakeIntegrityTestAccess;
     void showSnapOptions();
+    void showInputRecordingOptions();
+    IconButton recordAudio{"Record armed Audio Tracks (R)", ActionIcon::record},
+        inputOptions{"Audio recording options", ActionIcon::more};
     IconButton zoomIn{"Zoom in (Command-wheel)", ActionIcon::zoom}, zoomOut{"Zoom out", ActionIcon::zoomOut},
         fitAll{"Fit design", ActionIcon::fit}, fitSelected{"Fit selected layers", ActionIcon::fitSelection},
         snap{"Enable snapping (Command temporarily bypasses)", ActionIcon::snap},

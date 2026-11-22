@@ -71,6 +71,12 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         }
     };
     addAndMakeVisible(addTrackButton);
+    addAndMakeVisible(recordAudio);
+    addAndMakeVisible(inputOptions);
+    recordAudio.setTooltip("Record armed Audio Tracks from the playhead (R). Stop finalizes source WAVs; "
+                           "Escape cancels and retains a recoverable prefix. Monitoring starts off.");
+    recordAudio.onClick = [this] { session.startInputRecording(); };
+    inputOptions.onClick = [this] { showInputRecordingOptions(); };
     addTrackButton.onClick = [this] { tracks->addTrackMenu(addTrackButton); };
     perform = std::make_unique<PerformView>(session, peakPool);
     perform->onAlternatives = [this](const auto &id) { showPoolPopup(id); };
@@ -1304,13 +1310,18 @@ void DesignerView::timerCallback()
     }
     bool owned = state["id"].toString() == "design:" + session.document.id;
     bool playing = session.ownsPlayback();
-    play.setIcon(playing ? ActionIcon::stop : ActionIcon::play);
+    play.setIcon(playing || session.inputBusy() ? ActionIcon::stop : ActionIcon::play);
     play.setButtonText(
-        session.document.activeTake.isNotEmpty()
+        session.inputBusy() ? "Stop audio recording"
+        : session.document.activeTake.isNotEmpty()
             ? (playing ? "Stop take audition" : "Audition take: " + selectedTake(session.document)->name)
             : (playing ? "Stop design" : "Play design"));
-    play.setEnabled(!session.performanceMix().layers.empty() &&
-                    (!selectedTake(session.document) || selectedTake(session.document)->complete));
+    play.setEnabled(session.inputBusy() ||
+                    (!session.performanceMix().layers.empty() &&
+                     (!selectedTake(session.document) || selectedTake(session.document)->complete)));
+    recordAudio.setEnabled(!performMode && session.inputReady() && !session.inputBusy() &&
+                           !session.takeBusy() && session.document.activeTake.isEmpty());
+    stopButton.setEnabled(session.inputBusy() || session.ownsPlayback());
     peak = std::max(owned && playing ? (float)state["preMonitorPeak"] : 0.f, peak * .88f);
     clipHeld |= peak >= 1;
     meter.setText(clipHeld ? "CLIP" : "", juce::dontSendNotification);
@@ -1534,20 +1545,18 @@ void DesignerView::resized()
         button->setVisible(!performMode);
     if (!performMode)
     {
-        int tx = creative / 2 - 116, ty = getHeight() - 86;
-        for (auto *button : {&start, &previousMarker, &stopButton})
+        int slot = std::clamp((creative - 24) / 10, 20, 32);
+        int tx = (creative - (10 * slot + 8)) / 2, ty = getHeight() - 86;
+        for (auto *button : {&recordAudio, &inputOptions, &start, &previousMarker, &stopButton, &play,
+                             &nextMarker, &end, &addMarker, &accurate})
         {
-            button->setBounds(tx, ty, 28, 28);
-            tx += 32;
-        }
-        play.setBounds(tx, ty - 6, 40, 40);
-        tx += 44;
-        for (auto *button : {&nextMarker, &end, &addMarker, &accurate})
-        {
-            button->setBounds(tx, ty, 28, 28);
-            tx += 32;
+            int size = button == &play ? slot + 8 : slot - 2;
+            button->setBounds(tx, ty + (button == &play ? -4 : 1), size, size);
+            tx += button == &play ? slot + 8 : slot;
         }
     }
+    recordAudio.setVisible(!performMode);
+    inputOptions.setVisible(!performMode);
     status.setBounds(16, getHeight() - 30, std::max(200, getWidth() - 280), 24);
     bool denseMeters = designChannels(session.document) > 8;
     monitor.setBounds(getWidth() - 230, getHeight() - (denseMeters ? 25 : 33), 180, denseMeters ? 18 : 24);
@@ -1666,6 +1675,49 @@ void DesignerView::filesDropped(const juce::StringArray &files, int x, int y)
     canvas->setDropGhost({});
     session.addExternals(files, frame);
     canvas->grabKeyboardFocus();
+}
+void DesignerView::showInputRecordingOptions()
+{
+    auto generation = session.documentGeneration();
+    auto doc = session.document.id;
+    auto variation = session.document.activeVariation;
+    juce::Component::SafePointer<DesignerView> safe(this);
+    session.findInputRecoveries(
+        [safe, generation, doc, variation](juce::Array<juce::var> entries)
+        {
+            if (!safe || safe->session.documentGeneration() != generation ||
+                safe->session.document.id != doc || safe->session.document.activeVariation != variation)
+                return;
+            juce::PopupMenu menu;
+            menu.addItem(1, "Stop and keep audio", safe->session.inputBusy());
+            menu.addItem(2, "Cancel audio recording", safe->session.inputBusy());
+            menu.addSeparator();
+            int n = 100;
+            for (auto &v : entries)
+            {
+                auto name = v["plan"]["tracks"][0]["name"].toString();
+                name += juce::String::fromUTF8(" · ") + v["plan"]["id"].toString().substring(0, 6);
+                menu.addItem(n++, (v["receipt"].isVoid() ? "Recover interrupted: " : "Add retained: ") + name,
+                             !safe->session.inputBusy() && (int64_t)v["frames"] > 0);
+            }
+            if (entries.isEmpty())
+                menu.addItem(0, "No retained recordings to recover", false);
+            menu.showMenuAsync(juce::PopupMenu::Options()
+                                   .withTargetComponent(&safe->inputOptions)
+                                   .withParentComponent(safe.getComponent()),
+                               [safe, entries, generation, doc, variation](int result)
+                               {
+                                   if (!safe || safe->session.documentGeneration() != generation ||
+                                       safe->session.document.id != doc ||
+                                       safe->session.document.activeVariation != variation)
+                                       return;
+                                   if (result == 1 || result == 2)
+                                       safe->session.stopInputRecording(result == 2);
+                                   if (result >= 100 && result < 100 + entries.size())
+                                       safe->session.recoverInputRecording(
+                                           juce::File(entries[result - 100]["partial"].toString()));
+                               });
+        });
 }
 void DesignerView::showSnapOptions()
 {
@@ -2118,6 +2170,20 @@ bool DesignerView::keyPressed(const juce::KeyPress &key, juce::Component *)
     }
     if (editing)
         return false;
+    if (!performMode && !key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown() &&
+        (key.isKeyCode('R') || key.isKeyCode('r')))
+    {
+        if (session.inputBusy())
+            session.stopInputRecording();
+        else
+            session.startInputRecording();
+        return true;
+    }
+    if (session.inputBusy() && key.isKeyCode(juce::KeyPress::escapeKey))
+    {
+        session.stopInputRecording(true);
+        return true;
+    }
     if (!key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown() &&
         (key.isKeyCode('M') || key.isKeyCode('m')))
     {
