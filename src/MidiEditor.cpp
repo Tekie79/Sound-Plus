@@ -475,6 +475,7 @@ bool MidiEditor::keyPressed(const juce::KeyPress &k)
                 session.undo();
             return true;
         }
+        return false; // Preserve application commands (Save, Quit, Open) for the parent dispatcher.
     }
     if (k.isKeyCode(juce::KeyPress::deleteKey) || k.isKeyCode(juce::KeyPress::backspaceKey))
     {

@@ -322,6 +322,11 @@ void runMidiTests(const juce::File &base)
     sp::MidiEditor editor(session);
     editor.setSize(350, 200);
     editor.open(midiClip);
+    auto beforeAppCommand = session.document.revision;
+    check(!editor.keyPressed(juce::KeyPress('q', juce::ModifierKeys::commandModifier, 0)) &&
+              !editor.keyPressed(juce::KeyPress('s', juce::ModifierKeys::commandModifier, 0)) &&
+              session.document.revision == beforeAppCommand,
+          "Piano roll forwards global Quit/Save without treating Command-Q as Quantize");
     auto count = sp::findMidiClip(session.document.original, midiClip)->notes.size();
     editor.drawNote(sp::midiPpq, 64, 83);
     check(sp::findMidiClip(session.document.original, midiClip)->notes.size() == count + 1,
