@@ -8,6 +8,8 @@ The product reference is [the architecture and requirements specification](docs/
 
 Current insert ordering, retained native editors and plugin-aware take behavior are defined in the [hosting contract](docs/PLUGIN_HOSTING_CONTRACT.md); earlier workflow sections below document their original increments. [Finite Process](docs/VST3_PROCESSING_CONTRACT.md) remains available independently. VST2/AUv3, physical surround monitoring and receiving-app delivery have separate qualification limits; this recording increment does not qualify them.
 
+**MIDI sequencing and instruments v1:** create a separate MIDI Track, load a referenced sample or an accepted VST3/AUv2 Instrument, then double-click its clip to edit notes/controllers. CoreMIDI Record uses the shared transport; recording arm/monitor reopen off. The native sampler provides polyphony, ADSR, sustain, pitch bend and alternates. MIDI-only designs render and freeze with their instrument/score. See the [timing, persistence and hosting contract](docs/MIDI_INSTRUMENT_CONTRACT.md) and [milestone report, native evidence and exact commands](docs/MIDI_MILESTONE_REPORT.md). External Instrument automation remains read-only; physical-keyboard and human-listening qualification remain open.
+
 ## Build and launch
 
 Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for initial dependency downloads. Local AI requires macOS 13.3+. The Library/audition application retains its macOS 12.0 compilation minimum. Only macOS 26.3.2 was hardware tested. CMake, Ninja, JUCE and the native ONNX Runtime are installed inside this checkout. No Homebrew packages or administrator install are required.

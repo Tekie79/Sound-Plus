@@ -1,0 +1,15 @@
+{
+  "nativeWindow": "Workflow demonstration r4478, Perform, Browser visible, Live Design, Blend on, X0.32098764/Y0.48463356, Macro1 enabled0.491, monitor0.25",
+  "currentDataRoot": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native",
+  "payloadMatchesProtectedLatest": true,
+  "preferencesMatchProtectedLatest": true,
+  "counts": {
+    "assets": 43,
+    "roots": 1
+  },
+  "protectedMediaHashesMatch": 37,
+  "nativeInstrumentOutputsStillMatch": true,
+  "nativeMidiJournalStillMatches": true,
+  "olderBackupRestored": false,
+  "originalAppLeftOpen": true
+}

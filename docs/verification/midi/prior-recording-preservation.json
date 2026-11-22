@@ -1,0 +1,131 @@
+{
+  "priorFinalizedWavs": [
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/Recording-1.wav",
+      "sha256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7",
+      "matchesPriorMilestone": true
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/Recording-1.wav",
+      "sha256": "997d9ec9ef4978b6d9310a77b1ccd2d49c8e8df058d20cae3ad2e8965f801325",
+      "matchesPriorMilestone": true
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/Recording-1.wav",
+      "sha256": "ed962413e973a8f45cc4c3f6208873a7a527dc886682c047d5b9d97d8fd36f8d",
+      "matchesPriorMilestone": true
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/Recording-1.wav",
+      "sha256": "62f0940ccfa0da689cf02d76bf5d35119ee2277521cee9805019d1d8c674c76e",
+      "matchesPriorMilestone": true
+    },
+    {
+      "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/Recording-1.wav",
+      "sha256": "2671a1785acab1558c0c0b4c9fd67fbd5c47a688c50dbd21d40e9ac78202a1b3",
+      "matchesPriorMilestone": true
+    }
+  ],
+  "allPriorFinalizedWavsMatch": true,
+  "cancelledPartialStillPresent": true,
+  "recordingRoot": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio",
+  "currentInventory": {
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/journal.json": {
+      "bytes": 1049,
+      "sha256": "b96fa321466f5758bd2f70ad3b7cbb4cdee0e39bf70ade965e448d83677d146c"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/Recording-1.wav": {
+      "bytes": 10720744,
+      "sha256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/source-0.f32": {
+      "bytes": 10719960,
+      "sha256": "39d04a49af9535cc7f1f75bfc343b8e269330bf3c960f6ab32748cb87cedde40"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/receipt.json": {
+      "bytes": 1529,
+      "sha256": "a425a7a68ecf3acc1bf072f01c52a68e2d134ad156b6658333733ff63c697050"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/journal.json": {
+      "bytes": 1289,
+      "sha256": "1bd433bc917a1a755317cc42e32c07869abb79fe6bd4d693c99f68636544b65e"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/Recording-1.wav": {
+      "bytes": 3221492,
+      "sha256": "ed962413e973a8f45cc4c3f6208873a7a527dc886682c047d5b9d97d8fd36f8d"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/source-0.f32": {
+      "bytes": 3220708,
+      "sha256": "3fd7c060d321e0bb7bbe0ac9c6125f10a5206f0e9eb07d2f06799b60ec597fb2"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/receipt.json": {
+      "bytes": 1732,
+      "sha256": "85da59ed7e601ef182f30f9f442cdfa4f371e57f834d7d4cf41c483db37ac66e"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/journal.json": {
+      "bytes": 1289,
+      "sha256": "2050c5be5f792075e63fefca319856083d21992f5646c3f5760125f673212c8d"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/Recording-1.wav": {
+      "bytes": 1957152,
+      "sha256": "62f0940ccfa0da689cf02d76bf5d35119ee2277521cee9805019d1d8c674c76e"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/source-0.f32": {
+      "bytes": 1956368,
+      "sha256": "05d7dfcd506a0d720ab173e0da0c674680214584edbbf55b83be026b15f8c804"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/receipt.json": {
+      "bytes": 1763,
+      "sha256": "10a5f72ed6e71a588821561179e465405d0c15be172263e1b940c619e849813c"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/journal.json": {
+      "bytes": 1342,
+      "sha256": "6187381fb3c10f985e3d38ab8c330f0e52aeaf93d870649c660213d90a2d70a2"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/Recording-1.wav": {
+      "bytes": 4158752,
+      "sha256": "997d9ec9ef4978b6d9310a77b1ccd2d49c8e8df058d20cae3ad2e8965f801325"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/source-0.f32": {
+      "bytes": 4160016,
+      "sha256": "a37b2632b4a2926f307e51e17f43f22b340836361607835d42e63acc4cf355f9"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/receipt.json": {
+      "bytes": 1817,
+      "sha256": "b139fb66e23b4893c2de38ca91c85d3a09f67894ea0272ee9de4a34b9b409615"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/journal.json": {
+      "bytes": 1354,
+      "sha256": "7344037d57116ffcb39fbca7486cbcb484a1dbd1dcf0780ea23c2ada1a358c9e"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/Recording-1.wav": {
+      "bytes": 3182796,
+      "sha256": "2671a1785acab1558c0c0b4c9fd67fbd5c47a688c50dbd21d40e9ac78202a1b3"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/source-0.f32": {
+      "bytes": 3182012,
+      "sha256": "3ff935911a369e857fdde081828bd51a82cfb71465d4aa4e5f8d0ed5760bfe2a"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/receipt.json": {
+      "bytes": 1828,
+      "sha256": "89ed23395cda33f791dc93b02666c0df80bbbf1a84afa8a5d4ac715d44fc63a8"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.baf223f5a49d4f77bcdec4ec397c7e35.partial/journal.json": {
+      "bytes": 1280,
+      "sha256": "57e80428427f2f01000e6fea0eb4584590b9d28bcc0f2d9295509e8604cdb887"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.baf223f5a49d4f77bcdec4ec397c7e35.partial/source-0.f32": {
+      "bytes": 4042568,
+      "sha256": "239502fb77d671113cad867618685052a0a89492f4de6c1d0192105583b0c643"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.acaeebcaae1d4469870029fe00dc987f.partial/journal.json": {
+      "bytes": 1289,
+      "sha256": "d47d45c3e5a1c666621f9af7cf784f95b8d8f9665b12ddf40c0899709f9fff56"
+    },
+    "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/input-recording/native/recorded-audio/.acaeebcaae1d4469870029fe00dc987f.partial/source-0.f32": {
+      "bytes": 1510628,
+      "sha256": "8484bb992d1c42dd9ec7cb554950a72b08046cf8a5971768f5b33e91ab9cfe99"
+    }
+  },
+  "note": "Current raw/journal inventory retained; no inferred independent pre-task digest for every unreferenced raw/journal file."
+}

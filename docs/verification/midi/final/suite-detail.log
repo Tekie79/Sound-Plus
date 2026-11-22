@@ -1,0 +1,621 @@
+Start testing: Nov 22 04:09 EST
+----------------------------------------------------------
+1/37 Testing: midi_sequencing
+1/37 Test: midi_sequencing
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--midi" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"midi_sequencing" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+MIDI sequencing/sampler: 966 checks passed
+<end of output>
+Test time =   0.65 sec
+----------------------------------------------------------
+Test Passed.
+"midi_sequencing" end time: Nov 22 04:09 EST
+"midi_sequencing" time elapsed: 00:00:00
+----------------------------------------------------------
+
+2/37 Testing: audio_input_recording
+2/37 Test: audio_input_recording
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--audio-input" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/audio-input-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"audio_input_recording" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+Audio input recording: 195 checks passed
+<end of output>
+Test time =   0.57 sec
+----------------------------------------------------------
+Test Passed.
+"audio_input_recording" end time: Nov 22 04:09 EST
+"audio_input_recording" time elapsed: 00:00:00
+----------------------------------------------------------
+
+3/37 Testing: multitrack_automation
+3/37 Test: multitrack_automation
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--multitrack" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multitrack-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"multitrack_automation" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+stage legacy
+stage tracks
+stage clips
+stage automation
+stage take
+Multitrack: 212 checks passed
+<end of output>
+Test time =   0.84 sec
+----------------------------------------------------------
+Test Passed.
+"multitrack_automation" end time: Nov 22 04:09 EST
+"multitrack_automation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+4/37 Testing: pool_corrections
+4/37 Test: pool_corrections
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--pool-corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/pool-corrections-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"pool_corrections" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+R18 production panner/canvas/history, generation and PCM checks passed
+R19 production review constructor/refresh/Use checks passed
+Portable evidence /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/pool-corrections-output/c7e36d74e46d4c2cbbb565913cc7997b/portable
+Native corrected control samples 100, indexing overlap 38
+Pool correction checks 893
+<end of output>
+Test time =   6.02 sec
+----------------------------------------------------------
+Test Passed.
+"pool_corrections" end time: Nov 22 04:09 EST
+"pool_corrections" time elapsed: 00:00:06
+----------------------------------------------------------
+
+5/37 Testing: source_pools
+5/37 Test: source_pools
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--source-pools" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/source-pool-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"source_pools" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+Pool six-channel capture/replay/offline maximum error 0
+Source pool model/session scenarios passed (49426 assertions)
+<end of output>
+Test time =   0.35 sec
+----------------------------------------------------------
+Test Passed.
+"source_pools" end time: Nov 22 04:09 EST
+"source_pools" time elapsed: 00:00:00
+----------------------------------------------------------
+
+6/37 Testing: library_playback_search
+6/37 Test: library_playback_search
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--playback-search" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/playback-search-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_playback_search" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+Library playback/search checks: 63263 passed
+<end of output>
+Test time =   2.98 sec
+----------------------------------------------------------
+Test Passed.
+"library_playback_search" end time: Nov 22 04:09 EST
+"library_playback_search" time elapsed: 00:00:02
+----------------------------------------------------------
+
+7/37 Testing: multichannel_corrections
+7/37 Test: multichannel_corrections
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--multichannel-corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-corrections-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"multichannel_corrections" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS multichannel corrections: 3152133 checks
+<end of output>
+Test time =  16.71 sec
+----------------------------------------------------------
+Test Passed.
+"multichannel_corrections" end time: Nov 22 04:09 EST
+"multichannel_corrections" time elapsed: 00:00:16
+----------------------------------------------------------
+
+8/37 Testing: multichannel
+8/37 Test: multichannel
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--multichannel" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multichannel-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"multichannel" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS multichannel identity, processing, spatial takes, delivery: 910635 checks; native error 0
+<end of output>
+Test time =   5.21 sec
+----------------------------------------------------------
+Test Passed.
+"multichannel" end time: Nov 22 04:09 EST
+"multichannel" time elapsed: 00:00:05
+----------------------------------------------------------
+
+9/37 Testing: take_integrity
+9/37 Test: take_integrity
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--take-integrity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-integrity-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"take_integrity" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS take integrity: 157 checks, native PCM error 0
+<end of output>
+Test time =   4.08 sec
+----------------------------------------------------------
+Test Passed.
+"take_integrity" end time: Nov 22 04:09 EST
+"take_integrity" time elapsed: 00:00:04
+----------------------------------------------------------
+
+10/37 Testing: capture_device_lifecycle
+10/37 Test: capture_device_lifecycle
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--device-capture" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/device-capture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"capture_device_lifecycle" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS actual device lifecycle handlers/service: 38 checks
+PASS actual device lifecycle handlers/service: 74 checks
+<end of output>
+Test time =   4.72 sec
+----------------------------------------------------------
+Test Passed.
+"capture_device_lifecycle" end time: Nov 22 04:09 EST
+"capture_device_lifecycle" time elapsed: 00:00:04
+----------------------------------------------------------
+
+11/37 Testing: recorded_takes
+11/37 Test: recorded_takes
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--takes" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"recorded_takes" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+SoundPlus audio health: {"helperPid": 33219, "processGeneration": 1, "reason": "socket closed", "failureMs": 3.493048240464583e8, "lastHeartbeatMs": 3.49304816715375e8, "heartbeatAgeMs": 7.331083297729492, "lastCommandMs": 3.49304487410125e8, "lastCommand": "play_design", "sentSequence": 45, "statusesReceived": 91, "pendingResponseBytes": 0, "errno": 0, "exitCode": -1, "exitSignal": 9, "supervisorSignal": 0, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "design:90b587d623b3406c91096054389db7e8", "playGeneration": 10, "graphEpoch": 9, "preparationsRequested": 9, "helperPid": 33219, "outputRate": 48000.0, "sourceSample": 15360, "acceptedSourceEnd": 15360, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 144000, "playing": true, "completed": false, "loopCount": 0, "seconds": 0.32, "firstCallbackMs": 3.493045048852083e8, "peak": 0.00044486738625, "preMonitorPeak": 0.004448591265827, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.002481848932803, 0.004448591265827, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": true, "designLayers": 4, "producerMaxMs": 0.252833306789398, "error": "", "playbackContext": "live:90b587d623b3406c91096054389db7e8", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 235, "frames": 120320, "underruns": 0, "designRevision": 13, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "takeId": "ace8f531f2ae4621a273b0cd5380f1a6", "takePhase": 1, "takeEnd": 15360, "takeEvents": 0, "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/bf9379a07c834c75bdc7dfb7dd21cc1e/session/designer-takes/ace8f531f2ae4621a273b0cd5380f1a6.soundplus", "takeCheckpointReady": false, "takePeakBacklog": 0, "takeError": "", "statusSequence": 91, "statusMs": 3.493048165554166e8, "lastCommandSequence": 45, "lastCommandMs": 3.49304493572625e8, "sampleRate": 48000.0, "deviceReservationId": 3, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "5AE1E01A-29F6-4574-80A8-B6D100000003", "name": "HP iPhone Microphone", "rate": 48000.0, "channels": 1, "latency": 6000, "safety": 100, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": false}, {"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "availableDevices": [], "request": ""}, "peakResidentBytes": 62472192, "cpuSeconds": 0.15604, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "helperSignalExit"}
+Capture/replay 44100 -> 44100 error 0 body 1536 event 512
+Capture/replay 48000 -> 48000 error 0 body 1536 event 512
+Capture/replay 96000 -> 96000 error 0 body 1536 event 512
+Capture/replay 48000 -> 44100 error 0 body 1672 event 560
+Capture/replay 44100 -> 48000 error 0 body 1412 event 473
+PASS recorded takes: 2820 checks
+<end of output>
+Test time =   8.89 sec
+----------------------------------------------------------
+Test Passed.
+"recorded_takes" end time: Nov 22 04:09 EST
+"recorded_takes" time elapsed: 00:00:08
+----------------------------------------------------------
+
+12/37 Testing: library_stability
+12/37 Test: library_stability
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--library-stability" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/library-stability-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_stability" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS Library stability: 168 checks
+<end of output>
+Test time =   1.40 sec
+----------------------------------------------------------
+Test Passed.
+"library_stability" end time: Nov 22 04:09 EST
+"library_stability" time elapsed: 00:00:01
+----------------------------------------------------------
+
+13/37 Testing: waveform_scheduling
+13/37 Test: waveform_scheduling
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--waveform-scheduling" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/waveform-scheduling-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"waveform_scheduling" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+PASS cooperative waveform cancellation, priority and bounded fairness: 296 checks
+<end of output>
+Test time =   2.20 sec
+----------------------------------------------------------
+Test Passed.
+"waveform_scheduling" end time: Nov 22 04:09 EST
+"waveform_scheduling" time elapsed: 00:00:02
+----------------------------------------------------------
+
+14/37 Testing: audio_health
+14/37 Test: audio_health
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--audio-health" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/audio-health-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"audio_health" start time: Nov 22 04:09 EST
+Output:
+----------------------------------------------------------
+SoundPlus audio health: {"helperPid": 33243, "processGeneration": 1, "reason": "socket closed", "failureMs": 3.49313324332875e8, "lastHeartbeatMs": 3.493133221845416e8, "heartbeatAgeMs": 2.148333370685577, "lastCommandMs": 3.49312755204125e8, "lastCommand": "play_design", "sentSequence": 4, "statusesReceived": 2, "pendingResponseBytes": 0, "errno": 0, "exitCode": -1, "exitSignal": 9, "supervisorSignal": 0, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "design:9bdba63bfd7e4b4fa98c20a7311d9327", "playGeneration": 1, "graphEpoch": 1, "preparationsRequested": 1, "helperPid": 33243, "outputRate": 48000.0, "sourceSample": 512, "acceptedSourceEnd": 512, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 1008000, "playing": true, "completed": false, "loopCount": 0, "seconds": 0.010666666666667, "firstCallbackMs": 3.49313315572125e8, "peak": 0.007263153791428, "preMonitorPeak": 0.017726132646203, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.017726132646203, 0.017726132646203, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": true, "designLayers": 1, "producerMaxMs": 0.04045832157135, "error": "", "playbackContext": "live:9bdba63bfd7e4b4fa98c20a7311d9327", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 1, "frames": 512, "underruns": 0, "designRevision": 2, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "statusSequence": 2, "statusMs": 3.493133220129167e8, "lastCommandSequence": 4, "lastCommandMs": 3.49313306368625e8, "sampleRate": 48000.0, "deviceReservationId": 0, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "5AE1E01A-29F6-4574-80A8-B6D100000003", "name": "HP iPhone Microphone", "rate": 48000.0, "channels": 1, "latency": 6000, "safety": 100, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": false}, {"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "availableDevices": [], "request": ""}, "peakResidentBytes": 51019776, "cpuSeconds": 0.048643, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "helperSignalExit"}
+SoundPlus audio health: {"helperPid": 33248, "processGeneration": 2, "reason": "status heartbeat timed out", "failureMs": 3.49318519881375e8, "lastHeartbeatMs": 3.493135168877083e8, "heartbeatAgeMs": 5002.993666708469391, "lastCommandMs": 3.49313500063125e8, "lastCommand": "play_design", "sentSequence": 7, "statusesReceived": 3, "pendingResponseBytes": 0, "errno": 0, "exitCode": -1, "exitSignal": 15, "supervisorSignal": 15, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "design:9bdba63bfd7e4b4fa98c20a7311d9327", "playGeneration": 2, "graphEpoch": 1, "preparationsRequested": 1, "helperPid": 33248, "outputRate": 48000.0, "sourceSample": 0, "acceptedSourceEnd": 0, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 1008000, "playing": true, "completed": false, "loopCount": 0, "seconds": 0.0, "firstCallbackMs": 0.0, "peak": 0.0, "preMonitorPeak": 0.0, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": true, "designLayers": 1, "producerMaxMs": 0.042499959468842, "error": "", "playbackContext": "live:9bdba63bfd7e4b4fa98c20a7311d9327", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 4, "frames": 2048, "underruns": 0, "designRevision": 2, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "statusSequence": 3, "statusMs": 3.49313516703625e8, "lastCommandSequence": 7, "lastCommandMs": 3.493135030737083e8, "sampleRate": 48000.0, "deviceReservationId": 0, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "5AE1E01A-29F6-4574-80A8-B6D100000003", "name": "HP iPhone Microphone", "rate": 48000.0, "channels": 1, "latency": 6000, "safety": 100, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": false}, {"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "availableDevices": [], "request": ""}, "peakResidentBytes": 50921472, "cpuSeconds": 0.040457, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "watchdogTimeout"}
+SoundPlus audio health: {"helperPid": 33255, "processGeneration": 3, "reason": "explicit reconnect", "failureMs": 3.493199911284167e8, "lastHeartbeatMs": 3.4931998053525e8, "heartbeatAgeMs": 10.593166649341583, "lastCommandMs": 3.493198458525e8, "lastCommand": "play_design", "sentSequence": 10, "statusesReceived": 2, "pendingResponseBytes": 0, "errno": 0, "exitCode": 0, "exitSignal": 0, "supervisorSignal": 0, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "design:9bdba63bfd7e4b4fa98c20a7311d9327", "playGeneration": 3, "graphEpoch": 1, "preparationsRequested": 1, "helperPid": 33255, "outputRate": 48000.0, "sourceSample": 0, "acceptedSourceEnd": 0, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 1008000, "playing": true, "completed": false, "loopCount": 0, "seconds": 0.0, "firstCallbackMs": 0.0, "peak": 0.0, "preMonitorPeak": 0.0, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": true, "designLayers": 1, "producerMaxMs": 0.040749967098236, "error": "", "playbackContext": "live:9bdba63bfd7e4b4fa98c20a7311d9327", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 1, "frames": 512, "underruns": 0, "designRevision": 2, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "statusSequence": 2, "statusMs": 3.493199803760833e8, "lastCommandSequence": 10, "lastCommandMs": 3.493199670464583e8, "sampleRate": 48000.0, "deviceReservationId": 0, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "5AE1E01A-29F6-4574-80A8-B6D100000003", "name": "HP iPhone Microphone", "rate": 48000.0, "channels": 1, "latency": 6000, "safety": 100, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": false}, {"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "availableDevices": [], "request": ""}, "peakResidentBytes": 50806784, "cpuSeconds": 0.047975, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "explicitReconnect"}
+PASS intentional SIGKILL / SIGSTOP watchdog / explicit reconnect, diagnostics and document/output preservation
+<end of output>
+Test time =   8.33 sec
+----------------------------------------------------------
+Test Passed.
+"audio_health" end time: Nov 22 04:10 EST
+"audio_health" time elapsed: 00:00:08
+----------------------------------------------------------
+
+15/37 Testing: waveform_previews
+15/37 Test: waveform_previews
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--waveform-previews" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/waveform-preview-test-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"waveform_previews" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS truthful compact waveform ranges, extrema, identity, worker scheduling and cards: 3634 checks
+<end of output>
+Test time =   0.49 sec
+----------------------------------------------------------
+Test Passed.
+"waveform_previews" end time: Nov 22 04:10 EST
+"waveform_previews" time elapsed: 00:00:00
+----------------------------------------------------------
+
+16/37 Testing: performance_state
+16/37 Test: performance_state
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--performance-state" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-state-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"performance_state" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS performance neutral compatibility, 0-4 blend, stable mappings, idempotence and PCM recall: 655012 checks
+<end of output>
+Test time =   3.27 sec
+----------------------------------------------------------
+Test Passed.
+"performance_state" end time: Nov 22 04:10 EST
+"performance_state" time elapsed: 00:00:03
+----------------------------------------------------------
+
+17/37 Testing: designer_view_commands
+17/37 Test: designer_view_commands
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--view-commands" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/view-command-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_view_commands" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS actual view comparison, model toggles and minimum geometry: 87 checks
+<end of output>
+Test time =   0.37 sec
+----------------------------------------------------------
+Test Passed.
+"designer_view_commands" end time: Nov 22 04:10 EST
+"designer_view_commands" time elapsed: 00:00:00
+----------------------------------------------------------
+
+18/37 Testing: icon_system
+18/37 Test: icon_system
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--icon-system" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/icon-test-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"icon_system" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS embedded icon coverage, viewBox, states, cache and 1x/2x rendering: 870 checks
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"icon_system" end time: Nov 22 04:10 EST
+"icon_system" time elapsed: 00:00:00
+----------------------------------------------------------
+
+19/37 Testing: library_and_audio
+19/37 Test: library_and_audio
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/test-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_and_audio" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+SoundPlus audio health: {"helperPid": 33294, "processGeneration": 1, "reason": "explicit reconnect", "failureMs": 3.493338918516666e8, "lastHeartbeatMs": 3.493338678047916e8, "heartbeatAgeMs": 24.046875, "lastCommandMs": 3.493325032009166e8, "lastCommand": "play", "sentSequence": 3, "statusesReceived": 52, "pendingResponseBytes": 0, "errno": 0, "exitCode": 0, "exitSignal": 0, "supervisorSignal": 0, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "test-asset", "playGeneration": 1, "graphEpoch": 1, "preparationsRequested": 1, "helperPid": 33294, "outputRate": 48000.0, "sourceSample": 64512, "acceptedSourceEnd": 64512, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 384000, "playing": true, "completed": false, "loopCount": 0, "seconds": 1.344, "firstCallbackMs": 3.49332526296e8, "peak": 0.140008538961411, "preMonitorPeak": 0.20001220703125, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.20001220703125, 0.20001220703125, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": false, "designLayers": 0, "producerMaxMs": 0.07108336687088, "error": "", "playbackContext": "", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 129, "frames": 66048, "underruns": 0, "designRevision": 0, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "statusSequence": 52, "statusMs": 3.493338675622917e8, "lastCommandSequence": 3, "lastCommandMs": 3.49332510763875e8, "sampleRate": 48000.0, "deviceReservationId": 0, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "5AE1E01A-29F6-4574-80A8-B6D100000003", "name": "HP iPhone Microphone", "rate": 48000.0, "channels": 1, "latency": 6000, "safety": 100, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": false}, {"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "availableDevices": [], "request": ""}, "peakResidentBytes": 50298880, "cpuSeconds": 0.07828, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "explicitReconnect"}
+200 warm FTS queries, mean ms: 0.0497983
+Progressive import visible at 700 / 2400 files
+Core Audio device: MacBook Pro Speakers, sample rate: 48000.0, callback frames: 66048
+PASS: 2808 checks. Original fixtures retained at /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/test-output/fixture
+<end of output>
+Test time =   9.54 sec
+----------------------------------------------------------
+Test Passed.
+"library_and_audio" end time: Nov 22 04:10 EST
+"library_and_audio" time elapsed: 00:00:09
+----------------------------------------------------------
+
+20/37 Testing: library_selection_audition
+20/37 Test: library_selection_audition
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--selection-audition" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/library-selection-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_selection_audition" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+Native selection audition passed in full Library and Designer browser
+<end of output>
+Test time =   3.81 sec
+----------------------------------------------------------
+Test Passed.
+"library_selection_audition" end time: Nov 22 04:10 EST
+"library_selection_audition" time elapsed: 00:00:03
+----------------------------------------------------------
+
+21/37 Testing: library_performance_regression
+21/37 Test: library_performance_regression
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--performance" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/performance-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_performance_regression" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+Pause acknowledged at 808 committed files
+PASS paging, concurrent import identity, cancellation, source filters, pause/resume, incremental scope, reopen and paused audition
+<end of output>
+Test time =   6.93 sec
+----------------------------------------------------------
+Test Passed.
+"library_performance_regression" end time: Nov 22 04:10 EST
+"library_performance_regression" time elapsed: 00:00:06
+----------------------------------------------------------
+
+22/37 Testing: library_semantic_integrity
+22/37 Test: library_semantic_integrity
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--semantic-integrity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_semantic_integrity" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS semantic revision/space integrity, window grouping, source ranges, waveform cache and seek generations
+<end of output>
+Test time =   0.40 sec
+----------------------------------------------------------
+Test Passed.
+"library_semantic_integrity" end time: Nov 22 04:10 EST
+"library_semantic_integrity" time elapsed: 00:00:00
+----------------------------------------------------------
+
+23/37 Testing: library_similar_integrity
+23/37 Test: library_similar_integrity
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--similar-integrity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/similar-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"library_similar_integrity" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS exact cached retrieval, live deltas, filters, exclusions, invalidation, log gap recovery, cache reuse/integrity, channels and reference windows
+<end of output>
+Test time =   1.25 sec
+----------------------------------------------------------
+Test Passed.
+"library_similar_integrity" end time: Nov 22 04:10 EST
+"library_similar_integrity" time elapsed: 00:00:01
+----------------------------------------------------------
+
+24/37 Testing: designer_transport
+24/37 Test: designer_transport
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-transport" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-transport-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_transport" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+Prepared eight-layer 40-second sources
+PASS native live control, search/index, clock, late seek/Stop/cancel and forward grains: 4745 checks
+<end of output>
+Test time =  15.84 sec
+----------------------------------------------------------
+Test Passed.
+"designer_transport" end time: Nov 22 04:10 EST
+"designer_transport" time elapsed: 00:00:15
+----------------------------------------------------------
+
+25/37 Testing: designer_canvas
+25/37 Test: designer_canvas
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--canvas-gestures" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-gesture-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_canvas" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS canvas timing/targets, trim/rate boundaries, real pointer gestures/history and drops: 1449 checks
+<end of output>
+Test time =   0.20 sec
+----------------------------------------------------------
+Test Passed.
+"designer_canvas" end time: Nov 22 04:10 EST
+"designer_canvas" time elapsed: 00:00:00
+----------------------------------------------------------
+
+26/37 Testing: designer_session
+26/37 Test: designer_session
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-session" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-session-output"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_session" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport ownership: 164 checks
+<end of output>
+Test time =   0.12 sec
+----------------------------------------------------------
+Test Passed.
+"designer_session" end time: Nov 22 04:10 EST
+"designer_session" time elapsed: 00:00:00
+----------------------------------------------------------
+
+27/37 Testing: designer_workflow
+27/37 Test: designer_workflow
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_workflow" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+Designer checks passed: 66299
+<end of output>
+Test time =   9.95 sec
+----------------------------------------------------------
+Test Passed.
+"designer_workflow" end time: Nov 22 04:10 EST
+"designer_workflow" time elapsed: 00:00:09
+----------------------------------------------------------
+
+28/37 Testing: designer_fades
+28/37 Test: designer_fades
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--designer-fades" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/designer-fade-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"designer_fades" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+PASS independent fade shapes, legacy recall, overlap, Undo/Redo and native/render parity: 1137 checks
+<end of output>
+Test time =   2.48 sec
+----------------------------------------------------------
+Test Passed.
+"designer_fades" end time: Nov 22 04:10 EST
+"designer_fades" time elapsed: 00:00:02
+----------------------------------------------------------
+
+29/37 Testing: midi_instruments
+29/37 Test: midi_instruments
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--midi-instruments" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusMidiFixture_artefacts/Release/VST3/SoundPlus MIDI Oracle.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"midi_instruments" start time: Nov 22 04:10 EST
+Output:
+----------------------------------------------------------
+MIDI instrument: 11007 checks passed; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/fe775f6d871542d08d546c68d54444a8
+<end of output>
+Test time =  23.08 sec
+----------------------------------------------------------
+Test Passed.
+"midi_instruments" end time: Nov 22 04:11 EST
+"midi_instruments" time elapsed: 00:00:23
+----------------------------------------------------------
+
+30/37 Testing: plugin_processing
+30/37 Test: plugin_processing
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--plugin-processing" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.." "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"plugin_processing" start time: Nov 22 04:11 EST
+Output:
+----------------------------------------------------------
+Plugin processing passed: 733770 checks, 8 exact buses; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-processing-test-output/329da9dcbd314732b7e16eb1a901a502
+<end of output>
+Test time =  69.83 sec
+----------------------------------------------------------
+Test Passed.
+"plugin_processing" end time: Nov 22 04:12 EST
+"plugin_processing" time elapsed: 00:01:09
+----------------------------------------------------------
+
+31/37 Testing: plugin_correctness
+31/37 Test: plugin_correctness
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--plugin-correctness" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/tests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.." "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"plugin_correctness" start time: Nov 22 04:12 EST
+Output:
+----------------------------------------------------------
+Plugin correctness passed: 74 checks; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-correctness/tests/3bfc623d22ab4196a5bca62e40601a9c
+<end of output>
+Test time =  10.59 sec
+----------------------------------------------------------
+Test Passed.
+"plugin_correctness" end time: Nov 22 04:12 EST
+"plugin_correctness" time elapsed: 00:00:10
+----------------------------------------------------------
+
+32/37 Testing: plugin_gate_a
+32/37 Test: plugin_gate_a
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--plugin-gate-a" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/gate-a" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.." "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"plugin_gate_a" start time: Nov 22 04:12 EST
+Output:
+----------------------------------------------------------
+Plugin Gate A passed: 97 checks; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/gate-a/6913d480a8d3432b93938e070c651ff0
+<end of output>
+Test time =  16.95 sec
+----------------------------------------------------------
+Test Passed.
+"plugin_gate_a" end time: Nov 22 04:12 EST
+"plugin_gate_a" time elapsed: 00:00:16
+----------------------------------------------------------
+
+33/37 Testing: ordered_corrections
+33/37 Test: ordered_corrections
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--ordered-corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/tests/fixtures/legacy-v7"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"ordered_corrections" start time: Nov 22 04:12 EST
+Output:
+----------------------------------------------------------
+Ordered corrections passed: 115; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/corrections/7150ce123e27489db1495cfa77f91fa3
+<end of output>
+Test time =   0.13 sec
+----------------------------------------------------------
+Test Passed.
+"ordered_corrections" end time: Nov 22 04:12 EST
+"ordered_corrections" time elapsed: 00:00:00
+----------------------------------------------------------
+
+34/37 Testing: plugin_takes
+34/37 Test: plugin_takes
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--plugin-takes" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/tests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"plugin_takes" start time: Nov 22 04:12 EST
+Output:
+----------------------------------------------------------
+Plugin-aware takes passed: 160674 assertions; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/tests/e6c856b5d936446496e6a6576b1645b9
+<end of output>
+Test time =  31.10 sec
+----------------------------------------------------------
+Test Passed.
+"plugin_takes" end time: Nov 22 04:13 EST
+"plugin_takes" time elapsed: 00:00:31
+----------------------------------------------------------
+
+35/37 Testing: ordered_inserts
+35/37 Test: ordered_inserts
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--ordered-inserts" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/tests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.." "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusStereoFixture_artefacts/Release/VST3/SoundPlus QA Stereo.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"ordered_inserts" start time: Nov 22 04:13 EST
+Output:
+----------------------------------------------------------
+Ordered chain oracle/migration/bypass checks passed: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/ordered-inserts/tests/a10a348c31e742cfb0667544b926d8c6
+<end of output>
+Test time =  31.63 sec
+----------------------------------------------------------
+Test Passed.
+"ordered_inserts" end time: Nov 22 04:14 EST
+"ordered_inserts" time elapsed: 00:00:31
+----------------------------------------------------------
+
+36/37 Testing: native_view_scale
+36/37 Test: native_view_scale
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--native-view-scale"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"native_view_scale" start time: Nov 22 04:14 EST
+Output:
+----------------------------------------------------------
+Native view scale contract passed: 9 checks
+<end of output>
+Test time =   0.01 sec
+----------------------------------------------------------
+Test Passed.
+"native_view_scale" end time: Nov 22 04:14 EST
+"native_view_scale" time elapsed: 00:00:00
+----------------------------------------------------------
+
+37/37 Testing: plugin_live
+37/37 Test: plugin_live
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--plugin-live" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/tests" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusFixture_artefacts/Release/VST3/SoundPlus QA Effect.vst3/Contents/MacOS/../.."
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"plugin_live" start time: Nov 22 04:14 EST
+Output:
+----------------------------------------------------------
+Plugin live service passed: 219 checks; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-editor-live/tests/2aef8605d0504ac5b470714b779be3bf
+<end of output>
+Test time =  44.13 sec
+----------------------------------------------------------
+Test Passed.
+"plugin_live" end time: Nov 22 04:14 EST
+"plugin_live" time elapsed: 00:00:44
+----------------------------------------------------------
+
+End testing: Nov 22 04:14 EST

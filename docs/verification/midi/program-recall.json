@@ -1,0 +1,19 @@
+{
+  "plugin": "Owned SoundPlus MIDI Oracle VST3",
+  "purpose": "midi-instrument-v1",
+  "runs": [
+    {
+      "program": 1,
+      "programName": "Half",
+      "stateHash": "a82dde89c2c69aabeb82f9882dcd3c506261b0de3f8f2783e89106f9763f4a4d"
+    },
+    {
+      "program": 1,
+      "programName": "Half",
+      "stateHash": "a82dde89c2c69aabeb82f9882dcd3c506261b0de3f8f2783e89106f9763f4a4d"
+    }
+  ],
+  "freshHelperEachRun": true,
+  "pcmComparison": false,
+  "scope": "Nondefault program and opaque-state metadata recall through a saved preset"
+}
