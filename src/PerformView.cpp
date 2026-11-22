@@ -717,8 +717,7 @@ void PerformView::paint(juce::Graphics &g)
 void PerformView::resized()
 {
     int w = getWidth(), h = getHeight();
-    // A bounded sidebar keeps at least two thirds of normal workspace widths for Blend.
-    const int effectiveMacroWidth = std::clamp(w / 3, minimumMacroWidth, defaultMacroWidth);
+    const int effectiveMacroWidth = ui::workspace::sidebarWidth;
     const int split = std::max(0, w - effectiveMacroWidth);
     blendBounds = {0, 0, std::max(0, split - 10), h};
     const int row = std::min(72, std::max(64, (h - 16) / 4));
@@ -728,12 +727,17 @@ void PerformView::resized()
     updateBlend.setBounds(split - 86, 3, 70, 28);
     blendState.setBounds(112, 3, split - (session.performanceMix().performance.blendLaw == 1 ? 206 : 126),
                          28);
-    blendContent.setBounds(6, 34, std::max(0, blendBounds.getWidth() - 12), std::max(0, h - 40));
     constexpr int axisWidth = 32, gap = 6;
     const int cardHeight = std::clamp(h / 12, 32, 64), padY = cardHeight + gap;
-    const int padHeight = std::max(0, blendContent.getHeight() - cardHeight * 2 - 28 - gap * 2);
-    const int padWidth = std::max(0, blendContent.getWidth() - axisWidth - 8);
-    // All controls fit the available space; no scroll area or overflowing canvas.
+    const int availableHeight = std::max(0, h - 40);
+    const auto size = ui::workspace::boundedPadSize(
+        {blendBounds.getWidth() - 12 - axisWidth * 2, availableHeight - cardHeight * 2 - 28 - gap * 2});
+    const int padWidth = size.x, padHeight = size.y;
+    const int contentHeight = cardHeight * 2 + padHeight + 28 + gap * 2;
+    // Centre the pad itself; extra window space becomes balanced margins after the limits are reached.
+    blendContent.setBounds((blendBounds.getWidth() - padWidth) / 2 - axisWidth,
+                           34 + (availableHeight - contentHeight) / 2, axisWidth + padWidth + 8,
+                           contentHeight);
     pad.setBounds(axisWidth, padY, padWidth, padHeight);
     const int cardLeft = pad.getX() + 8, half = (padWidth - 16 - gap) / 2;
     for (int i = 0; i < 4; ++i)

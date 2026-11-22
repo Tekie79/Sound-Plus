@@ -3,6 +3,7 @@
 #include "PerformanceState.h"
 #include "DesignControls.h"
 #include "SourceCard.h"
+#include "WorkspaceSizing.h"
 namespace sp
 {
 class PerformView final : public juce::Component, public juce::DragAndDropTarget
@@ -20,7 +21,7 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     bool isInterestedInDragSource(const SourceDetails &) override;
     void itemDropped(const SourceDetails &) override;
     void benchmarkControls(int phase, double value);
-    static constexpr int defaultMacroWidth = 400, minimumMacroWidth = 240, minimumBlendWidth = 360;
+    static constexpr int defaultMacroWidth = ui::workspace::sidebarWidth, minimumBlendWidth = 360;
 
   private:
     friend struct PerformanceViewTestAccess;

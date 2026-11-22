@@ -107,7 +107,8 @@ class SoundPlusApplication final : public juce::JUCEApplication
             view = &workstation->library;
             setContentOwned(workstation, true);
             setResizable(true, true);
-            setResizeLimits(1040, 680, 3200, 2200);
+            setResizeLimits(sp::ui::workspace::minimumWindowWidth, sp::ui::workspace::minimumWindowHeight,
+                            3200, 2200);
             centreWithSize(1360, 860);
             if (!benchmark)
                 restoreWindowStateFromString(workstation->preferences.getValue("window"));

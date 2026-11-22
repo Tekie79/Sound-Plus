@@ -147,24 +147,33 @@ struct PerformanceViewTestAccess
         const auto before = mixText(view.session.document.activeMix());
         const auto revision = view.session.document.revision;
         view.setSize(1280, 700);
-        check(view.macroArea.getWidth() == PerformView::defaultMacroWidth && view.pad.getWidth() >= 240,
-              "Wider macro default leaves usable Blend space on desktop");
+        check(view.macroArea.getWidth() == ui::workspace::sidebarWidth && view.pad.getWidth() >= 240,
+              "Macros use the same fixed logical width as the Library sidebar");
         check(view.xLabel.getText() == "X" && view.yLabel.getText() == "Y" &&
                   view.yValue.getSliderStyle() == juce::Slider::LinearVertical &&
                   view.yValue.getRight() <= view.pad.getX() && view.xValue.getY() >= view.pad.getBottom(),
               "Single-letter axes sit vertically left and horizontally below the pad");
         for (auto size :
-             {juce::Point<int>(664, 308), juce::Point<int>(900, 540), juce::Point<int>(1500, 900)})
+             {juce::Point<int>(690, 352), juce::Point<int>(950, 540), juce::Point<int>(1500, 900),
+              juce::Point<int>(690, 1800), juce::Point<int>(2500, 352), juce::Point<int>(2500, 1800)})
         {
             view.setSize(size.x, size.y);
             {
                 check(view.blendBounds.getWidth() >= PerformView::minimumBlendWidth &&
-                          view.macroArea.getWidth() >= PerformView::minimumMacroWidth,
-                      "Resizing honours both panel minimum widths");
+                          view.macroArea.getWidth() == ui::workspace::sidebarWidth,
+                      "Macro width stays constant at minimum, wide and tall sizes");
                 check(view.blendBounds.contains(view.blendContent.getBounds()) &&
                           view.blendContent.getLocalBounds().contains(view.pad.getBounds()) &&
-                          view.pad.getWidth() >= 240 && view.pad.getHeight() >= 120,
+                          view.pad.getWidth() >= 280 && view.pad.getHeight() >= 208,
                       "Resizing keeps the pad and all controls inside their panel");
+                const auto padInView = view.getLocalArea(&view.blendContent, view.pad.getBounds());
+                check(view.pad.getWidth() <= 640 && view.pad.getHeight() <= 640 &&
+                          view.pad.getWidth() * 2 <= view.pad.getHeight() * 3 &&
+                          view.pad.getHeight() * 2 <= view.pad.getWidth() * 3,
+                      "Pad never stretches beyond 640 points or a 3:2 aspect ratio in either direction");
+                check(std::abs(padInView.getCentreX() - view.blendBounds.getCentreX()) <= 1 &&
+                          std::abs(padInView.getCentreY() - view.blendBounds.getCentreY()) <= 1,
+                      "Bounded pad remains centred as screen shape changes");
                 for (auto *axis : std::initializer_list<juce::Component *>{&view.xValue, &view.yValue,
                                                                            &view.xLabel, &view.yLabel})
                     check(view.blendContent.getLocalBounds().contains(axis->getBounds()),
@@ -199,23 +208,22 @@ struct PerformanceViewTestAccess
                 view.back.onClick();
             }
         }
-        view.setSize(1280, 700);
-        const auto tallCard = view.slotBounds[0].getHeight();
-        const auto tallPad = view.pad.getHeight();
-        const auto widePad = view.pad.getWidth();
-        view.setSize(1280, 540);
-        check(tallCard > view.slotBounds[0].getHeight() && tallPad > view.pad.getHeight(),
-              "Source cards and pad grow into available height");
-        view.setSize(900, 540);
-        check(view.pad.getWidth() < widePad && view.macroArea.getWidth() <= 300,
-              "The sidebar stays bounded as the pad responds to window width");
+        view.setSize(2500, 1800);
+        const juce::Point<int> cappedPad{view.pad.getWidth(), view.pad.getHeight()};
+        view.setSize(3000, 2000);
+        check(juce::Point<int>(view.pad.getWidth(), view.pad.getHeight()) == cappedPad &&
+                  cappedPad == juce::Point<int>(640, 640),
+              "Further window growth cannot stretch the pad after its maximum size");
+        view.setSize(690, 352);
+        check(view.pad.getWidth() >= 280 && view.pad.getHeight() >= 208,
+              "Supported minimum window protects a usable pad instead of squeezing it further");
         check(view.yValue.valueToProportionOfLength(0) == 1 &&
                   view.yValue.valueToProportionOfLength(1) == 0 &&
                   view.yValue.proportionOfLengthToValue(1) == 0,
               "Vertical Y keeps the existing zero-at-top, one-at-bottom source orientation");
-        check(view.macroArea.getWidth() <= PerformView::defaultMacroWidth &&
+        check(view.macroArea.getWidth() == ui::workspace::sidebarWidth &&
                   view.blendBounds.getWidth() > view.macroArea.getWidth(),
-              "Macros cannot squeeze the primary Blend workspace");
+              "The equal-width macro sidebar cannot squeeze the primary Blend workspace");
         check(mixText(view.session.document.activeMix()) == before &&
                   view.session.document.revision == revision,
               "Workspace resizing never changes the design, controls, or audio revision");

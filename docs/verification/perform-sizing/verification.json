@@ -1,0 +1,81 @@
+{
+  "base": "0a5eb94",
+  "sourceSha256": {
+    "src/WorkspaceSizing.h": "44e0ab52de507e61c1fdb4700829ed53839d4c52459705713aa59efa9054c00a",
+    "src/Workstation.h": "45a894072485304cff9511d2cd58f3718f735d132a8e7edeb9270a530c70f8a2",
+    "src/PerformView.h": "46dc18fb54277cddbb77ceb9269bcb7d97f092a981278ca720fb732d59380873",
+    "src/PerformView.cpp": "c25564b866159b7260af4f2637f7b0dfc664bf7a00d699e46ea311db4e21f16b",
+    "src/Main.cpp": "1ef4c4b2e38256f4a11ac4acab497ab53fff77a4bb75b5c7f1856def978b1280",
+    "tests/PerformanceStateTests.cpp": "335eec5528bad6e08894f8517ce593922f161ee849496ca88e91a19d32e47886"
+  },
+  "binarySha256": "f73eaf6eb78a6ab40a03e3e407653a030828499dcca1102efed5e73c3a9fa0c7",
+  "nativeCopyMatches": true,
+  "build": "Release arm64 / JUCE 8.0.6 / Apple M5 Pro / macOS 26.3.2",
+  "tests": "5/5 passed in 9.95 seconds",
+  "policy": {
+    "sidebarWidth": 320,
+    "maximumOuterPadExtent": 640,
+    "maximumOuterPadAspect": 1.5,
+    "minimumWindow": [
+      1040,
+      680
+    ],
+    "minimumSupportedOuterPad": [
+      284,
+      208
+    ]
+  },
+  "native": {
+    "minimumWindowVerified": [
+      1040,
+      680
+    ],
+    "desktopWindowRequested": [
+      1500,
+      982
+    ],
+    "tallWindowRequested": [
+      1040,
+      1040
+    ],
+    "tallWindowNote": "macOS fits this window to the available screen work area",
+    "renderedImageDimensions": {
+      "tall.jpg": [
+        788,
+        768
+      ],
+      "desktop.jpg": [
+        1174,
+        768
+      ],
+      "zoomed.jpg": [
+        1302,
+        768
+      ],
+      "restored-library.jpg": [
+        1077,
+        768
+      ],
+      "minimum.jpg": [
+        1040,
+        680
+      ]
+    },
+    "staleWidthPreferencesTested": 3200,
+    "libraryDividerDragLeftWidthsUnchanged": true,
+    "yMouseAndUpKey": true,
+    "nativeWindowZoom": true,
+    "qaModelUnchangedAcrossDesktopTallZoom": {
+      "revision": 32,
+      "payloadUnchanged": true
+    }
+  },
+  "restoration": {
+    "document": "Workflow demonstration",
+    "revision": 4478,
+    "latestPayloadEqual": true,
+    "mediaCount": 37,
+    "allMediaUnchanged": true
+  },
+  "workspaceRestored": "Library, scroll 0; Designer recovered r4478 in Edit mode, monitor gain .25."
+}

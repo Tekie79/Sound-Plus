@@ -1,0 +1,74 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Designer
+	2 button Choose reference file, Help: Use a local audio file as a temporary search reference. You can also drop one file here.
+	3 button Add existing sound folders, Help: Add Folder
+	4 text (settable) 43 results  ·  43 indexed  ·  43 ready
+	5 button Rescan, Help: Reconcile all sources. Unchanged audio headers are reused.
+	6 text entry area (settable) Search library, Secondary Actions: Delete
+	7 button (settable) Pause Indexing, Value: Off
+	8 button Retry Analysis
+	9 text (settable)
+	10 outline
+		11 container
+			12 container RECORDING / LOCATION
+			13 container DURATION
+			14 container CHANNELS
+			15 container RATE
+			16 container STATUS
+			17 container MATCH
+		18 row clip-001.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav
+			19 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav, clip-001.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav
+		20 row clip-002.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-002.wav
+			21 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-002.wav, clip-002.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-002.wav
+		22 row clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+			23 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav, clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+		24 row clip-004.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-004.wav
+			25 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-004.wav, clip-004.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-004.wav
+		26 row clip-005.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav
+			27 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav, clip-005.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav
+		28 row clip-006.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav
+			29 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav, clip-006.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav
+		30 row clip-007.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-007.wav
+			31 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-007.wav, clip-007.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-007.wav
+		32 row clip-008.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-008.wav
+			33 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-008.wav, clip-008.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-008.wav
+		34 row clip-009.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-009.wav
+			35 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-009.wav, clip-009.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-009.wav
+		36 row clip-010.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-010.wav
+			37 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-010.wav, clip-010.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-010.wav
+		38 row clip-011.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-011.wav
+			39 row Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-011.wav, clip-011.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-011.wav
+		40 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	41 text (settable) Value: Local AI ready, Help:
+Model: clap-htsat-unfused-q8-c28f2883575e
+Preprocessing: soundplus-clap48k-slaney-repeatpad-sinc32-v1
+Paired CLAP · 512 dimensions · cosine ranking · native CPU inference
+Sound index ready
+	42 outline
+		43 row All recordings
+		44 row /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media Online, 43 recordings
+	45 text (settable) Choose a recording to listen
+	46 pop up button (settable) Other matching moments
+	47 button Per-channel source waveforms
+	48 text (settable)
+	49 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	50 button Previous recording
+	51 button Next recording
+	52 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	53 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	54 toggle button (settable, boolean) Add 250 milliseconds of audition context, Value: off, Help: Adds 250 ms before and after the range, clamped to the recording. Stored match boundaries stay unchanged.
+	55 text (settable) Listen
+	56 slider (settable) Audition volume, Value: 25%, Secondary Actions: Delete
+	57 pop up button (settable) Audio output device, Value: External Headphones
+	58 pop up button (settable) Audition channels, Value: Analysis Mix (all channels), Help: Analysis Mix reproduces the encoder's all-channel mono average; opposite polarity can cancel. Select a pair present in the recording to inspect original channels. Changing this switches the current audition.
+	59 button Reconnect Audio
+	60 text (settable)
+	61 close button
+	62 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	63 minimize button
+	64 text SoundPlus
+65 menu bar
+	66 SoundPlus
+
+The focused UI element is 1 button Designer

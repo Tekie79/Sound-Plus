@@ -2,6 +2,7 @@
 #include "LibraryView.h"
 #include "DesignerView.h"
 #include "PluginProcessPanel.h"
+#include "WorkspaceSizing.h"
 class Workstation final : public juce::Component,public juce::DragAndDropContainer
 {
   public:
@@ -16,7 +17,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         library.onProcess=[this,db](const sp::Asset &a,int64_t first,int64_t last) { sp::PluginInput input; input.source=a;input.first=first;input.last=last;input.layout=a.layoutOverride.id.isNotEmpty()?a.layoutOverride:a.detectedChannels; if(a.channels<=16)for(int c=0;c<a.channels;++c)input.inputs.push_back(c); showProcessing(input,db); };
         designer.onProcessOutput=[this,db](const juce::File &file) { try { sp::PluginInput input;input.source=sp::inspectDesignSource(file);input.last=input.source.samples;input.layout=input.source.detectedChannels;input.scope="Finalized design/take output";for(int c=0;c<input.source.channels;++c)input.inputs.push_back(c);showProcessing(input,db); } catch(const std::exception &e) { designer.session.message=e.what(); } };
         library.bindPreferences(preferences);
-        browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",400);
+        browserOpen=preferences.getBoolValue("browserOpen",true);
         addAndMakeVisible(library);addChildComponent(designer);addChildComponent(divider);
         library.onShowDesigner=[this]{showDesigner(true);};library.onBeforeAudition=[this]{designer.session.stop();};
         library.onAddToDesigner=[this](const sp::Asset &a,int64_t first,int64_t last,bool external,int pair){designer.addSource(a,first,last,external,pair);showDesigner(true);};
@@ -34,7 +35,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         library.setCompact(designerActive);
         bool both=designerActive && browserOpen;designer.setBrowserVisible(both);
         library.setVisible(!designerActive || both);designer.setVisible(designerActive);divider.setVisible(both);
-        if(both){int width=std::clamp(browserWidth,260,std::max(260,getWidth()/3));library.setBounds(0,0,width,getHeight());divider.setBounds(width,0,6,getHeight());designer.setBounds(width+6,0,getWidth()-width-6,getHeight());}
+        if(both){constexpr int width=sp::ui::workspace::sidebarWidth;library.setBounds(0,0,width,getHeight());divider.setBounds(width,0,6,getHeight());designer.setBounds(width+6,0,getWidth()-width-6,getHeight());}
         else {library.setBounds(getLocalBounds());designer.setBounds(getLocalBounds());}
     }
     void showDesigner(bool yes)
@@ -77,14 +78,11 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         processWindow=std::make_unique<ProcessWindow>();processWindow->onClose=[safe]{juce::MessageManager::callAsync([safe]{if(safe)safe->processWindow.reset();});};
         processWindow->setContentOwned(panel.release(),true);processWindow->centreWithSize(700,650);processWindow->setVisible(true);processWindow->toFront(true);
     }
-    bool designerActive=false,browserOpen=true;int browserWidth=400;
+    bool designerActive=false,browserOpen=true;
     struct Divider : juce::Component
     {
-        Workstation &owner;int anchor=0;
-        explicit Divider(Workstation &o):owner(o){setMouseCursor(juce::MouseCursor::LeftRightResizeCursor);setTitle("Resize sound browser");}
-        void paint(juce::Graphics &g) override{g.fillAll(sp::ui::background);g.setColour(isMouseOver() ? sp::ui::accent : sp::ui::line);g.drawVerticalLine(2,12,(float)getHeight()-12);}
-        void mouseDown(const juce::MouseEvent &e) override{anchor=e.getEventRelativeTo(&owner).x-owner.browserWidth;}
-        void mouseDrag(const juce::MouseEvent &e) override{owner.browserWidth=std::clamp(e.getEventRelativeTo(&owner).x-anchor,260,std::max(260,owner.getWidth()/3));owner.preferences.setValue("browserWidth",owner.browserWidth);owner.resized();}
+        explicit Divider(Workstation &){setTitle("Library sidebar divider");}
+        void paint(juce::Graphics &g) override{g.fillAll(sp::ui::background);g.setColour(sp::ui::line);g.drawVerticalLine(2,12,(float)getHeight()-12);}
     } divider;
     juce::TooltipWindow tooltips{this,600};
 };
