@@ -226,6 +226,8 @@ void splitClip(DesignDocument &d, const juce::String &id, int64_t frame)
     auto *c = findClip(d.activeMix(), id);
     require(c != nullptr, "Clip missing");
     auto before = *c;
+    auto origin = sourceTiming(splitPlaybackLayer(before));
+    bool ownsTail = !usesSplitHistory(before) || before.splitHistory->ownsTail;
     require(frame > c->placement && frame < c->placement + layerDuration(*c, d.sampleRate),
             "Split inside clip");
     auto right = before;
@@ -233,7 +235,30 @@ void splitClip(DesignDocument &d, const juce::String &id, int64_t frame)
               d.sampleRate);
     trimLayer(right, before, true, frame - before.placement, d.sampleRate);
     right.id = juce::Uuid().toString();
+    auto oldOrder = resolvedInsertOrder(right.inserts);
     rekeyInsertChain(right.inserts);
+    auto newOrder = resolvedInsertOrder(right.inserts);
+    if (d.activeMix().trackSchema)
+    {
+        // Independent processors each replay the same dry source prefix; only one
+        // fragment contributes at any frame. The final fragment alone owns the tail.
+        right.placement = frame;
+        c->splitHistory = SplitHistory{origin, sourceTiming(*c), false, frame - before.placement};
+        right.splitHistory = SplitHistory{origin, sourceTiming(right), ownsTail,
+                                          before.placement + layerDuration(before, d.sampleRate) - frame};
+        auto *lane = automationLane(d.activeMix(), before.trackId);
+        auto curves = lane->curves;
+        for (auto curve : curves)
+            for (size_t i = 0; i < oldOrder.size(); ++i)
+                if (curve.target.instance == oldOrder[i].id)
+                {
+                    curve.target.instance = newOrder[i].id;
+                    for (auto &point : curve.points)
+                        point.id = juce::Uuid().toString();
+                    lane->curves.push_back(std::move(curve));
+                    break;
+                }
+    }
     d.selectedLayer = right.id;
     d.activeMix().layers.push_back(std::move(right));
 }

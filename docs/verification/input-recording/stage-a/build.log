@@ -1,0 +1,14 @@
+[0/2] Re-checking globbed directories...
+[1/13] Building CXX object CMakeFiles/SoundPlusAudio.dir/src/AudioMain.cpp.o
+[2/13] Building CXX object CMakeFiles/SoundPlusAudio.dir/src/AudioEngine.cpp.o
+[3/13] Building CXX object CMakeFiles/soundplus_core.dir/src/AudioPlaybackService.cpp.o
+[4/13] Linking CXX static library libsoundplus_core.a
+[5/13] Linking CXX executable SoundPlusAI_artefacts/Release/SoundPlusAI
+[6/13] Linking CXX executable SoundPlusAudio_artefacts/Release/SoundPlusAudio
+[7/13] Linking CXX executable SoundPlusPlugin_artefacts/Release/SoundPlusPlugin
+[8/13] Linking CXX executable SoundPlusPluginEditor_artefacts/Release/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor
+[9/13] Linking CXX executable SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+[10/13] Building CXX object CMakeFiles/SoundPlusTests.dir/src/AudioEngine.cpp.o
+[11/13] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/DeviceCaptureTests.cpp.o
+[12/13] Building CXX object CMakeFiles/SoundPlusTests.dir/tests/TakeTests.cpp.o
+[13/13] Linking CXX executable SoundPlusTests_artefacts/Release/SoundPlusTests

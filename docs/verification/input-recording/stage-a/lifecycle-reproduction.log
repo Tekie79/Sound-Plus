@@ -1,0 +1,26 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........   Passed    4.67 sec
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........   Passed    4.67 sec
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........   Passed    4.66 sec
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........   Passed    4.67 sec
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........   Passed    4.66 sec
+    Start 8: capture_device_lifecycle
+    Test #8: capture_device_lifecycle .........***Failed    2.88 sec
+PASS actual device lifecycle handlers/service: 36 checks
+Device failure observation (unchanged-rate diagnostic) idle=1 status={"version": 10, "command": "status", "id": "", "playGeneration": 2, "graphEpoch": 4, "preparationsRequested": 4, "helperPid": 14603, "outputRate": 0.0, "sourceSample": 0, "acceptedSourceEnd": 0, "sourceRate": 0.0, "auditionPair": 0, "startSample": 0, "endSample": 0, "playing": false, "completed": false, "loopCount": 0, "seconds": 0.0, "firstCallbackMs": 0.0, "peak": 0.017541555687785, "preMonitorPeak": 0.050118733197451, "busChannels": 0, "channelPeaks": [0.050118733197451, 0.050118733197451, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": false, "designLayers": 0, "producerMaxMs": 0.0, "error": "Audio device lifecycle interrupted during Arming", "playbackContext": "live:659366a2efc04462a2048a26e0eee3b0", "immutableReplay": false, "deviceFaultEpoch": 4, "captureLifecycleFailed": true, "captureDeviceError": "Audio device error during capture: unchanged-rate diagnostic", "callbacks": 8, "frames": 4096, "underruns": 0, "designRevision": 1, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "takeId": "2e7d5a2f256a40f0a30b8c25ceb18854", "takePhase": 4, "takeEnd": 2048, "takeEvents": 0, "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/device-capture-output/layout/44b067a8ee2f4026813132c38f4fdbb4/2e7d5a2f256a40f0a30b8c25ceb18854-checkpoint.soundplus", "takeCheckpointReady": false, "takePeakBacklog": 0, "takeError": "Audio device lifecycle interrupted during Arming"}
+FAIL after 0 checks: First useful diagnostic retained, ownership released, stale intent cleared
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =  26.20 sec
+
+The following tests FAILED:
+	  8 - capture_device_lifecycle (Failed)
+Errors while running CTest

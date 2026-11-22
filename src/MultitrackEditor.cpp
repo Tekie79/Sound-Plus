@@ -60,7 +60,6 @@ struct MultitrackEditor::Header final : juce::Component
             b->setToggleable(true);
         expand.onClick = [this]
         {
-            editor.session.endGesture();
             editor.session.editMetadata("Track disclosure",
                                         [&](auto &d)
                                         {
@@ -169,7 +168,12 @@ MultitrackEditor::MultitrackEditor(DesignSession &s, Peaks p, juce::PropertiesFi
     viewport.startSeconds = preferences.getDoubleValue("trackTimelineStart", 0);
     refresh();
 }
-MultitrackEditor::~MultitrackEditor() = default;
+MultitrackEditor::~MultitrackEditor()
+{
+    refreshing = true;
+    lanes.clear();
+    headers.clear();
+}
 void MultitrackEditor::updateRows()
 {
     rows = visibleTracks(session.document.activeMix());
@@ -194,35 +198,56 @@ int MultitrackEditor::contentHeight() const
 }
 void MultitrackEditor::refresh()
 {
+    if (refreshing)
+        return;
+    juce::ScopedValueSetter<bool> guard(refreshing, true);
     updateRows();
     juce::String key = session.document.id + ":" + session.document.activeVariation;
-    for (auto &id : rows)
-    {
-        key += id;
-        auto *l = automationLane(session.document.activeMix(), id);
-        key += l && l->expanded ? "open" : "closed";
-    }
-    if (key != signature)
+    if (key != signature || editorIncarnation != session.documentGeneration())
     {
         signature = key;
+        editorIncarnation = session.documentGeneration();
         headers.clear();
         lanes.clear();
-        for (auto &id : rows)
+    }
+    // Preserve owner identity (including hidden folder children). Disclosure is layout,
+    // not topology, and must not destroy another lane's focus or Touch gesture.
+    auto exists = [&](const juce::String &id)
+    { return id == "master" || findTrack(session.document.activeMix(), id) != nullptr; };
+    for (int i = headers.size(); --i >= 0;)
+        if (!exists(headers[i]->id))
+            headers.remove(i);
+    for (int i = lanes.size(); --i >= 0;)
+        if (!exists(lanes[i]->owner))
+            lanes.remove(i);
+    for (auto &id : rows)
+    {
+        if (std::none_of(headers.begin(), headers.end(), [&](auto *h) { return h->id == id; }))
         {
             auto *h = headers.add(new Header(*this, id));
             addAndMakeVisible(h);
-            auto *l = automationLane(session.document.activeMix(), id);
-            if (l && l->expanded)
-            {
-                auto *a = lanes.add(new AutomationEditor(session, id, viewport, snapping));
-                addAndMakeVisible(a);
-            }
         }
+        auto *l = automationLane(session.document.activeMix(), id);
+        if (l && l->expanded &&
+            std::none_of(lanes.begin(), lanes.end(), [&](auto *a) { return a->owner == id; }))
+            addAndMakeVisible(lanes.add(new AutomationEditor(session, id, viewport, snapping)));
     }
     for (auto *h : headers)
+    {
+        h->setVisible(std::find(rows.begin(), rows.end(), h->id) != rows.end());
         h->sync();
+    }
     for (auto *l : lanes)
+    {
+        auto *model = automationLane(session.document.activeMix(), l->owner);
+        bool visible =
+            model && model->expanded && std::find(rows.begin(), rows.end(), l->owner) != rows.end();
+        bool hiding = !visible && l->isVisible();
+        l->setVisible(visible);
+        if (hiding)
+            l->finishInteraction();
         l->refresh();
+    }
     resized();
     repaint();
     if (onRowsChanged)
@@ -237,8 +262,13 @@ void MultitrackEditor::transportTick()
 void MultitrackEditor::resized()
 {
     updateRows();
-    for (int i = 0; i < headers.size(); ++i)
-        headers[i]->setBounds(4, (int)tops[(size_t)i], (int)viewport.header - 16, (int)height - 5);
+    for (auto *h : headers)
+    {
+        auto at = std::find(rows.begin(), rows.end(), h->id);
+        if (at != rows.end())
+            h->setBounds(4, (int)tops[(size_t)(at - rows.begin())], (int)viewport.header - 16,
+                         (int)height - 5);
+    }
     for (auto *a : lanes)
     {
         auto at = std::find(rows.begin(), rows.end(), a->owner);

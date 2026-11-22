@@ -7,6 +7,16 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
     auto root = base.getChildFile(Uuid().toString());
     root.createDirectory();
     auto cancel = [] { return false; };
+    auto maxDiff = [](const AudioBuffer<float> &a, const AudioBuffer<float> &b)
+    {
+        require(a.getNumSamples() == b.getNumSamples() && a.getNumChannels() == b.getNumChannels(),
+                "PCM comparison dimensions");
+        double error = 0;
+        for (int c = 0; c < a.getNumChannels(); ++c)
+            for (int n = 0; n < a.getNumSamples(); ++n)
+                error = std::max(error, (double)std::abs(a.getSample(c, n) - b.getSample(c, n)));
+        return error;
+    };
     auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
     setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
     PluginWorker worker(helper);
@@ -127,6 +137,65 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
                 "Track chains included in immutable plugin take4");
         auto back = takeFromJson(takeToJson(frozen));
         require(back.recipeHash == frozen.recipeHash, "Multitrack plugin take hash roundtrip");
+    }
+    {
+        auto bus = channelLayout("mono-v1");
+        auto d = document(bus, hosted(bus, 0, 19));
+        auto delay = makeStockEffect("delay");
+        delay.parameters = {17, .6, .5, 0};
+        auto filter = makeStockEffect("filter");
+        filter.parameters[1] = 8000;
+        d.original.layers[0].inserts.stock.push_back(filter);
+        d.original.layers[0].inserts.stock.push_back(delay);
+        normaliseInsertChain(d.original.layers[0].inserts);
+        enableTrackSchema(d.original);
+        auto owner = d.original.tracks[0].id;
+        auto gainId = d.original.layers[0].inserts.stock[0].id;
+        for (auto frame : {0, 4095, 4096, 4097, 8192})
+            addAutomationPoint(d.original, owner, {gainId, "parameter-0"}, frame, frame < 4096 ? -9 : -3,
+                               48000);
+        auto render = [](const DesignDocument &doc, int size)
+        {
+            DesignGraph g(doc);
+            AudioBuffer<float> b(1, 32768);
+            for (int n = 0; n < b.getNumSamples(); n += size)
+                g.render(b, n, std::min(size, b.getNumSamples() - n));
+            return b;
+        };
+        auto baseline = render(d, 257);
+        auto frozen = freezeTake(d, "Before split");
+        auto hash = frozen.recipeHash;
+        splitClip(d, d.original.layers[0].id, 4096);
+        require(d.original.layers[0].inserts.hosted.slots[0].id !=
+                        d.original.layers[1].inserts.hosted.slots[0].id &&
+                    d.original.layers[0].inserts.hosted.id != d.original.layers[1].inserts.hosted.id,
+                "split hosted processors have independent slot and rack identities");
+        auto actual = render(d, 61);
+        require(maxDiff(baseline, actual) < 2e-6,
+                "independent hosted latency and automated source gain/filter/delay retain seam and tails");
+        auto receipt =
+            renderDesign(d, root.getChildFile("split-delivery"), d.renderSettings, cancel, [](double) {});
+        require(receipt.processing == "multitrack-automation-v1" &&
+                    receipt.sourceProvenance["authority"].toString() == "single-float-pass-v1",
+                "hosted multitrack label retains authoritative raw-pass metadata");
+        auto raw = File(receipt.sourceProvenance["rawPass"].toString());
+        require(raw.existsAsFile() && processingHash(raw) == receipt.sourceProvenance["rawSha256"].toString(),
+                "hosted multitrack raw pass exists and matches recorded hash");
+        auto delivered = read(File(receipt.path)), authoritative = read(raw);
+        require(maxDiff(delivered, authoritative) < 2e-6,
+                "hosted delivery PCM comes from the retained authoritative pass");
+        d.outputs.push_back(receipt);
+        d.takes.push_back(frozen);
+        auto saved = root.getChildFile("split-reopen.soundplus");
+        saveDesignAtomic(saved, d);
+        auto loaded = loadDesign(saved);
+        require(loaded.outputs[0].processing == receipt.processing &&
+                    loaded.outputs[0].sourceProvenance["rawSha256"] ==
+                        receipt.sourceProvenance["rawSha256"] &&
+                    loaded.takes[0].recipeHash == hash,
+                "hosted multitrack receipts and pre-split frozen take hashes survive save/reopen");
+        require(maxDiff(baseline, render(loaded, 127)) < 2e-6,
+                "hosted split independent history survives document reopen");
     }
     for (auto id :
          {"mono-v1", "stereo-v1", "lcr-v1", "quad-v1", "5.0-v1", "5.1-side-v1", "5.1-rear-v1", "7.1-v1"})

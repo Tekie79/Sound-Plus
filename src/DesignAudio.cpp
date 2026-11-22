@@ -223,6 +223,9 @@ class StockProcessor final : public EffectProcessor
 class Voice
 {
     DesignLayer layer;
+    bool continuation = false, ownsTail = true;
+    int64_t gateFirst = 0, gateLast = 0;
+    juce::AudioBuffer<float> gated;
     juce::AudioBuffer<float> alignment;
     int alignmentPosition = 0, alignmentFrames = 0;
     double ratio;
@@ -372,13 +375,17 @@ class Voice
     Voice(
         const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {}, int version = 2,
         bool fixed = false, const std::function<bool()> &cancelled = [] { return false; })
-        : layer(l), ratio(l.source.sampleRate * l.rate / rate), duration(layerDuration(l, rate)),
+        : layer(splitPlaybackLayer(l)), continuation(usesSplitHistory(l)),
+          ownsTail(!continuation || l.splitHistory->ownsTail), gateFirst(l.placement),
+          gateLast(l.placement + layerDuration(l, rate)), ratio(l.source.sampleRate * l.rate / rate),
+          duration(layerDuration(layer, rate)),
           rack(std::make_unique<OrderedRack>(
               l.inserts, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
               invariant, !layout.id.isEmpty(), fixed, cancelled)),
           layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? l.routing.interpretation.size() : 2),
-          routingVersion(version), bus(layout), designRate(rate), previousIn(l.fadeInShape, l.fadeInPoints),
-          previousOut(l.fadeOutShape, l.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
+          routingVersion(version), bus(layout), designRate(rate),
+          previousIn(layer.fadeInShape, layer.fadeInPoints),
+          previousOut(layer.fadeOutShape, layer.fadeOutPoints), currentIn(previousIn), currentOut(previousOut)
     {
         if (l.source.error.isNotEmpty())
             throw std::runtime_error((l.name + ": " + l.source.error).toStdString());
@@ -390,6 +397,7 @@ class Voice
             throw std::runtime_error("Source header changed: " + l.source.name.toStdString());
         scratch.setSize(l.source.channels, 8192);
         block.setSize(inputChannels, 512);
+        gated.setSize(layoutAware ? layout.size() : 2, 512);
         for (auto &c : cache)
             c.data.setSize(inputChannels, 8192);
         if (layoutAware)
@@ -423,8 +431,13 @@ class Voice
         gainTargets(true);
         buildCoefficients();
     }
-    void add(juce::AudioBuffer<float> &output, int offset, int frames, int64_t frame, int64_t inputEnd = -1)
+    void add(juce::AudioBuffer<float> &destination, int destinationOffset, int frames, int64_t frame,
+             int64_t inputEnd = -1)
     {
+        auto &output = continuation ? gated : destination;
+        int offset = continuation ? 0 : destinationOffset;
+        if (continuation)
+            gated.clear();
         block.clear();
         for (int n = 0; n < frames; ++n)
         {
@@ -506,6 +519,14 @@ class Voice
                             output.addSample(c, offset + n,
                                              block.getSample(k, n) * matrixGains[c][k].getNextValue());
             }
+        if (continuation)
+            for (int n = 0; n < frames; ++n)
+            {
+                auto time = frame + n - rack->latency() - alignmentFrames;
+                if (time >= gateFirst && (ownsTail || time < gateLast))
+                    for (int c = 0; c < destination.getNumChannels(); ++c)
+                        destination.addSample(c, destinationOffset + n, gated.getSample(c, n));
+            }
     }
     void automate(const CompiledAutomation &a, int64_t frame)
     {
@@ -528,8 +549,11 @@ class Voice
     {
         return layer.id;
     }
-    void update(const DesignLayer &updated)
+    void update(const DesignLayer &visible)
     {
+        auto updated = splitPlaybackLayer(visible);
+        gateFirst = visible.placement;
+        gateLast = visible.placement + layerDuration(visible, designRate);
         bool rateChanged = layer.rate != updated.rate;
         auto changeShape = [](FadeShape before, FadeShape after, const auto &oldPoints, const auto &newPoints,
                               PreparedFade &previous, PreparedFade &current, auto &mix)
@@ -846,7 +870,8 @@ struct DesignGraph::Impl
         block.setSize(channels, 512);
         masterRack = std::make_unique<OrderedRack>(
             mix.inserts, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
-            invariant || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), invariant, cancelled);
+            invariant || mix.trackSchema || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), invariant,
+            cancelled);
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -860,9 +885,9 @@ struct DesignGraph::Impl
                 auto layout = document.activeMix().layout;
                 if (document.activeMix().trackSchema && layout.id.isNotEmpty())
                     layout = findTrack(document.activeMix(), l.trackId)->layout;
-                voices.push_back(std::make_unique<Voice>(l, sampleRate, invariant || !layout.id.isEmpty(),
-                                                         layout, document.activeMix().routingVersion,
-                                                         invariant, cancelled));
+                voices.push_back(std::make_unique<Voice>(
+                    l, sampleRate, invariant || mix.trackSchema || !layout.id.isEmpty(), layout,
+                    document.activeMix().routingVersion, invariant, cancelled));
             }
         int longest = 0;
         for (auto &voice : voices)
@@ -1318,7 +1343,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         result.processing = "multitrack-automation-v1";
     if (hostedPass)
     {
-        result.processing = "hosted-racks-v1";
+        if (result.processing.isEmpty())
+            result.processing = "hosted-racks-v1";
         auto *p = new juce::DynamicObject();
         p->setProperty("rawPass", rawPass.getFullPathName());
         p->setProperty("rawSha256", rawPassHash);

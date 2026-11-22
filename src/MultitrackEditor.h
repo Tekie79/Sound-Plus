@@ -53,6 +53,8 @@ class MultitrackEditor final : public juce::Component,
     juce::PropertiesFile &preferences;
     std::vector<juce::String> rows;
     juce::String signature, clipId, ownerAtDown, draggingMarker;
+    uint64_t editorIncarnation = 0;
+    bool refreshing = false;
     CanvasTarget hit = CanvasTarget::none;
     int fadePoint = -1;
     bool active = false, copied = false, slip = false;

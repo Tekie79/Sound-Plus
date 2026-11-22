@@ -98,7 +98,8 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
 } // namespace
 AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineViewport &v,
                                    SnapSettings &settings)
-    : owner(std::move(id)), session(s), viewport(v), snap(settings)
+    : owner(std::move(id)), session(s), viewport(v), snap(settings), incarnation(s.documentGeneration()),
+      documentId(s.document.id), variation(s.document.activeVariation)
 {
     setWantsKeyboardFocus(true);
     setTitle("Automation lane");
@@ -107,6 +108,8 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
     target.onClick = [this] { chooseTarget(); };
     read.onClick = [this]
     {
+        if (!lane())
+            return;
         auto t = lane()->shown;
         session.edit("Automation Read",
                      [&](auto &d)
@@ -117,6 +120,8 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
     };
     touch.onClick = [this]
     {
+        if (!lane())
+            return;
         session.edit("Arm automation Touch",
                      [&](auto &d)
                      {
@@ -142,10 +147,29 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
     target.setTooltip("Choose the curve shown in this single lane. Hidden read curves keep playing.");
     refresh();
 }
-AutomationEditor::~AutomationEditor() = default;
+AutomationEditor::~AutomationEditor()
+{
+    finishInteraction();
+}
+bool AutomationEditor::contextValid() const
+{
+    return incarnation == session.documentGeneration() && documentId == session.document.id &&
+           variation == session.document.activeVariation;
+}
+void AutomationEditor::finishInteraction()
+{
+    if (contextValid())
+    {
+        if (touching && lane())
+            endTouch();
+        if (dragging || touching)
+            session.endGesture();
+    }
+    dragging = touching = false;
+}
 AutomationLane *AutomationEditor::lane()
 {
-    return automationLane(session.document.activeMix(), owner);
+    return contextValid() ? automationLane(session.document.activeMix(), owner) : nullptr;
 }
 AutomationCurve *AutomationEditor::curve()
 {
@@ -299,7 +323,7 @@ void AutomationEditor::chooseTarget()
         automationTargets(session.document.activeMix(), owner),
         [safe](auto t)
         {
-            if (!safe)
+            if (!safe || !safe->contextValid() || !safe->lane())
                 return;
             safe->session.editMetadata("Display automation target", [&](auto &d)
                                        { automationLane(d.activeMix(), safe->owner)->shown = t; });
@@ -310,6 +334,8 @@ void AutomationEditor::chooseTarget()
 }
 void AutomationEditor::insertPoint(int64_t frame, double value)
 {
+    if (!lane())
+        return;
     auto t = lane()->shown;
     session.edit("Add automation point",
                  [&](auto &d) { addAutomationPoint(d.activeMix(), owner, t, frame, value, d.sampleRate); });
@@ -317,7 +343,7 @@ void AutomationEditor::insertPoint(int64_t frame, double value)
 }
 void AutomationEditor::mouseDown(const juce::MouseEvent &e)
 {
-    if (e.y < 30 || e.x < viewport.header || !parameter.writable)
+    if (!lane() || e.y < 30 || e.x < viewport.header || !parameter.writable)
         return;
     grabKeyboardFocus();
     capturedTarget = lane()->shown;
@@ -339,7 +365,7 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
                         [safe](int n)
                         {
-                            if (!safe)
+                            if (!safe || !safe->contextValid() || !safe->lane())
                                 return;
                             if (n == 1)
                                 safe->numericDialog();
@@ -375,7 +401,7 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
 }
 void AutomationEditor::mouseDrag(const juce::MouseEvent &e)
 {
-    if (!dragging)
+    if (!dragging || !contextValid() || !lane())
         return;
     if (session.document.id != original.id || session.document.activeVariation != original.activeVariation)
     {
@@ -419,6 +445,11 @@ void AutomationEditor::mouseDrag(const juce::MouseEvent &e)
 }
 void AutomationEditor::mouseUp(const juce::MouseEvent &)
 {
+    if (!contextValid())
+    {
+        dragging = false;
+        return;
+    }
     if (dragging)
     {
         dragging = false;
@@ -438,6 +469,8 @@ void AutomationEditor::mouseDoubleClick(const juce::MouseEvent &e)
 }
 void AutomationEditor::deletePoints()
 {
+    if (!lane())
+        return;
     auto t = lane()->shown;
     session.edit("Delete automation points",
                  [&](auto &d)
@@ -449,6 +482,8 @@ void AutomationEditor::deletePoints()
 }
 void AutomationEditor::setHold(bool hold)
 {
+    if (!lane())
+        return;
     auto t = lane()->shown;
     session.edit("Automation interpolation",
                  [&](auto &d)
@@ -461,6 +496,8 @@ void AutomationEditor::setHold(bool hold)
 }
 void AutomationEditor::offsetPoints(double amount)
 {
+    if (!lane())
+        return;
     auto t = lane()->shown;
     session.edit("Offset automation range",
                  [&](auto &d)
@@ -486,6 +523,8 @@ void AutomationEditor::copyPoints()
 }
 void AutomationEditor::pastePoints(int64_t frame)
 {
+    if (!lane())
+        return;
     auto v = juce::JSON::parse(juce::SystemClipboard::getTextFromClipboard());
     auto *a = v["points"].getArray();
     if ((int)v["soundplusAutomation"] != 1 || !a || a->isEmpty() || a->size() > 2048 ||
@@ -509,6 +548,8 @@ void AutomationEditor::pastePoints(int64_t frame)
 }
 void AutomationEditor::numericPoint(int64_t frame, double value)
 {
+    if (!lane())
+        return;
     auto t = lane()->shown;
     session.edit(
         "Numeric automation point",
@@ -549,12 +590,15 @@ void AutomationEditor::numericDialog()
     box->addButton("Apply", 1, juce::KeyPress(juce::KeyPress::returnKey));
     box->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
     juce::Component::SafePointer<AutomationEditor> safe(this);
+    auto target = lane()->shown;
+    auto selected = selection;
     box->enterModalState(
         true,
         juce::ModalCallbackFunction::create(
-            [safe, box](int n)
+            [safe, box, target, selected](int n)
             {
-                if (safe && n == 1)
+                if (safe && safe->contextValid() && safe->lane() && safe->lane()->shown == target &&
+                    safe->selection == selected && n == 1)
                     safe->numericPoint(
                         (int64_t)std::llround(box->getTextEditorContents("time").getDoubleValue() *
                                               safe->session.document.sampleRate),
@@ -564,16 +608,12 @@ void AutomationEditor::numericDialog()
 }
 void AutomationEditor::focusLost(FocusChangeType)
 {
-    if (dragging)
-    {
-        dragging = false;
-        session.endGesture();
-    }
-    if (touching)
-        endTouch();
+    finishInteraction();
 }
 bool AutomationEditor::keyPressed(const juce::KeyPress &k)
 {
+    if (!lane())
+        return false;
     if (k.isKeyCode(juce::KeyPress::escapeKey) && (dragging || touching))
     {
         dragging = touching = false;
@@ -630,7 +670,7 @@ bool AutomationEditor::keyPressed(const juce::KeyPress &k)
 }
 void AutomationEditor::beginTouch()
 {
-    if (!lane()->touch || !session.automationFrame())
+    if (!lane() || !lane()->touch || !session.automationFrame())
         return;
     capturedTarget = lane()->armed;
     auto targets = automationTargets(session.document.activeMix(), owner);
@@ -647,7 +687,7 @@ void AutomationEditor::beginTouch()
 }
 void AutomationEditor::touchValue(double value)
 {
-    if (!touching)
+    if (!touching || !lane())
         return;
     auto clock = session.automationFrame();
     if (!clock)
@@ -678,6 +718,11 @@ void AutomationEditor::touchValue(double value)
 }
 void AutomationEditor::endTouch()
 {
+    if (!contextValid())
+    {
+        touching = false;
+        return;
+    }
     if (touching)
     {
         if (!touchPoints.empty())

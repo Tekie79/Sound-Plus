@@ -31,6 +31,8 @@ class AutomationEditor final : public juce::Component
     void beginTouch();
     void touchValue(double);
     void endTouch();
+    void finishInteraction();
+    bool contextValid() const;
     const juce::String owner;
     std::set<juce::String> selection;
 
@@ -38,6 +40,8 @@ class AutomationEditor final : public juce::Component
     DesignSession &session;
     TimelineViewport &viewport;
     SnapSettings &snap;
+    const uint64_t incarnation;
+    const juce::String documentId, variation;
     ui::TextActionButton target{"Volume"}, read{"Read", true}, touch{"Touch", true};
     juce::Slider write;
     juce::Label valueLabel;

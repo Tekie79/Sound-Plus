@@ -112,6 +112,22 @@ struct SourcePool
     uint64_t seed = 0, ordinal = 0;
 };
 constexpr size_t maxPoolEntries = 64;
+struct SourceTiming
+{
+    int64_t first = 0, last = 0, placement = 0, fadeIn = 0, fadeOut = 0;
+    double rate = 1;
+    bool reverse = false;
+    FadeShape inShape = FadeShape::linear, outShape = FadeShape::linear;
+    std::vector<FadePoint> inPoints, outPoints;
+    juce::String source;
+    bool operator==(const SourceTiming &) const = default;
+};
+struct SplitHistory
+{
+    SourceTiming origin, fragment;
+    bool ownsTail = true;
+    int64_t frames = 0; // Exact project-frame gate, independent of rounded source-sample trims.
+};
 struct DesignLayer
 {
     juce::String id = juce::Uuid().toString(), name, trackId;
@@ -128,7 +144,11 @@ struct DesignLayer
     uint32_t colour = 0; // Optional ARGB track colour. Zero uses the application palette.
     InsertChain inserts; // Source-channel chain before spatial/matrix routing.
     std::optional<SourcePool> pool;
+    std::optional<SplitHistory> splitHistory;
 };
+SourceTiming sourceTiming(const DesignLayer &);
+bool usesSplitHistory(const DesignLayer &);
+DesignLayer splitPlaybackLayer(const DesignLayer &);
 enum class TrackKind
 {
     audio,

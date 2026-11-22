@@ -2,6 +2,8 @@
 #include <juce_core/juce_core.h>
 #include <array>
 #include <atomic>
+#include <thread>
+#include <chrono>
 namespace sp
 {
 // Callback-safe first-fault latch. The armed->failed and armed->committed CAS
@@ -56,6 +58,17 @@ class CaptureDeviceLifecycle
     juce::String diagnostic(uint64_t ticket) const
     {
         auto s = state.load(std::memory_order_acquire);
+        // Worker/message-thread reader only. `writing` has already won the fault
+        // CAS, but its text is not published yet. Never retain a generic first
+        // error simply because that callback was preempted during the short copy.
+        auto deadline = std::chrono::steady_clock::now() + std::chrono::milliseconds(250);
+        while ((s & ~uint64_t(7)) == ticket && (s & 7) == writing)
+        {
+            if (std::chrono::steady_clock::now() >= deadline)
+                return "Audio device fault diagnostic publication stalled";
+            std::this_thread::yield();
+            s = state.load(std::memory_order_acquire);
+        }
         if ((s & ~uint64_t(7)) != ticket || (s & 7) != fault)
             return "Audio device lifecycle interrupted during Arming";
         char text[192]{};
@@ -74,6 +87,7 @@ class CaptureDeviceLifecycle
     }
 
   private:
+    friend struct CaptureDeviceLifecycleTestAccess;
     static constexpr uint64_t armed = 1, writing = 2, fault = 3, committed = 4;
     std::atomic<uint64_t> state{0}, faultEpoch{0};
     std::atomic<int> cause{0};

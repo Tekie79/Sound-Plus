@@ -174,6 +174,11 @@ juce::String designStructure(const DesignDocument &document)
     stripHosted(mix["hostedRack"], document.liveInserts);
     for (auto &layer : *mix["layers"].getArray())
     {
+        if (layer.hasProperty("splitHistory"))
+        {
+            auto *l = findClip(resolved.activeMix(), layer["id"].toString());
+            layer.getDynamicObject()->setProperty("splitActive", l && usesSplitHistory(*l));
+        }
         stripChain(layer["insertChain"], document.liveInserts);
         stripRack(layer["effects"]);
         stripHosted(layer["hostedRack"], document.liveInserts);

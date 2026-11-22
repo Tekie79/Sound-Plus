@@ -4,6 +4,7 @@
 #include "Performance.h"
 #include <iostream>
 #include <deque>
+#include <future>
 namespace
 {
 int checks = 0;
@@ -114,6 +115,21 @@ sp::DesignDocument fixture(const juce::File &root)
 } // namespace
 namespace sp
 {
+struct CaptureDeviceLifecycleTestAccess
+{
+    static void holdPublication(CaptureDeviceLifecycle &l, uint64_t ticket)
+    {
+        l.state.store(ticket | l.writing, std::memory_order_release);
+    }
+    static void publish(CaptureDeviceLifecycle &l, uint64_t ticket)
+    {
+        l.cause.store(CaptureDeviceLifecycle::error, std::memory_order_relaxed);
+        const char text[] = "controlled first fault";
+        for (size_t i = 0; i < sizeof(text); ++i)
+            l.detail[i].store(text[i], std::memory_order_relaxed);
+        l.state.store(ticket | l.fault, std::memory_order_release);
+    }
+};
 struct AudioEngineTestAccess
 {
     static void start(AudioEngine &e, Device &d)
@@ -266,6 +282,10 @@ void runDeviceCaptureContract(const juce::File &parent, bool layoutAware)
             "Relevant device failure produces Incomplete");
         A::handle(engine);
         auto s = A::status(engine);
+        if ((bool)s["takeCheckpointReady"] || !s["takeError"].toString().contains(diagnostic) ||
+            !A::idle(engine))
+            std::cerr << "Device failure observation (" << diagnostic << ") idle=" << A::idle(engine)
+                      << " status=" << juce::JSON::toString(s, true) << std::endl;
         check(!(bool)s["takeCheckpointReady"] && s["takeError"].toString().contains(diagnostic) &&
                   A::idle(engine),
               "First useful diagnostic retained, ownership released, stale intent cleared");
@@ -418,6 +438,15 @@ void runDeviceCaptureContract(const juce::File &parent, bool layoutAware)
 
 void runDeviceCaptureTests(const juce::File &parent)
 {
+    sp::CaptureDeviceLifecycle latch;
+    auto ticket = latch.reserve(0);
+    sp::CaptureDeviceLifecycleTestAccess::holdPublication(latch, ticket);
+    auto diagnostic = std::async(std::launch::async, [&] { return latch.diagnostic(ticket); });
+    check(diagnostic.wait_for(std::chrono::milliseconds(20)) == std::future_status::timeout,
+          "Fault reader does not retain a placeholder while callback publication is held");
+    sp::CaptureDeviceLifecycleTestAccess::publish(latch, ticket);
+    check(diagnostic.get().contains("controlled first fault"),
+          "First capture diagnostic is read only after the release publication");
     auto legacy = parent.getChildFile("legacy");
     legacy.createDirectory();
     runDeviceCaptureContract(legacy, false);

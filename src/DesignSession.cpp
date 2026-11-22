@@ -745,7 +745,11 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         {
             normaliseInsertChain(m.inserts);
             for (auto &l : m.layers)
+            {
+                if (l.splitHistory && !usesSplitHistory(l))
+                    l.splitHistory.reset();
                 normaliseInsertChain(l.inserts);
+            }
             for (auto &t : m.tracks)
                 normaliseInsertChain(t.inserts);
         };

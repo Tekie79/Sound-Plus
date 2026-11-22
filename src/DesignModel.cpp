@@ -24,6 +24,38 @@ int64_t integer(const juce::var &o, const char *key)
 {
     return (int64_t)o[key];
 }
+juce::var timingJson(const SourceTiming &t)
+{
+    auto v = object();
+    put(v, "first", (juce::int64)t.first);
+    put(v, "last", (juce::int64)t.last);
+    put(v, "placement", (juce::int64)t.placement);
+    put(v, "fadeIn", (juce::int64)t.fadeIn);
+    put(v, "fadeOut", (juce::int64)t.fadeOut);
+    put(v, "rate", t.rate);
+    put(v, "reverse", t.reverse);
+    put(v, "inShape", fadeShapeId(t.inShape));
+    put(v, "outShape", fadeShapeId(t.outShape));
+    put(v, "inPoints", fadePointsToJson(t.inPoints));
+    put(v, "outPoints", fadePointsToJson(t.outPoints));
+    put(v, "source", t.source);
+    return v;
+}
+SourceTiming timingFrom(const juce::var &v)
+{
+    return {integer(v, "first"),
+            integer(v, "last"),
+            integer(v, "placement"),
+            integer(v, "fadeIn"),
+            integer(v, "fadeOut"),
+            (double)v["rate"],
+            (bool)v["reverse"],
+            fadeShapeFromId(v["inShape"].toString()),
+            fadeShapeFromId(v["outShape"].toString()),
+            fadePointsFromJson(v["inPoints"]),
+            fadePointsFromJson(v["outPoints"]),
+            v["source"].toString()};
+}
 juce::var effectsJson(const std::vector<StockEffect> &effects)
 {
     juce::Array<juce::var> a;
@@ -98,6 +130,16 @@ juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
         put(v, "id", l.id);
         if (mix.trackSchema)
             put(v, "track", l.trackId);
+        if (l.splitHistory)
+        {
+            auto h = object();
+            put(h, "version", 1);
+            put(h, "origin", timingJson(l.splitHistory->origin));
+            put(h, "fragment", timingJson(l.splitHistory->fragment));
+            put(h, "ownsTail", l.splitHistory->ownsTail);
+            put(h, "frames", (juce::int64)l.splitHistory->frames);
+            put(v, "splitHistory", h);
+        }
         put(v, "name", l.name);
         put(v, "external", l.external);
         auto s = object();
@@ -197,6 +239,14 @@ DesignMix mixFrom(const juce::var &o)
         DesignLayer l;
         l.id = v["id"].toString();
         l.trackId = v["track"].toString();
+        if (v.hasProperty("splitHistory"))
+        {
+            auto h = v["splitHistory"];
+            if ((int)h["version"] != 1)
+                throw std::runtime_error("Unsupported split history");
+            l.splitHistory = SplitHistory{timingFrom(h["origin"]), timingFrom(h["fragment"]),
+                                          (bool)h["ownsTail"], integer(h, "frames")};
+        }
         l.name = v["name"].toString();
         l.external = (bool)v["external"];
         auto s = v["source"];
@@ -410,6 +460,48 @@ DesignMix designMixFromJson(const juce::var &v)
 {
     return mixFrom(v);
 }
+SourceTiming sourceTiming(const DesignLayer &l)
+{
+    return {l.region.startSample,
+            l.region.endSample,
+            l.placement,
+            l.fadeIn,
+            l.fadeOut,
+            l.rate,
+            l.reverse,
+            l.fadeInShape,
+            l.fadeOutShape,
+            l.fadeInPoints,
+            l.fadeOutPoints,
+            l.source.id};
+}
+bool usesSplitHistory(const DesignLayer &l)
+{
+    if (!l.splitHistory)
+        return false;
+    return sourceTiming(l) == l.splitHistory->fragment;
+}
+DesignLayer splitPlaybackLayer(const DesignLayer &l)
+{
+    auto result = l;
+    if (usesSplitHistory(l))
+    {
+        const auto &t = l.splitHistory->origin;
+        result.region.startSample = t.first;
+        result.region.endSample = t.last;
+        result.placement = t.placement + l.placement - l.splitHistory->fragment.placement;
+        result.fadeIn = t.fadeIn;
+        result.fadeOut = t.fadeOut;
+        result.rate = t.rate;
+        result.reverse = t.reverse;
+        result.fadeInShape = t.inShape;
+        result.fadeOutShape = t.outShape;
+        result.fadeInPoints = t.inPoints;
+        result.fadeOutPoints = t.outPoints;
+    }
+    result.splitHistory.reset();
+    return result;
+}
 DesignMix &DesignDocument::activeMix()
 {
     for (auto &v : variations)
@@ -426,6 +518,8 @@ const DesignMix &DesignDocument::activeMix() const
 }
 int64_t layerDuration(const DesignLayer &l, double rate)
 {
+    if (usesSplitHistory(l))
+        return l.splitHistory->frames;
     return (int64_t)std::ceil((long double)(l.region.endSample - l.region.startSample) * rate /
                               (l.source.sampleRate * l.rate));
 }
@@ -626,8 +720,17 @@ juce::var designToJson(const DesignDocument &d)
         d.original.trackSchema ||
         std::any_of(d.variations.begin(), d.variations.end(), [](auto &v) { return v.mix.trackSchema; }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [](auto &t) { return t.trackRecipe; });
+    auto hasSplit = [](const DesignMix &m) {
+        return std::any_of(m.layers.begin(), m.layers.end(),
+                           [](auto &l) { return l.splitHistory.has_value(); });
+    };
+    bool continuations =
+        hasSplit(d.original) ||
+        std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasSplit(v.mix); }) ||
+        std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasSplit(t.recipe); });
     put(o, "version",
-        tracks                ? 11
+        continuations         ? 12
+        : tracks              ? 11
         : plugins             ? 10
         : ordered             ? 9
         : hasHostedInserts(d) ? 8
@@ -725,7 +828,7 @@ juce::var designToJson(const DesignDocument &d)
             put(n, "files", v.files);
         if (v.outputSetVersion)
             put(n, "outputSetVersion", v.outputSetVersion);
-        if (v.processing == "hosted-racks-v1")
+        if (v.processing.isNotEmpty())
         {
             put(n, "processing", v.processing);
             put(n, "sources", v.sourceProvenance);
@@ -754,8 +857,8 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 11) ||
-        (version == 11   ? dsp != "multitrack-automation-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 12) ||
+        (version >= 11   ? dsp != "multitrack-automation-v1"
          : version == 10 ? dsp != "plugin-takes-v1"
          : version == 9  ? dsp != "ordered-inserts-v1"
          : version == 8  ? dsp != "hosted-racks-v1"
@@ -868,6 +971,16 @@ DesignDocument designFromJson(const juce::var &o)
         }
     }
     validateDesign(d);
+    auto hasContinuation = [](const DesignMix &m) {
+        return std::any_of(m.layers.begin(), m.layers.end(),
+                           [](auto &l) { return l.splitHistory.has_value(); });
+    };
+    if (version < 12 &&
+        (hasContinuation(d.original) ||
+         std::any_of(d.variations.begin(), d.variations.end(),
+                     [&](auto &v) { return hasContinuation(v.mix); }) ||
+         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasContinuation(t.recipe); })))
+        throw std::runtime_error("Split continuation requires document manifest12");
     if (version < 11 &&
         (d.original.trackSchema ||
          std::any_of(d.variations.begin(), d.variations.end(), [](auto &v) { return v.mix.trackSchema; }) ||
@@ -987,6 +1100,40 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
         juce::StringArray ids;
         for (auto &l : m.layers)
         {
+            if (l.splitHistory)
+            {
+                if (l.splitHistory->frames < 1 || l.splitHistory->frames > d.sampleRate * 3600)
+                    throw std::runtime_error("Invalid split project-frame gate");
+                if (!m.trackSchema)
+                    throw std::runtime_error("Split continuation requires multitrack processing");
+                for (auto &t : {l.splitHistory->origin, l.splitHistory->fragment})
+                {
+                    if (t.source.isEmpty() || t.first < 0 || t.last <= t.first || t.last > l.source.samples ||
+                        t.placement < 0 || t.placement > d.sampleRate * 3600 || t.fadeIn < 0 ||
+                        t.fadeOut < 0 || t.fadeIn > d.sampleRate * 3600 || t.fadeOut > d.sampleRate * 3600)
+                        throw std::runtime_error("Invalid split continuation timing");
+                    bounded(t.rate, .1, 8, "Invalid split continuation rate");
+                    // Reuse the ordinary fade validator with no recursive history.
+                    auto check = l;
+                    check.splitHistory.reset();
+                    check.fadeInPoints = t.inPoints;
+                    check.fadeOutPoints = t.outPoints;
+                    for (auto *points : {&check.fadeInPoints, &check.fadeOutPoints})
+                    {
+                        if (points->size() > maxFadePoints)
+                            throw std::runtime_error("Split fade point bound");
+                        double previous = 0;
+                        for (auto &p : *points)
+                        {
+                            bounded(p.x, fadePointEpsilon, 1 - fadePointEpsilon, "Invalid split fade time");
+                            bounded(p.y, 0, 1, "Invalid split fade gain");
+                            if (p.x - previous < fadePointEpsilon)
+                                throw std::runtime_error("Invalid split fade order");
+                            previous = p.x;
+                        }
+                    }
+                }
+            }
             validatePool(l, m.layout);
             if (l.id.isEmpty() || ids.contains(l.id))
                 throw std::runtime_error("Duplicate or empty layer identity");
@@ -1382,7 +1529,8 @@ bool hasHostedInserts(const DesignDocument &d)
         if (t.pluginAware)
             return true;
     for (auto &o : d.outputs)
-        if (o.processing == "hosted-racks-v1" || o.processing == "plugin-ordered-takes-v1")
+        if (o.processing == "hosted-racks-v1" || o.processing == "plugin-ordered-takes-v1" ||
+            o.sourceProvenance.hasProperty("rawPass"))
             return true;
     return false;
 }

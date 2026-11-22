@@ -73,6 +73,79 @@ void runMultitrackTests(const juce::File &root)
     clip.inserts.stock.push_back(sp::makeStockEffect("filter"));
     clip.inserts.stock[0].parameters[1] = 6000;
     sp::normaliseInsertChain(clip.inserts);
+    {
+        auto split = legacy;
+        auto &source = split.original.layers[0];
+        auto gain = sp::makeStockEffect("gain");
+        auto delay = sp::makeStockEffect("delay");
+        delay.parameters = {130, .55, .35, 0};
+        source.inserts.stock.insert(source.inserts.stock.begin(), gain);
+        source.inserts.stock.push_back(delay);
+        sp::normaliseInsertChain(source.inserts);
+        sp::enableTrackSchema(split.original);
+        auto owner = split.original.tracks[0].id, id = source.id;
+        for (auto target : {sp::AutomationTarget{gain.id, "parameter-0"},
+                            sp::AutomationTarget{source.inserts.stock[1].id, "parameter-1"}})
+            for (auto frame : {0, 23999, 24000, 24001, 47999})
+                sp::addAutomationPoint(split.original, owner, target, frame,
+                                       target.instance == gain.id ? (frame < 24000 ? -9 : -3)
+                                                                  : (frame < 24000 ? 900 : 9000),
+                                       48000);
+        auto expected = pcm(split, 96000);
+        auto before = split;
+        sp::splitClip(split, id, 24000);
+        auto actual = pcm(split, 96000, 61);
+        check(difference(expected, actual) < 2e-6,
+              "split preserves automated source Gain/Filter and delay history/tail across exact cut");
+        check(split.original.tracks[0].automation.curves.size() == 4,
+              "split binds independent right insert IDs to copied project-time curves");
+        auto saved = dir.getChildFile("split.soundplus");
+        sp::saveDesignAtomic(saved, split);
+        auto recalled = sp::loadDesign(saved);
+        check(difference(expected, pcm(recalled, 96000)) < 2e-6, "split continuation save/reopen PCM");
+        sp::splitClip(recalled, recalled.original.layers.back().id, 36000);
+        check(difference(expected, pcm(recalled, 96000)) < 2e-6,
+              "nested split has one tail owner and independently reconstructed history");
+        auto moved = recalled.original.layers.back();
+        moved.placement += 100;
+        check(!sp::usesSplitHistory(moved), "moving a fragment establishes a fresh processing boundary");
+        moved.fadeIn += 1;
+        check(!sp::usesSplitHistory(moved),
+              "intentional boundary/fade edits establish a fresh source envelope");
+        sp::DesignRenderSettings settings;
+        settings.bits = 32;
+        settings.tailSeconds = 1;
+        auto receipt = sp::renderDesign(
+            split, dir.getChildFile("stock-receipts"), settings, [] { return false; }, [](double) {});
+        check(receipt.processing == "multitrack-automation-v1", "stock multitrack output provenance");
+        split.outputs.push_back(receipt);
+        sp::saveDesignAtomic(saved, split);
+        recalled = sp::loadDesign(saved);
+        check(recalled.outputs[0].processing == receipt.processing &&
+                  recalled.outputs[0].sha256 == receipt.sha256,
+              "ordinary multitrack processing and actual file receipt survive reopen");
+        juce::AudioFormatManager formats;
+        formats.registerBasicFormats();
+        std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(juce::File(receipt.path)));
+        juce::AudioBuffer<float> delivered(2, 96000);
+        check(reader && reader->lengthInSamples == 96000 && reader->read(&delivered, 0, 96000, 0, true, true),
+              "stock multitrack WAV finalized and readable");
+        check(difference(expected, delivered) < 2e-6,
+              "stock multitrack receipt represents actual WAV content");
+        for (bool reverse : {false, true})
+        {
+            auto fractional = before;
+            fractional.original.layers[0].reverse = reverse;
+            fractional.original.layers[0].rate = 1.173;
+            auto reference = pcm(fractional, 96000, 127);
+            sp::splitClip(fractional, fractional.original.layers[0].id, 12347);
+            check(fractional.original.layers[1].placement == 12347 &&
+                      sp::layerDuration(fractional.original.layers[0], 48000) == 12347,
+                  "nonintegral-rate split preserves exact project-frame gate");
+            check(difference(reference, pcm(fractional, 96000, 509)) < 2e-6,
+                  "forward/reverse nonintegral-rate split preserves interpolation and effect history");
+        }
+    }
     std::cout << "stage legacy\n" << std::flush;
     auto oldJson = juce::JSON::toString(sp::designToJson(legacy), true);
     auto baseline = pcm(legacy);
@@ -367,6 +440,7 @@ void runMultitrackTests(const juce::File &root)
     };
     services.post = [&](auto task) { ui.push_back(std::move(task)); };
     services.resolve = [](auto &) {};
+    services.retain = [](const auto &, const auto &, bool) {};
     services.parameters = [](auto &, auto, auto) {};
     services.stop = [&] { state.getDynamicObject()->setProperty("playing", false); };
     services.now = [&] { return now; };
@@ -528,6 +602,83 @@ void runMultitrackTests(const juce::File &root)
                   sp::automationLaneJson(*sp::automationLane(beforeTouch.activeMix(), first)), true),
           "Touch is one Undo pass");
     session.stop();
+    drain();
+    // Actual row disclosure commands must retain the other owner's component and focus.
+    session.document = d;
+    auto second = sp::addTrack(session.document.original, sp::TrackKind::audio);
+    sp::automationLane(session.document.original, first)->expanded = true;
+    view.refresh();
+    auto laneFor = [&](const juce::String &owner) -> sp::AutomationEditor *
+    {
+        for (auto *child : view.getChildren())
+            if (auto *lane = dynamic_cast<sp::AutomationEditor *>(child); lane && lane->owner == owner)
+                return lane;
+        return nullptr;
+    };
+    auto *retained = laneFor(first);
+    check(retained != nullptr, "expanded lane exists");
+    juce::Component host;
+    host.setBounds(20, 40, 700, 500);
+    host.addToDesktop(0);
+    host.addAndMakeVisible(view);
+    host.setVisible(true);
+    host.toFront(true);
+    retained->grabKeyboardFocus();
+    check(retained->hasKeyboardFocus(true), "automation lane accepts native keyboard focus");
+    session.onChange = [&] { view.refresh(); };
+    auto *armed = sp::automationLane(session.document.original, first);
+    armed->armed = armed->shown = volume;
+    armed->touch = true;
+    retained->refresh();
+    session.play();
+    drain();
+    state.getDynamicObject()->setProperty("sourceSample", (juce::int64)12000);
+    auto priorTouch = session.document;
+    retained->beginTouch();
+    retained->touchValue(-30);
+    session.editMetadata("Disclosure",
+                         [&](auto &doc) { sp::automationLane(doc.activeMix(), second)->expanded = true; });
+    check(laneFor(first) == retained && retained->hasKeyboardFocus(true),
+          "another lane expands without replacing or defocusing active Touch editor");
+    state.getDynamicObject()->setProperty("sourceSample", (juce::int64)15000);
+    retained->touchValue(-12);
+    session.editMetadata("Disclosure",
+                         [&](auto &doc) { sp::automationLane(doc.activeMix(), second)->expanded = false; });
+    check(laneFor(first) == retained, "another collapse retains component identity");
+    retained->endTouch();
+    session.undo();
+    check(juce::JSON::toString(sp::automationLaneJson(*sp::automationLane(session.document.original, first)),
+                               true) ==
+              juce::JSON::toString(sp::automationLaneJson(*sp::automationLane(priorTouch.original, first)),
+                                   true),
+          "Touch spanning unrelated disclosure remains one Undo");
+    session.redo();
+    retained->beginTouch();
+    retained->touchValue(-20);
+    session.editMetadata("Collapse active lane",
+                         [&](auto &doc) { sp::automationLane(doc.activeMix(), first)->expanded = false; });
+    session.edit("After collapse", [](auto &doc) { doc.name = "Independent edit"; });
+    session.undo();
+    check(session.document.name != "Independent edit", "hiding active lane closes gesture before next edit");
+    juce::Component::SafePointer<sp::AutomationEditor> stale(retained);
+    session.newDesign();
+    drain();
+    view.refresh();
+    check(!stale, "document transition destroys old callbacks and editors");
+    session.onChange = {};
+    host.removeChildComponent(&view);
+    host.removeFromDesktop();
+    session.document = legacy;
+    sp::enableTrackSchema(session.document.original);
+    session.selectLayer(session.document.original.layers[0].id);
+    session.document.playhead = 24000;
+    view.refresh();
+    view.splitSelected();
+    check(session.document.original.layers.size() == 2, "actual Split view command");
+    session.undo();
+    check(session.document.original.layers.size() == 1, "Split Undo restores original");
+    session.redo();
+    check(difference(pcm(legacy), pcm(session.document)) < 2e-6, "Split Redo preserves source-effect PCM");
     drain();
     std::cout << "Multitrack: " << checks << " checks passed\n";
 }
