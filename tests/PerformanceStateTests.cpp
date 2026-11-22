@@ -137,11 +137,95 @@ struct PerformanceViewTestAccess
         view.setSize(752, 360);
         view.refresh();
     }
+    static void workspaceLayout(PerformView &view)
+    {
+        const auto before = mixText(view.session.document.activeMix());
+        const auto revision = view.session.document.revision;
+        int persisted = 0, stored = 0;
+        view.onMacroWidthChanged = [&](int width)
+        {
+            ++persisted;
+            stored = width;
+        };
+        view.setSize(1280, 700);
+        check(view.macroArea.getWidth() == 260 && view.pad.getWidth() >= 560,
+              "Default compact macros leave a larger central Blend pad on desktop");
+        check(view.pad.getBounds().getCentreX() == view.blendBounds.getCentreX(),
+              "Pad centres in the creative area");
+        for (auto size :
+             {juce::Point<int>(664, 308), juce::Point<int>(900, 540), juce::Point<int>(1500, 900)})
+        {
+            view.setSize(size.x, size.y);
+            for (int width : {240, 320, 440})
+            {
+                view.setMacroPanelWidth(width);
+                check(view.blendBounds.getWidth() >= PerformView::minimumBlendWidth &&
+                          view.macroArea.getWidth() >= PerformView::minimumMacroWidth,
+                      "Resizing honours both panel minimum widths");
+                check(view.blendBounds.contains(view.pad.getBounds()) &&
+                          !view.pad.getBounds().intersects(view.macroArea),
+                      "Pad remains in its own panel");
+                for (auto b : view.slotBounds)
+                    check(view.blendBounds.contains(b) && !b.intersects(view.pad.getBounds()),
+                          "All four source cards stay visible outside the pad");
+                for (auto &slider : view.macros)
+                    check(view.macroArea.contains(slider.getBounds()),
+                          "Macro sliders stay inside compact sidebar");
+                view.openMapping(0);
+                for (auto *field : {&view.minimum, &view.maximum})
+                    check(field->isVisible() && view.macroArea.contains(field->getBounds()),
+                          "Both mapping range fields remain usable at minimum width");
+                view.back.onClick();
+            }
+        }
+        view.setSize(1000, 600);
+        view.setMacroPanelWidth(260);
+        auto &d = view.divider;
+        auto start = d.getLocalBounds().getCentre().toFloat();
+        d.mouseDown(pointer(d, start, start));
+        d.mouseDrag(pointer(d, start.translated(-1000, 0), start));
+        check(view.macroPanelWidth() == 630 && persisted == 0,
+              "Divider clamps large drags without writing settings every pixel");
+        d.mouseUp(pointer(d, start, start));
+        check(persisted == 1 && stored == 630, "Completed drag publishes the chosen preference once");
+        d.mouseDown(pointer(d, start, start));
+        d.mouseDrag(pointer(d, start.translated(1000, 0), start));
+        check(view.macroPanelWidth() == 240, "Opposite drag honours the macro minimum");
+        d.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
+        d.mouseUp(pointer(d, start, start));
+        check(view.macroPanelWidth() == 630 && persisted == 1,
+              "Escape restores the original width without persistence");
+        d.keyPressed(juce::KeyPress(juce::KeyPress::homeKey));
+        check(stored == 260, "Keyboard reset publishes the default width");
+        d.keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
+        check(stored == 276, "Keyboard divider adjustment is accessible");
+        view.setSize(664, 308);
+        view.setSize(1000, 600);
+        check(view.macroPanelWidth() == 276 && view.macroArea.getWidth() == 276,
+              "Window shrink/grow preserves the preferred width");
+        view.setMacroPanelWidth(800);
+        view.setSize(664, 308);
+        start = d.getLocalBounds().getCentre().toFloat();
+        d.mouseDown(pointer(d, start, start));
+        d.mouseDrag(pointer(d, start.translated(20, 0), start));
+        d.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
+        d.mouseUp(pointer(d, start, start));
+        view.setSize(1200, 600);
+        check(view.macroPanelWidth() == 800 && view.macroArea.getWidth() == 800,
+              "Cancelling a drag while window-clamped restores the unclamped preference");
+        check(mixText(view.session.document.activeMix()) == before &&
+                  view.session.document.revision == revision,
+              "Workspace resizing never changes the design, controls, or audio revision");
+        view.onMacroWidthChanged = {};
+        view.setMacroPanelWidth(260);
+        view.setSize(752, 360);
+    }
     static void run(DesignSession &session)
     {
         PerformView view(session);
         view.setSize(752, 360);
         session.onChange = [&] { view.refresh(); };
+        workspaceLayout(view);
         padBoundary(view);
         session.document.activeMix().performance.blendLaw = 1;
         view.refresh();
@@ -372,15 +456,15 @@ void runPerformanceStateTests(const juce::File &parent, const juce::File &app)
         auto l = sp::makeDesignLayer(source, 0, -1, true);
         l.name = "Layer " + juce::String(i + 1);
         l.inserts.stock = {sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
-                     sp::makeStockEffect("reverb")};
+                           sp::makeStockEffect("reverb")};
         d.original.layers.push_back(l);
     }
     d.selectedLayer = d.original.layers[0].id;
     auto legacy = sp::designToJson(d);
     check((int)legacy["version"] == 9, "Live insert documents use the authoritative ordered-chain manifest");
-    legacy.getDynamicObject()->setProperty("version",1);
-    legacy.getDynamicObject()->setProperty("dsp","stock-sinc32-v1");
-    legacy.getDynamicObject()->setProperty("original",sp::designMixToJson(d.original,true));
+    legacy.getDynamicObject()->setProperty("version", 1);
+    legacy.getDynamicObject()->setProperty("dsp", "stock-sinc32-v1");
+    legacy.getDynamicObject()->setProperty("original", sp::designMixToJson(d.original, true));
     auto old = sp::designFromJson(legacy);
     check(mixText(sp::resolvePerformance(old.original)) == mixText(d.original),
           "Old documents resolve neutrally");

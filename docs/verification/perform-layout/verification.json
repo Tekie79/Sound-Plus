@@ -1,0 +1,33 @@
+{
+  "base": "bcb6c14b7dbef5d59dc4dbd178319e7b2a9f98b8",
+  "implementationFiles": {
+    "src/PerformView.cpp": "0884fe44793199ebc103b36c02ef2e1320826457f61e34bd1e1fcadb79d06447",
+    "src/PerformView.h": "a7886936cbdf750825cca81b4993ac2d316f2d8a798d8ed72712cc353d8ce096",
+    "src/DesignerView.cpp": "231577a6bc26ef5d97213d5d1783dfe4f550b895fbc9ecd270123399a338d98d",
+    "tests/PerformanceStateTests.cpp": "e3763a26fb9d93f8af05cf47a307965e4bc8d19bffbfb1965089c8c3c9409134"
+  },
+  "binarySha256": "016816965c1b5c356ed1ea0b1eec31aecee3b562145145ebf5b47c0864b15a62",
+  "nativeCopyMatches": true,
+  "build": "Release arm64, Apple M5 Pro, macOS26.3.2, JUCE8.0.6",
+  "nativeChecks": {
+    "dragSavedWidth": 381,
+    "RightKeySavedWidth": 365,
+    "widthAfterHomeAndFourLeftKeys": 324,
+    "widthReopened": 324,
+    "finalQAWidthAfterHome": 260,
+    "minimumOuterWindow": [
+      1040,
+      680
+    ],
+    "auditionStillActiveAfterResize": true
+  },
+  "tests": "5/5 passed, 13.85s",
+  "restoration": {
+    "document": "Workflow demonstration",
+    "revision": 3801,
+    "preQuitPayloadEqual": true,
+    "referencedMediaCount": 6,
+    "allMediaHashesMatch": true,
+    "policy": "Reopen current data in place; never copy older recovery over it."
+  }
+}

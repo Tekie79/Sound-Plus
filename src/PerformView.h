@@ -20,6 +20,13 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     bool isInterestedInDragSource(const SourceDetails &) override;
     void itemDropped(const SourceDetails &) override;
     void benchmarkControls(int phase, double value);
+    static constexpr int defaultMacroWidth = 260, minimumMacroWidth = 240, minimumBlendWidth = 360;
+    void setMacroPanelWidth(int);
+    int macroPanelWidth() const
+    {
+        return preferredMacroWidth;
+    }
+    std::function<void(int)> onMacroWidthChanged;
 
   private:
     friend struct PerformanceViewTestAccess;
@@ -36,6 +43,29 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
         void mouseUp(const juce::MouseEvent &) override;
         bool keyPressed(const juce::KeyPress &) override;
     } pad;
+    struct Divider : juce::Component, juce::SettableTooltipClient
+    {
+        PerformView &owner;
+        int startX = 0, startWidth = defaultMacroWidth, startPreference = defaultMacroWidth;
+        bool dragging = false;
+        explicit Divider(PerformView &);
+        void paint(juce::Graphics &) override;
+        void mouseEnter(const juce::MouseEvent &) override
+        {
+            repaint();
+        }
+        void mouseExit(const juce::MouseEvent &) override
+        {
+            repaint();
+        }
+        void mouseDown(const juce::MouseEvent &) override;
+        void mouseDrag(const juce::MouseEvent &) override;
+        void mouseUp(const juce::MouseEvent &) override;
+        void mouseDoubleClick(const juce::MouseEvent &) override;
+        bool keyPressed(const juce::KeyPress &) override;
+    } divider;
+    int preferredMacroWidth = defaultMacroWidth, effectiveMacroWidth = defaultMacroWidth;
+    void persistMacroWidth();
     struct LayerDrag : IconButton
     {
         PerformView &owner;
