@@ -16,7 +16,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         library.onProcess=[this,db](const sp::Asset &a,int64_t first,int64_t last) { sp::PluginInput input; input.source=a;input.first=first;input.last=last;input.layout=a.layoutOverride.id.isNotEmpty()?a.layoutOverride:a.detectedChannels; if(a.channels<=16)for(int c=0;c<a.channels;++c)input.inputs.push_back(c); showProcessing(input,db); };
         designer.onProcessOutput=[this,db](const juce::File &file) { try { sp::PluginInput input;input.source=sp::inspectDesignSource(file);input.last=input.source.samples;input.layout=input.source.detectedChannels;input.scope="Finalized design/take output";for(int c=0;c<input.source.channels;++c)input.inputs.push_back(c);showProcessing(input,db); } catch(const std::exception &e) { designer.session.message=e.what(); } };
         library.bindPreferences(preferences);
-        browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",300);
+        browserOpen=preferences.getBoolValue("browserOpen",true);browserWidth=preferences.getIntValue("browserWidth",400);
         addAndMakeVisible(library);addChildComponent(designer);addChildComponent(divider);
         library.onShowDesigner=[this]{showDesigner(true);};library.onBeforeAudition=[this]{designer.session.stop();};
         library.onAddToDesigner=[this](const sp::Asset &a,int64_t first,int64_t last,bool external,int pair){designer.addSource(a,first,last,external,pair);showDesigner(true);};
@@ -77,7 +77,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         processWindow=std::make_unique<ProcessWindow>();processWindow->onClose=[safe]{juce::MessageManager::callAsync([safe]{if(safe)safe->processWindow.reset();});};
         processWindow->setContentOwned(panel.release(),true);processWindow->centreWithSize(700,650);processWindow->setVisible(true);processWindow->toFront(true);
     }
-    bool designerActive=false,browserOpen=true;int browserWidth=300;
+    bool designerActive=false,browserOpen=true;int browserWidth=400;
     struct Divider : juce::Component
     {
         Workstation &owner;int anchor=0;

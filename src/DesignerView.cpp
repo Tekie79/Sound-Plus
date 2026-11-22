@@ -73,8 +73,6 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     addAndMakeVisible(addTrackButton);
     addTrackButton.onClick = [this] { tracks->addTrackMenu(addTrackButton); };
     perform = std::make_unique<PerformView>(session, peakPool);
-    perform->setMacroPanelWidth(preferences.getIntValue("performMacroWidth", PerformView::defaultMacroWidth));
-    perform->onMacroWidthChanged = [this](int width) { preferences.setValue("performMacroWidth", width); };
     perform->onAlternatives = [this](const auto &id) { showPoolPopup(id); };
     perform->onOpenEdit = [this](const juce::String &)
     {

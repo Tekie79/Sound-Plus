@@ -1,0 +1,47 @@
+{
+  "base": "d14e23b",
+  "sourceSha256": {
+    "src/DesignerView.cpp": "53086ea1e806646053b05e4d4d1e2850801cf4eccdf2b280f5c78ae6e7695f06",
+    "src/PerformView.cpp": "2479e2b03ac930d3f58fdb5c9e6973db8a94bc129d94bc745689fd25803a7c5d",
+    "src/PerformView.h": "43e50dac1cd519f964c82e4639f2f92a8526231b2bab5a9af2df26c3e0e9be7d",
+    "src/SourceCard.cpp": "0d0901e302e70e0b14cfb1f075c0dd6c8b5610f792053401e0fad73c103e43ba",
+    "src/SourceCard.h": "390f065377e4d564492a0c24a822bcb4f6721156ec4a184780eacd9504a5140f",
+    "src/UIComponents.h": "6c3d1dbc431494ede3a3b714c3f8e2f6acda8c8b9f154c10296001d182349e93",
+    "src/Workstation.h": "d3a65abc21bde157c599d3ce6df38e1803fb9b97582f29ddd05b3dccaf7217bb",
+    "tests/PerformanceStateTests.cpp": "9de6fcb48a2096e53d5cf52f85aa944994f0fa80d501a46171a7a1aeba6d2f29"
+  },
+  "binarySha256": "92f0378caac397c4a3f15bb35c34c4a2c301734da33a381587fda13b5dfcade5",
+  "nativeCopyMatches": true,
+  "environment": "Apple M5 Pro / macOS 26.3.2 (25D2150) / arm64 Release / JUCE 8.0.6",
+  "tests": "6/6 passed, 14.89 seconds",
+  "native": {
+    "minimumOuterWindow": [
+      1040,
+      680
+    ],
+    "restoredContentWindowState": "33 109 1656 937",
+    "sourceDropdownNativeSelection": true,
+    "yMouseAndUp": true,
+    "liveYUpdateRetainedPlayback": true,
+    "monitorGainDuringQA": 0,
+    "staleMacroWidthPreferenceTested": 3200,
+    "blendMacroDragHandleRemoved": true,
+    "internalCardPointerDrag": "Not established; actual-view drop commands pass",
+    "humanListening": "Not performed"
+  },
+  "restoration": {
+    "document": "Workflow demonstration",
+    "revision": 3801,
+    "latestProtectedPayloadEqual": true,
+    "mediaCount": 37,
+    "allMediaUnchanged": true,
+    "libraryScroll": 1802,
+    "blend": [
+      0.608,
+      0.76
+    ],
+    "macro1": 0.491,
+    "monitorGain": 0.25
+  },
+  "rollback": "Latest square-pad and footer/monitor-dock rearrangement reverted; previous responsive pad and footer restored."
+}

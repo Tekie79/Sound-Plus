@@ -137,37 +137,58 @@ struct PerformanceViewTestAccess
         view.setSize(752, 360);
         view.refresh();
     }
+    static juce::Point<int> dropPoint(PerformView &view, int slot)
+    {
+        auto b = view.slotBounds[(size_t)slot];
+        return view.getLocalPoint(&view.blendContent, b.getCentre());
+    }
     static void workspaceLayout(PerformView &view)
     {
         const auto before = mixText(view.session.document.activeMix());
         const auto revision = view.session.document.revision;
-        int persisted = 0, stored = 0;
-        view.onMacroWidthChanged = [&](int width)
-        {
-            ++persisted;
-            stored = width;
-        };
         view.setSize(1280, 700);
-        check(view.macroArea.getWidth() == 260 && view.pad.getWidth() >= 560,
-              "Default compact macros leave a larger central Blend pad on desktop");
-        check(view.pad.getBounds().getCentreX() == view.blendBounds.getCentreX(),
-              "Pad centres in the creative area");
+        check(view.macroArea.getWidth() == PerformView::defaultMacroWidth && view.pad.getWidth() >= 240,
+              "Wider macro default leaves usable Blend space on desktop");
+        check(view.xLabel.getText() == "X" && view.yLabel.getText() == "Y" &&
+                  view.yValue.getSliderStyle() == juce::Slider::LinearVertical &&
+                  view.yValue.getRight() <= view.pad.getX() && view.xValue.getY() >= view.pad.getBottom(),
+              "Single-letter axes sit vertically left and horizontally below the pad");
         for (auto size :
              {juce::Point<int>(664, 308), juce::Point<int>(900, 540), juce::Point<int>(1500, 900)})
         {
             view.setSize(size.x, size.y);
-            for (int width : {240, 320, 440})
             {
-                view.setMacroPanelWidth(width);
                 check(view.blendBounds.getWidth() >= PerformView::minimumBlendWidth &&
                           view.macroArea.getWidth() >= PerformView::minimumMacroWidth,
                       "Resizing honours both panel minimum widths");
-                check(view.blendBounds.contains(view.pad.getBounds()) &&
-                          !view.pad.getBounds().intersects(view.macroArea),
-                      "Pad remains in its own panel");
-                for (auto b : view.slotBounds)
-                    check(view.blendBounds.contains(b) && !b.intersects(view.pad.getBounds()),
-                          "All four source cards stay visible outside the pad");
+                check(view.blendBounds.contains(view.blendContent.getBounds()) &&
+                          view.blendContent.getLocalBounds().contains(view.pad.getBounds()) &&
+                          view.pad.getWidth() >= 240 && view.pad.getHeight() >= 120,
+                      "Resizing keeps the pad and all controls inside their panel");
+                for (auto *axis : std::initializer_list<juce::Component *>{&view.xValue, &view.yValue,
+                                                                           &view.xLabel, &view.yLabel})
+                    check(view.blendContent.getLocalBounds().contains(axis->getBounds()),
+                          "Both axes and labels fit completely without scrolling or clipping");
+                for (int i = 0; i < 4; ++i)
+                {
+                    auto b = view.slotBounds[(size_t)i];
+                    check(view.blendContent.getLocalBounds().contains(b) &&
+                              !b.intersects(view.pad.getBounds()) && b.getHeight() >= 32 &&
+                              b.getHeight() <= 64 &&
+                              (i < 2 ? b.getBottom() <= view.pad.getY() : b.getY() > view.xValue.getBottom()),
+                          "Compact source rows remain above and below the pad, without side gutters");
+                    auto point = dropPoint(view, i);
+                    check(view.blendContent.getBounds().contains(point) && view.slotAt(point) == i,
+                          "Every source assignment stays fully visible and accepts drops without scrolling");
+                    auto chooser = view.assignments[(size_t)i].getBounds();
+                    check(chooser.getWidth() == chooser.getHeight() &&
+                              chooser.getCentreY() ==
+                                  view.assignmentNames[(size_t)i].getBounds().getCentreY(),
+                          "Source dropdown border is square and aligned with its name row");
+                }
+                check(view.slotBounds[0].getX() == view.pad.getX() + 8 &&
+                          std::abs(view.slotBounds[1].getRight() - (view.pad.getRight() - 8)) <= 1,
+                      "Source row edges align with the visible pad frame");
                 for (auto &slider : view.macros)
                     check(view.macroArea.contains(slider.getBounds()),
                           "Macro sliders stay inside compact sidebar");
@@ -178,46 +199,26 @@ struct PerformanceViewTestAccess
                 view.back.onClick();
             }
         }
-        view.setSize(1000, 600);
-        view.setMacroPanelWidth(260);
-        auto &d = view.divider;
-        auto start = d.getLocalBounds().getCentre().toFloat();
-        d.mouseDown(pointer(d, start, start));
-        d.mouseDrag(pointer(d, start.translated(-1000, 0), start));
-        check(view.macroPanelWidth() == 630 && persisted == 0,
-              "Divider clamps large drags without writing settings every pixel");
-        d.mouseUp(pointer(d, start, start));
-        check(persisted == 1 && stored == 630, "Completed drag publishes the chosen preference once");
-        d.mouseDown(pointer(d, start, start));
-        d.mouseDrag(pointer(d, start.translated(1000, 0), start));
-        check(view.macroPanelWidth() == 240, "Opposite drag honours the macro minimum");
-        d.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
-        d.mouseUp(pointer(d, start, start));
-        check(view.macroPanelWidth() == 630 && persisted == 1,
-              "Escape restores the original width without persistence");
-        d.keyPressed(juce::KeyPress(juce::KeyPress::homeKey));
-        check(stored == 260, "Keyboard reset publishes the default width");
-        d.keyPressed(juce::KeyPress(juce::KeyPress::leftKey));
-        check(stored == 276, "Keyboard divider adjustment is accessible");
-        view.setSize(664, 308);
-        view.setSize(1000, 600);
-        check(view.macroPanelWidth() == 276 && view.macroArea.getWidth() == 276,
-              "Window shrink/grow preserves the preferred width");
-        view.setMacroPanelWidth(800);
-        view.setSize(664, 308);
-        start = d.getLocalBounds().getCentre().toFloat();
-        d.mouseDown(pointer(d, start, start));
-        d.mouseDrag(pointer(d, start.translated(20, 0), start));
-        d.keyPressed(juce::KeyPress(juce::KeyPress::escapeKey));
-        d.mouseUp(pointer(d, start, start));
-        view.setSize(1200, 600);
-        check(view.macroPanelWidth() == 800 && view.macroArea.getWidth() == 800,
-              "Cancelling a drag while window-clamped restores the unclamped preference");
+        view.setSize(1280, 700);
+        const auto tallCard = view.slotBounds[0].getHeight();
+        const auto tallPad = view.pad.getHeight();
+        const auto widePad = view.pad.getWidth();
+        view.setSize(1280, 540);
+        check(tallCard > view.slotBounds[0].getHeight() && tallPad > view.pad.getHeight(),
+              "Source cards and pad grow into available height");
+        view.setSize(900, 540);
+        check(view.pad.getWidth() < widePad && view.macroArea.getWidth() <= 300,
+              "The sidebar stays bounded as the pad responds to window width");
+        check(view.yValue.valueToProportionOfLength(0) == 1 &&
+                  view.yValue.valueToProportionOfLength(1) == 0 &&
+                  view.yValue.proportionOfLengthToValue(1) == 0,
+              "Vertical Y keeps the existing zero-at-top, one-at-bottom source orientation");
+        check(view.macroArea.getWidth() <= PerformView::defaultMacroWidth &&
+                  view.blendBounds.getWidth() > view.macroArea.getWidth(),
+              "Macros cannot squeeze the primary Blend workspace");
         check(mixText(view.session.document.activeMix()) == before &&
                   view.session.document.revision == revision,
               "Workspace resizing never changes the design, controls, or audio revision");
-        view.onMacroWidthChanged = {};
-        view.setMacroPanelWidth(260);
         view.setSize(752, 360);
     }
     static void run(DesignSession &session)
@@ -227,6 +228,15 @@ struct PerformanceViewTestAccess
         session.onChange = [&] { view.refresh(); };
         workspaceLayout(view);
         padBoundary(view);
+        const auto axisY = session.document.activeMix().performance.y;
+        view.yValue.keyPressed(juce::KeyPress(juce::KeyPress::downKey));
+        check(session.document.activeMix().performance.y > axisY && view.yValue.getWantsKeyboardFocus(),
+              "Down on the focusable vertical Y axis moves toward the lower source row");
+        session.undo();
+        view.yValue.keyPressed(juce::KeyPress(juce::KeyPress::upKey));
+        check(session.document.activeMix().performance.y < axisY,
+              "Up on the vertical Y axis moves toward the upper source row");
+        session.undo();
         session.document.activeMix().performance.blendLaw = 1;
         view.refresh();
         check(view.updateBlend.isVisible(), "Legacy blend exposes an explicit upgrade action");
@@ -322,7 +332,7 @@ struct PerformanceViewTestAccess
         const auto layerCount = session.document.activeMix().layers.size();
         auto payload = view.cards[0]->dragPayload.clone();
         const auto sourceId = session.document.activeMix().performance.assignments[0].layer;
-        view.itemDropped({payload, view.cards[0].get(), view.slotBounds[3].getCentre()});
+        view.itemDropped({payload, view.cards[0].get(), dropPoint(view, 3)});
         check(session.document.activeMix().performance.assignments[3].layer == sourceId &&
                   session.document.activeMix().performance.assignments[0].layer.isEmpty() &&
                   session.document.activeMix().layers.size() == layerCount,
@@ -334,14 +344,14 @@ struct PerformanceViewTestAccess
         check(session.document.activeMix().performance.assignments[3].layer == sourceId,
               "Card move can be redone");
         session.undo();
-        view.itemDropped({"SoundPlus layer:" + session.document.activeMix().layers[2].id, &view,
-                          view.slotBounds[1].getCentre()});
+        view.itemDropped(
+            {"SoundPlus layer:" + session.document.activeMix().layers[2].id, &view, dropPoint(view, 1)});
         check(session.document.activeMix().performance.assignments[1].layer ==
                   session.document.activeMix().layers[2].id,
               "Existing stable-layer drag payload remains supported");
         auto swapPayload = view.cards[0]->dragPayload.clone();
         const auto otherId = session.document.activeMix().performance.assignments[1].layer;
-        view.itemDropped({swapPayload, view.cards[0].get(), view.slotBounds[1].getCentre()});
+        view.itemDropped({swapPayload, view.cards[0].get(), dropPoint(view, 1)});
         check(session.document.activeMix().performance.assignments[1].layer == sourceId &&
                   session.document.activeMix().performance.assignments[0].layer == otherId,
               "Dropping onto an occupied card swaps stable assignments instead of creating a conflict");
@@ -349,8 +359,7 @@ struct PerformanceViewTestAccess
         session.undo();
         DesignDocument captured;
         captured.original.layers = {session.document.activeMix().layers[2]};
-        view.itemDropped(
-            {juce::JSON::toString(designToJson(captured), true), &view, view.slotBounds[1].getCentre()});
+        view.itemDropped({juce::JSON::toString(designToJson(captured), true), &view, dropPoint(view, 1)});
         check(session.document.activeMix().layers.size() == layerCount + 1,
               "Actual Library payload creates one ordinary design layer through the existing path");
         session.undo();
@@ -359,7 +368,7 @@ struct PerformanceViewTestAccess
         auto documentId = session.document.id;
         session.document.id = juce::Uuid().toString();
         view.refresh();
-        view.itemDropped({payload, &view, view.slotBounds[3].getCentre()});
+        view.itemDropped({payload, &view, dropPoint(view, 3)});
         check(mixText(session.document.activeMix()) == beforeDrop && !session.canUndo(),
               "A stale cross-document assignment payload cannot mutate the new design");
         session.document.id = documentId;
@@ -407,8 +416,9 @@ struct PerformanceViewTestAccess
         {
             view.setSize(size.x, size.y);
             auto bounds = view.getLocalBounds();
-            check(bounds.contains(view.pad.getBounds()) && bounds.contains(view.macros[3].getBounds()),
-                  "Minimum Perform layout contains pad and macro controls");
+            check(bounds.contains(view.blendContent.getBounds()) &&
+                      bounds.contains(view.macros[3].getBounds()),
+                  "Minimum Perform layout contains Blend and macro controls without overflow");
             view.openMapping(0);
             for (auto *c : std::initializer_list<juce::Component *>{&view.mappingChoice, &view.targetChoice,
                                                                     &view.minimum, &view.maximum, &view.curve,

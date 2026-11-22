@@ -11,6 +11,7 @@ class SourceCard final : public juce::Component, public juce::SettableTooltipCli
               double contribution, bool readOnly = false);
     void transport(bool owned, int64_t frame, double designRate);
     void refreshPeaks();
+    void setCompact(bool);
     void paint(juce::Graphics &) override;
     void resized() override;
     void mouseDown(const juce::MouseEvent &) override;
@@ -47,7 +48,7 @@ class SourceCard final : public juce::Component, public juce::SettableTooltipCli
     std::shared_ptr<const PeakColumns> geometry;
     std::optional<double> playhead;
     juce::var capturedDrag;
-    bool selected = false, silent = false;
+    bool selected = false, silent = false, compact = false;
     double weight = 0;
     juce::Rectangle<float> waveBounds() const;
 };

@@ -17,91 +17,6 @@ void label(juce::Label &l, const juce::String &name)
     l.setColour(juce::Label::textColourId, ui::muted);
 }
 } // namespace
-PerformView::Divider::Divider(PerformView &v) : owner(v)
-{
-    setWantsKeyboardFocus(true);
-    setMouseCursor(juce::MouseCursor::LeftRightResizeCursor);
-    setTitle("Resize Blend and macros");
-    setTooltip("Drag to resize Blend and macros. Left/Right adjusts width; Home or double-click resets.");
-}
-void PerformView::Divider::paint(juce::Graphics &g)
-{
-    const auto b = getLocalBounds().toFloat();
-    const bool active = isMouseOver() || dragging || hasKeyboardFocus(false);
-    g.setColour(active ? ui::accent.withAlpha(.65f) : ui::line);
-    g.fillRoundedRectangle(b.getCentreX() - 1, b.getCentreY() - 18, 2, 36, 1);
-    if (hasKeyboardFocus(false))
-    {
-        g.setColour(ui::button::focus);
-        g.drawRoundedRectangle(b.withSizeKeepingCentre(6.f, 46.f), 3, 1);
-    }
-}
-void PerformView::Divider::mouseDown(const juce::MouseEvent &e)
-{
-    grabKeyboardFocus();
-    startX = e.getScreenX();
-    startWidth = owner.effectiveMacroWidth;
-    startPreference = owner.preferredMacroWidth;
-    dragging = true;
-    repaint();
-}
-void PerformView::Divider::mouseDrag(const juce::MouseEvent &e)
-{
-    if (dragging)
-        owner.setMacroPanelWidth(
-            std::clamp(startWidth - (e.getScreenX() - startX), minimumMacroWidth,
-                       std::max(minimumMacroWidth, owner.getWidth() - minimumBlendWidth - 10)));
-}
-void PerformView::Divider::mouseUp(const juce::MouseEvent &)
-{
-    if (dragging)
-    {
-        dragging = false;
-        owner.persistMacroWidth();
-        repaint();
-    }
-}
-void PerformView::Divider::mouseDoubleClick(const juce::MouseEvent &)
-{
-    dragging = false;
-    owner.setMacroPanelWidth(defaultMacroWidth);
-    owner.persistMacroWidth();
-}
-bool PerformView::Divider::keyPressed(const juce::KeyPress &k)
-{
-    if (k == juce::KeyPress::escapeKey && dragging)
-    {
-        dragging = false;
-        owner.setMacroPanelWidth(startPreference);
-        repaint();
-        return true;
-    }
-    if (k == juce::KeyPress::homeKey)
-        owner.setMacroPanelWidth(defaultMacroWidth);
-    else if (k.getKeyCode() == juce::KeyPress::leftKey || k.getKeyCode() == juce::KeyPress::rightKey)
-    {
-        const int delta =
-            (k.getModifiers().isShiftDown() ? 4 : 16) * (k.getKeyCode() == juce::KeyPress::leftKey ? 1 : -1);
-        owner.setMacroPanelWidth(
-            std::clamp(owner.effectiveMacroWidth + delta, minimumMacroWidth,
-                       std::max(minimumMacroWidth, owner.getWidth() - minimumBlendWidth - 10)));
-    }
-    else
-        return false;
-    owner.persistMacroWidth();
-    return true;
-}
-void PerformView::setMacroPanelWidth(int width)
-{
-    preferredMacroWidth = std::clamp(width, minimumMacroWidth, 3200);
-    resized();
-    repaint();
-}
-void PerformView::persistMacroWidth()
-{
-    if (onMacroWidthChanged)
-        onMacroWidthChanged(preferredMacroWidth);
-}
 PerformView::Pad::Pad(PerformView &o) : owner(o)
 {
     setWantsKeyboardFocus(true);
@@ -206,21 +121,26 @@ void PerformView::LayerDrag::mouseDrag(const juce::MouseEvent &e)
                     container->startDragging("SoundPlus layer:" + layer, this);
 }
 PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
-    : pad(*this), divider(*this), layerDrag(*this), session(s)
+    : pad(*this), layerDrag(*this), session(s)
 {
     setWantsKeyboardFocus(true);
     for (auto *c : std::initializer_list<juce::Component *>{
-             &pad,           &divider,     &blendEnable,     &blendReset,   &xValue,        &yValue,
-             &blendState,    &layerSource, &layerDrag,       &mappingTitle, &mappingChoice, &targetChoice,
-             &minimum,       &maximum,     &minimumLabel,    &maximumLabel, &curve,         &inverted,
-             &removeMapping, &addMapping,  &mappingFeedback, &policy,       &back})
+             &pad,         &blendEnable,     &blendReset,   &xValue,        &yValue,       &blendState,
+             &layerSource, &layerDrag,       &mappingTitle, &mappingChoice, &targetChoice, &minimum,
+             &maximum,     &minimumLabel,    &maximumLabel, &curve,         &inverted,     &removeMapping,
+             &addMapping,  &mappingFeedback, &policy,       &back})
         addAndMakeVisible(c);
     blendEnable.setToggleable(true);
     addAndMakeVisible(updateBlend);
     addAndMakeVisible(xLabel);
     addAndMakeVisible(yLabel);
-    label(xLabel, juce::String::fromUTF8("X · Left–Right"));
-    label(yLabel, juce::String::fromUTF8("Y · Top–Bottom"));
+    label(xLabel, "X");
+    label(yLabel, "Y");
+    xLabel.setBorderSize(juce::BorderSize<int>(0));
+    yLabel.setBorderSize(juce::BorderSize<int>(0));
+    addAndMakeVisible(blendContent);
+    for (auto *c : std::initializer_list<juce::Component *>{&pad, &xValue, &yValue, &xLabel, &yLabel})
+        blendContent.addAndMakeVisible(c);
     updateBlend.setTooltip(
         "Update this mix to continuous sparse blending. This may change its sound near "
         "empty corners. Undo restores the legacy law; saving requires document version 3.");
@@ -238,14 +158,16 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
     blendEnable.setTooltip("Enable equal-power blending explicitly. Assigned layers change level; unassigned "
                            "layers stay unchanged.");
     blendReset.onClick = [this] { setPad(.5, .5); };
-    for (auto *v : {&xValue, &yValue})
+    for (auto *v : std::initializer_list<juce::Slider *>{&xValue, &yValue})
     {
         v->setRange(0, 1, .001);
         v->setSliderStyle(juce::Slider::LinearHorizontal);
-        v->setTextBoxStyle(juce::Slider::TextBoxRight, false, 48, 20);
+        v->setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
+        v->setWantsKeyboardFocus(true);
         v->onDragStart = [this] { beginControl(); };
         v->onDragEnd = [this] { endControl(); };
     }
+    yValue.setSliderStyle(juce::Slider::LinearVertical);
     xValue.setTitle("Blend X, zero left to one right");
     yValue.setTitle("Blend Y, zero top to one bottom");
     xValue.onValueChange = [this]
@@ -269,7 +191,8 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
         addAndMakeVisible(assignments[n]);
         addAndMakeVisible(assignmentNames[n]);
         cards[n] = std::make_unique<SourceCard>(assignmentNames[n], assignments[n], pool);
-        addAndMakeVisible(*cards[n]);
+        blendContent.addAndMakeVisible(*cards[n]);
+        cards[n]->setCompact(true);
         cards[n]->onSelect = [this](const juce::String &id) { session.selectLayer(id); };
         cards[n]->onAlternatives = [this](const auto &id)
         {
@@ -794,11 +717,10 @@ void PerformView::paint(juce::Graphics &g)
 void PerformView::resized()
 {
     int w = getWidth(), h = getHeight();
-    effectiveMacroWidth =
-        std::min(preferredMacroWidth, std::max(minimumMacroWidth, w - minimumBlendWidth - 10));
+    // A bounded sidebar keeps at least two thirds of normal workspace widths for Blend.
+    const int effectiveMacroWidth = std::clamp(w / 3, minimumMacroWidth, defaultMacroWidth);
     const int split = std::max(0, w - effectiveMacroWidth);
     blendBounds = {0, 0, std::max(0, split - 10), h};
-    divider.setBounds(split - 10, 0, 10, h);
     const int row = std::min(72, std::max(64, (h - 16) / 4));
     macroArea = {split, 0, w - split, mappingOpen ? std::min(h, 390) : std::min(h, row * 4 + 12)};
     blendEnable.setBounds(8, 3, 70, 28);
@@ -806,25 +728,25 @@ void PerformView::resized()
     updateBlend.setBounds(split - 86, 3, 70, 28);
     blendState.setBounds(112, 3, split - (session.performanceMix().performance.blendLaw == 1 ? 206 : 126),
                          28);
-    const int blendWidth = blendBounds.getWidth(), half = (blendWidth - 26) / 2;
-    const int stackedDiameter = std::max(60, std::min(blendWidth - 28, h - 226));
-    const int cardWidth = 144;
-    const int sideDiameter = std::min(blendWidth - cardWidth * 2 - 36, h - 88);
-    const bool flankPad = sideDiameter > stackedDiameter + 24;
-    const int diameter = flankPad ? sideDiameter : stackedDiameter;
-    const int padY = flankPad ? 38 + std::max(0, (h - 88 - diameter) / 2) : 108;
-    pad.setBounds((blendWidth - diameter) / 2, padY, diameter, diameter);
+    blendContent.setBounds(6, 34, std::max(0, blendBounds.getWidth() - 12), std::max(0, h - 40));
+    constexpr int axisWidth = 32, gap = 6;
+    const int cardHeight = std::clamp(h / 12, 32, 64), padY = cardHeight + gap;
+    const int padHeight = std::max(0, blendContent.getHeight() - cardHeight * 2 - 28 - gap * 2);
+    const int padWidth = std::max(0, blendContent.getWidth() - axisWidth - 8);
+    // All controls fit the available space; no scroll area or overflowing canvas.
+    pad.setBounds(axisWidth, padY, padWidth, padHeight);
+    const int cardLeft = pad.getX() + 8, half = (padWidth - 16 - gap) / 2;
     for (int i = 0; i < 4; ++i)
     {
-        const int x = flankPad ? ((i % 2) ? blendWidth - cardWidth - 8 : 8) : 10 + (i % 2) * (half + 6);
-        const int y = flankPad ? ((i < 2) ? padY : padY + diameter - 70) : ((i < 2) ? 34 : h - 118);
-        slotBounds[(size_t)i] = {x, y, flankPad ? cardWidth : half, 70};
+        const int x = cardLeft + (i % 2) * (half + gap);
+        const int y = i < 2 ? 0 : pad.getBottom() + 28 + gap;
+        slotBounds[(size_t)i] = {x, y, half, cardHeight};
         cards[(size_t)i]->setBounds(slotBounds[(size_t)i]);
     }
-    xLabel.setBounds(10, h - 46, half, 14);
-    yLabel.setBounds(16 + half, h - 46, half, 14);
-    xValue.setBounds(10, h - 30, half, 24);
-    yValue.setBounds(16 + half, h - 30, half, 24);
+    yLabel.setBounds(0, pad.getBounds().getCentreY() - 9, 14, 18);
+    yValue.setBounds(14, pad.getY() + 8, 18, padHeight - 16);
+    xLabel.setBounds(cardLeft, pad.getBottom(), 16, 24);
+    xValue.setBounds(cardLeft + 18, pad.getBottom(), padWidth - 34, 24);
     // Source cards themselves are the existing-layer drag handles; pickers remain accessible.
     layerSource.setVisible(false);
     layerDrag.setVisible(false);
@@ -872,6 +794,9 @@ bool PerformView::isInterestedInDragSource(const SourceDetails &d)
 }
 int PerformView::slotAt(juce::Point<int> p) const
 {
+    if (!blendContent.getBounds().contains(p))
+        return -1;
+    p = blendContent.getLocalPoint(this, p);
     for (int i = 0; i < 4; ++i)
         if (slotBounds[(size_t)i].expanded(4).contains(p))
             return i;

@@ -84,7 +84,15 @@ void SourceCard::bind(const DesignLayer *value, const juce::String &id, const ju
 }
 juce::Rectangle<float> SourceCard::waveBounds() const
 {
-    return {8, 27, std::max(1.f, getWidth() - 16.f), 26};
+    return {8, compact ? 25.f : 27.f, std::max(1.f, getWidth() - 16.f),
+            compact ? std::max(2.f, getHeight() - 27.f - (getHeight() >= 52 ? 15.f : 0.f)) : 26.f};
+}
+void SourceCard::setCompact(bool value)
+{
+    compact = value;
+    title.setFont(juce::FontOptions(compact ? 13.f : 14.f));
+    resized();
+    repaint();
 }
 void SourceCard::refreshPeaks()
 {
@@ -154,8 +162,9 @@ void SourceCard::transport(bool owned, int64_t frame, double rate)
 }
 void SourceCard::resized()
 {
-    title.setBounds(6, 2, std::max(1, getWidth() - 38), 23);
-    chooser.setBounds(getWidth() - 30, 2, 26, 23);
+    const int height = compact ? 22 : 23, chooserWidth = compact ? 22 : 26, top = compact ? 3 : 2;
+    title.setBounds(6, top, std::max(1, getWidth() - chooserWidth - 12), height);
+    chooser.setBounds(getWidth() - chooserWidth - 4, top, chooserWidth, height);
     refreshPeaks();
 }
 void SourceCard::paint(juce::Graphics &g)
@@ -173,20 +182,21 @@ void SourceCard::paint(juce::Graphics &g)
         g.setColour(ui::muted);
         g.drawText(state, waveBounds(), juce::Justification::centred);
     }
-    g.setFont(juce::FontOptions(10.5f));
+    g.setFont(juce::FontOptions(compact ? 10.f : 10.5f));
     g.setColour(ui::muted);
-    if (layer)
+    if (layer && (!compact || getHeight() >= 52))
     {
         const auto seconds =
             (layer->region.endSample - layer->region.startSample) / (layer->source.sampleRate * layer->rate);
-        g.drawText(cardDuration(seconds), 8, 54, 52, 14, juce::Justification::left);
+        const int metaY = compact ? getHeight() - 15 : 54;
+        g.drawText(cardDuration(seconds), 8, metaY, 52, 14, juce::Justification::left);
         auto sourceLayout = observedSource(*layer);
-        g.drawText(silent ? "Silent source" : layoutBadge(sourceLayout), 60, 54, std::max(0, getWidth() - 98),
-                   14, juce::Justification::left, true);
+        g.drawText(silent ? "Silent source" : layoutBadge(sourceLayout), 60, metaY,
+                   std::max(0, getWidth() - 98), 14, juce::Justification::left, true);
         g.setColour(ui::line);
-        g.fillRoundedRectangle(getWidth() - 33.f, 60, 23, 2, 1);
+        g.fillRoundedRectangle(getWidth() - 33.f, metaY + 6.f, 23, 2, 1);
         g.setColour(ui::accent);
-        g.fillRoundedRectangle(getWidth() - 33.f, 60, (float)weight * 23, 2, 1);
+        g.fillRoundedRectangle(getWidth() - 33.f, metaY + 6.f, (float)weight * 23, 2, 1);
     }
     if (hasKeyboardFocus(false))
     {

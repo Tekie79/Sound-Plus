@@ -1,0 +1,112 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Add existing sound folders, Help: Add Folder
+	2 text entry area (settable) Search library, Secondary Actions: Delete
+	3 text (settable) All sources
+	4 outline
+	5 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	6 button Play  [Space]
+	7 button Per-channel source waveforms
+	8 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	9 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	10 container Resize sound browser
+	11 container
+	12 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 28, Value: Blend workspace QA
+	13 button Render Design, Help: Render Design (Command-R)
+	14 button Render settings
+	15 button Render selected layer
+	16 button Choose permanent output folder
+	17 button Library
+	18 button (settable) Browser, Help: Hide sound browser, Value: On
+	19 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	20 text (settable) Unsaved changes
+	21 button New design, Help: New design (Command-N)
+	22 button Open design, Help: Open design (Command-O)
+	23 button Save design, Help: Save design (Command-S)
+	24 button Recover autosave
+	25 button Undo, Help: Undo (Command-Z)
+	26 button Add source
+	27 button Duplicate layer, Help: Duplicate layer (Command-D)
+	28 button Remove layer, Help: Remove layer (Delete / Backspace)
+	29 button Move layer down
+	30 button (settable) Edit, Value: Off
+	31 button (settable) Perform, Value: On
+	32 button Save Snapshot, Help: Save the current static sound and its control settings as a named snapshot. No control motion is recorded.
+	33 pop up button (settable) Live Design or recorded take context, Help: Live Design
+	34 button Record, Help: Record a performance take
+	35 button Take options
+	36 text (settable) Take capture starts at frame zero; replay and render rebuild complete history. 120 seconds /8192 applied events maximum.
+	37 button (settable) Blend on, Value: On, Help: Enable equal-power blending explicitly. Assigned layers change level; unassigned layers stay unchanged.
+	38 button Centre blend surface
+	39 text (settable) Help: While Blend is off, movement prepares a position. Enable Blend to hear it., Value: Equal-power blend
+	40 text entry area (settable) Help: Intensity · double-click to rename, Value: Intensity
+	41 button (settable) Bypass Intensity, Value: On
+	42 button Reset Intensity
+	43 button Edit mappings for Intensity
+	44 slider (settable) Intensity value, zero to one, Value: 0.500, Secondary Actions: Delete
+	45 container Rain texture, 1 ch · MONO, 120.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready
+	46 text entry area (settable) Value: Rain texture, Help: Rain texture
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-layout/native/Rain texture.wav
+All-channel source overview before fades, gain and inserts. Double-click waveform or press Return to open in Edit. Drag to assign another corner. Right-click or Shift-Return for Alternatives.
+Double-click title to edit alias.
+	47 pop up button (settable) Assign Top left blend layer, Help: Choose, replace or clear this blend assignment, Value: Rain texture
+	48 container Low impact, 1 ch · MONO, 120.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready
+	49 text entry area (settable) Value: Low impact, Help: Low impact
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-layout/native/Low impact.wav
+All-channel source overview before fades, gain and inserts. Double-click waveform or press Return to open in Edit. Drag to assign another corner. Right-click or Shift-Return for Alternatives.
+Double-click title to edit alias.
+	50 pop up button (settable) Assign Top right blend layer, Help: Choose, replace or clear this blend assignment, Value: Low impact
+	51 container Source Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.
+	52 slider (settable) Blend Y, zero top to one bottom, Value: 0.400, Secondary Actions: Delete
+	53 text (settable) Y X
+	54 slider (settable) Blend X, zero left to one right, Value: 0.500, Secondary Actions: Delete
+	55 container Air movement, 1 ch · MONO, 120.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready
+	56 text entry area (settable) Value: Air movement, Help: Air movement
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-layout/native/Air movement.wav
+All-channel source overview before fades, gain and inserts. Double-click waveform or press Return to open in Edit. Drag to assign another corner. Right-click or Shift-Return for Alternatives.
+Double-click title to edit alias.
+	57 pop up button (settable) Assign Bottom left blend layer, Help: Choose, replace or clear this blend assignment, Value: Air movement
+	58 container Granular layer, 1 ch · MONO, 120.0 seconds. All-channel source overview. Return opens Edit., Description: Waveform: Ready
+	59 text entry area (settable) Value: Granular layer, Help: Granular layer
+/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-layout/native/Granular layer.wav
+All-channel source overview before fades, gain and inserts. Double-click waveform or press Return to open in Edit. Drag to assign another corner. Right-click or Shift-Return for Alternatives.
+Double-click title to edit alias.
+	60 pop up button (settable) Assign Bottom right blend layer, Help: Choose, replace or clear this blend assignment, Value: Granular layer
+	61 text (settable) 1 target - Enabled
+	62 text entry area (settable) Help: Macro 2 · double-click to rename, Value: Macro 2
+	63 button (settable) Enable Macro 2, Value: Off
+	64 button Reset Macro 2
+	65 button Edit mappings for Macro 2
+	66 slider (settable) Macro 2 value, zero to one, Value: 0.500, Secondary Actions: Delete
+	67 text (settable) No mapped targets
+	68 text entry area (settable) Help: Macro 3 · double-click to rename, Value: Macro 3
+	69 button (settable) Enable Macro 3, Value: Off
+	70 button Reset Macro 3
+	71 button Edit mappings for Macro 3
+	72 slider (settable) Macro 3 value, zero to one, Value: 0.500, Secondary Actions: Delete
+	73 text (settable) No mapped targets
+	74 text entry area (settable) Help: Macro 4 · double-click to rename, Value: Macro 4
+	75 button (settable) Enable Macro 4, Value: Off
+	76 button Reset Macro 4
+	77 button Edit mappings for Macro 4
+	78 slider (settable) Macro 4 value, zero to one, Value: 0.500, Secondary Actions: Delete
+	79 text (settable) No mapped targets
+	80 button Generate 5
+	81 button Variation bounds and enabled parameters
+	82 pop up button (settable) Original and variation candidates, Value: Original
+	83 button Stop design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
+	84 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	85 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	86 button Copy Original to Project
+	87 text (settable) /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-layout/native/Renders
+	88 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -24.7 dBFS; R -24.7 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	89 slider (settable) Monitor volume, excluded from render, Value: 0.00, Secondary Actions: Delete
+	90 text (settable) Recovered latest changes
+	91 close button
+	92 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	93 minimize button
+	94 text SoundPlus
+95 menu bar
+	96 SoundPlus
+
+The focused UI element is 11 container

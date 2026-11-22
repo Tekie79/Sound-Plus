@@ -32,7 +32,8 @@ class LookAndFeel : public juce::LookAndFeel_V4
         g.fillRoundedRectangle(.5f, .5f, width - 1.f, height - 1.f, 6);
         g.setColour(box.hasKeyboardFocus(true) ? button::focus : line);
         g.drawRoundedRectangle(.5f, .5f, width - 1.f, height - 1.f, 6, 1);
-        icons::draw(g, ActionIcon::chevronDown, {width - 23.f, (height - 13.f) * .5f, 13, 13},
+        const float arrowX = width <= 32 ? (width - 13.f) * .5f : width - 23.f;
+        icons::draw(g, ActionIcon::chevronDown, {arrowX, (height - 13.f) * .5f, 13, 13},
                     box.isEnabled() ? icons::Tone::normal : icons::Tone::disabled);
     }
     void drawLinearSlider(juce::Graphics &g, int x, int y, int width, int height, float pos, float minPos,
@@ -66,7 +67,8 @@ class FileDragButton : public IconButton
     juce::StringArray files;
     void mouseDown(const juce::MouseEvent &e) override
     {
-        if (resolveFile) file = resolveFile();
+        if (resolveFile)
+            file = resolveFile();
         files = resolveFiles ? resolveFiles() : juce::StringArray{file.getFullPathName()};
         started = false;
         tracedDrag = false;
