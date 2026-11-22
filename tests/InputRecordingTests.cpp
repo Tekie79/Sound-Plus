@@ -8,10 +8,16 @@
 #include <iostream>
 #include <deque>
 #include <future>
+#include <unistd.h>
 namespace sp
 {
 struct InputRecordingTestAccess
 {
+    static void breakSecondWriter(InputRecordingStore &s)
+    {
+        ::close(s.handles[1]);
+        s.handles[1] = -1;
+    }
     static void hold(InputRecordingService &s, bool b)
     {
         s.holdWriter = b;
@@ -362,6 +368,9 @@ void runInputRecordingTests(const juce::File &base)
     auto state = sp::message("status");
     uint64_t generation = 0;
     uint64_t configurationSerial = 0;
+    uint64_t monitorSerial = 0;
+    double monitorOutputRate = 48000;
+    juce::String monitorError;
     bool inputOpen = false;
     state.getDynamicObject()->setProperty("processGeneration", 1);
     sp::DesignSessionServices services;
@@ -382,6 +391,8 @@ void runInputRecordingTests(const juce::File &base)
         auto input = capture.status();
         input.getDynamicObject()->setProperty("open", inputOpen);
         input.getDynamicObject()->setProperty("configurationSerial", (juce::int64)configurationSerial);
+        input.getDynamicObject()->setProperty("monitorSerial", (juce::int64)monitorSerial);
+        input.getDynamicObject()->setProperty("monitorError", monitorError);
         juce::Array<juce::var> devices;
         devices.add(info.json());
         input.getDynamicObject()->setProperty("availableDevices", devices);
@@ -404,6 +415,13 @@ void runInputRecordingTests(const juce::File &base)
     services.inputCommand = [&](const juce::var &v)
     {
         auto name = v["command"].toString();
+        if (name == "input_monitor")
+        {
+            monitorSerial = (uint64_t)(int64_t)v["monitorSerial"];
+            auto tracks = v["plan"].isObject() ? sp::inputPlanFromJson(v["plan"]).tracks
+                                               : std::vector<sp::InputTrackPlan>{};
+            monitorError = capture.setMonitoring(tracks, monitorOutputRate) ? "" : "Rate mismatch";
+        }
         if (name == "input_device")
         {
             inputOpen = v["uid"].toString().isNotEmpty();
@@ -432,6 +450,9 @@ void runInputRecordingTests(const juce::File &base)
     session.armInputTrack(b, true);
     session.poll();
     check(session.inputReady(), "Two independent Audio Track inputs arm through actual session commands");
+    session.monitorInputTrack(a, true);
+    session.poll();
+    check(session.inputMonitored(a), "Monitor UI follows acknowledged enabled service state");
     auto drain = [&]
     {
         int guard = 0;
@@ -477,6 +498,16 @@ void runInputRecordingTests(const juce::File &base)
     check(inputFinishRequests == finishRequestsBeforeSeek && session.inputBusy() && capture.busy() &&
               session.document.playhead == parked && generation == recordingGeneration,
           "Ruler/marker/drag seeks cannot move, replace or finalize an active input recording");
+    monitorOutputRate = 44100;
+    session.monitorInputTrack(a, true);
+    session.poll();
+    check(!session.inputMonitored(a) && !(bool)capture.status()["monitoring"] && session.inputBusy(),
+          "In-progress rejection synchronizes monitor UI and service without cancelling raw capture");
+    monitorOutputRate = 48000;
+    session.monitorInputTrack(a, true);
+    session.poll();
+    check(session.inputMonitored(a) && (bool)capture.status()["monitoring"],
+          "Acknowledged matching-rate re-enable restores UI and active monitoring");
     auto identity = session.document.id;
     session.editMetadata("Rename during capture",
                          [](auto &d) { d.name = "Fresh metadata during input capture"; });
@@ -653,6 +684,7 @@ void runInputRecordingTests(const juce::File &base)
         check((int64_t)retained["frames"] == 512 && retained["state"].toString() == "incomplete",
               "Timeline-limit interruption retains exactly the valid durable prefix");
     }
+#include "InputCorrectionChecks.inc"
     auto evidence = sp::message("input-recording-tests");
     evidence.getDynamicObject()->setProperty("checks", checks);
     evidence.getDynamicObject()->setProperty("controlled", true);

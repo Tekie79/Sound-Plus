@@ -1697,7 +1697,11 @@ void DesignerView::showInputRecordingOptions()
             {
                 auto name = v["plan"]["tracks"][0]["name"].toString();
                 name += juce::String::fromUTF8(" · ") + v["plan"]["id"].toString().substring(0, 6);
-                menu.addItem(n++, (v["receipt"].isVoid() ? "Recover interrupted: " : "Add retained: ") + name,
+                menu.addItem(n++,
+                             (v["receipt"].isVoid() ? ((int)v["version"] == 1 ? "Recover unverified legacy: "
+                                                                              : "Recover interrupted: ")
+                                                    : "Add retained: ") +
+                                 name,
                              !safe->session.inputBusy() && (int64_t)v["frames"] > 0);
             }
             if (entries.isEmpty())
@@ -1715,7 +1719,8 @@ void DesignerView::showInputRecordingOptions()
                                        safe->session.stopInputRecording(result == 2);
                                    if (result >= 100 && result < 100 + entries.size())
                                        safe->session.recoverInputRecording(
-                                           juce::File(entries[result - 100]["partial"].toString()));
+                                           juce::File(entries[result - 100]["partial"].toString()),
+                                           (int)entries[result - 100]["version"] == 1);
                                });
         });
 }

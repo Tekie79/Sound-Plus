@@ -5,6 +5,7 @@
 #include <mutex>
 #include <thread>
 #include <condition_variable>
+#include <CommonCrypto/CommonDigest.h>
 
 namespace sp
 {
@@ -67,7 +68,7 @@ class InputRecordingStore
                 uint64_t hostNs, int64_t projectFrame);
     void checkpoint();
     juce::var finish(bool complete, const juce::String &reason, bool cancelled = false);
-    static juce::var recover(const juce::File &partial);
+    static juce::var recover(const juce::File &partial, bool allowUnverifiedLegacy = false);
     static juce::Array<juce::var> recoverable(const juce::File &root);
     int64_t frames() const
     {
@@ -81,18 +82,21 @@ class InputRecordingStore
     }
 
   private:
+    friend struct InputRecordingTestAccess;
     InputRecordingPlan plan;
     InputDeviceInfo device;
     juce::File partial;
     std::vector<int> handles;
     std::vector<float> selected;
     std::vector<float> peaks;
+    std::vector<CC_SHA256_CTX> prefixHashes;
     int64_t written = 0, firstDeviceFrame = 0, placement = 0;
     uint64_t firstHostNs = 0;
     bool closed = false;
     juce::var diagnostics;
     juce::var journal(const juce::String &, const juce::String &) const;
-    static juce::var publish(const juce::File &, juce::var, bool recovered);
+    static juce::var publish(const juce::File &, juce::var, bool recovered,
+                             bool allowUnverifiedLegacy = false);
 };
 
 // One actual input callback -> one writer. No allocation/lock/I/O in push or monitor.
@@ -163,9 +167,12 @@ class InputRecordingService
     std::atomic<uint64_t> nativeCallbackNs{0};
     static constexpr uint64_t monitorCapacity = 65536;
     std::array<std::array<float, monitorCapacity>, 2> monitored{};
+    std::array<uint64_t, monitorCapacity> monitorEpochTags{};
+    std::atomic<uint64_t> monitorEpoch{1}, monitorFloor{0};
     std::atomic<uint64_t> monitorWrite{0}, monitorRead{0}, monitorDrops{0};
     std::array<std::array<std::atomic<float>, maxChannels>, 2> monitorGains{};
     std::atomic<bool> monitoring{false};
+    void disableMonitoring() noexcept;
     void run();
 };
 } // namespace sp

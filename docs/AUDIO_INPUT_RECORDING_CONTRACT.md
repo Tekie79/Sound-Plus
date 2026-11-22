@@ -30,6 +30,16 @@ Cancel, denial, I/O failure, helper/app interruption and device loss retain thei
 
 Documents containing input settings or recording provenance require manifest13. Documents without those fields and historical take recipe encodings retain their previous envelopes and hashes. App/audio IPC is version11. The existing plugin format/identity, isolated DSP and single-pass output-authority contracts remain in effect.
 
+## Journal v2 prefix integrity and monitor correction
+
+New journals/receipts use version2 with `sha256-raw-prefix-v1`. Each source retains its stable owner, acknowledged byte count and SHA-256 of exactly that prefix. The writer advances incremental hash state only after every owner's append succeeds; fsync precedes journal publication. Checkpoint hashing is bounded by owner count and does not reread growing files. Hashing never runs on an audio callback.
+
+Before recovering/publishing, verify every owner's acknowledged byte count, digest and finite float32 data, before touching any derived WAV or receipt. Longer unacknowledged suffixes are ignored. A second digest during WAV staging detects changes between validation and copying. Any mismatch/nonfinite source refuses publication and retains raw files/journal/staging. Interrupted WAV finalization rebuilds from verified raw authority.
+
+Version1 partials have no historical prefix digest. Default recovery refuses with an explicit reason. The separate **Recover unverified legacy** action validates available size/finite PCM and labels both receipt (`legacy-unverified`) and clip (**Recovered (unverified)**); it never invents a verified historical checksum. Previously finalized v1 WAVs remain governed by their retained output SHA-256; no old journal, receipt or source is automatically rewritten/upgraded.
+
+Rejected monitor requests disable monitoring, clear the old matrix, and discard prior ring epochs before re-enable. Epoch-tagged source frames reject late old-configuration publication without resetting producer/consumer indices from a control thread. A safe input-device reconfiguration resets peak meters. Output-device changes turn monitoring off explicitly. Monitor acknowledgments carry a separate serial so stale status/error cannot undo a newer UI action. These changes do not alter recorded source PCM.
+
 ## Qualification
 
 See the milestone report for actual controlled, native, physical-device and failure evidence. Simulated stereo/multiple-input/role tests do not qualify unavailable physical interfaces. PCM verification is separate from human listening. No new VST2, AUv3, OldSkoolVerb custom-gesture, physical surround, MIDI-instrument or receiving-application drag qualification is implied.

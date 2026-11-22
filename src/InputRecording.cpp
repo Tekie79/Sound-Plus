@@ -27,6 +27,32 @@ bool operationId(const juce::String &s)
 {
     return s.length() >= 32 && s.length() <= 36 && s.containsOnly("0123456789abcdefABCDEF-");
 }
+juce::String prefixDigest(CC_SHA256_CTX context)
+{
+    std::array<unsigned char, CC_SHA256_DIGEST_LENGTH> bytes{};
+    CC_SHA256_Final(bytes.data(), &context);
+    return juce::String::toHexString(bytes.data(), (int)bytes.size(), 0);
+}
+juce::String verifyPrefix(const juce::File &raw, int64_t bytes, const juce::String &expected)
+{
+    auto input = raw.createInputStream();
+    require(input != nullptr && raw.getSize() >= bytes, "Recording prefix integrity: truncated source");
+    CC_SHA256_CTX hash;
+    CC_SHA256_Init(&hash);
+    std::array<float, 16384> buffer{};
+    for (int64_t at = 0; at < bytes;)
+    {
+        int count = (int)std::min<int64_t>(bytes - at, sizeof(buffer));
+        require(input->read(buffer.data(), count) == count, "Recording prefix integrity: short read");
+        for (int n = 0; n < count / 4; ++n)
+            require(std::isfinite(buffer[(size_t)n]), "Recording prefix integrity: nonfinite PCM");
+        CC_SHA256_Update(&hash, buffer.data(), (CC_LONG)count);
+        at += count;
+    }
+    auto digest = prefixDigest(hash);
+    require(expected.isEmpty() || digest == expected, "Recording prefix integrity: checksum mismatch");
+    return digest;
+}
 void writeAll(int fd, const void *data, size_t bytes)
 {
     auto *p = static_cast<const char *>(data);
@@ -73,7 +99,7 @@ juce::var readJson(const juce::File &file)
     require(file.existsAsFile() && file.getSize() < 4 * 1024 * 1024,
             "Recording journal missing or oversized");
     auto v = juce::JSON::parse(file);
-    require(v.isObject() && (int)v["version"] == 1, "Invalid recording journal");
+    require(v.isObject() && ((int)v["version"] == 1 || (int)v["version"] == 2), "Invalid recording journal");
     return v;
 }
 InputDeviceInfo deviceFrom(const juce::var &v)
@@ -250,6 +276,9 @@ InputRecordingStore::InputRecordingStore(InputRecordingPlan p, InputDeviceInfo d
     require(partial.createDirectory().wasOk(), "Cannot create durable recording folder");
     selected.resize((size_t)InputRecordingService::maxFrames * 16);
     peaks.resize(plan.tracks.size());
+    prefixHashes.resize(plan.tracks.size());
+    for (auto &hash : prefixHashes)
+        CC_SHA256_Init(&hash);
     try
     {
         for (size_t i = 0; i < plan.tracks.size(); ++i)
@@ -277,7 +306,8 @@ InputRecordingStore::~InputRecordingStore()
 juce::var InputRecordingStore::journal(const juce::String &state, const juce::String &reason) const
 {
     auto v = obj();
-    put(v, "version", 1);
+    put(v, "version", 2);
+    put(v, "prefixAlgorithm", "sha256-raw-prefix-v1");
     put(v, "state", state);
     put(v, "reason", reason);
     put(v, "plan", inputPlanJson(plan));
@@ -295,6 +325,9 @@ juce::var InputRecordingStore::journal(const juce::String &state, const juce::St
         auto x = obj();
         put(x, "raw", "source-" + juce::String((int)i) + ".f32");
         put(x, "peak", peaks[i]);
+        put(x, "owner", plan.tracks[i].owner);
+        put(x, "bytes", (juce::int64)(written * plan.tracks[i].channels.size() * 4));
+        put(x, "sha256", prefixDigest(prefixHashes[i]));
         a.add(x);
     }
     put(v, "sources", a);
@@ -326,6 +359,8 @@ void InputRecordingStore::append(const float *pcm, int frames, int channels, int
         firstHostNs = hostNs;
         placement = std::max<int64_t>(0, projectFrame);
     }
+    auto nextHashes = prefixHashes;
+    auto nextPeaks = peaks;
     for (size_t i = 0; i < plan.tracks.size(); ++i)
     {
         auto &t = plan.tracks[i];
@@ -335,10 +370,13 @@ void InputRecordingStore::append(const float *pcm, int frames, int channels, int
                 float s = pcm[(size_t)n * channels + t.channels[c]];
                 require(std::isfinite(s), "Nonfinite recorded sample");
                 selected[(size_t)n * t.channels.size() + c] = s;
-                peaks[i] = std::max(peaks[i], std::abs(s));
+                nextPeaks[i] = std::max(nextPeaks[i], std::abs(s));
             }
         writeAll(handles[i], selected.data(), (size_t)frames * t.channels.size() * 4);
+        CC_SHA256_Update(&nextHashes[i], selected.data(), (CC_LONG)(frames * t.channels.size() * 4));
     }
+    prefixHashes = std::move(nextHashes);
+    peaks = std::move(nextPeaks);
     if (writeBudget >= 0)
         writeBudget -= bytes;
     written += frames;
@@ -366,7 +404,8 @@ juce::var InputRecordingStore::finish(bool complete, const juce::String &reason,
     put(j, "partial", partial.getFullPathName());
     return j;
 }
-juce::var InputRecordingStore::publish(const juce::File &partial, juce::var j, bool recovered)
+juce::var InputRecordingStore::publish(const juce::File &partial, juce::var j, bool recovered,
+                                       bool allowUnverifiedLegacy)
 {
     auto plan = inputPlanFromJson(j["plan"]);
     plan.root = partial.getParentDirectory();
@@ -378,6 +417,28 @@ juce::var InputRecordingStore::publish(const juce::File &partial, juce::var j, b
             "Invalid recording sources");
     auto final = plan.root.getChildFile(plan.id);
     require(!final.exists(), "Recording already published; existing audio retained");
+    bool verified = (int)j["version"] == 2;
+    require(verified || allowUnverifiedLegacy,
+            "Legacy recording has no historical prefix checksum; choose explicit unverified recovery");
+    if (verified)
+        require(j["prefixAlgorithm"].toString() == "sha256-raw-prefix-v1",
+                "Recording prefix integrity: unsupported algorithm");
+    // Validate every owner before touching any derived WAV or receipt. Only acknowledged bytes count.
+    std::vector<juce::String> digests;
+    for (size_t i = 0; i < plan.tracks.size(); ++i)
+    {
+        auto rawName = "source-" + juce::String((int)i) + ".f32";
+        auto entry = j["sources"][(int)i];
+        int64_t bytes = frames * plan.tracks[i].channels.size() * 4;
+        require(entry["raw"].toString() == rawName, "Recording prefix integrity: invalid raw source");
+        if (verified)
+            require(entry["owner"].toString() == plan.tracks[i].owner && (int64_t)entry["bytes"] == bytes &&
+                        entry["sha256"].toString().length() == 64,
+                    "Recording prefix integrity: owner or acknowledged byte count mismatch");
+        digests.push_back(verifyPrefix(partial.getChildFile(rawName), bytes,
+                                       verified ? entry["sha256"].toString() : juce::String()));
+    }
+    put(j, "prefixIntegrity", verified ? "checkpoint-verified" : "legacy-unverified");
     juce::Array<juce::var> outputs;
     for (size_t i = 0; i < plan.tracks.size(); ++i)
     {
@@ -405,17 +466,23 @@ juce::var InputRecordingStore::publish(const juce::File &partial, juce::var j, b
         std::vector<float> interleaved((size_t)4096 * channels);
         juce::AudioBuffer<float> b(channels, 4096);
         auto order = wavOrder(track.layout);
+        CC_SHA256_CTX copied;
+        CC_SHA256_Init(&copied);
         for (int64_t at = 0; at < frames; at += 4096)
         {
             int n = (int)std::min<int64_t>(4096, frames - at);
             int bytes = n * channels * 4;
             require(input->read(interleaved.data(), bytes) == bytes, "Truncated retained PCM");
+            for (int k = 0; k < n * channels; ++k)
+                require(std::isfinite(interleaved[(size_t)k]), "Recording prefix integrity: nonfinite PCM");
+            CC_SHA256_Update(&copied, interleaved.data(), (CC_LONG)bytes);
             for (int c = 0; c < channels; ++c)
                 for (int k = 0; k < n; ++k)
                     b.setSample(c, k, interleaved[(size_t)k * channels + order[(size_t)c]]);
             require(writer->writeFromAudioSampleBuffer(b, 0, n), "Recording WAV write failed");
         }
         writer.reset();
+        require(prefixDigest(copied) == digests[i], "Recording prefix integrity: changed during publication");
         syncPath(staged.getFile());
         require(staged.overwriteTargetFileWithTemporary(), "Cannot finalize source WAV");
         auto item = obj();
@@ -442,7 +509,7 @@ juce::var InputRecordingStore::publish(const juce::File &partial, juce::var j, b
     put(j, "receipt", final.getChildFile("receipt.json").getFullPathName());
     return j;
 }
-juce::var InputRecordingStore::recover(const juce::File &partial)
+juce::var InputRecordingStore::recover(const juce::File &partial, bool allowUnverifiedLegacy)
 {
     if (operationId(partial.getFileName()))
     {
@@ -458,7 +525,7 @@ juce::var InputRecordingStore::recover(const juce::File &partial)
     auto j = readJson(partial.getChildFile("journal.json"));
     require(partial.getFileName() == "." + j["plan"]["id"].toString() + ".partial",
             "Recording operation/folder mismatch");
-    return publish(partial, j, true);
+    return publish(partial, j, true, allowUnverifiedLegacy);
 }
 juce::Array<juce::var> InputRecordingStore::recoverable(const juce::File &root)
 {
@@ -499,7 +566,10 @@ void InputRecordingService::configure(const InputDeviceInfo &d)
     require(!busy(), "Stop recording before changing input devices");
     std::lock_guard lock(mutex);
     device = d;
-    monitoring = false;
+    disableMonitoring();
+    failure = none;
+    for (auto &peak : peaks)
+        peak = 0;
     maxCallbackNs = 0;
     nativeCallbackNs = 0;
 }
@@ -537,6 +607,7 @@ void InputRecordingService::interrupt(const juce::String &s)
 }
 void InputRecordingService::fault(Fault f) noexcept
 {
+    disableMonitoring();
     int expected = none;
     failure.compare_exchange_strong(expected, f);
     accepting = false;
@@ -609,6 +680,7 @@ void InputRecordingService::push(const float *const *in, int channels, int frame
     }
     if (monitoring.load(std::memory_order_acquire))
     {
+        auto epoch = monitorEpoch.load(std::memory_order_acquire);
         auto w = monitorWrite.load(std::memory_order_relaxed),
              r = monitorRead.load(std::memory_order_acquire);
         if (w - r + (uint64_t)frames > monitorCapacity)
@@ -616,6 +688,8 @@ void InputRecordingService::push(const float *const *in, int channels, int frame
         else
         {
             for (int n = 0; n < frames; ++n)
+            {
+                monitorEpochTags[(size_t)((w + n) % monitorCapacity)] = epoch;
                 for (int c = 0; c < 2; ++c)
                 {
                     float sum = 0;
@@ -624,13 +698,24 @@ void InputRecordingService::push(const float *const *in, int channels, int frame
                                monitorGains[(size_t)c][(size_t)k].load(std::memory_order_relaxed);
                     monitored[(size_t)c][(size_t)((w + n) % monitorCapacity)] = sum;
                 }
+            }
             monitorWrite.store(w + frames, std::memory_order_release);
         }
     }
 }
+void InputRecordingService::disableMonitoring() noexcept
+{
+    monitoring.store(false, std::memory_order_release);
+    monitorEpoch.fetch_add(1, std::memory_order_acq_rel);
+    monitorFloor.store(monitorWrite.load(std::memory_order_acquire), std::memory_order_release);
+}
 bool InputRecordingService::setMonitoring(const std::vector<InputTrackPlan> &tracks, double outputRate)
 {
-    if (!tracks.empty() && device.rate != outputRate)
+    disableMonitoring();
+    for (auto &row : monitorGains)
+        for (auto &gain : row)
+            gain = 0;
+    if (!tracks.empty() && (device.rate != outputRate || failure.load() != none))
         return false;
     std::array<std::array<float, maxChannels>, 2> matrix{};
     for (auto &t : tracks)
@@ -650,6 +735,11 @@ bool InputRecordingService::setMonitoring(const std::vector<InputTrackPlan> &tra
         for (int k = 0; k < maxChannels; ++k)
             monitorGains[(size_t)c][(size_t)k] = matrix[(size_t)c][(size_t)k];
     monitoring = !tracks.empty();
+    if (!tracks.empty() && failure.load(std::memory_order_acquire) != none)
+    {
+        disableMonitoring();
+        return false;
+    }
     return true;
 }
 void InputRecordingService::monitor(float *const *out, int channels, int frames, float gain) noexcept
@@ -660,10 +750,14 @@ void InputRecordingService::monitor(float *const *out, int channels, int frames,
         monitorRead.store(w, std::memory_order_release);
         return;
     }
+    auto epoch = monitorEpoch.load(std::memory_order_acquire);
+    r = std::max(r, monitorFloor.load(std::memory_order_acquire));
+    if (r > w)
+        return; // A newer configuration's floor overtook this callback's old write snapshot.
     int count = (int)std::min<uint64_t>(w - r, (uint64_t)frames);
     for (int n = 0; n < count; ++n)
         for (int c = 0; c < std::min(2, channels); ++c)
-            if (out[c])
+            if (out[c] && monitorEpochTags[(size_t)((r + n) % monitorCapacity)] == epoch)
                 out[c][n] += monitored[(size_t)c][(size_t)((r + n) % monitorCapacity)] * gain;
     monitorRead.store(r + count, std::memory_order_release);
 }

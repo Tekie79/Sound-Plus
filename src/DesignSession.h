@@ -121,7 +121,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void monitorInputTrack(const juce::String &, bool);
     void startInputRecording();
     void stopInputRecording(bool cancel = false);
-    void recoverInputRecording(const juce::File &);
+    void recoverInputRecording(const juce::File &, bool allowUnverifiedLegacy = false);
     void findInputRecoveries(std::function<void(juce::Array<juce::var>)>);
     void add(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0,
              int64_t placement = -1);
@@ -263,6 +263,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     std::set<juce::String> armedInputs, monitoredInputs, pendingInputArms;
     juce::String inputOperation, inputDocument, inputVariation, inputArmContext, inputLastPhase;
     uint64_t inputIncarnation = 0, inputProcessGeneration = 0, inputControlSerial = 0;
+    uint64_t inputMonitorControlSerial = 0;
     bool inputMutation = false, inputReadPending = false, inputStopRequested = false,
          inputCancelRequested = false;
     bool inputConfigPending = false;

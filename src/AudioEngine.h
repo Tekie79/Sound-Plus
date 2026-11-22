@@ -37,6 +37,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     juce::String inputError, inputRequest, inputMonitorError;
     int64_t inputUnderrunBaseline = 0;
     uint64_t inputConfigSerial = 0;
+    uint64_t inputMonitorSerial = 0;
     std::atomic<double> deviceRate{0};
     std::atomic<bool> deviceChanged{false};
     bool hello = false;

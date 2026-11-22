@@ -113,6 +113,7 @@ void AudioEngine::command(const juce::var &message)
             }
             else if (name == "input_monitor")
             {
+                inputMonitorSerial = (uint64_t)(int64_t)message["monitorSerial"];
                 inputMonitorError.clear();
                 std::vector<InputTrackPlan> tracks;
                 if (message["plan"].isObject())
@@ -254,6 +255,11 @@ void AudioEngine::handleDeviceChanges()
 {
     if (deviceChanged.exchange(false))
     {
+        if ((bool)inputRecorder.status()["monitoring"])
+        {
+            inputRecorder.setMonitoring({}, deviceRate.load());
+            inputMonitorError = "Output device changed; raw input monitoring turned off";
+        }
         outputs.clear();
         // Assignment is device-specific. A newly discovered device never inherits
         // an old device's index map. Rate/buffer changes on the same device keep it.
@@ -377,6 +383,7 @@ void AudioEngine::sendStatus()
     inputState.getDynamicObject()->setProperty("monitorError", inputMonitorError);
     inputState.getDynamicObject()->setProperty("request", inputRequest);
     inputState.getDynamicObject()->setProperty("configurationSerial", (juce::int64)inputConfigSerial);
+    inputState.getDynamicObject()->setProperty("monitorSerial", (juce::int64)inputMonitorSerial);
     object->setProperty("inputRecording", inputState);
     object->setProperty("peakResidentBytes", performance.json()["peakResidentBytes"]);
     object->setProperty("cpuSeconds", performance.json()["cpuSeconds"]);

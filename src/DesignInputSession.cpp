@@ -178,6 +178,7 @@ void DesignSession::updateInputDevice()
             services.inputCommand(command);
         }
         auto command = sp::message("input_monitor");
+        command.getDynamicObject()->setProperty("monitorSerial", (juce::int64)++inputMonitorControlSerial);
         if (!monitoredInputs.empty() && (bool)state["open"] && state["device"]["uid"].toString() == uid)
         {
             InputRecordingPlan p;
@@ -222,6 +223,8 @@ void DesignSession::monitorInputTrack(const juce::String &id, bool enabled)
         try
         {
             auto command = sp::message("input_monitor");
+            command.getDynamicObject()->setProperty("monitorSerial",
+                                                    (juce::int64)++inputMonitorControlSerial);
             if (!monitoredInputs.empty())
             {
                 InputRecordingPlan p;
@@ -393,9 +396,13 @@ void DesignSession::pollInput(const juce::var &state)
     auto input = state["inputRecording"];
     if (inputConfigPending && (uint64_t)(int64_t)input["configurationSerial"] == inputControlSerial)
         inputConfigPending = false;
-    if (!monitoredInputs.empty() && input["monitorError"].toString().isNotEmpty())
+    if (!monitoredInputs.empty() &&
+        (!(bool)input["open"] ||
+         ((uint64_t)(int64_t)input["monitorSerial"] == inputMonitorControlSerial &&
+          (!(bool)input["monitoring"] || input["monitorError"].toString().isNotEmpty()))))
     {
-        message = input["monitorError"].toString();
+        message = input["monitorError"].toString().isNotEmpty() ? input["monitorError"].toString()
+                                                                : "Raw input monitoring turned off";
         monitoredInputs.clear();
         notify();
     }
@@ -474,7 +481,7 @@ void DesignSession::applyInputReceipt(juce::var receipt)
                 require(file == root.getChildFile(id).getChildFile("receipt.json") && file.existsAsFile(),
                         "Recording receipt missing or outside durable source storage");
                 auto retained = juce::JSON::parse(file);
-                require((int)retained["version"] == 1 &&
+                require(((int)retained["version"] == 1 || (int)retained["version"] == 2) &&
                             (retained["state"].toString() == "complete" ||
                              retained["state"].toString() == "recovered") &&
                             retained["plan"]["id"].toString() == id,
@@ -501,8 +508,12 @@ void DesignSession::applyInputReceipt(juce::var receipt)
                     asset.layoutConfidence = "recorded-explicit";
                     auto layer = makeDesignLayer(asset, 0, -1, true);
                     layer.id = "record-" + id + "-" + v["owner"].toString();
-                    layer.name = ((bool)retained["recovered"] ? juce::String::fromUTF8("Recovered · ")
-                                                              : juce::String()) +
+                    layer.name = ((bool)retained["recovered"]
+                                      ? juce::String::fromUTF8(retained["prefixIntegrity"].toString() ==
+                                                                       "legacy-unverified"
+                                                                   ? "Recovered (unverified) · "
+                                                                   : "Recovered · ")
+                                      : juce::String()) +
                                  v["name"].toString();
                     layer.trackId = v["owner"].toString();
                     layer.placement = (int64_t)retained["placement"];
@@ -580,7 +591,7 @@ void DesignSession::findInputRecoveries(std::function<void(juce::Array<juce::var
                 return [done, results] { done(results); };
             });
 }
-void DesignSession::recoverInputRecording(const juce::File &partial)
+void DesignSession::recoverInputRecording(const juce::File &partial, bool allowUnverifiedLegacy)
 {
     if (inputBusy() || takeBusy() || replacing || document.activeTake.isNotEmpty())
         return;
@@ -601,9 +612,9 @@ void DesignSession::recoverInputRecording(const juce::File &partial)
     auto id = inputOperation;
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(stamp(Operation::input),
-            [safe, partial, id]
+            [safe, partial, id, allowUnverifiedLegacy]
             {
-                auto receipt = InputRecordingStore::recover(partial);
+                auto receipt = InputRecordingStore::recover(partial, allowUnverifiedLegacy);
                 return [safe, receipt, id]
                 {
                     if (safe && safe->inputOperation == id)
