@@ -1,4 +1,5 @@
 #include "DesignModel.h"
+#include "NativeEffects.h"
 #include "SourcePools.h"
 #include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
@@ -41,10 +42,13 @@ juce::var recipeJson(const PerformTake &t)
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
         put(o, "recipeVersion",
-            hasMidi((const DesignMix &)t.recipe) ? 5
-            : t.trackRecipe                      ? 4
-            : t.pluginAware                      ? 3
-                                                 : 2);
+            hasNativeEffects((const DesignMix &)t.recipe) ? 6
+            : hasMidi((const DesignMix &)t.recipe)        ? 5
+            : t.trackRecipe                               ? 4
+            : t.pluginAware                               ? 3
+                                                          : 2);
+    if (hasNativeEffects((const DesignMix &)t.recipe))
+        put(o, "nativePolicy", "native-effects-v1-fixed-latency");
     if (hasMidi((const DesignMix &)t.recipe))
         put(o, "midiPolicy", "constant-tempo-sample-offset-instruments-v1");
     if (t.trackRecipe)
@@ -222,19 +226,25 @@ PerformTake takeFromJson(const juce::var &o)
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
     if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3 &&
-        (int)r["recipeVersion"] != 4 && (int)r["recipeVersion"] != 5)
+        (int)r["recipeVersion"] != 4 && (int)r["recipeVersion"] != 5 && (int)r["recipeVersion"] != 6)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
-    t.trackRecipe = (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5;
-    t.pluginAware = (int)r["recipeVersion"] == 3 || (t.trackRecipe && r.hasProperty("pluginPolicy"));
+    t.trackRecipe = (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5 ||
+                    ((int)r["recipeVersion"] == 6 && r.hasProperty("trackPolicy"));
+    t.pluginAware = (int)r["recipeVersion"] == 3 ||
+                    ((t.trackRecipe || (int)r["recipeVersion"] == 6) && r.hasProperty("pluginPolicy"));
     if (t.trackRecipe && r["trackPolicy"].toString() != "project-automation-before-perform-v1")
         throw std::runtime_error("Unsupported track take policy");
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
-    if (hasMidi((const DesignMix &)t.recipe) != ((int)r["recipeVersion"] == 5) ||
-        ((int)r["recipeVersion"] == 5 &&
-         r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
+    const bool native = hasNativeEffects((const DesignMix &)t.recipe);
+    const bool midi = hasMidi((const DesignMix &)t.recipe);
+    if (native != ((int)r["recipeVersion"] == 6) ||
+        (native && r["nativePolicy"].toString() != "native-effects-v1-fixed-latency"))
+        throw std::runtime_error("Unsupported native take policy/version");
+    if ((midi != ((int)r["recipeVersion"] == 5 || (native && r.hasProperty("midiPolicy")))) ||
+        (midi && r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
         throw std::runtime_error("Unsupported MIDI take policy/version");
     t.sampleRate = (double)r["rate"];
     t.processing = r["processing"].toString();
@@ -279,7 +289,7 @@ PerformTake takeFromJson(const juce::var &o)
 void hashTake(PerformTake &t)
 {
     auto &mix = (const DesignMix &)t.recipe;
-    t.orderedRecipe = t.orderedRecipe || t.trackRecipe || t.pluginAware ||
+    t.orderedRecipe = t.orderedRecipe || hasNativeEffects(mix) || t.trackRecipe || t.pluginAware ||
                       requiresOrderedInserts(mix.inserts) ||
                       std::any_of(mix.layers.begin(), mix.layers.end(),
                                   [](auto &l) { return requiresOrderedInserts(l.inserts); });
@@ -293,18 +303,22 @@ void hashTake(PerformTake &t)
 }
 void validateTake(const PerformTake &t)
 {
+    const bool native = hasNativeEffects((const DesignMix &)t.recipe);
+    if (native != (t.processing == "native-effects-takes-v1"))
+        throw std::runtime_error("Native take processing mismatch");
     if (hasHostedInserts((const DesignMix &)t.recipe) != t.pluginAware ||
-        (!t.trackRecipe && (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
+        (!native && !t.trackRecipe && (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
         (t.pluginAware && !t.orderedRecipe))
         throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
     if (t.trackRecipe != t.recipe->trackSchema ||
-        ((t.processing == "track-automation-takes-v1" || t.processing == "midi-instrument-takes-v1")) !=
-            t.trackRecipe)
+        (!native && (t.processing == "track-automation-takes-v1" ||
+                     t.processing == "midi-instrument-takes-v1") != t.trackRecipe))
         throw std::runtime_error("Track take processing contract mismatch");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
          t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1" &&
-         t.processing != "track-automation-takes-v1" && t.processing != "midi-instrument-takes-v1") ||
+         t.processing != "track-automation-takes-v1" && t.processing != "midi-instrument-takes-v1" &&
+         t.processing != "native-effects-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -313,7 +327,7 @@ void validateTake(const PerformTake &t)
     if (t.complete &&
         t.bodyEnd != (int64_t)std::ceil((long double)(t.outputFrames - 1) * t.sampleRate / t.captureRate) + 1)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
-    if (!t.trackRecipe && !t.pluginAware &&
+    if (!native && !t.trackRecipe && !t.pluginAware &&
         (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
         throw std::runtime_error("Take layout processing contract mismatch");
     if ((t.processing == "stock-layout-takes-v1" && t.recipe->routingVersion != 1) ||
@@ -422,6 +436,11 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     }
     if (hasMidi(mix))
         t.processing = "midi-instrument-takes-v1";
+    if (hasNativeEffects(mix))
+    {
+        t.processing = "native-effects-takes-v1";
+        t.orderedRecipe = true;
+    }
     auto fixed = [](InsertChain &c)
     {
         c.hosted.runtimeEndpoint = juce::File();

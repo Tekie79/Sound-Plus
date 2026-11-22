@@ -89,7 +89,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     addAndMakeVisible(processPlugin);
     processPlugin.onClick = [this]
     {
-        if (selectedAsset && selectedAsset->deliverable() && onProcess && !audio.captureBusy())
+        if (selectedAsset && sourceAvailable(*selectedAsset) && onProcess && !audio.captureBusy())
             onProcess(*selectedAsset, regionStart, regionEnd);
     };
     addAndMakeVisible(scopeLabel);
@@ -201,7 +201,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     };
     addDesigner.onClick = [this]
     {
-        if (selectedAsset && selectedAsset->deliverable() && onAddToDesigner && selectedAsset->samples > 0)
+        if (selectedAsset && sourceAvailable(*selectedAsset) && onAddToDesigner && selectedAsset->samples > 0)
             onAddToDesigner(*selectedAsset, regionEnd > regionStart ? regionStart : 0,
                             regionEnd > regionStart ? regionEnd : selectedAsset->samples, false,
                             selectedAsset->channels > 16 ? (auditionChannels.getSelectedId() == 1 ||
@@ -209,7 +209,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                                 ? -3
                                                                 : auditionChannels.getSelectedId() - 2)
                                                          : 0);
-        if (selectedAsset && selectedAsset->deliverable())
+        if (selectedAsset && sourceAvailable(*selectedAsset))
             library.editCollections(CollectionEdit{"used", {}, {}, {}, 0, true, {currentBookmark()}});
     };
     addDesigner.setTooltip(
@@ -970,7 +970,7 @@ juce::var LibraryView::getDragSourceDescription(const juce::SparseSet<int> &rows
     if (!a || a->samples <= 0)
         return {};
     DesignDocument captured;
-    if (!a->deliverable())
+    if (!sourceAvailable(*a))
         return {};
     auto first = rangeKey == a->resultKey() ? regionStart
                  : a->bookmarkFirst >= 0    ? a->bookmarkFirst
@@ -1848,14 +1848,20 @@ void LibraryView::timerCallback()
     play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
     play.setIcon(navigationAuto || (libraryOwned && (isPlaying || pending)) ? ActionIcon::stop
                                                                             : ActionIcon::play);
-    processPlugin.setEnabled(selectedAsset && selectedAsset->deliverable() && selectedAsset->samples > 0 &&
+    processPlugin.setEnabled(selectedAsset && sourceAvailable(*selectedAsset) && selectedAsset->samples > 0 &&
                              !audio.captureBusy());
-    addDesigner.setEnabled(selectedAsset && selectedAsset->deliverable() && selectedAsset->samples > 0);
+    addDesigner.setEnabled(selectedAsset && sourceAvailable(*selectedAsset) && selectedAsset->samples > 0);
+    processPlugin.setTooltip(selectedAsset && !sourceAvailable(*selectedAsset)
+                                 ? "Source unavailable — reconnect or review the recording before processing"
+                                 : "Process with Plug-in");
+    addDesigner.setTooltip(selectedAsset && !sourceAvailable(*selectedAsset)
+                               ? "Source unavailable — reconnect or review before adding to Designer"
+                               : "Add marked source range to Designer");
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
     dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples > 0 &&
                             regionStart == 0 && regionEnd == selectedAsset->samples);
     referenceDesigner.setEnabled(pinnedReference.source.samples > 0);
-    bool canPlay = selectedAsset && selectedAsset->deliverable();
+    bool canPlay = selectedAsset && sourceAvailable(*selectedAsset);
     previous.setEnabled(snapshot.total > 0);
     this->next.setEnabled(snapshot.total > 0);
     findSimilar.setEnabled(canPlay && ai.ready && selectedAsset->samples > 0 &&
@@ -2176,5 +2182,18 @@ void LibraryView::updateReference(const ReferenceState &state)
         referenceWaveRequest = referenceWaveformCache.request(a);
         referenceWaveApplied = 0;
     }
+}
+} // namespace sp
+
+namespace sp
+{
+bool LibraryView::sourceAvailable(const Asset &a) const
+{
+    if (!a.deliverable() || !a.online || a.samples <= 0)
+        return false;
+    for (auto &r : snapshot.roots)
+        if (r.id == a.rootId)
+            return r.online;
+    return a.rootId.isEmpty();
 }
 } // namespace sp

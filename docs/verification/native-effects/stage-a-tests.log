@@ -1,0 +1,24 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: native_effects
+1/9 Test  #2: native_effects ...................   Passed    0.33 sec
+    Start  3: library_collections
+2/9 Test  #3: library_collections ..............   Passed    1.69 sec
+    Start  4: midi_sequencing
+3/9 Test  #4: midi_sequencing ..................   Passed    0.12 sec
+    Start  6: multitrack_automation
+4/9 Test  #6: multitrack_automation ............   Passed    0.81 sec
+    Start  8: source_pools
+5/9 Test  #8: source_pools .....................   Passed    0.36 sec
+    Start 12: take_integrity
+6/9 Test #12: take_integrity ...................   Passed    3.84 sec
+    Start 14: recorded_takes
+7/9 Test #14: recorded_takes ...................   Passed   11.04 sec
+    Start 36: ordered_corrections
+8/9 Test #36: ordered_corrections ..............   Passed    0.14 sec
+    Start 38: ordered_inserts
+9/9 Test #38: ordered_inserts ..................   Passed   32.02 sec
+
+100% tests passed, 0 tests failed out of 9
+
+Total Test time (real) =  50.37 sec

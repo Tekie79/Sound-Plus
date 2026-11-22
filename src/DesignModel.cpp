@@ -1,4 +1,5 @@
 #include "DesignModel.h"
+#include "NativeEffects.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
 #include "TrackModel.h"
@@ -66,6 +67,12 @@ juce::var effectsJson(const std::vector<StockEffect> &effects)
         put(v, "type", e.type);
         put(v, "bypass", e.bypass);
         put(v, "locked", e.locked);
+        if (e.nativeVersion)
+        {
+            put(v, "native", nativeEffectJson(e));
+            a.add(v);
+            continue;
+        }
         put(v, "parameterLocks", (int)e.parameterLocks);
         juce::Array<juce::var> p;
         for (double n : e.parameters)
@@ -88,6 +95,16 @@ std::vector<StockEffect> effectsFrom(const juce::var &value)
             e.id = v["id"].toString();
             e.bypass = (bool)v["bypass"];
             e.locked = (bool)v["locked"];
+            if (v.hasProperty("native"))
+            {
+                if (v.hasProperty("parameters") || v.hasProperty("parameterLocks"))
+                    throw std::runtime_error("Conflicting native/legacy effect state");
+                nativeEffectFromJson(e, v["native"]);
+                out.push_back(e);
+                continue;
+            }
+            if (e.nativeVersion)
+                throw std::runtime_error("Missing native effect state");
             e.parameterLocks = (uint32_t)(int)v["parameterLocks"];
             auto *p = v["parameters"].getArray();
             if (!p || p->size() != 4)
@@ -582,7 +599,9 @@ StockEffect makeStockEffect(const juce::String &type)
 {
     StockEffect e;
     e.type = type;
-    if (type == "filter")
+    if (nativeDefinition(type))
+        initialiseNativeEffect(e);
+    else if (type == "filter")
         e.parameters = {20, 20000, 0, 0};
     else if (type == "delay")
         e.parameters = {150, .3, .2, 0};
@@ -753,7 +772,8 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        hasMidi(d)            ? 14
+        hasNativeEffects(d)   ? 15
+        : hasMidi(d)          ? 14
         : inputs              ? 13
         : continuations       ? 12
         : tracks              ? 11
@@ -765,7 +785,8 @@ juce::var designToJson(const DesignDocument &d)
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasMidi(d)                  ? "midi-instruments-v1"
+        hasNativeEffects(d)         ? "native-effects-v1"
+        : hasMidi(d)                ? "midi-instruments-v1"
         : tracks                    ? "multitrack-automation-v1"
         : plugins                   ? "plugin-takes-v1"
         : ordered                   ? "ordered-inserts-v1"
@@ -886,8 +907,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 14) ||
-        (version == 14   ? dsp != "midi-instruments-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 15) ||
+        (version == 15   ? dsp != "native-effects-v1"
+         : version == 14 ? dsp != "midi-instruments-v1"
          : version >= 11 ? dsp != "multitrack-automation-v1"
          : version == 10 ? dsp != "plugin-takes-v1"
          : version == 9  ? dsp != "ordered-inserts-v1"
@@ -1008,6 +1030,8 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
+    if (version < 15 && hasNativeEffects(d))
+        throw std::runtime_error("Native effects require manifest15");
     if (version < 14 && hasMidi(d))
         throw std::runtime_error("MIDI sequencing requires manifest14");
     if (version < 13 &&
@@ -1084,6 +1108,15 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
                 throw std::runtime_error("Duplicate insert identity");
             effectIds.add(e.id);
             makeStockEffect(e.type);
+            if (e.nativeVersion)
+            {
+                validateNativeEffect(e);
+                continue;
+            }
+            if (nativeDefinition(e.type))
+                throw std::runtime_error("Missing native effect version");
+            if (!e.nativeValues.empty() || !e.nativeLocks.isEmpty())
+                throw std::runtime_error("Conflicting legacy native data");
             for (double p : e.parameters)
                 bounded(p, -100000, 100000, "Nonfinite effect parameter");
             if (e.type == "gain")
@@ -1448,7 +1481,22 @@ std::vector<DesignVariation> generateVariations(const DesignDocument &d, uint64_
                     auto at = std::find_if(l.inserts.stock.begin(), l.inserts.stock.end(),
                                            [&](auto &e) { return e.id == ref.id; });
                     auto &e = *at;
-                    if (!e.locked)
+                    if (!e.locked && e.nativeVersion)
+                    {
+                        auto &def = nativeDefinition(e);
+                        for (size_t p = 0; p < def.parameters.size(); ++p)
+                        {
+                            auto &info = def.parameters[p];
+                            if (effectParameterLocked(e, (int)p) || info.discrete || info.structural)
+                                continue;
+                            auto &v = e.nativeValues[p];
+                            v = std::clamp(info.logarithmic ? v * std::pow(2., delta(s.effectAmount))
+                                                            : v + delta(s.effectAmount *
+                                                                        (info.maximum - info.minimum) * .1),
+                                           info.minimum, info.maximum);
+                        }
+                    }
+                    if (!e.locked && !e.nativeVersion)
                     {
                         for (int p = 0; p < (e.type == "gain"     ? 1
                                              : e.type == "filter" ? 2

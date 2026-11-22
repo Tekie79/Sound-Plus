@@ -70,6 +70,32 @@ struct CollectionViewTestAccess
         check(v.collectionSelector.isVisible() && v.favoriteButton.isVisible() &&
                   v.collectionSelector.getRight() <= v.favoriteButton.getX(),
               "Compact selector and star fit minimum sidebar width");
+        // Offline references remain organizationally valid, but never offer processing.
+        auto assertUnavailable = [&]
+        {
+            v.timerCallback();
+            check(!v.processPlugin.isEnabled() && !v.addDesigner.isEnabled() && !v.playWhole.isEnabled(),
+                  "Unavailable source gates all processing actions");
+            int calls = 0;
+            v.onProcess = [&](auto &, auto, auto) { ++calls; };
+            v.processPlugin.onClick();
+            check(calls == 0, "Disabled Process callback also rejects stale invocation");
+            v.onProcess = {};
+            check(v.snapshot.total == 1 && v.favoriteButton.isEnabled(),
+                  "Offline collection retains row and metadata actions");
+        };
+        v.selectedAsset->online = false;
+        assertUnavailable();
+        v.selectedAsset->online = true;
+        v.snapshot.roots[0].online = false;
+        assertUnavailable();
+        v.snapshot.roots[0].online = true;
+        v.selectedAsset->needsReview = true;
+        assertUnavailable();
+        v.selectedAsset->needsReview = false;
+        v.timerCallback();
+        check(v.processPlugin.isEnabled() && v.addDesigner.isEnabled(),
+              "Reconnect/current region restores processing availability");
         auto payload = v.getDragSourceDescription(v.table.getSelectedRows());
         auto captured = designFromJson(juce::JSON::parse(payload.toString()));
         auto layer = captured.original.layers[0];

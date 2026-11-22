@@ -67,6 +67,9 @@ struct StockEffect
     bool bypass = false, locked = false;
     std::array<double, 4> parameters{0, 0, 0, 0};
     uint32_t parameterLocks = 0;
+    int nativeVersion = 0; // 0 retains legacy encoding/DSP verbatim.
+    std::vector<double> nativeValues;
+    juce::StringArray nativeLocks;
 };
 // A single owner chain: order is authoritative; typed payload tables have no
 // signal-order meaning. Stable IDs join each typed slot to exactly one payload.

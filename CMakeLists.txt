@@ -19,7 +19,7 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
-  src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
+  src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/InputRecording.cpp
   src/DesignInputSession.cpp src/DesignMidiSession.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
@@ -98,6 +98,9 @@ if(BUILD_TESTING)
   juce_add_console_app(SoundPlusMidiSource PRODUCT_NAME "SoundPlusMidiSource")
   target_sources(SoundPlusMidiSource PRIVATE tests/MidiSourceMain.cpp)
   target_link_libraries(SoundPlusMidiSource PRIVATE juce::juce_core "-framework CoreMIDI")
+  target_sources(SoundPlusTests PRIVATE tests/NativeEffectsTests.cpp)
+  add_test(NAME native_effects COMMAND SoundPlusTests --native-effects "${CMAKE_BINARY_DIR}/native-effect-tests")
+  set_tests_properties(native_effects PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   target_sources(SoundPlusTests PRIVATE tests/CollectionTests.cpp tests/CollectionScaleTests.cpp)
   add_test(NAME library_collections COMMAND SoundPlusTests --collections "${CMAKE_BINARY_DIR}/collection-tests" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_collections PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)

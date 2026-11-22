@@ -5,6 +5,8 @@
 #include "PerformanceState.h"
 #include "HostedRackView.h"
 #include "OrderedInsertList.h"
+#include "NativeParameterPanel.h"
+#include "NativeEffectsDSP.h"
 namespace sp
 {
 // Two independent instances are used for the selected track and master. Commands
@@ -24,6 +26,41 @@ class StockRackView final : public juce::Component
                                                       &all, &transfer, &reset, &lockSlot, &parameters, &more})
             addAndMakeVisible(c);
         addAndMakeVisible(orderedList);
+        addAndMakeVisible(nativePanel);
+        nativePanel.onBegin = [this]
+        {
+            gestureOwner = owner;
+            gestureSlot = selectedSlot;
+            dragging = true;
+            session.beginGesture();
+        };
+        nativePanel.onEnd = [this]
+        {
+            dragging = false;
+            session.endGesture();
+            refresh();
+        };
+        nativePanel.onValue = [this](int i, double value)
+        {
+            auto target = dragging ? gestureOwner : owner;
+            auto id = dragging ? gestureSlot : selectedSlot;
+            change(target, "Adjust native insert",
+                   [&](auto &fx)
+                   {
+                       for (auto &e : fx)
+                           if (e.id == id && e.nativeVersion)
+                               setEffectParameterValue(e, i, value);
+                   });
+        };
+        nativePanel.onLock = [this](int i) {
+            editSlot("Lock native parameter",
+                     [i](auto &fx, size_t at) { toggleEffectParameterLock(fx[at], i); });
+        };
+        nativePanel.onHeightChange = [this]
+        {
+            resized();
+            reportHeight();
+        };
         heading.setColour(juce::Label::textColourId, ui::muted);
         heading.setFont(juce::FontOptions(12.f));
         slots.setTitle(master ? "Master insert slots" : "Track insert slots");
@@ -55,6 +92,12 @@ class StockRackView final : public juce::Component
             menu.addItem(2, "Filter", canStock);
             menu.addItem(3, "Delay", canStock);
             menu.addItem(4, "Reverb", canStock);
+            for (size_t n = 0; n < nativeEffectDefinitions().size(); ++n)
+            {
+                auto &d = nativeEffectDefinitions()[n];
+                if (nativeDSPAvailable(d.type))
+                    menu.addItem(10 + (int)n, d.name, canStock);
+            }
             if (external)
             {
                 menu.addSeparator();
@@ -62,17 +105,20 @@ class StockRackView final : public juce::Component
                              external->currentRack() && external->currentRack()->slots.size() < 8);
             }
             juce::Component::SafePointer<StockRackView> safe(this);
-            menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(add),
-                               [safe, target](int choice)
-                               {
-                                   if (safe && choice == 5 && safe->external && safe->rack(target))
-                                       safe->external->chooseEffectFor({target.document, target.variation,
-                                                                        target.layer, target.generation},
-                                                                       safe->add.getScreenBounds());
-                                   else if (safe && choice >= 1 && choice <= 4)
-                                       safe->append(target, juce::StringArray{"gain", "filter", "delay",
-                                                                              "reverb"}[choice - 1]);
-                               });
+            menu.showMenuAsync(
+                juce::PopupMenu::Options().withTargetComponent(add),
+                [safe, target](int choice)
+                {
+                    if (safe && choice == 5 && safe->external && safe->rack(target))
+                        safe->external->chooseEffectFor(
+                            {target.document, target.variation, target.layer, target.generation},
+                            safe->add.getScreenBounds());
+                    else if (safe && choice >= 10 && choice < 10 + (int)nativeEffectDefinitions().size())
+                        safe->append(target, nativeEffectDefinitions()[(size_t)choice - 10].type);
+                    else if (safe && choice >= 1 && choice <= 4)
+                        safe->append(target,
+                                     juce::StringArray{"gain", "filter", "delay", "reverb"}[choice - 1]);
+                });
         };
         remove.onClick = [this]
         { editSlot("Remove insert", [](auto &fx, size_t i) { fx.erase(fx.begin() + (int)i); }); };
@@ -97,6 +143,7 @@ class StockRackView final : public juce::Component
                          fresh.bypass = fx[i].bypass;
                          fresh.locked = fx[i].locked;
                          fresh.parameterLocks = fx[i].parameterLocks;
+                         fresh.nativeLocks = fx[i].nativeLocks;
                          fx[i] = fresh;
                      });
         };
@@ -264,8 +311,10 @@ class StockRackView final : public juce::Component
         bool has = slots.getNumItems() > 0;
         return 28 + orderedList.preferredHeight() + 4 +
                (externalSelected && external ? external->preferredHeight()
-                : has                        ? 32 + (expanded ? parameterCount * 46 : 0)
-                                             : 0);
+                : has ? 32 + (expanded ? (nativePanel.isVisible() ? nativePanel.preferredHeight()
+                                                                  : parameterCount * 46)
+                                       : 0)
+                      : 0);
     }
     void selectExternalSlot(const juce::String &id)
     {
@@ -303,7 +352,7 @@ class StockRackView final : public juce::Component
             for (size_t i = 0; i < fx->size(); ++i)
             {
                 auto &e = (*fx)[i];
-                slots.addItem(e.type.substring(0, 1).toUpperCase() + e.type.substring(1), (int)i + 1);
+                slots.addItem(effectName(e), (int)i + 1);
                 if (e.id == selectedSlot)
                     picked = (int)i + 1;
             }
@@ -468,12 +517,17 @@ class StockRackView final : public juce::Component
                             ? juce::StringArray{"Room size", "Damping", "Wet mix", "Stereo width"}
                             : juce::StringArray{"Room size", "Damping", "Wet mix"};
         }
+        if (effect && effect->nativeVersion)
+            names.clear();
+        nativePanel.bind(effect, editable);
+        nativePanel.setVisible(effect && effect->nativeVersion && !externalSelected && expanded);
         parameterCount = names.size();
         for (int i = 0; i < 4; ++i)
         {
             auto &v = values[(size_t)i];
             auto &label = labels[(size_t)i];
-            bool visible = !externalSelected && expanded && i < parameterCount;
+            bool visible =
+                !externalSelected && expanded && i < parameterCount && effect && !effect->nativeVersion;
             locks[(size_t)i].setVisible(visible);
             locks[(size_t)i].setEnabled(editable);
             locks[(size_t)i].setToggleState(effect && (effect->parameterLocks & (1u << i)),
@@ -520,6 +574,8 @@ class StockRackView final : public juce::Component
             row = r.removeFromTop(32);
             for (auto *b : {&parameters, &more})
                 b->setBounds(row.removeFromLeft(32).reduced(2));
+            if (nativePanel.isVisible())
+                nativePanel.setBounds(r.removeFromTop(nativePanel.preferredHeight()));
             for (int i = 0; expanded && i < parameterCount; ++i)
             {
                 labels[(size_t)i].setBounds(r.removeFromTop(17));
@@ -542,6 +598,8 @@ class StockRackView final : public juce::Component
                 onHeightChange();
         }
     }
+    NativeParameterPanel nativePanel;
+    std::unique_ptr<juce::FileChooser> presetChooser;
     OrderedInsertList orderedList;
     std::unique_ptr<HostedRackView> external;
     juce::Label heading;
@@ -656,6 +714,15 @@ class StockRackView final : public juce::Component
         menu.addItem(5, "Move later", down.isEnabled());
         if (auto *fx = rack(target); fx && fx->size() > 1)
             menu.addItem(6, "Insert chain enabled", all.isEnabled(), all.getToggleState());
+        auto *fx = rack(target);
+        auto at = fx ? std::find_if(fx->begin(), fx->end(), [&](auto &e) { return e.id == id; })
+                     : std::vector<StockEffect>::iterator{};
+        if (fx && at != fx->end() && at->nativeVersion)
+        {
+            menu.addSeparator();
+            menu.addItem(8, "Save preset…");
+            menu.addItem(9, "Load preset…");
+        }
         menu.addSeparator();
         menu.addItem(7, "Remove effect", remove.isEnabled());
         juce::Component::SafePointer<StockRackView> safe(this);
@@ -670,6 +737,12 @@ class StockRackView final : public juce::Component
                                    return;
                                switch (choice)
                                {
+                               case 8:
+                                   safe->preset(true);
+                                   break;
+                               case 9:
+                                   safe->preset(false);
+                                   break;
                                case 1:
                                    safe->reset.onClick();
                                    break;
@@ -693,6 +766,60 @@ class StockRackView final : public juce::Component
                                    break;
                                }
                            });
+    }
+    void preset(bool save)
+    {
+        auto target = owner;
+        auto id = selectedSlot;
+        presetChooser = std::make_unique<juce::FileChooser>(
+            save ? "Save effect preset" : "Load effect preset", juce::File(), "*.soundplus-effect");
+        juce::Component::SafePointer<StockRackView> safe(this);
+        presetChooser->launchAsync(
+            juce::FileBrowserComponent::canSelectFiles |
+                (save
+                     ? juce::FileBrowserComponent::saveMode | juce::FileBrowserComponent::warnAboutOverwriting
+                     : juce::FileBrowserComponent::openMode),
+            [safe, target, id, save](const juce::FileChooser &chooser)
+            {
+                if (!safe)
+                    return;
+                auto file = chooser.getResult();
+                if (file == juce::File())
+                    return;
+                auto *fx = safe->rack(target);
+                if (!fx)
+                    return;
+                auto at = std::find_if(fx->begin(), fx->end(), [&](auto &e) { return e.id == id; });
+                if (at == fx->end() || !at->nativeVersion)
+                    return;
+                try
+                {
+                    if (save)
+                    {
+                        auto data = nativePresetJson(*at, file.getFileNameWithoutExtension());
+                        if (!file.withFileExtension("soundplus-effect")
+                                 .replaceWithText(juce::JSON::toString(data, true)))
+                            throw std::runtime_error("Cannot save preset");
+                    }
+                    else
+                    {
+                        if (file.getSize() > 1024 * 1024)
+                            throw std::runtime_error("Preset exceeds 1 MiB");
+                        auto value = juce::JSON::parse(file);
+                        safe->change(target, "Load effect preset",
+                                     [&](auto &effects)
+                                     {
+                                         for (auto &e : effects)
+                                             if (e.id == id)
+                                                 applyNativePreset(e, value);
+                                     });
+                    }
+                }
+                catch (const std::exception &e)
+                {
+                    safe->session.message = e.what();
+                }
+            });
     }
     void showTransfer()
     {

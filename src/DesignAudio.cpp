@@ -1,4 +1,5 @@
 #include "NativeSampler.h"
+#include "NativeEffectsDSP.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
 #include "SourcePools.h"
@@ -952,7 +953,7 @@ struct DesignGraph::Impl
         // Reapply controls at the same internal graph position, including the
         // frozen pipeline's lookahead. Historical zero-latency stock recipes
         // retain their exact event interpretation.
-        if (auto *t = selectedTake(d); t && (t->pluginAware || t->trackRecipe))
+        if (auto *t = selectedTake(d); t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
             for (auto &event : events)
                 event.frame += pipelineLatency;
     }
@@ -1457,6 +1458,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         p.getDynamicObject()->setProperty("instruments", instruments);
         result.sourceProvenance = p;
     }
+    if (hasNativeEffects(effectiveInput.activeMix())) result.processing = "native-effects-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

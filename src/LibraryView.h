@@ -166,6 +166,7 @@ class LibraryView final : public juce::Component,
     void submitCollectionEdit(CollectionEdit);
     std::vector<BookmarkRequest> selectedBookmarks() const;
     BookmarkRequest currentBookmark() const;
+    bool sourceAvailable(const Asset &) const;
     juce::String currentBookmarkKey() const;
     void inspectFavorite();
     IconButton channelDetails{"Per-channel source waveforms", ActionIcon::layers};

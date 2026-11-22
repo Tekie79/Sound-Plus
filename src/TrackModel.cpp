@@ -1,4 +1,5 @@
 #include "TrackModel.h"
+#include "NativeEffects.h"
 #include "CanvasEditing.h"
 #include "SourcePools.h"
 #include <algorithm>
@@ -498,6 +499,25 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
                                            e.parameters[(size_t)n],
                                            log});
                         };
+                        if (e.nativeVersion)
+                        {
+                            auto &def = nativeDefinition(e);
+                            for (size_t p = 0; p < def.parameters.size(); ++p)
+                            {
+                                auto &info = def.parameters[p];
+                                out.push_back({{e.id, info.id},
+                                               "Inserts",
+                                               prefix + juce::String(index) + " · " + def.name + " · " +
+                                                   info.group + " / " + info.name,
+                                               info.units,
+                                               info.minimum,
+                                               info.maximum,
+                                               e.nativeValues[p],
+                                               info.logarithmic,
+                                               info.discrete,
+                                               !info.structural});
+                            }
+                        }
                         if (e.type == "gain")
                             add(0, "Gain", "dB", -90, 24);
                         if (e.type == "filter")

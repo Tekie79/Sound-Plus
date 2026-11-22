@@ -1,4 +1,5 @@
 #include "DesignLive.h"
+#include "NativeEffects.h"
 #include "TrackModel.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
@@ -115,12 +116,36 @@ void applyHostedControls(HostedRack &rack, const juce::var &value)
         slot.bypass = (bool)item["bypass"];
     }
 }
+void stripNative(juce::var settings)
+{
+    if (!settings.hasProperty("native"))
+        return;
+    auto native = settings["native"];
+    auto *def = nativeDefinition(settings["type"].toString());
+    if (!def)
+        throw std::runtime_error("Unknown live native schema");
+    if (auto *rows = native["parameters"].getArray())
+        for (auto &row : *rows)
+        {
+            auto id = row["id"].toString();
+            auto at = std::find_if(def->parameters.begin(), def->parameters.end(),
+                                   [&](auto &p) { return p.id == id; });
+            if (at == def->parameters.end())
+                throw std::runtime_error("Unknown live native target");
+            if (!at->structural)
+                row.getDynamicObject()->removeProperty("value");
+            row.getDynamicObject()->removeProperty("locked");
+        }
+}
 void stripRack(juce::var rack)
 {
     if (auto *effects = rack.getArray())
         for (auto &effect : *effects)
+        {
+            stripNative(effect);
             for (auto key : {"parameters", "bypass", "locked", "parameterLocks"})
                 effect.getDynamicObject()->removeProperty(key);
+        }
 }
 void stripChain(juce::var chain, bool retained)
 {
@@ -132,6 +157,8 @@ void stripChain(juce::var chain, bool retained)
     {
         row.getDynamicObject()->removeProperty("bypass");
         auto settings = row["settings"];
+        if (row["kind"].toString() == "stock")
+            stripNative(settings);
         settings.getDynamicObject()->removeProperty("parameters");
         if (row["kind"].toString() == "stock")
             for (auto key : {"locked", "parameterLocks"})
@@ -149,6 +176,8 @@ juce::var rackParameters(const std::vector<StockEffect> &rack)
         auto *value = new juce::DynamicObject();
         value->setProperty("id", effect.id);
         value->setProperty("bypass", effect.bypass);
+        if (effect.nativeVersion)
+            value->setProperty("native", nativeEffectJson(effect));
         juce::Array<juce::var> parameters;
         for (auto parameter : effect.parameters)
             parameters.add(parameter);
@@ -170,6 +199,8 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
             std::find_if(rack.begin(), rack.end(), [&](auto &s) { return s.id == item["id"].toString(); });
         if (at == rack.end() || !parameters || parameters->size() != 4)
             throw std::runtime_error("Live insert identity mismatch");
+        if (at->nativeVersion)
+            nativeEffectFromJson(*at, item["native"]);
         at->bypass = (bool)item["bypass"];
         for (int p = 0; p < 4; ++p)
             at->parameters[(size_t)p] = (double)(*parameters)[p];
