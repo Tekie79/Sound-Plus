@@ -120,6 +120,10 @@ class DesignSession final : public juce::Component, private juce::Timer
     void armInputTrack(const juce::String &, bool);
     void monitorInputTrack(const juce::String &, bool);
     void startInputRecording();
+    bool hasArmedMidi() const
+    {
+        return !armedMidi.empty();
+    }
     bool midiBusy() const
     {
         return midiOperation.isNotEmpty();
@@ -139,6 +143,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void configureMidiInput(const juce::String &, const juce::String &uid, int channel);
     void armMidiTrack(const juce::String &, bool);
     void monitorMidiTrack(const juce::String &, bool);
+    void previewMidiNote(const juce::String &, int pitch, bool on, int velocity = 100);
     void startMidiRecording();
     void stopMidiRecording(bool cancel = false);
     void recoverMidiRecording(const juce::File &);
@@ -300,6 +305,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool takeMutation = false, takeReadPending = false;
     std::set<juce::String> armedMidi, monitoredMidi;
     juce::String midiOperation, midiContext;
+    juce::var midiPlan;
     uint64_t midiIncarnation = 0, midiProcess = 0;
     bool midiMutation = false, midiReadPending = false, midiStopping = false;
     double midiStarted = 0;

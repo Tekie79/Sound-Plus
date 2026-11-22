@@ -1,0 +1,98 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button Add existing sound folders, Help: Add Folder
+	2 text entry area (settable) Search library, Secondary Actions: Delete
+	3 text (settable) All sources
+	4 outline
+		5 row Sampled tone.wav, 1.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/6d5e35e6c37e4625a8b6574bebfda725/native-fixtures/Sampled tone.wav
+			6 row Sampled tone.wav, 1.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-tests/6d5e35e6c37e4625a8b6574bebfda725/native-fixtures/Sampled tone.wav
+	7 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	8 button Per-channel source waveforms
+	9 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	10 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	11 container Library sidebar divider
+	12 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 3, Value: AUMIDISynth QA
+	13 button Render Design, Help: Render Design (Command-R)
+	14 button Render settings
+	15 button Choose permanent output folder
+	16 button Library
+	17 button (settable) Browser, Help: Hide sound browser, Value: On
+	18 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	19 text (settable)
+	20 button New design, Help: New design (Command-N)
+	21 button Open design, Help: Open design (Command-O)
+	22 button Save design, Help: Save design (Command-S)
+	23 button Recover autosave
+	24 button Add source
+	25 button Duplicate layer, Help: Duplicate layer (Command-D)
+	26 button Remove layer, Help: Remove layer (Delete / Backspace)
+	27 button Add track
+	28 button (settable) Edit, Value: On
+	29 button (settable) Perform, Value: Off
+	30 button (settable) Hide layer inspector, Value: On
+	31 button Zoom out
+	32 button Zoom in (Command-wheel)
+	33 button Decrease track height
+	34 button Increase track height (Command-Option-wheel)
+	35 button Fit design
+	36 button Fit selected layers
+	37 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	38 button Snap targets and grid
+	39 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	40 button (settable) Instrument, Value: On
+	41 button AUMIDISynth, Help: Instrument: AUMIDISynth. Source, editor, sampler controls and tempo.
+	42 button (settable) Track inserts, Value: On
+	43 text (settable) MIDI
+	44 button Add effect
+	45 button (settable) Master inserts, Value: On
+	46 text (settable) Master
+	47 button Add effect
+	48 button (settable) Output, Value: Off
+	49 container Multitrack Edit timeline
+	50 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: MIDI
+	51 button Track colour
+	52 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	53 button (settable) Mute track, Value: Off
+	54 button (settable) Solo track, Value: Off
+	55 button (settable) Arm MIDI Track, Help: MIDI arm. Choose device, channel and monitoring in Track options., Value: Off
+	56 button Track options
+	57 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	58 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
+	59 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	60 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	61 container Piano roll
+	62 text (settable) MIDI
+	63 button Zoom piano roll in
+	64 button Zoom piano roll out
+	65 button Instrument
+	66 button Close piano roll
+	67 pop up button (settable) Select
+	68 pop up button (settable) Note snap, Value: 1/16
+	69 button Quantize selected notes
+	70 pop up button (settable) Clip controller, Value: Velocity
+	71 slider (settable) Quantize strength, Help: Quantize strength, 0-100%. Applies with Quantize., Value: 1.00, Secondary Actions: Delete
+	72 button Variation bounds and enabled parameters
+	73 pop up button (settable) Original and variation candidates, Value: Original
+	74 button Drag WAV, Help: Drag the actual finalized durable WAV to Finder or another application.
+	75 button Add completed output as layer
+	76 button Process finalized output with Plug-in, Help: Process the selected finalized WAV; the editable design/take stays unchanged
+	77 pop up button (settable) Actual finalized Export output / set, Value: Mix STEREO · AUMIDISynth QA-r2-2d54ed9c.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/8677c116237748d09f38361c7a1646eb/native-renders/AUMIDISynth QA-r2-2d54ed9c.wav
+	78 button Play design, Help: Play / Stop (Space). MIDI seeks rebuild full voice/effect history in the background; Stop cancels preparation.
+	79 button Audio recording options
+	80 button Go to start (Home)
+	81 button Previous marker
+	82 button Next marker
+	83 button Go to end (End)
+	84 button Add marker (M)
+	85 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	86 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	87 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
+	88 text (settable) Live
+	89 close button
+	90 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	91 minimize button
+	92 text SoundPlus
+93 menu bar
+	94 SoundPlus
+
+The focused UI element is 61 container Piano roll

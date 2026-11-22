@@ -54,7 +54,7 @@ sp::HostedRack rackFor(const juce::var &settings)
     r.slots.push_back({juce::Uuid().toString(), juce::JSON::toString(settings, true), false});
     return r;
 }
-juce::AudioBuffer<float> render(const sp::HostedRack &rack, int partition)
+juce::AudioBuffer<float> render(const sp::HostedRack &rack, int partition, int64_t inputEnd = -1)
 {
     auto layout = sp::channelLayout("stereo-v1");
     sp::HostedRackClient client(rack, layout, 48000, [] { return false; });
@@ -66,7 +66,7 @@ juce::AudioBuffer<float> render(const sp::HostedRack &rack, int partition)
     {
         int n = std::min(partition, 200 - at);
         b.clear();
-        client.process(b, n, &events, 100 + at, {137, 7, 8});
+        client.process(b, n, &events, 100 + at, {137, 7, 8}, true, false, inputEnd);
         for (int c = 0; c < 2; ++c)
             out.copyFrom(c, at, b, c, 0, n);
         at += n;
@@ -106,6 +106,15 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
             check(std::abs(a.getSample(c, n) - b.getSample(c, n)) < 1e-7,
                   "VST3 MIDI/latency/tail PCM is invariant across block partition");
         }
+    auto gated = render(r, 47, 120), gatedSmall = render(r, 7, 120);
+    for (int n = 0; n < 200; ++n)
+    {
+        double expected = n < 40 ? 0 : n < 51 ? .25 : n < 115 ? .25 * (1 - (n - 51) / 64.) : 0;
+        check(std::abs(gated.getSample(0, n) - expected) < 1e-6,
+              "Exact within-block input gate releases Instrument notes once and preserves tail");
+        check(std::abs(gated.getSample(0, n) - gatedSmall.getSample(0, n)) < 1e-7,
+              "Input-gated Instrument tails are block-partition invariant");
+    }
     auto wrong = sp::channelLayout("5.1-side-v1");
     rejects([&] { sp::HostedRackClient client(r, wrong, 48000, [] { return false; }); },
             "Unsupported instrument output roles are rejected without relabel/downmix");
@@ -139,6 +148,24 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
         check(std::abs(pcm.getSample(0, n) - expected) < 1e-6,
               "Shared graph compensates actual Instrument latency and retains its release tail");
     }
+    auto deliverySettings = d.renderSettings;
+    deliverySettings.first = 0;
+    deliverySettings.last = 180;
+    deliverySettings.tailSeconds = .005;
+    deliverySettings.normalize = false;
+    deliverySettings.bits = 24;
+    deliverySettings.layout = "same";
+    auto output = sp::renderDesign(
+        loaded, root.getChildFile("renders"), deliverySettings, [] { return false; }, [](double) {});
+    check(output.processing == "midi-instruments-v1" && juce::File(output.path).existsAsFile() &&
+              output.sourceProvenance["authority"].toString() == "single-float-pass-v1",
+          "Actual MIDI Instrument render retains dedicated provenance and one authoritative float pass");
+    auto withOutput = loaded;
+    withOutput.outputs.push_back(output);
+    sp::saveDesignAtomic(root.getChildFile("render-receipt.soundplus"), withOutput);
+    check(sp::loadDesign(root.getChildFile("render-receipt.soundplus")).outputs[0].processing ==
+              output.processing,
+          "MIDI render receipt survives real document save/reopen");
     auto targets = sp::automationTargets(loaded.original, owner);
     check(!loaded.original.tracks[0].automation.expanded && targets.front().name == "Volume",
           "MIDI Instrument retains exactly one collapsed Volume-first track lane");
@@ -187,8 +214,11 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
         auto registry = worker.call(enumerate, root, 30000);
         juce::var candidate;
         for (auto &v : *registry["candidates"].getArray())
-            if (v["path"].toString().contains("aumu,dls ,appl"))
+            if (v["path"].toString().contains("aumu,msyn,appl"))
                 candidate = v.clone();
+        if (registry["registeredIdentifiers"].toString().contains("aumu,msyn,appl"))
+            check(candidate.isObject(),
+                  "Registered AU Instrument must reach discovery rather than silently skip qualification");
         if (candidate.isObject())
         {
             put(candidate, "mode", "scan");
@@ -196,7 +226,7 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
             sp::saveProcessingJson(root.getChildFile("installed-au-scan.json"), scanned);
             auto au = scanned["plugins"][0];
             check((bool)au["instrument"] && au["reason"].toString().isEmpty(),
-                  "Installed Apple DLSMusicDevice is an accepted real AUv2 Instrument");
+                  "Installed Apple AUMIDISynth is an accepted real AUv2 Instrument");
             auto state = describe(worker, au, root);
             auto auRack = rackFor(state);
             sp::HostedRackClient client(auRack, sp::channelLayout("stereo-v1"), 48000, [] { return false; });
@@ -216,9 +246,67 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
             put(evidence, "installedPeak", peak);
             put(evidence, "installedLateTail", tail);
             put(evidence, "installedStateHash", state["stateHash"]);
+            sp::PluginCatalog nativeCatalog(root.getChildFile("native-plugin-catalog.json"));
+            nativeCatalog.scan(worker, {fixture}, false, [] { return false; }, {}, true);
+
+            auto nativePointer = obj();
+            put(nativePointer, "catalog", root.getChildFile("native-plugin-catalog.json").getFullPathName());
+            put(nativePointer, "installedSettings", state);
+            put(nativePointer, "ownedSettings", settings);
+            auto nativeDesign = d;
+            nativeDesign.id = juce::Uuid().toString();
+            nativeDesign.name = "External instrument QA";
+            nativeDesign.outputFolder = root.getChildFile("native-renders").getFullPathName();
+            auto &score = nativeDesign.original.midiClips.front();
+            score.notes.clear();
+            score.length = 16 * sp::midiPpq;
+            for (int beat = 0; beat < 16; beat += 2)
+                for (int pitch : {60, 64, 67})
+                {
+                    sp::MidiNote n;
+                    n.tick = beat * sp::midiPpq;
+                    n.duration = sp::midiPpq;
+                    n.pitch = pitch;
+                    n.velocity = 90;
+                    score.notes.push_back(n);
+                }
+            auto nativeFile = root.getChildFile("native-instrument.soundplus");
+            sp::saveDesignAtomic(nativeFile, nativeDesign);
+            put(nativePointer, "design", nativeFile.getFullPathName());
+            auto auDesign = nativeDesign;
+            auDesign.id = juce::Uuid().toString();
+            auDesign.name = "AUMIDISynth QA";
+            auto &auSlot = *sp::findTrack(auDesign.original, owner)->instrument;
+            auSlot.id = juce::Uuid().toString();
+            auSlot.format = au["format"].toString();
+            auSlot.identifier = au["id"].toString();
+            auSlot.hostedInstrument.hosted = auRack;
+            auto auFile = root.getChildFile("native-au.soundplus");
+            sp::saveDesignAtomic(auFile, auDesign);
+            put(nativePointer, "installedDesign", auFile.getFullPathName());
+            for (int reopen = 0; reopen < 2; ++reopen)
+            {
+                // Each graph owns a new isolated AU process; destruction closes the previous instance.
+                auto recall = sp::loadDesign(auFile);
+                const auto &recallSlot = *sp::findTrack(recall.original, owner)->instrument;
+                auto recalled = juce::JSON::parse(recallSlot.hostedInstrument.hosted.slots[0].settings);
+                check(recalled["stateHash"] == state["stateHash"] && recalled["program"] == state["program"],
+                      "Installed AU state/program survive actual document Save and isolated-process reopen");
+                sp::DesignGraph fresh(recall);
+                juce::AudioBuffer<float> start(2, 4800);
+                fresh.render(start, 0, 4800);
+                check(start.getMagnitude(0, 4800) > .001,
+                      "Reopened installed AU produces musical PCM through the shared graph");
+                for (int n = 0; n < 4800; ++n)
+                    check(std::isfinite(start.getSample(0, n)), "Installed AU reopened PCM stays finite");
+            }
+            put(evidence, "installedDocumentReopen",
+                "two fresh isolated AU graphs, state/program retained and finite PCM");
+
+            sp::saveProcessingJson(base.getChildFile("native-instrument.json"), nativePointer);
         }
         else
-            put(evidence, "installed", "Blocked: Apple DLSMusicDevice registration unavailable");
+            put(evidence, "installed", "Blocked: Apple AUMIDISynth registration unavailable");
     }
     put(evidence, "checks", checks);
     sp::saveProcessingJson(root.getChildFile("evidence.json"), evidence);

@@ -35,7 +35,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     uint64_t requestedGeneration = 0;
     juce::Array<juce::var> outputs;
     juce::Array<juce::var> availableInputs;
-    juce::String inputError, inputRequest, inputMonitorError, midiError;
+    juce::String inputError, inputRequest, inputMonitorError, midiError, midiRequest;
     int64_t inputUnderrunBaseline = 0;
     uint64_t inputConfigSerial = 0;
     uint64_t inputMonitorSerial = 0;

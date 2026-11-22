@@ -361,12 +361,12 @@ int HostedRackClient::latency() const
 }
 void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames,
                                const std::vector<MidiPacket> *midi, int64_t first, const MidiTiming &timing,
-                               bool notesAllowed, bool panic)
+                               bool notesAllowed, bool panic, int64_t inputEnd)
 {
     if (impl->composite)
     {
         for (auto &child : impl->children)
-            child->process(buffer, frames, midi, first, timing, notesAllowed, panic);
+            child->process(buffer, frames, midi, first, timing, notesAllowed, panic, inputEnd);
         return;
     }
     auto *e = impl->exchange;
@@ -396,12 +396,19 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames,
                 add(0, 0xb0 | ch, 64, 0);
                 add(0, 0xb0 | ch, 123, 0);
             }
+        if (inputEnd >= first && inputEnd < first + frames)
+            for (int ch = 0; ch < 16; ++ch)
+            {
+                add((int)(inputEnd - first), 0xb0 | ch, 64, 0);
+                add((int)(inputEnd - first), 0xb0 | ch, 123, 0);
+            }
         if (midi)
         {
             auto at = std::lower_bound(midi->begin(), midi->end(), first,
                                        [](const auto &p, int64_t f) { return p.frame < f; });
             for (; at != midi->end() && at->frame < first + frames; ++at)
-                if (notesAllowed || (at->status & 0xf0) != 0x90 || at->data2 == 0)
+                if ((inputEnd < 0 || at->frame < inputEnd) &&
+                    (notesAllowed || (at->status & 0xf0) != 0x90 || at->data2 == 0))
                     add((int)(at->frame - first), at->status, at->data1, at->data2);
         }
     }

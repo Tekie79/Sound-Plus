@@ -102,7 +102,14 @@ class MidiFixture final : public juce::AudioProcessor
                                     if (!held[ch][p])
                                         releases[ch][p] = voices[ch][p] / 64;
                         }
-                        if (cc == 120 || cc == 123)
+                        if (cc == 123)
+                        {
+                            held[ch] = {};
+                            sustain[ch] = false;
+                            for (int p = 0; p < 128; ++p)
+                                releases[ch][p] = voices[ch][p] / 64;
+                        }
+                        if (cc == 120)
                         {
                             voices[ch] = {};
                             releases[ch] = {};

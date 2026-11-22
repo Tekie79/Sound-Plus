@@ -829,10 +829,10 @@ struct DesignGraph::Impl
                                      node.automation.get(), inputEnd);
             if (node.instrument)
             {
-                bool ending = inputEnd >= 0 && cursor >= inputEnd && !node.endedMidi;
+                bool ending = inputEnd >= 0 && cursor + frames > inputEnd && !node.endedMidi;
                 node.instrument->process(node.pcm, frames, &node.midi, cursor,
                                          document.activeMix().midiTiming, node.audible && !node.endedMidi,
-                                         node.panic || ending);
+                                         node.panic, inputEnd);
                 node.panic = false;
                 if (ending)
                     node.endedMidi = true;
@@ -1067,6 +1067,10 @@ void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)
 }
 void DesignGraph::seek(int64_t frame, const std::function<bool()> &cancelled, int64_t warmup)
 {
+    // A short effect warmup cannot recreate held MIDI voices, sampler positions or sustain.
+    // Prepare this score's complete history on the cancellable graph worker.
+    if (hasMidi(impl->document))
+        warmup = -1;
     impl->prime(warmup >= 0 ? std::max<int64_t>(0, frame - warmup) : 0, cancelled);
     frame += impl->pipelineLatency;
     if (frame < impl->cursor)

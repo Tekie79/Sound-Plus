@@ -97,7 +97,7 @@ inline juce::var registeredAudioUnits()
     std::map<String, String> hashes;
     for (auto &id : identifiers)
     {
-        if (!id.contains("Effects/") && !id.contains("Panners/"))
+        if (!id.contains("Effects/") && !id.contains("Panners/") && !id.contains("Synths/"))
             continue;
         auto *v = new DynamicObject();
         v->setProperty("path", id);

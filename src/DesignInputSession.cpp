@@ -86,6 +86,12 @@ void DesignSession::armInputTrack(const juce::String &id, bool arm)
         notify();
         return;
     }
+    if (!armedMidi.empty() || !monitoredMidi.empty())
+    {
+        armedMidi.clear();
+        monitoredMidi.clear();
+        updateMidiDevice();
+    }
     auto *t = findTrack(document.activeMix(), id);
     if (!t || t->kind != TrackKind::audio)
         return;

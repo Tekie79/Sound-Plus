@@ -1,0 +1,19 @@
+{
+  "hardware": "Apple M5 Pro, macOS26.3.2",
+  "device": "SoundPlus QA MIDI (owned native virtual CoreMIDI source; no physical keyboard)",
+  "rate": 48000,
+  "events": 126,
+  "first": 322048,
+  "last": 1025536,
+  "lateEvents": 126,
+  "maxLateFrames": 2601,
+  "complete": true,
+  "journal": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi/native/recorded-midi/3c2bd9ae2b70493c91be2a85021738c4.midi-partial.json",
+  "journalSha256": "2bb4110e357e0475293e6c9eeaa20427499b8127a186c1983bdb4e30e5a5dc4e",
+  "humanListening": false,
+  "nativeUndoRedoSave": true,
+  "nativeQuitReopen": true,
+  "reopenedRevision": 11,
+  "nativePlaybackPeakDbfs": -25.8,
+  "physicalMidiKeyboard": false
+}

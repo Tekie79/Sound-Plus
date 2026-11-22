@@ -486,6 +486,19 @@ void MultitrackEditor::paint(juce::Graphics &g)
             g.fillRoundedRectangle(r, 4);
             g.setColour(colour.withAlpha(c.mute ? .3f : .85f));
             auto grid = r.reduced(5, 14);
+            int low = 127, high = 0;
+            for (auto &n : c.notes)
+            {
+                low = std::min(low, n.pitch);
+                high = std::max(high, n.pitch);
+            }
+            if (c.notes.empty())
+            {
+                low = 48;
+                high = 72;
+            }
+            auto span = std::max(12, high - low + 4);
+            low = std::max(0, low - 2);
             for (auto &n : c.notes)
             {
                 auto a = std::max<int64_t>(0, n.tick - c.offset),
@@ -493,7 +506,7 @@ void MultitrackEditor::paint(juce::Graphics &g)
                 if (b <= a)
                     continue;
                 float x = r.getX() + r.getWidth() * a / c.length;
-                float y = grid.getBottom() - grid.getHeight() * (n.pitch - 24) / 84.f;
+                float y = grid.getBottom() - grid.getHeight() * (n.pitch - low) / (float)span;
                 if (y >= grid.getY() && y <= grid.getBottom())
                     g.fillRoundedRectangle(x, y, std::max(2.f, r.getWidth() * (b - a) / c.length), 2.f, 1);
             }

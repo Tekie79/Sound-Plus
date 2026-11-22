@@ -153,6 +153,11 @@ void validateInstrument(const InstrumentSlot &s, const ChannelLayout &bus)
                     s.hostedInstrument.stock.empty() && s.hostedInstrument.hosted.slots.size() == 1 &&
                     s.hostedInstrument.hosted.instrument,
                 "Instrument needs one isolated VST3/AUv2 slot");
+        auto settings = juce::JSON::parse(s.hostedInstrument.hosted.slots[0].settings);
+        require((bool)settings["plugin"]["instrument"] &&
+                    settings["plugin"]["format"].toString() == s.format &&
+                    settings["plugin"]["id"].toString() == s.identifier,
+                "Instrument classification/identity mismatch");
         validateHostedRack(s.hostedInstrument.hosted);
     }
 }
@@ -216,7 +221,11 @@ std::vector<Asset *> mixAssets(DesignMix &m)
 }
 bool hasMidi(const DesignMix &m)
 {
-    return m.midiEnabled || !m.midiClips.empty();
+    return m.midiEnabled || !m.midiClips.empty() ||
+           std::any_of(m.tracks.begin(), m.tracks.end(),
+                       [](const auto &t) {
+                           return (t.instrument && t.instrument->version == 1) || t.midiInputUID.isNotEmpty();
+                       });
 }
 bool hasMidi(const DesignDocument &d)
 {

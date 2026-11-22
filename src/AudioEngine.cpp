@@ -84,8 +84,11 @@ void AudioEngine::command(const juce::var &message)
             midiError.clear();
             if (name == "midi_configure")
                 midiInput.configure(message);
+            else if (name == "midi_note")
+                midiInput.software(message);
             else if (name == "midi_record")
             {
+                midiRequest = message["id"].toString();
                 if (inputRecorder.busy() || playback.captureBusy())
                     throw std::runtime_error("Another recording owns transport");
                 midiInput.begin(message);
@@ -415,6 +418,7 @@ void AudioEngine::sendStatus()
     inputState.getDynamicObject()->setProperty("monitorSerial", (juce::int64)inputMonitorSerial);
     object->setProperty("inputRecording", inputState);
     auto midiState = midiInput.status();
+    midiState.getDynamicObject()->setProperty("request", midiRequest);
     if (midiError.isNotEmpty())
         midiState.getDynamicObject()->setProperty("error", midiError);
     object->setProperty("midi", midiState);

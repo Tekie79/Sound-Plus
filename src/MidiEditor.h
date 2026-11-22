@@ -8,7 +8,7 @@ class MidiEditor final : public juce::Component
   public:
     explicit MidiEditor(DesignSession &, juce::File registry = {});
     ~MidiEditor() override;
-    void open(const juce::String &);
+    void open(const juce::String &, bool focus = true);
     void refresh();
     void instrument(const juce::String &, juce::Component &anchor);
     std::function<void()> onClose;
@@ -44,9 +44,17 @@ class MidiEditor final : public juce::Component
     juce::Point<float> anchor;
     juce::String dragging;
     bool gesture = false, resizeNote = false, velocityDrag = false, syncing = false;
-    int lowest = 48, highest = 72;
+    int lowest = 48, highest = 72, heldKey = -1;
+    juce::String heldOwner;
     double beats = 8, startBeat = 0;
     juce::Rectangle<float> grid, velocities;
+    struct CompactLook : ui::LookAndFeel
+    {
+        juce::Font getComboBoxFont(juce::ComboBox &) override
+        {
+            return juce::Font(juce::FontOptions(11.f));
+        }
+    } look;
     juce::Label title;
     juce::ComboBox tool, snap, controller;
     juce::Slider strength;

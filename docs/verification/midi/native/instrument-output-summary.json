@@ -1,0 +1,143 @@
+{
+  "owned": {
+    "design": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/5d3ade306f2b44d1b907eab9effcb725/native-instrument.soundplus",
+    "revision": 3,
+    "plugin": {
+      "name": "SoundPlus MIDI Oracle",
+      "version": "0.1.0",
+      "format": "VST3",
+      "fingerprint": "e37032246ccd34fc72dfae6d608a61d05d36957b1567e4cc46beb24ae9f30d76"
+    },
+    "parameters": [
+      {
+        "automatable": true,
+        "stableId": "3165055",
+        "index": 0,
+        "name": "Gain",
+        "id": "0",
+        "value": 0.5,
+        "default": 1.0,
+        "text": "0.50",
+        "steps": 2147483647
+      },
+      {
+        "automatable": true,
+        "stableId": "2100907262",
+        "index": 1,
+        "name": "Latency",
+        "id": "1",
+        "value": 0.12109375,
+        "default": 0.12109375,
+        "text": "31",
+        "steps": 2147483647
+      },
+      {
+        "automatable": true,
+        "stableId": "1652125811",
+        "index": 2,
+        "name": "Bypass",
+        "id": "2",
+        "value": 0.0,
+        "default": 0.0,
+        "text": "Off",
+        "steps": 2
+      },
+      {
+        "automatable": true,
+        "stableId": "1886548852",
+        "index": 3,
+        "name": "Program",
+        "id": "3",
+        "value": 0.0,
+        "default": 0.0,
+        "text": "Full",
+        "steps": 2
+      }
+    ],
+    "stateHash": "bbc6538d33e0f106bd1de9b287593a962730d653bfecc6885e885c1331c13e83",
+    "output": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/5d3ade306f2b44d1b907eab9effcb725/native-renders/External instrument QA-r2-f26e2b94.wav",
+    "sha256": "ad55d0088d17911849e51ed4d9d89990beb4ec6c226e01f75bd699d35e0b7d51",
+    "frames": 432000,
+    "sampleRate": 48000,
+    "channels": 2,
+    "bits": 24,
+    "peak": 0.2657480239868164,
+    "humanListening": false,
+    "receiverTest": false,
+    "expectedPeak": 0.26574803149606296,
+    "independentPeakError": 7.50924655790186e-09,
+    "nativeSaveQuitReopen": true,
+    "nativeEditorRecallGain": 0.5,
+    "nativeEditorRecallLatencyFrames": 31,
+    "editorStayedOpenDuringPlayback": true
+  },
+  "installed": {
+    "design": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/8677c116237748d09f38361c7a1646eb/native-au.soundplus",
+    "revision": 3,
+    "plugin": {
+      "name": "AUMIDISynth",
+      "version": "1.0.0",
+      "format": "AudioUnit",
+      "fingerprint": "3eda5d20dcd540eeaa4015267ca67e5bc8838197043125d955f70a95fb83aaa1"
+    },
+    "parameters": [
+      {
+        "automatable": true,
+        "stableId": "900",
+        "index": 0,
+        "name": "Gain",
+        "id": "0",
+        "value": 0.833333313465118,
+        "default": 0.888888895511627,
+        "text": "-6",
+        "steps": 2147483647
+      },
+      {
+        "automatable": true,
+        "stableId": "901",
+        "index": 1,
+        "name": "Coarse Tuning",
+        "id": "1",
+        "value": 0.5,
+        "default": 0.5,
+        "text": "0",
+        "steps": 2147483647
+      },
+      {
+        "automatable": true,
+        "stableId": "902",
+        "index": 2,
+        "name": "Fine Tuning",
+        "id": "2",
+        "value": 0.5,
+        "default": 0.5,
+        "text": "0",
+        "steps": 2147483647
+      },
+      {
+        "automatable": true,
+        "stableId": "903",
+        "index": 3,
+        "name": "Stereo Pan",
+        "id": "3",
+        "value": 0.5,
+        "default": 0.5,
+        "text": "0",
+        "steps": 2147483647
+      }
+    ],
+    "stateHash": "42116c56a15b3014947b26add5605bcaf49bd6bdbd60888d5ec23c3c24931ed1",
+    "output": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/midi-instrument-tests/8677c116237748d09f38361c7a1646eb/native-renders/AUMIDISynth QA-r2-2d54ed9c.wav",
+    "sha256": "73f49ec5aaff2ed74742ff92c7bde67df03a8f6e1f025eeefd7375424f363450",
+    "frames": 432000,
+    "sampleRate": 48000,
+    "channels": 2,
+    "bits": 24,
+    "peak": 0.3250868320465088,
+    "humanListening": false,
+    "receiverTest": false,
+    "nativeSaveQuitReopen": true,
+    "nativeEditorRecallGainDb": -6,
+    "editorStayedOpenDuringPlayback": true
+  }
+}

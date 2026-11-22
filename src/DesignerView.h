@@ -197,6 +197,7 @@ class DesignerView final : public juce::Component,
         chooseFolder{"Choose permanent output folder", ActionIcon::folder};
     juce::Label title, info, status, position, outputInfo, meter;
     juce::ComboBox candidates, channelMap, deviceRate, readyOutputs;
+    ui::TextActionButton instrumentControl{"Choose instrument"};
     ui::TextActionButton layoutControl{"Design · Legacy stereo"}, routingButton{"Routing / Spatial Panner"},
         monitorControl{"Monitor · Stereo"};
     IconButton channelDetail{"Per-channel waveforms", ActionIcon::layers};

@@ -3,9 +3,12 @@
 #include "DesignSession.h"
 #include "SourcePools.h"
 #include "MidiInput.h"
+#include "AudioStream.h"
 #include "MidiEditor.h"
 #include "MultitrackEditor.h"
 #include "PluginProcessing.h"
+#include "DesignLive.h"
+#include <juce_cryptography/juce_cryptography.h>
 #include <deque>
 #include <iostream>
 namespace
@@ -234,6 +237,13 @@ void runMidiTests(const juce::File &base)
     graph.render(output, 0, 1024);
     check(output.getMagnitude(0, 1024) > .2f,
           "MIDI sampler produces audible PCM through the actual shared Track/Master graph");
+    sp::DesignGraph seekGraph(loaded);
+    seekGraph.seek(256, [] { return false; }, 32);
+    juce::AudioBuffer<float> sought(1, 256);
+    seekGraph.render(sought, 0, 256);
+    for (int n = 0; n < 256; ++n)
+        check(sought.getSample(0, n) == output.getSample(0, n + 256),
+              "MIDI seek reconstructs held voices with full history, independent of short FX warmup");
     auto frozen = sp::freezeTake(loaded, "Native MIDI freeze");
     check((int)sp::takeToJson(frozen)["recipe"]["recipeVersion"] == 5, "MIDI sampler frozen recipe5");
     auto frozenRecall = sp::takeFromJson(sp::takeToJson(frozen));
@@ -246,6 +256,37 @@ void runMidiTests(const juce::File &base)
     auto oldRecall = sp::designFromJson(oldJson);
     check(!sp::hasMidi(oldRecall) && (int)sp::designToJson(oldRecall)["version"] == 11,
           "Historical no-MIDI manifest is not silently upgraded");
+    {
+        auto changed = loaded;
+        auto &slot = *sp::findTrack(changed.original, midiTrack)->instrument;
+        slot.instrumentGainDb = -12;
+        slot.transpose = 7;
+        auto controls = sp::designParameters(changed);
+        auto compact = juce::JSON::toString(controls);
+        check(!compact.contains("samples") && !compact.contains("sha256") &&
+                  !compact.contains("hostedInstrument") && compact.length() < 10000,
+              "Continuous Instrument controls exclude source descriptors and opaque plugin state");
+        auto target = loaded;
+        auto source = sp::findTrack(target.original, midiTrack)->instrument->samples.front();
+        sp::applyDesignParameters(target, controls);
+        const auto &adopted = *sp::findTrack(target.original, midiTrack)->instrument;
+        check(adopted.instrumentGainDb == -12 && adopted.transpose == 7 &&
+                  adopted.samples.front().source.path == source.source.path &&
+                  adopted.samples.front().fingerprint == source.fingerprint,
+              "Primitive Instrument controls adopt without replacing immutable source identity");
+        sp::NativeSampler held(*sp::findTrack(loaded.original, midiTrack)->instrument, mono, 48000);
+        held.event({0, 1, 0, 0x90, 60, 127, 0});
+        std::vector<sp::MidiPacket> none;
+        auto full = renderSampler(held, none, 16, 16);
+        auto quiet = *sp::findTrack(loaded.original, midiTrack)->instrument;
+        quiet.instrumentGainDb = -12;
+        held.update(quiet);
+        auto reduced = renderSampler(held, none, 16, 16);
+        check(full.getMagnitude(0, 16) > .01 &&
+                  std::abs(reduced.getMagnitude(0, 16) / full.getMagnitude(0, 16) -
+                           std::pow(10., -12. / 20)) < 1e-5,
+              "Sustained native voice changes audibly with continuous Gain without retrigger");
+    }
     std::deque<std::function<void()>> jobs, completions;
     sp::DesignSessionServices services;
     services.automaticRecovery = services.timers = false;
@@ -411,9 +452,220 @@ void runMidiTests(const juce::File &base)
     check(!capture.busy() && !(bool)capture.status()["receipt"]["complete"] &&
               capture.status()["error"].toString().contains("overflow"),
           "Bounded MIDI overflow ends an honest incomplete retained pass");
+    auto liveDocument = loaded;
+    liveDocument.original.midiClips.clear();
+    liveDocument.original.duration = 48000;
+    sp::PcmStream stream(liveDocument, 48000, 0);
+    stream.fill(128);
+    config.getDynamicObject()->setProperty("monitored", juce::Array<juce::var>{midiTrack});
+    capture.configure(config);
+    auto liveId = juce::Uuid().toString();
+    p->setProperty("id", liveId);
+    p->setProperty("first", 0);
+    p->setProperty("generation", 8);
+    clock.publish({host, 8, 0, 48000});
+    capture.begin(plan);
+    clock.publish({host, 8, 0, 0});
+    capture.receiveForTest(host, 0x91, 60, 127);
+    clock.publish({host, 8, 0, 48000});
+    capture.service(&stream);
+    check((int64_t)capture.status()["lateEvents"] == 1 && (int64_t)capture.status()["maxLateFrames"] == 128,
+          "Measured pending PCM lookahead reconciles acquired frame0 to applied frame128");
+    stream.fill(256);
+    clock.publish({host + 8000000, 8, 384, 48000});
+    capture.receiveForTest(host + 8000000, 0x81, 60, 64);
+    capture.service(&stream);
+    stream.fill(128);
+    clock.publish({host + 10666667, 8, 512, 48000});
+    capture.finish();
+    capture.service(&stream);
+    auto liveReceipt =
+        sp::MidiInputService::recover(juce::File(capture.status()["receipt"]["journal"].toString()));
+    auto liveClip = sp::midiClipFromJson(liveReceipt["clips"][0]);
+    check(sp::midiFrame(liveClip.notes[0].tick, {120, 4, 4}, 48000) == 128 &&
+              sp::midiFrame(liveClip.notes[0].duration, {120, 4, 4}, 48000) == 256,
+          "Recorded notes use actual scheduled frame and exact later note-off");
+    juce::AudioBuffer<float> livePcm(2, 512);
+    float gain = 1;
+    auto *out = livePcm.getArrayOfWritePointers();
+    check(stream.read(out, 2, 512, gain, 1) == 512, "Consume actual prepared live MIDI stream PCM");
+    check(livePcm.getMagnitude(0, 0, 128) == 0 && livePcm.getMagnitude(0, 128, 256) > .1f &&
+              livePcm.getMagnitude(0, 384, 128) == 0,
+          "Live note PCM starts at acknowledged applied frame and stops without hanging");
+    auto offline = liveDocument;
+    offline.original.midiClips = {liveClip};
+    sp::DesignGraph comparison(offline);
+    juce::AudioBuffer<float> off(1, 512);
+    comparison.render(off, 0, 512);
+    for (int n = 0; n < 512; ++n)
+        check(std::abs(off.getSample(0, n) * .70710678f - livePcm.getSample(0, n)) < 1e-7,
+              "Live producer and offline MIDI agree after independent Mono-to-Stereo monitor fold");
+    p->setProperty("id", juce::Uuid().toString());
+    capture.begin(plan);
+    capture.receiveForTest(host + 12000000, 0x91, 62, 100);
+    capture.service(&stream);
+    capture.finish(true);
+    capture.service(&stream);
+    check(!(bool)capture.status()["receipt"]["complete"] && (bool)capture.status()["receipt"]["cancelled"],
+          "MIDI cancellation preserves acknowledged journal without claiming completed clips");
+    auto recoveredCancel =
+        sp::MidiInputService::recover(juce::File(capture.status()["receipt"]["journal"].toString()));
+    check(recoveredCancel["clips"][0]["name"].toString().contains("Recovered"),
+          "Cancelled pass needs deliberately labelled recovery");
+    {
+        // Actual session commands and controlled worker completions, backed by the real MIDI store.
+        auto savedServices = services;
+        juce::var sessionState = sp::message("status");
+        auto *status = sessionState.getDynamicObject();
+        status->setProperty("processGeneration", 1);
+        uint64_t generation = 30;
+        juce::var acceptedPlan;
+        savedServices.status = [&]
+        {
+            auto out = sessionState.clone();
+            out.getDynamicObject()->setProperty("midi", capture.status());
+            return out;
+        };
+        savedServices.play = [&](const auto &identity, const auto &, int64_t frame, const auto &)
+        {
+            status->setProperty("id", identity);
+            status->setProperty("playGeneration", (juce::int64)++generation);
+            status->setProperty("playing", true);
+            status->setProperty("sourceSample", (juce::int64)frame);
+            clock.publish({host, generation, frame, 48000});
+            return generation;
+        };
+        savedServices.stop = [&] { status->setProperty("playing", false); };
+        savedServices.inputCommand = [&](auto command)
+        {
+            auto name = command["command"].toString();
+            if (name == "midi_configure")
+                capture.configure(command);
+            else if (name == "midi_record")
+            {
+                acceptedPlan = command.clone();
+                capture.begin(command);
+            }
+            else if (name == "midi_finish")
+                capture.finish((bool)command["cancel"]);
+        };
+        sp::DesignSession recorder(root.getChildFile("session-record/catalog.sqlite"), savedServices);
+        recorder.document = loaded;
+        recorder.document.playhead = 0;
+        recorder.configureMidiInput(midiTrack, juce::String(uid), 2);
+        recorder.armMidiTrack(midiTrack, true);
+        recorder.startMidiRecording();
+        flush();
+        check(recorder.midiBusy() && acceptedPlan["id"].toString().isNotEmpty(),
+              "Session Record publishes a plan and waits for real durable completion");
+        capture.receiveForTest(host + 1000000, 0x91, 60, 100);
+        capture.receiveForTest(host + 4000000, 0x81, 60, 64);
+        capture.service(nullptr);
+        clock.publish({host + 100000000, generation, 4800, 48000});
+        recorder.stopMidiRecording();
+        capture.service(nullptr);
+        recorder.poll();
+        flush();
+        check(!recorder.midiBusy() && recorder.document.original.midiClips.size() == 2 &&
+                  recorder.message.contains("retained"),
+              "Session adopts acknowledged MIDI once and closes recording ownership");
+        auto file = juce::File(capture.status()["receipt"]["journal"].toString());
+        auto retainedHash = juce::SHA256(file).toHexString();
+        recorder.recoverMidiRecording(file);
+        flush();
+        check(recorder.document.original.midiClips.size() == 2 && recorder.message.contains("already"),
+              "Deliberate repeat recovery does not duplicate an accepted pass");
+        recorder.undo();
+        check(recorder.document.original.midiClips.size() == 1 && file.existsAsFile(),
+              "Record Undo removes the clip while preserving its original journal");
+        recorder.redo();
+        check(recorder.document.original.midiClips.size() == 2 &&
+                  juce::SHA256(file).toHexString() == retainedHash,
+              "Record Redo restores exact payload and never rewrites recording evidence");
+        recorder.edit("Different tempo", [](auto &d) { d.original.midiTiming.bpm = 90; });
+        recorder.recoverMidiRecording(file);
+        flush();
+        check(recorder.document.original.midiClips.size() == 2 && recorder.message.contains("tempo"),
+              "Recovery refuses changed clock context before declaring retention");
+        recorder.edit("Restore tempo", [](auto &d) { d.original.midiTiming.bpm = 120; });
+        auto wrong = recorder.document.id;
+        recorder.document.id = juce::Uuid().toString();
+        recorder.recoverMidiRecording(file);
+        flush();
+        check(recorder.message.contains("another document"),
+              "MIDI recovery refuses another document even with matching owner IDs");
+        recorder.document.id = wrong;
+        recorder.recoverMidiRecording(root.getChildFile("missing.midi-partial.json"));
+        flush();
+        check(!recorder.midiBusy() && recorder.document.original.midiClips.size() == 2,
+              "Read failure cannot strand MIDI ownership or insert invented clips");
+    }
     capture.configure(sp::message("midi_configure"));
     MIDIEndpointDispose(source);
     MIDIClientDispose(midiClient);
     flush();
+    // Retained musical fixture for actual app UI verification; separate catalog is launched later.
+    auto nativeFolder = root.getChildFile("native-fixtures");
+    nativeFolder.createDirectory();
+    auto nativeSource = nativeFolder.getChildFile("Sampled tone.wav");
+    {
+        juce::WavAudioFormat format;
+        auto stream = nativeSource.createOutputStream();
+        auto writer = std::unique_ptr<juce::AudioFormatWriter>(
+            format.createWriterFor(stream.release(), 48000, 1, 24, {}, 0));
+        juce::AudioBuffer<float> tone(1, 48000);
+        for (int n = 0; n < 48000; ++n)
+            tone.setSample(
+                0, n,
+                (float)(.15 * std::sin(juce::MathConstants<double>::twoPi * 261.625565 * n / 48000) *
+                        std::min(1., n / 240.) * std::exp(-n / 12000.)));
+        check(writer && writer->writeFromAudioSampleBuffer(tone, 0, 48000),
+              "Generate repeatable native musical audition fixture");
+    }
+    sp::DesignDocument native;
+    native.name = "MIDI instrument QA";
+    native.original.layout = mono;
+    native.original.masterDb = -6;
+    native.outputFolder = root.getChildFile("native-renders").getFullPathName();
+    auto nt = sp::addTrack(native.original, sp::TrackKind::midiInstrument);
+    auto group = sp::addTrack(native.original, sp::TrackKind::groupBus);
+    auto audio = sp::addTrack(native.original, sp::TrackKind::audio);
+    auto *track = sp::findTrack(native.original, nt);
+    track->name = "Sampled keys";
+    track->instrument = instrument(nativeSource, mono);
+    track->instrument->attack = .005;
+    track->instrument->release = .15;
+    track->output = group;
+    sp::findTrack(native.original, group)->name = "Music bus";
+    sp::findTrack(native.original, audio)->name = "Reference audio";
+    sp::findTrack(native.original, audio)->output = group;
+    auto nc = sp::createMidiClip(native, nt, 0);
+    auto *score = sp::findMidiClip(native.original, nc);
+    score->name = "Chord sketch";
+    score->length = 16 * sp::midiPpq;
+    for (int beat : {0, 2, 4, 6, 8, 10, 12, 14})
+        for (int pitch : {60, 64, 67})
+        {
+            sp::MidiNote n;
+            n.tick = beat * sp::midiPpq;
+            n.duration = sp::midiPpq;
+            n.pitch = pitch;
+            n.velocity = 90;
+            score->notes.push_back(n);
+        }
+    auto reference = sp::makeDesignLayer(sp::inspectDesignSource(nativeSource), 0, -1, true);
+    sp::initialiseRouting(reference, mono);
+    reference.placement = 72000;
+    sp::attachClip(native, reference, audio);
+    native.original.layers.push_back(reference);
+    native.selectedLayer.clear();
+    native.selectedMidiClip = nc;
+    native.selectedTrack = nt;
+    auto nativeFile = root.getChildFile("midi-native.soundplus");
+    sp::saveDesignAtomic(nativeFile, native);
+    auto pointer = juce::var(new juce::DynamicObject);
+    pointer.getDynamicObject()->setProperty("design", nativeFile.getFullPathName());
+    pointer.getDynamicObject()->setProperty("folder", nativeFolder.getFullPathName());
+    sp::saveProcessingJson(base.getChildFile("native-fixture.json"), pointer);
     std::cout << "MIDI sequencing/sampler: " << checks << " checks passed\n";
 }

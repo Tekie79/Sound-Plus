@@ -498,7 +498,9 @@ void AudioClient::run()
                         std::lock_guard lock(mutex);
                         latest = state;
                         auto midi = state["midi"];
-                        if (midi["receipt"]["id"].toString() == midiOperation && !(bool)midi["recording"])
+                        if ((midi["receipt"]["id"].toString() == midiOperation && !(bool)midi["recording"]) ||
+                            (midi["request"].toString() == midiOperation &&
+                             midi["error"].toString().isNotEmpty()))
                             midiOwned = false;
                         auto recording = state["inputRecording"];
                         auto phase = recording["state"].toString();

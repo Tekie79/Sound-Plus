@@ -30,6 +30,33 @@ void stripHosted(juce::var rack, bool retained = false)
                     slot["settings"].getDynamicObject()->removeProperty(key);
         }
 }
+juce::var instrumentControls(const InstrumentSlot &s)
+{
+    auto value = instrumentJson(s);
+    auto *o = value.getDynamicObject();
+    for (auto key : {"samples", "hostedInstrument", "state"})
+        o->removeProperty(key);
+    o->setProperty("controlsVersion", 1);
+    return value;
+}
+void applyInstrumentControls(InstrumentSlot &s, const juce::var &v)
+{
+    if ((int)v["controlsVersion"] != 1 || v["id"].toString() != s.id || v["format"].toString() != s.format ||
+        v["identifier"].toString() != s.identifier)
+        throw std::runtime_error("Live Instrument identity changed");
+    s.rootNote = (int)v["rootNote"];
+    s.polyphony = (int)v["polyphony"];
+    s.attack = (double)v["attack"];
+    s.decay = (double)v["decay"];
+    s.sustain = (double)v["sustain"];
+    s.release = (double)v["release"];
+    s.bendRange = (double)v["bendRange"];
+    s.instrumentGainDb = (double)v["gainDb"];
+    s.transpose = (double)v["transpose"];
+    s.sampleLoop = (bool)v["loop"];
+    s.oneShot = (bool)v["oneShot"];
+    s.roundRobin = (bool)v["roundRobin"];
+}
 juce::var hostedControls(const HostedRack &rack)
 {
     auto result = juce::var(new juce::DynamicObject());
@@ -284,9 +311,9 @@ juce::var designParameters(const DesignDocument &base)
             o->setProperty("automation", automationLaneJson(track.automation));
             o->setProperty("chainBypass", track.inserts.bypass);
             o->setProperty("effects", rackParameters(track.inserts.stock));
-            if (track.instrument)
+            if (track.instrument && track.instrument->version == 1)
             {
-                o->setProperty("instrument", instrumentJson(*track.instrument));
+                o->setProperty("instrument", instrumentControls(*track.instrument));
                 if (!track.instrument->hostedInstrument.hosted.slots.empty())
                     o->setProperty("instrumentControls",
                                    hostedControls(track.instrument->hostedInstrument.hosted));
@@ -379,15 +406,9 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
             track->azimuth = (double)v["azimuth"];
             track->width = (double)v["width"];
             track->automation = automationLaneFromJson(v["automation"]);
-            if (track->instrument)
+            if (track->instrument && track->instrument->version == 1)
             {
-                auto next = instrumentFromJson(v["instrument"]);
-                if (next.id != track->instrument->id || next.format != track->instrument->format ||
-                    next.identifier != track->instrument->identifier)
-                    throw std::runtime_error("Live Instrument identity changed");
-                auto rack = track->instrument->hostedInstrument;
-                *track->instrument = std::move(next);
-                track->instrument->hostedInstrument = std::move(rack);
+                applyInstrumentControls(*track->instrument, v["instrument"]);
                 if (!track->instrument->hostedInstrument.hosted.slots.empty())
                     applyHostedControls(track->instrument->hostedInstrument.hosted, v["instrumentControls"]);
             }

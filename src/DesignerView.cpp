@@ -47,19 +47,20 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     canvas = std::make_unique<Canvas>(*this);
     tracks = std::make_unique<MultitrackEditor>(
         session, [this](const Asset &a) { return peakPool->get(a); }, preferences);
-    midiEditor =
-        std::make_unique<MidiEditor>(session, catalog.getParentDirectory().getChildFile("plugins.json"));
+    midiEditor = std::make_unique<MidiEditor>(
+        session, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
     addChildComponent(*midiEditor);
     midiEditor->onClose = [this]
     {
         midiEditorOpen = false;
         resized();
+        tracks->grabKeyboardFocus();
     };
     tracks->onOpenMidi = [this](const auto &id)
     {
         midiEditorOpen = true;
-        midiEditor->open(id);
         resized();
+        midiEditor->open(id);
     };
     tracks->onInstrument = [this](const auto &id) { midiEditor->instrument(id, addTrackButton); };
     tracks->onRowsChanged = [this]
@@ -673,6 +674,12 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     sourceRack->setBounds(8, inspectorY, 306, 280);
     sourceRack->onHeightChange = [this] { layoutInspector(); };
     inspectorY += 288;
+    section("INSTRUMENT");
+    inspector.addAndMakeVisible(instrumentControl);
+    instrumentControl.setBounds(8, inspectorY, 306, 30);
+    inspectorY += 38;
+    instrumentControl.onClick = [this]
+    { midiEditor->instrument(session.document.selectedTrack, instrumentControl); };
     section("TRACK INSERTS");
     trackRack = std::make_unique<StockRackView>(
         session, false, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
@@ -745,6 +752,8 @@ void DesignerView::section(const juce::String &name)
     auto label = name == "SOURCE & TIMING" ? juce::String("Source")
                  : name == "MASTER"        ? juce::String("Output")
                                            : name.toLowerCase();
+    if (label == "instrument")
+        label = "Instrument";
     if (label == "layer")
         label = "Layer";
     else if (label == "mix")
@@ -801,6 +810,7 @@ void DesignerView::layoutInspector()
                                  g.name == "FADES" || g.name == "SOURCE INSERTS";
         auto *track = findTrack(session.document.activeMix(), session.document.selectedTrack);
         bool hidden =
+            (g.name == "INSTRUMENT" && (!track || track->kind != TrackKind::midiInstrument)) ||
             (g.name == "SOURCE INSERTS" && !multitrack) ||
             (multitrack && !session.selectedLayer() && clipSection) ||
             (multitrack && g.name == "TRACK INSERTS" && (!track || track->kind == TrackKind::folder));
@@ -1075,6 +1085,20 @@ void DesignerView::toggle(const juce::String &name, std::function<bool(const Des
 }
 void DesignerView::updateEffects()
 {
+    auto *instrumentTrack = findTrack(session.document.activeMix(), session.document.selectedTrack);
+    juce::String instrumentName = "Choose instrument";
+    if (instrumentTrack && instrumentTrack->instrument)
+    {
+        auto &i = *instrumentTrack->instrument;
+        if (i.format == "SoundPlus")
+            instrumentName = i.samples.empty() ? "Load sample" : i.samples.front().source.name;
+        else if (!i.hostedInstrument.hosted.slots.empty())
+            instrumentName =
+                juce::JSON::parse(i.hostedInstrument.hosted.slots[0].settings)["plugin"]["name"].toString();
+    }
+    instrumentControl.setButtonText(instrumentName);
+    instrumentControl.setTooltip("Instrument: " + instrumentName +
+                                 ". Source, editor, sampler controls and tempo.");
     if (sourceRack)
         sourceRack->bind(session.document.activeMix().trackSchema ? session.document.selectedLayer
                                                                   : juce::String());
@@ -1310,7 +1334,8 @@ void DesignerView::refresh()
     addTrackButton.setEnabled(!frozen);
     inspector.setEnabled(!frozen && !session.transitionPending());
     render.setEnabled(!session.takeBusy() && !session.rendering &&
-                      (selectedTake(d) ? selectedTake(d)->complete : !d.activeMix().layers.empty()));
+                      (selectedTake(d) ? selectedTake(d)->complete
+                                       : (!d.activeMix().layers.empty() || hasMidi(d.activeMix()))));
     render.setButtonText(d.activeTake.isEmpty() ? "Render Design" : "Render Take");
     dragOriginal.setEnabled(!frozen && layer && layer->source.error.isEmpty());
     accurate.setEnabled(!session.takeBusy() && (!selectedTake(d) || selectedTake(d)->complete));
@@ -1342,13 +1367,27 @@ void DesignerView::timerCallback()
     bool playing = session.ownsPlayback();
     play.setIcon(playing || session.inputBusy() || session.midiBusy() ? ActionIcon::stop : ActionIcon::play);
     play.setButtonText(
-        session.inputBusy() ? "Stop audio recording"
+        session.midiBusy()    ? "Stop MIDI recording"
+        : session.inputBusy() ? "Stop audio recording"
         : session.document.activeTake.isNotEmpty()
             ? (playing ? "Stop take audition" : "Audition take: " + selectedTake(session.document)->name)
             : (playing ? "Stop design" : "Play design"));
+    play.setTooltip(hasMidi(session.performanceMix())
+                        ? "Play / Stop (Space). MIDI seeks rebuild full voice/effect history in the "
+                          "background; Stop cancels preparation."
+                        : "Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use "
+                          "Accurate audition to judge long tails.");
     play.setEnabled(session.inputBusy() || session.midiBusy() ||
                     ((!session.performanceMix().layers.empty() || hasMidi(session.performanceMix())) &&
                      (!selectedTake(session.document) || selectedTake(session.document)->complete)));
+    recordAudio.setButtonText(session.hasArmedMidi() ? "Record armed MIDI Tracks (R)"
+                                                     : "Record armed Audio Tracks (R)");
+    recordAudio.setTooltip(
+        session.hasArmedMidi()
+            ? "Record armed MIDI Tracks from the playhead (R). Stop retains editable clips and a durable "
+              "MIDI journal. Escape cancels and preserves the journal."
+            : "Record armed Audio Tracks from the playhead (R). Stop finalizes source WAVs; Escape cancels "
+              "and retains a recoverable prefix. Monitoring starts off.");
     recordAudio.setEnabled(!performMode && (session.inputReady() || (bool)session.midiStatus()["open"]) &&
                            !session.midiBusy() && !session.inputBusy() && !session.takeBusy() &&
                            session.document.activeTake.isEmpty());

@@ -50,6 +50,14 @@ void DesignSession::armMidiTrack(const juce::String &owner, bool enabled)
             notify();
             return;
         }
+        if (!armedInputs.empty() || !pendingInputArms.empty())
+        {
+            armedInputs.clear();
+            monitoredInputs.clear();
+            pendingInputArms.clear();
+            updateInputDevice();
+        }
+        midiIncarnation = lifetime;
         armedMidi.insert(owner);
     }
     else
@@ -128,6 +136,38 @@ void DesignSession::monitorMidiTrack(const juce::String &id, bool enabled)
     }
     notify();
 }
+void DesignSession::previewMidiNote(const juce::String &owner, int pitch, bool on, int velocity)
+{
+    if (inputBusy() || takeBusy() || midiBusy() || replacing)
+        return;
+    auto *t = findTrack(document.activeMix(), owner);
+    if (!t || !t->instrument || t->instrument->format == "none")
+    {
+        message = "Choose an Instrument before auditioning keys";
+        notify();
+        return;
+    }
+    if (on && !ownsPlayback())
+    {
+        active = true;
+        schedulePreview("midi-monitor");
+    }
+    auto c = sp::message("midi_note");
+    auto *p = c.getDynamicObject();
+    p->setProperty("owner", owner);
+    p->setProperty("status", on ? 0x90 : 0x80);
+    p->setProperty("a", pitch);
+    p->setProperty("b", on ? velocity : 64);
+    try
+    {
+        services.inputCommand(c);
+    }
+    catch (const std::exception &e)
+    {
+        message = e.what();
+        notify();
+    }
+}
 void DesignSession::startMidiRecording()
 {
     if (midiBusy() || inputBusy() || takeBusy() || replacing || working || rendering ||
@@ -183,26 +223,35 @@ void DesignSession::startMidiRecording()
             {
                 if (!safe || safe->midiOperation != operation)
                     return;
-                safe->expectedGeneration =
-                    safe->services.play("design:" + snapshot.id, file, position, "midi-record");
-                safe->publishedStructure = designStructure(snapshot);
-                safe->auditionContext = designPlaybackContext(snapshot);
-                safe->previewWaiting = false;
-                auto c = sp::message("midi_record");
-                auto *o = c.getDynamicObject();
-                o->setProperty("maxEvents", eventBudget);
-                o->setProperty("id", operation);
-                o->setProperty("document", snapshot.id);
-                o->setProperty("variation", snapshot.activeVariation);
-                o->setProperty("root", root.getFullPathName());
-                o->setProperty("first", (juce::int64)position);
-                o->setProperty("generation", (juce::int64)safe->expectedGeneration);
-                o->setProperty("rate", snapshot.sampleRate);
-                o->setProperty("bpm", snapshot.activeMix().midiTiming.bpm);
-                o->setProperty("numerator", snapshot.activeMix().midiTiming.numerator);
-                o->setProperty("denominator", snapshot.activeMix().midiTiming.denominator);
-                safe->services.inputCommand(c);
-                safe->message = "Recording MIDI";
+                try
+                {
+                    safe->expectedGeneration =
+                        safe->services.play("design:" + snapshot.id, file, position, "midi-record");
+                    safe->publishedStructure = designStructure(snapshot);
+                    safe->auditionContext = designPlaybackContext(snapshot);
+                    safe->previewWaiting = false;
+                    auto c = sp::message("midi_record");
+                    auto *o = c.getDynamicObject();
+                    o->setProperty("maxEvents", eventBudget);
+                    o->setProperty("id", operation);
+                    o->setProperty("document", snapshot.id);
+                    o->setProperty("variation", snapshot.activeVariation);
+                    o->setProperty("root", root.getFullPathName());
+                    o->setProperty("first", (juce::int64)position);
+                    o->setProperty("generation", (juce::int64)safe->expectedGeneration);
+                    o->setProperty("rate", snapshot.sampleRate);
+                    o->setProperty("bpm", snapshot.activeMix().midiTiming.bpm);
+                    o->setProperty("numerator", snapshot.activeMix().midiTiming.numerator);
+                    o->setProperty("denominator", snapshot.activeMix().midiTiming.denominator);
+                    safe->midiPlan = c.clone();
+                    safe->services.inputCommand(c);
+                    safe->message = "Recording MIDI";
+                }
+                catch (const std::exception &e)
+                {
+                    safe->message = e.what();
+                    safe->clearMidiContext();
+                }
             };
         });
     notify();
@@ -214,13 +263,24 @@ void DesignSession::stopMidiRecording(bool cancel)
     midiStopping = true;
     auto c = sp::message("midi_finish");
     c.getDynamicObject()->setProperty("cancel", cancel);
-    services.inputCommand(c);
+    try
+    {
+        services.inputCommand(c);
+    }
+    catch (const std::exception &e)
+    {
+        midiStopping = false;
+        message = e.what();
+        notify();
+        return;
+    }
     message = cancel ? "Cancelling MIDI pass; journal retained" : "Finalizing MIDI pass";
     notify();
 }
 void DesignSession::clearMidiContext()
 {
     midiOperation.clear();
+    midiPlan = juce::var();
     midiReadPending = midiStopping = false;
     active = previewWaiting = false;
     services.stop();
@@ -232,42 +292,81 @@ void DesignSession::clearMidiContext()
 }
 void DesignSession::applyMidiReceipt(juce::var receipt)
 {
-    if (receipt["document"].toString() != document.id ||
-        receipt["variation"].toString() != document.activeVariation)
-        throw std::runtime_error("MIDI recovery belongs to another document/variation");
-    std::vector<MidiClip> clips;
-    for (auto &v : *receipt["clips"].getArray())
+    try
     {
-        auto c = midiClipFromJson(v);
-        auto *t = findTrack(document.activeMix(), c.track);
-        if (!t || t->kind != TrackKind::midiInstrument)
-            throw std::runtime_error("MIDI recording owner missing");
-        clips.push_back(std::move(c));
-    }
-    if (document.activeMix().midiClips.size() + clips.size() > 64)
-        throw std::runtime_error("MIDI recovery exceeds clip capacity");
-    auto candidate = document;
-    for (auto &c : clips)
-        candidate.activeMix().midiClips.push_back(c);
-    validateDesign(candidate);
-    midiMutation = true;
-    edit((bool)receipt["recovered"] ? "Recover MIDI recording" : "Record MIDI",
-         [&](auto &d)
-         {
-             for (auto &c : clips)
-                 d.activeMix().midiClips.push_back(c);
-             if (!clips.empty())
+
+        if (midiBusy() && receipt["id"].toString() != midiOperation)
+            throw std::runtime_error("MIDI receipt operation mismatch; journal retained");
+        if (midiBusy())
+            for (auto key : {"generation", "first", "rate", "bpm", "numerator", "denominator"})
+                if (juce::String(key) == "rate" || juce::String(key) == "bpm"
+                        ? (double)receipt[key] != (double)midiPlan[key]
+                        : (int64_t)receipt[key] != (int64_t)midiPlan[key])
+                    throw std::runtime_error("MIDI receipt plan mismatch; journal retained");
+        if ((double)receipt["rate"] != document.sampleRate ||
+            (double)receipt["bpm"] != document.activeMix().midiTiming.bpm ||
+            (int)receipt["numerator"] != document.activeMix().midiTiming.numerator ||
+            (int)receipt["denominator"] != document.activeMix().midiTiming.denominator)
+            throw std::runtime_error("Restore this MIDI pass's tempo/signature/rate before recovery");
+        if (receipt["document"].toString() != document.id ||
+            receipt["variation"].toString() != document.activeVariation)
+            throw std::runtime_error("MIDI recovery belongs to another document/variation");
+        std::vector<MidiClip> clips;
+        for (auto &v : *receipt["clips"].getArray())
+        {
+            auto c = midiClipFromJson(v);
+            auto existing =
+                std::find_if(document.activeMix().midiClips.begin(), document.activeMix().midiClips.end(),
+                             [&](const auto &clip)
+                             {
+                                 return clip.track == c.track &&
+                                        clip.recordingOrigin["journal"] == c.recordingOrigin["journal"] &&
+                                        clip.recordingOrigin["sha256"] == c.recordingOrigin["sha256"];
+                             });
+            if (existing != document.activeMix().midiClips.end())
+                continue;
+            auto *t = findTrack(document.activeMix(), c.track);
+            if (!t || t->kind != TrackKind::midiInstrument)
+                throw std::runtime_error("MIDI recording owner missing");
+            clips.push_back(std::move(c));
+        }
+        if (clips.empty())
+        {
+            message = "This MIDI pass is already retained in this mix";
+            notify();
+            return;
+        }
+        if (document.activeMix().midiClips.size() + clips.size() > 64)
+            throw std::runtime_error("MIDI recovery exceeds clip capacity");
+        auto candidate = document;
+        for (auto &c : clips)
+            candidate.activeMix().midiClips.push_back(c);
+        validateDesign(candidate);
+        midiMutation = true;
+        edit((bool)receipt["recovered"] ? "Recover MIDI recording" : "Record MIDI",
+             [&](auto &d)
              {
-                 d.selectedMidiClip = clips.front().id;
-                 d.selectedLayer.clear();
-                 d.selectedTrack = clips.front().track;
-             }
-         });
-    midiMutation = false;
-    for (auto &c : clips)
-        if (!findMidiClip(document.activeMix(), c.id))
-            throw std::runtime_error("MIDI clips were not retained: " + message.toStdString());
-    message = "MIDI clips retained; journal preserved";
+                 for (auto &c : clips)
+                     d.activeMix().midiClips.push_back(c);
+                 if (!clips.empty())
+                 {
+                     d.selectedMidiClip = clips.front().id;
+                     d.selectedLayer.clear();
+                     d.selectedTrack = clips.front().track;
+                 }
+             });
+        midiMutation = false;
+        for (auto &c : clips)
+            if (!findMidiClip(document.activeMix(), c.id))
+                throw std::runtime_error("MIDI clips were not retained: " + message.toStdString());
+        message = "MIDI clips retained; journal preserved";
+    }
+    catch (const std::exception &e)
+    {
+        midiMutation = false;
+        message = e.what();
+        notify();
+    }
 }
 void DesignSession::pollMidi(const juce::var &state)
 {

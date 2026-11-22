@@ -7,6 +7,7 @@ namespace sp
 MidiEditor::MidiEditor(DesignSession &s, juce::File r) : session(s), registry(std::move(r))
 {
     setWantsKeyboardFocus(true);
+    setLookAndFeel(&look);
     setTitle("Piano roll");
     for (auto *c :
          std::initializer_list<juce::Component *>{&title, &tool, &snap, &controller, &strength, &close,
@@ -26,7 +27,7 @@ MidiEditor::MidiEditor(DesignSession &s, juce::File r) : session(s), registry(st
     strength.setValue(1);
     strength.setTextBoxStyle(juce::Slider::NoTextBox, false, 0, 0);
     strength.setTitle("Quantize strength");
-    strength.setTooltip("Quantize strength, 0–100%. Applies with Quantize.");
+    strength.setTooltip("Quantize strength, 0-100%. Applies with Quantize.");
     close.onClick = [this]
     {
         finish();
@@ -54,6 +55,7 @@ MidiEditor::MidiEditor(DesignSession &s, juce::File r) : session(s), registry(st
 MidiEditor::~MidiEditor()
 {
     finish();
+    setLookAndFeel(nullptr);
 }
 bool MidiEditor::valid() const
 {
@@ -64,7 +66,7 @@ const MidiClip *MidiEditor::model() const
 {
     return valid() ? findMidiClip(session.document.activeMix(), clip) : nullptr;
 }
-void MidiEditor::open(const juce::String &id)
+void MidiEditor::open(const juce::String &id, bool focus)
 {
     finish();
     clip = id;
@@ -72,16 +74,25 @@ void MidiEditor::open(const juce::String &id)
     variation = session.document.activeVariation;
     incarnation = session.documentGeneration();
     selected.clear();
+    lowest = 58;
     if (auto *c = model())
     {
         startBeat = (double)c->offset / midiPpq;
         beats = std::clamp((double)c->length / midiPpq, 1., 16.);
     }
+    resized();
     refresh();
-    grabKeyboardFocus();
+    if (focus)
+        grabKeyboardFocus();
 }
 void MidiEditor::refresh()
 {
+    if (isVisible() && valid() && session.document.selectedMidiClip.isNotEmpty() &&
+        session.document.selectedMidiClip != clip)
+    {
+        open(session.document.selectedMidiClip, false);
+        return;
+    }
     auto *c = model();
     setEnabled(c != nullptr && !session.inputBusy() && !session.takeBusy() && !session.midiBusy());
     title.setText(c ? c->name : "Piano roll", juce::dontSendNotification);
@@ -139,11 +150,14 @@ void MidiEditor::resized()
     zoomIn.setBounds(w - 4 * slot - 10, 3, slot, 26);
     title.setBounds(4, 3, std::max(0, w - 4 * slot - 20), 24);
     tool.setBounds(4, 33, 65, 24);
-    snap.setBounds(73, 33, 55, 24);
-    quantizeButton.setBounds(132, 33, 24, 24);
-    strength.setBounds(158, 35, std::max(20, std::min(70, w - 290)), 20);
+    snap.setBounds(73, 33, 64, 24);
+    quantizeButton.setBounds(139, 33, 24, 24);
+    strength.setBounds(165, 35, std::max(20, std::min(70, w - 300)), 20);
     controller.setBounds(w - 94, 33, 90, 24);
     grid = {40, 62.f, (float)std::max(20, w - 46), (float)std::max(40, getHeight() - 100)};
+    int keys = std::clamp((int)(grid.getHeight() / 7), 8, 36);
+    lowest = std::clamp(lowest, 0, 128 - keys);
+    highest = lowest + keys - 1;
     velocities = {grid.getX(), grid.getBottom() + 3, grid.getWidth(), 30};
 }
 void MidiEditor::paint(juce::Graphics &g)
@@ -294,6 +308,13 @@ void MidiEditor::mouseDown(const juce::MouseEvent &e)
     auto *c = model();
     if (!c)
         return;
+    if (e.x < 36 && e.y >= grid.getY() && e.y < grid.getBottom())
+    {
+        heldKey = pitch(e.y);
+        heldOwner = c->track;
+        session.previewMidiNote(heldOwner, heldKey, true);
+        return;
+    }
     if (velocities.contains(e.position) && controller.getSelectedId() != 1)
     {
         int value = std::clamp((int)std::llround((velocities.getBottom() - e.y) / velocities.getHeight() *
@@ -381,6 +402,12 @@ void MidiEditor::mouseDrag(const juce::MouseEvent &e)
 }
 void MidiEditor::finish()
 {
+    if (heldKey >= 0)
+    {
+        if (valid())
+            session.previewMidiNote(heldOwner, heldKey, false);
+        heldKey = -1;
+    }
     if (gesture)
     {
         gesture = false;
@@ -496,18 +523,37 @@ bool MidiEditor::keyPressed(const juce::KeyPress &k)
 }
 namespace
 {
-class SamplerControls final : public juce::Component
+class SamplerControls final : public juce::Component, private juce::Timer
 {
     DesignSession &session;
-    juce::String owner, document, variation;
+    juce::String owner, document, variation, slot;
     uint64_t incarnation;
     juce::OwnedArray<juce::Slider> sliders;
     juce::OwnedArray<juce::Label> labels;
     juce::OwnedArray<juce::ToggleButton> toggles;
     bool valid() const
     {
+        auto *t = findTrack(session.document.activeMix(), owner);
         return incarnation == session.documentGeneration() && document == session.document.id &&
-               variation == session.document.activeVariation;
+               variation == session.document.activeVariation && t && t->instrument &&
+               t->instrument->id == slot && t->instrument->format == "SoundPlus";
+    }
+    void timerCallback() override
+    {
+        setEnabled(valid());
+        if (!valid())
+            return;
+        const auto &v = *findTrack(session.document.activeMix(), owner)->instrument;
+        const std::array<double, 8> values{
+            (double)v.rootNote, (double)v.polyphony, v.attack,    v.decay,
+            v.sustain,          v.release,           v.bendRange, v.instrumentGainDb};
+        for (int n = 0; n < sliders.size(); ++n)
+            if (!sliders[n]->isMouseButtonDown() && !sliders[n]->isMouseOver(true) &&
+                !sliders[n]->hasKeyboardFocus(true))
+                sliders[n]->setValue(values[(size_t)n], juce::dontSendNotification);
+        const std::array<bool, 3> modes{v.sampleLoop, v.oneShot, v.roundRobin};
+        for (int n = 0; n < toggles.size(); ++n)
+            toggles[n]->setToggleState(modes[(size_t)n], juce::dontSendNotification);
     }
 
   public:
@@ -519,6 +565,7 @@ class SamplerControls final : public juce::Component
         auto *t = findTrack(session.document.activeMix(), owner);
         if (!t || !t->instrument)
             return;
+        slot = t->instrument->id;
         auto add = [&](const char *name, double lo, double hi, double step, double value, auto setter)
         {
             int y = 12 + sliders.size() * 35;
@@ -596,6 +643,7 @@ class SamplerControls final : public juce::Component
                        i.sampleLoop = false;
                });
         toggle("Round robin", v.roundRobin, [](auto &i, bool b) { i.roundRobin = b; });
+        startTimerHz(20);
     }
     ~SamplerControls() override
     {
@@ -665,6 +713,12 @@ void MidiEditor::instrument(const juce::String &owner, juce::Component &anchor)
     if (!t || t->kind != TrackKind::midiInstrument)
         return;
     juce::PopupMenu menu;
+    const bool hosted = t->instrument && !t->instrument->hostedInstrument.hosted.slots.empty();
+    if (hosted)
+    {
+        menu.addItem(8, "Open editor");
+        menu.addSeparator();
+    }
     menu.addItem(1, "Load sample…");
     menu.addItem(2, "Add sample alternate…", t->instrument && t->instrument->format == "SoundPlus");
     menu.addItem(3, "Sampler controls…", t->instrument && t->instrument->format == "SoundPlus");
@@ -681,6 +735,13 @@ void MidiEditor::instrument(const juce::String &owner, juce::Component &anchor)
         {
             if (!safe || !safe->session.accepts(token) || !n)
                 return;
+            if (n == 8)
+            {
+                auto *track = findTrack(safe->session.document.activeMix(), owner);
+                if (track && track->instrument && !track->instrument->hostedInstrument.hosted.slots.empty())
+                    safe->session.openLiveEditor(track->instrument->hostedInstrument.hosted.slots.front().id);
+                return;
+            }
             if (n == 7)
             {
                 safe->chooser = std::make_unique<juce::FileChooser>(

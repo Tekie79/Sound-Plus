@@ -327,6 +327,8 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
         finishOperation(token);
         if (token.kind == Operation::input)
             finishInputContext();
+        if (token.kind == Operation::midi)
+            clearMidiContext();
         if (token.kind == Operation::take && takeBusy())
         {
             services.reserveTake(false);

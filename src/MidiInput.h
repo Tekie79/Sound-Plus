@@ -4,6 +4,7 @@
 #include <CoreMIDI/CoreMIDI.h>
 #include <mach/mach_time.h>
 #include <mutex>
+#include <deque>
 namespace sp
 {
 class PcmStream;
@@ -22,6 +23,7 @@ class MidiInputService
     ~MidiInputService();
     static juce::Array<juce::var> devices();
     void configure(const juce::var &);
+    void software(const juce::var &);
     void begin(const juce::var &);
     void finish(bool cancel = false, juce::String reason = {});
     void poll();
@@ -70,6 +72,10 @@ class MidiInputService
     std::vector<CapturedMidi> events;
     juce::File journal;
     juce::var receipt;
+    std::deque<std::pair<juce::String, MidiPacket>> softwareQueue;
+    std::map<std::pair<int, int>, std::deque<uint64_t>> liveNotes;
+    std::map<juce::String, std::pair<uint64_t, int64_t>> softwareNotes;
+    uint64_t noteSequence = 1;
     uint64_t late = 0, maxLate = 0, receivedCount = 0;
     static void input(const MIDIPacketList *, void *, void *);
     static void notify(const MIDINotification *, void *);

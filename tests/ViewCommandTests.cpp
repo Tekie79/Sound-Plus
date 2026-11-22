@@ -168,6 +168,33 @@ struct DesignerViewTestAccess
             if (g.name == "TRACK INSERTS")
                 check(g.header->isVisible(), "Empty Track exposes real insert owner immediately");
         }
+        auto midiDocument = view.session.document;
+        auto midiOwner = addTrack(midiDocument.activeMix(), TrackKind::midiInstrument);
+        auto midiId = createMidiClip(midiDocument, midiOwner, 0);
+        view.session.document = midiDocument;
+        view.refresh();
+        auto rows = visibleTracks(view.session.document.activeMix());
+        auto at = std::find(rows.begin(), rows.end(), midiOwner);
+        auto point = juce::Point<float>(view.tracks->viewport.x(24000, 48000),
+                                        28.f + (float)(at - rows.begin()) * 86 + 35);
+        auto event = juce::MouseEvent(
+            juce::Desktop::getInstance().getMainMouseSource(), point, {}, 1, 0, 0, 0, 0, view.tracks.get(),
+            view.tracks.get(), juce::Time::getCurrentTime(), point, juce::Time::getCurrentTime(), 1, false);
+        view.session.document.selectedMidiClip.clear();
+        view.tracks->mouseDown(event);
+        view.tracks->mouseUp(event);
+        check(view.session.document.selectedMidiClip == midiId,
+              "Actual MIDI canvas pointer selects clip independently of Track selection");
+        view.tracks->mouseDoubleClick(event);
+        check(view.midiEditorOpen && view.midiEditor->isVisible(),
+              "Actual MIDI canvas double-click opens visible contextual piano roll");
+        auto onlyMidi = midiDocument;
+        onlyMidi.activeMix().layers.clear();
+        view.session.document = onlyMidi;
+        view.refresh();
+        check(view.render.isEnabled() && view.recordTake.isEnabled(),
+              "Final view reconciliation allows MIDI-only Render and frozen Perform recording");
+        view.midiEditorOpen = false;
         view.session.document = legacyDocument;
         view.refresh();
         select(2);

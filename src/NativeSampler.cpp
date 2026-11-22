@@ -153,6 +153,8 @@ void NativeSampler::update(const InstrumentSlot &s)
 {
     require(s.id == settings.id && s.samples.size() == settings.samples.size(), "Sampler topology changed");
     settings = s;
+    for (size_t i = (size_t)s.polyphony; i < voices.size(); ++i)
+        voices[i].active = false;
 }
 void NativeSampler::event(const MidiPacket &p)
 {
