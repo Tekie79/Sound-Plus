@@ -1,6 +1,7 @@
 #pragma once
 #include "DesignSession.h"
 #include "MultitrackEditor.h"
+#include "MidiEditor.h"
 #include "Waveform.h"
 #include "UIComponents.h"
 #include "DesignControls.h"
@@ -85,6 +86,8 @@ class DesignerView final : public juce::Component,
     struct Canvas;
     std::unique_ptr<Canvas> canvas;
     std::unique_ptr<MultitrackEditor> tracks;
+    std::unique_ptr<MidiEditor> midiEditor;
+    bool midiEditorOpen = false;
     IconButton addTrackButton{"Add track", ActionIcon::addLayer};
     std::unique_ptr<PerformView> perform;
     std::unique_ptr<SourcePoolView> alternatives;

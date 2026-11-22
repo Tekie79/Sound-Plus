@@ -120,6 +120,39 @@ class DesignSession final : public juce::Component, private juce::Timer
     void armInputTrack(const juce::String &, bool);
     void monitorInputTrack(const juce::String &, bool);
     void startInputRecording();
+    bool midiBusy() const
+    {
+        return midiOperation.isNotEmpty();
+    }
+    bool midiArmed(const juce::String &id) const
+    {
+        return armedMidi.contains(id);
+    }
+    bool midiMonitored(const juce::String &id) const
+    {
+        return monitoredMidi.contains(id);
+    }
+    juce::var midiStatus() const
+    {
+        return services.status()["midi"];
+    }
+    void configureMidiInput(const juce::String &, const juce::String &uid, int channel);
+    void armMidiTrack(const juce::String &, bool);
+    void monitorMidiTrack(const juce::String &, bool);
+    void startMidiRecording();
+    void stopMidiRecording(bool cancel = false);
+    void recoverMidiRecording(const juce::File &);
+    juce::File midiRecordingRoot() const
+    {
+        return directory.getChildFile("recorded-midi");
+    }
+    void startTrackRecording()
+    {
+        if (!armedMidi.empty())
+            startMidiRecording();
+        else
+            startInputRecording();
+    }
     void stopInputRecording(bool cancel = false);
     void recoverInputRecording(const juce::File &, bool allowUnverifiedLegacy = false);
     void findInputRecoveries(std::function<void(juce::Array<juce::var>)>);
@@ -181,6 +214,9 @@ class DesignSession final : public juce::Component, private juce::Timer
                         bool move);
     void cancelRender();
     void selectLayer(const juce::String &, bool additive = false);
+    void selectMidiClip(const juce::String &);
+    void assignSampler(const juce::String &track, const juce::File &, bool alternate = false,
+                       int64_t first = 0, int64_t last = 0);
     void selectVariation(const juce::String &);
     void generate(uint64_t);
     void saveSnapshot(const juce::String &name);
@@ -215,6 +251,8 @@ class DesignSession final : public juce::Component, private juce::Timer
         take,
         input,
         inputRecoveryList,
+        midiSource,
+        midi,
         count
     };
     struct Stamp
@@ -260,6 +298,16 @@ class DesignSession final : public juce::Component, private juce::Timer
     std::optional<PerformControls> takeGestureStart;
     std::optional<History> takeUndoBase;
     bool takeMutation = false, takeReadPending = false;
+    std::set<juce::String> armedMidi, monitoredMidi;
+    juce::String midiOperation, midiContext;
+    uint64_t midiIncarnation = 0, midiProcess = 0;
+    bool midiMutation = false, midiReadPending = false, midiStopping = false;
+    double midiStarted = 0;
+    std::function<void()> midiClose;
+    void updateMidiDevice();
+    void pollMidi(const juce::var &);
+    void applyMidiReceipt(juce::var);
+    void clearMidiContext();
     std::set<juce::String> armedInputs, monitoredInputs, pendingInputArms;
     juce::String inputOperation, inputDocument, inputVariation, inputArmContext, inputLastPhase;
     uint64_t inputIncarnation = 0, inputProcessGeneration = 0, inputControlSerial = 0;

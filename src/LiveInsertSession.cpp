@@ -186,6 +186,7 @@ void LiveInsertSession::run()
                             problems.erase(slot.id);
                         }
                         e.rack.id = slot.id;
+                        e.rack.instrument = rack.instrument;
                         e.rack.slots = {slot};
                         e.rack.runtimeControlTicks = next->document.liveControlTicks;
                         e.rack.bypass = rack.bypass;
@@ -269,8 +270,13 @@ void LiveInsertSession::run()
                           mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, "master",
                           "Master");
                 for (auto &t : mix.tracks)
+                {
                     if (t.kind != TrackKind::folder)
                         reconcile(t.inserts.hosted, t.layout, t.id, t.name);
+                    if (t.instrument && !t.instrument->hostedInstrument.hosted.slots.empty())
+                        reconcile(t.instrument->hostedInstrument.hosted, t.layout, "instrument:" + t.id,
+                                  t.name + " · Instrument");
+                }
                 for (auto &layer : mix.layers)
                     reconcile(layer.inserts.hosted,
                               mix.layout.id.isEmpty() ? channelLayout("stereo-v1")

@@ -1,6 +1,7 @@
 #pragma once
 #include "AudioStream.h"
 #include "CaptureDeviceLifecycle.h"
+#include "MidiInput.h"
 #include <condition_variable>
 #include <mutex>
 #include <thread>
@@ -52,6 +53,7 @@ class AudioPlaybackService
         core.render(out, channels, frames, hostNs);
     }
     AuditionCore core;
+    MidiInputService *midiInput = nullptr;
 
   private:
     friend struct AudioEngineTestAccess;

@@ -26,6 +26,8 @@ AudioPlaybackService::~AudioPlaybackService()
 }
 void AudioPlaybackService::request(juce::var command, double rate)
 {
+    if (midiInput && midiInput->busy() && command["mode"].toString() != "midi-record")
+        return;
     bool recording = command["mode"].toString() == "record";
     if (captureBusy() && !(recording && reservationPending.load()))
         return;
@@ -121,7 +123,12 @@ void AudioPlaybackService::prepare()
                     {
                         document.activeMix().inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                         for (auto &track : document.activeMix().tracks)
+                        {
                             track.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
+                            if (track.instrument)
+                                track.instrument->hostedInstrument.hosted.runtimeEndpoint =
+                                    juce::File(liveRoot);
+                        }
                         for (auto &layer : document.activeMix().layers)
                             layer.inserts.hosted.runtimeEndpoint = juce::File(liveRoot);
                     }
@@ -168,6 +175,8 @@ void AudioPlaybackService::prepare()
                 }
                 if (cancelled())
                     throw QueryCancelled();
+                if (result.mode == "midi-monitor" || result.mode == "midi-record")
+                    document.activeMix().duration = (int64_t)std::llround(document.sampleRate * 3600);
                 auto frame = (int64_t)request.command["positionSample"];
                 if (result.mode == "update")
                     frame = clockFrame.load() + (int64_t)std::llround(document.sampleRate * .25);
@@ -405,6 +414,8 @@ void AudioPlaybackService::produce()
                                           (double)latestControls["eventMs"]);
                 lastEdit = (uint64_t)(int64_t)latestControls["sequence"];
             }
+            if (midiInput)
+                midiInput->service(core.producerStream());
             core.service(1536);
             if (auto capture = core.capture();
                 capture && (capture->phase == TakeCapture::recording || capture->checkpointFailed))

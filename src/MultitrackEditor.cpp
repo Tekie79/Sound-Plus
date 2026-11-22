@@ -94,7 +94,14 @@ struct MultitrackEditor::Header final : juce::Component
         };
         for (auto *b : {&expand, &mute, &solo, &arm})
             b->setToggleable(true);
-        arm.onClick = [this] { editor.session.armInputTrack(id, !editor.session.inputArmed(id)); };
+        arm.onClick = [this]
+        {
+            auto *t = findTrack(editor.session.document.activeMix(), id);
+            if (t && t->kind == TrackKind::midiInstrument)
+                editor.session.armMidiTrack(id, !editor.session.midiArmed(id));
+            else
+                editor.session.armInputTrack(id, !editor.session.inputArmed(id));
+        };
         arm.setTooltip("Arm raw audio recording. Choose the device/channels and optional monitoring in Track "
                        "options. Monitoring starts off.");
         expand.onClick = [this]
@@ -186,11 +193,19 @@ struct MultitrackEditor::Header final : juce::Component
         level.setEnabled(!editor.session.inputBusy());
         mute.setEnabled(!editor.session.inputBusy());
         solo.setEnabled(!editor.session.inputBusy());
-        arm.setVisible(t && t->kind == TrackKind::audio);
+        arm.setVisible(t && (t->kind == TrackKind::audio || t->kind == TrackKind::midiInstrument));
         arm.setEnabled(!editor.session.inputBusy() && !editor.session.takeBusy());
-        arm.setToggleState(editor.session.inputArmed(id), juce::dontSendNotification);
+        bool midi = t && t->kind == TrackKind::midiInstrument;
+        arm.setIcon(midi ? ActionIcon::record : ActionIcon::microphone);
+        arm.setToggleState(midi ? editor.session.midiArmed(id) : editor.session.inputArmed(id),
+                           juce::dontSendNotification);
         arm.setButtonText((editor.session.inputArmed(id) ? "Disarm audio input: " : "Arm audio input: ") +
                           (t ? t->name : juce::String()));
+        if (midi)
+        {
+            arm.setButtonText(editor.session.midiArmed(id) ? "Disarm MIDI Track" : "Arm MIDI Track");
+            arm.setTooltip("MIDI arm. Choose device, channel and monitoring in Track options.");
+        }
         if (t && t->input)
             arm.setTooltip(t->input->deviceName + " / " + layoutName(t->input->layout) +
                            ". Input options and raw monitoring are in Track options. Monitoring starts off.");
@@ -377,6 +392,17 @@ CanvasClipGeometry MultitrackEditor::geometry(const DesignLayer &l, const juce::
     c.height = (float)height;
     return c;
 }
+juce::Rectangle<float> MultitrackEditor::midiGeometry(const MidiClip &c) const
+{
+    auto at = std::find(rows.begin(), rows.end(), c.track);
+    if (at == rows.end())
+        return {};
+    auto &d = session.document;
+    auto &timing = d.activeMix().midiTiming;
+    float x = viewport.x(midiFrame(c.start, timing, d.sampleRate), d.sampleRate),
+          right = viewport.x(midiFrame(c.start + c.length, timing, d.sampleRate), d.sampleRate);
+    return {x, tops[(size_t)(at - rows.begin())] + 5, std::max(2.f, right - x), (float)height - 15};
+}
 void MultitrackEditor::paint(juce::Graphics &g)
 {
     auto &d = session.document;
@@ -384,28 +410,56 @@ void MultitrackEditor::paint(juce::Graphics &g)
     auto rate = d.sampleRate;
     g.fillAll(ui::background);
     const auto left = viewport.header;
-    double step = viewport.pixelsPerSecond >= 100
-                      ? 1
-                      : std::pow(10, std::ceil(std::log10(100 / viewport.pixelsPerSecond)));
-    for (double t = std::floor(viewport.startSeconds / step) * step;
-         t < viewport.startSeconds + (getWidth() - left) / viewport.pixelsPerSecond; t += step)
+    if (hasMidi(m))
     {
-        auto x = left + (float)((t - viewport.startSeconds) * viewport.pixelsPerSecond);
-        g.setColour(ui::line);
-        g.drawVerticalLine((int)x, 23, (float)getHeight());
-        g.setColour(ui::muted);
-        g.setFont(juce::FontOptions(11.f));
-        g.drawText(juce::String(t, 2) + " s", (int)x + 4, 0, 80, 20, juce::Justification::centredLeft);
+        double secondsPerBeat = 60 / m.midiTiming.bpm, px = viewport.pixelsPerSecond * secondsPerBeat;
+        double step = px < 40 ? std::pow(2, std::ceil(std::log2(40 / std::max(.001, px)))) : 1;
+        double start = viewport.startSeconds / secondsPerBeat;
+        double bar = (double)m.midiTiming.numerator * 4 / m.midiTiming.denominator;
+        for (double beat = std::floor(start / step) * step; beat < start + (getWidth() - left) / px;
+             beat += step)
+        {
+            float x = left + (float)((beat - start) * px);
+            bool major = std::abs(beat / bar - std::round(beat / bar)) < .00001;
+            g.setColour(ui::line.withAlpha(major ? 1.f : .45f));
+            g.drawVerticalLine((int)x, 23, (float)getHeight());
+            g.setColour(ui::muted);
+            g.setFont(juce::FontOptions(10.f));
+            g.drawText(
+                juce::String((int)std::floor(beat / bar) + 1) + " | " +
+                    juce::String((int)std::floor(std::fmod(beat, bar) * m.midiTiming.denominator / 4) + 1),
+                (int)x + 4, 0, 70, 20, juce::Justification::centredLeft);
+        }
+    }
+    else
+    {
+        double step = viewport.pixelsPerSecond >= 100
+                          ? 1
+                          : std::pow(10, std::ceil(std::log10(100 / viewport.pixelsPerSecond)));
+        for (double t = std::floor(viewport.startSeconds / step) * step;
+             t < viewport.startSeconds + (getWidth() - left) / viewport.pixelsPerSecond; t += step)
+        {
+            auto x = left + (float)((t - viewport.startSeconds) * viewport.pixelsPerSecond);
+            g.setColour(ui::line);
+            g.drawVerticalLine((int)x, 23, (float)getHeight());
+            g.setColour(ui::muted);
+            g.setFont(juce::FontOptions(11.f));
+            g.drawText(juce::String(t, 2) + " s", (int)x + 4, 0, 80, 20, juce::Justification::centredLeft);
+        }
     }
     for (size_t i = 0; i < rows.size(); ++i)
     {
         auto id = rows[i];
         auto *t = findTrack(m, id);
         auto col = t ? ui::trackColour(t->colour) : ui::accent;
-        g.setColour(
-            (d.selectedTrack == id && d.selectedLayer.isEmpty() ? ui::raised : ui::surface).withAlpha(.45f));
+        g.setColour((d.selectedTrack == id && d.selectedLayer.isEmpty() && d.selectedMidiClip.isEmpty()
+                         ? ui::raised
+                         : ui::surface)
+                        .withAlpha(.45f));
         g.fillRoundedRectangle(left, tops[i], getWidth() - left - 3, (float)height - 5, 4);
-        g.setColour(d.selectedTrack == id && d.selectedLayer.isEmpty() ? ui::raised : ui::surface);
+        g.setColour(d.selectedTrack == id && d.selectedLayer.isEmpty() && d.selectedMidiClip.isEmpty()
+                        ? ui::raised
+                        : ui::surface);
         g.fillRoundedRectangle(4, tops[i], left - 16, (float)height - 5, 4);
         g.setColour(col.withAlpha(.8f));
         g.fillRoundedRectangle(4, tops[i] + 6, 2, (float)height - 17, 1);
@@ -420,6 +474,35 @@ void MultitrackEditor::paint(juce::Graphics &g)
     {
         juce::Graphics::ScopedSaveState save(g);
         g.reduceClipRegion((int)left, 24, getWidth() - (int)left, getHeight() - 24);
+        for (auto &c : m.midiClips)
+        {
+            auto r = midiGeometry(c);
+            if (r.isEmpty())
+                continue;
+            auto *owner = findTrack(m, c.track);
+            auto colour = ui::trackColour(owner ? owner->colour : 0);
+            auto selected = d.selectedMidiClip == c.id;
+            g.setColour(ui::surface.interpolatedWith(colour, selected ? .35f : .18f));
+            g.fillRoundedRectangle(r, 4);
+            g.setColour(colour.withAlpha(c.mute ? .3f : .85f));
+            auto grid = r.reduced(5, 14);
+            for (auto &n : c.notes)
+            {
+                auto a = std::max<int64_t>(0, n.tick - c.offset),
+                     b = std::min(c.length, n.tick + n.duration - c.offset);
+                if (b <= a)
+                    continue;
+                float x = r.getX() + r.getWidth() * a / c.length;
+                float y = grid.getBottom() - grid.getHeight() * (n.pitch - 24) / 84.f;
+                if (y >= grid.getY() && y <= grid.getBottom())
+                    g.fillRoundedRectangle(x, y, std::max(2.f, r.getWidth() * (b - a) / c.length), 2.f, 1);
+            }
+            g.setColour(selected ? ui::accent : colour.withAlpha(.4f));
+            g.drawRoundedRectangle(r.reduced(.7f), 4, selected ? 1.5f : 1.f);
+            g.setColour(ui::text);
+            g.setFont(juce::FontOptions(10.f));
+            g.drawText(c.name, r.reduced(6, 2).removeFromTop(13), juce::Justification::centredLeft);
+        }
         for (auto &l : m.layers)
         {
             if (std::find(rows.begin(), rows.end(), l.trackId) == rows.end())
@@ -518,6 +601,14 @@ void MultitrackEditor::fitDesign()
 }
 void MultitrackEditor::fitSelection()
 {
+    if (auto *c = findMidiClip(session.document.activeMix(), session.document.selectedMidiClip))
+    {
+        auto &d = session.document;
+        viewport.fit(midiFrame(c->start, d.activeMix().midiTiming, d.sampleRate),
+                     midiFrame(c->start + c->length, d.activeMix().midiTiming, d.sampleRate), d.sampleRate);
+        repaint();
+        return;
+    }
     if (auto *l = session.selectedLayer())
         viewport.fit(l->placement, l->placement + layerDuration(*l, session.document.sampleRate),
                      session.document.sampleRate);
@@ -545,6 +636,7 @@ void MultitrackEditor::createTrack(TrackKind kind)
                  {
                      d.selectedTrack = addTrack(d.activeMix(), kind);
                      d.selectedLayer.clear();
+                     d.selectedMidiClip.clear();
                  });
     session.selectedIds.clear();
     refresh();
@@ -555,14 +647,16 @@ void MultitrackEditor::addTrackMenu(juce::Component &anchor)
     m.addItem(1, "Audio Track");
     m.addItem(2, "Folder");
     m.addItem(3, "Group Bus");
+    m.addItem(4, "MIDI Track");
     juce::Component::SafePointer<MultitrackEditor> safe(this);
     m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
                     [safe](int n)
                     {
-                        if (safe && n >= 1 && n <= 3)
+                        if (safe && n >= 1 && n <= 4)
                             safe->createTrack(n == 1   ? TrackKind::audio
                                               : n == 2 ? TrackKind::folder
-                                                       : TrackKind::groupBus);
+                                              : n == 3 ? TrackKind::groupBus
+                                                       : TrackKind::midiInstrument);
                     });
 }
 void MultitrackEditor::selectTrack(const juce::String &id)
@@ -571,6 +665,7 @@ void MultitrackEditor::selectTrack(const juce::String &id)
                          [&](auto &d)
                          {
                              d.selectedLayer.clear();
+                             d.selectedMidiClip.clear();
                              d.selectedTrack = id;
                          });
     session.selectedIds.clear();
@@ -606,7 +701,15 @@ void MultitrackEditor::moveClip(const juce::String &id, const juce::String &owne
 void MultitrackEditor::splitSelected()
 {
     auto id = session.document.selectedLayer;
-    session.edit("Split clip", [&](auto &d) { splitClip(d, id, d.playhead); });
+    auto midi = session.document.selectedMidiClip;
+    session.edit("Split clip",
+                 [&](auto &d)
+                 {
+                     if (midi.isNotEmpty())
+                         splitMidiClip(d, midi, d.playhead);
+                     else
+                         splitClip(d, id, d.playhead);
+                 });
 }
 void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor)
 {
@@ -618,6 +721,14 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
     {
         m.addItem(400, juce::String::fromUTF8("Audio input…"), !session.inputBusy());
         m.addItem(401, "Raw input monitoring", session.inputArmed(id), session.inputMonitored(id));
+        m.addSeparator();
+    }
+    if (t->kind == TrackKind::midiInstrument)
+        m.addItem(402, "Instrument…");
+    if (t->kind == TrackKind::midiInstrument)
+    {
+        m.addItem(403, "MIDI input…", !session.midiBusy());
+        m.addItem(404, "MIDI monitoring", session.midiArmed(id), session.midiMonitored(id));
         m.addSeparator();
     }
     m.addItem(1, "Move up");
@@ -645,7 +756,7 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
     m.addSubMenu("Folder membership", parent);
     if (t->kind != TrackKind::folder)
         m.addSubMenu("Audio output", output);
-    if (t->kind == TrackKind::audio || t->kind == TrackKind::groupBus)
+    if (t->kind == TrackKind::audio || t->kind == TrackKind::groupBus || t->kind == TrackKind::midiInstrument)
     {
         juce::PopupMenu layout;
         int n = 300;
@@ -672,6 +783,22 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
             if (!safe || !n || safe->session.documentGeneration() != incarnation ||
                 safe->session.document.id != document || safe->session.document.activeVariation != variation)
                 return;
+            if (n == 403)
+            {
+                safe->midiInputMenu(id, *safe);
+                return;
+            }
+            if (n == 404)
+            {
+                safe->session.monitorMidiTrack(id, !safe->session.midiMonitored(id));
+                return;
+            }
+            if (n == 402)
+            {
+                if (safe->onInstrument)
+                    safe->onInstrument(id);
+                return;
+            }
             if (n == 400)
             {
                 safe->inputMenu(id, *safe);
@@ -710,6 +837,42 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
                                                                         "5.1-rear-v1", "7.1-v1"}[n - 300]);
                 });
         });
+}
+void MultitrackEditor::midiInputMenu(const juce::String &owner, juce::Component &anchor)
+{
+    auto *t = findTrack(session.document.activeMix(), owner);
+    if (!t)
+        return;
+    auto devices = session.midiStatus()["availableDevices"];
+    juce::PopupMenu menu;
+    menu.addSectionHeader("MIDI input");
+    menu.addItem(1, "None", true, t->midiInputUID.isEmpty());
+    for (int n = 0; n < devices.size(); ++n)
+        menu.addItem(100 + n, devices[n]["name"].toString(), true,
+                     t->midiInputUID == devices[n]["uid"].toString());
+    juce::PopupMenu channels;
+    channels.addItem(200, "All channels", true, t->midiChannel == 0);
+    for (int ch = 1; ch <= 16; ++ch)
+        channels.addItem(200 + ch, juce::String(ch), true, t->midiChannel == ch);
+    menu.addSubMenu("Channel", channels);
+    juce::Component::SafePointer<MultitrackEditor> safe(this);
+    auto token = session.beginDialog();
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
+                       [safe, devices, owner, token](int n)
+                       {
+                           if (!safe || !safe->session.accepts(token) || !n)
+                               return;
+                           auto *t = findTrack(safe->session.document.activeMix(), owner);
+                           if (!t)
+                               return;
+                           if (n == 1)
+                               safe->session.configureMidiInput(owner, {}, t->midiChannel);
+                           else if (n >= 100 && n < 100 + devices.size())
+                               safe->session.configureMidiInput(owner, devices[n - 100]["uid"].toString(),
+                                                                t->midiChannel);
+                           else if (n >= 200 && n <= 216)
+                               safe->session.configureMidiInput(owner, t->midiInputUID, n - 200);
+                       });
 }
 void MultitrackEditor::inputMenu(const juce::String &owner, juce::Component &anchor)
 {
@@ -797,6 +960,7 @@ void MultitrackEditor::mouseDown(const juce::MouseEvent &e)
     anchor = e.position;
     ownerAtDown = rowAt(e.y);
     clipId.clear();
+    midiDrag = false;
     hit = CanvasTarget::none;
     fadePoint = -1;
     if (e.y < 25)
@@ -838,6 +1002,30 @@ void MultitrackEditor::mouseDown(const juce::MouseEvent &e)
         hit = CanvasTarget::header;
         original = session.document;
         active = true;
+        session.beginGesture();
+        return;
+    }
+    for (auto it = session.document.activeMix().midiClips.rbegin();
+         it != session.document.activeMix().midiClips.rend(); ++it)
+    {
+        if (it->track != ownerAtDown || !midiGeometry(*it).expanded(3).contains(e.position))
+            continue;
+        clipId = it->id;
+        session.selectMidiClip(clipId);
+        auto rect = midiGeometry(*it);
+        hit = std::abs(e.x - rect.getX()) < 5       ? CanvasTarget::trimIn
+              : std::abs(e.x - rect.getRight()) < 5 ? CanvasTarget::trimOut
+                                                    : CanvasTarget::body;
+        if (e.mods.isPopupMenu())
+        {
+            if (onOpenMidi)
+                onOpenMidi(clipId);
+            return;
+        }
+        copied = e.mods.isAltDown();
+        original = session.document;
+        active = true;
+        midiDrag = true;
         session.beginGesture();
         return;
     }
@@ -967,6 +1155,51 @@ void MultitrackEditor::mouseDrag(const juce::MouseEvent &e)
     }
     if (hit == CanvasTarget::header)
         return;
+    if (midiDrag)
+    {
+        auto *before = findMidiClip(original.activeMix(), clipId);
+        if (!before)
+            return;
+        auto rate = session.document.sampleRate;
+        auto timing = original.activeMix().midiTiming;
+        auto delta = viewport.delta(e.x - anchor.x, rate);
+        auto start = midiFrame(before->start, timing, rate),
+             end = midiFrame(before->start + before->length, timing, rate);
+        if (!e.mods.isCommandDown() && snapping.enabled)
+        {
+            auto grid = midiPpq / 4;
+            auto tick = midiTick(start + delta, timing, rate);
+            delta = midiFrame((int64_t)std::llround((double)tick / grid) * grid, timing, rate) - start;
+        }
+        auto owner = rowAt(e.y);
+        auto *track = findTrack(session.document.activeMix(), owner);
+        if (!track || track->kind != TrackKind::midiInstrument)
+            owner = before->track;
+        session.edit(
+            "Edit MIDI clip",
+            [&](auto &d)
+            {
+                auto id = copied && d.selectedMidiClip != clipId ? d.selectedMidiClip : clipId;
+                if (hit == CanvasTarget::body)
+                    moveMidiClip(d, id, owner, std::max<int64_t>(0, start + delta), copied && id == clipId);
+                else
+                {
+                    auto *c = findMidiClip(d.activeMix(), id);
+                    if (!c)
+                        return;
+                    *c = *before;
+                    auto a = hit == CanvasTarget::trimIn
+                                 ? std::clamp(
+                                       start + delta,
+                                       std::max<int64_t>(0, start - midiFrame(before->offset, timing, rate)),
+                                       end - 1)
+                                 : start;
+                    auto b = hit == CanvasTarget::trimOut ? std::max(start + 1, end + delta) : end;
+                    trimMidiClip(d, id, a, b);
+                }
+            });
+        return;
+    }
     auto *before = findClip(original.activeMix(), clipId);
     if (!before)
         return;
@@ -1096,6 +1329,26 @@ void MultitrackEditor::mouseMove(const juce::MouseEvent &e)
 }
 void MultitrackEditor::mouseDoubleClick(const juce::MouseEvent &e)
 {
+    auto owner = rowAt(e.y);
+    if (auto *t = findTrack(session.document.activeMix(), owner);
+        t && t->kind == TrackKind::midiInstrument && e.x >= viewport.header)
+    {
+        juce::String id;
+        for (auto &c : session.document.activeMix().midiClips)
+            if (c.track == owner && midiGeometry(c).contains(e.position))
+            {
+                id = c.id;
+                break;
+            }
+        if (id.isEmpty())
+            session.edit(
+                "Create MIDI clip", [&](auto &d)
+                { id = createMidiClip(d, owner, std::max<int64_t>(0, viewport.frame(e.x, d.sampleRate))); });
+        session.selectMidiClip(id);
+        if (onOpenMidi)
+            onOpenMidi(id);
+        return;
+    }
     for (auto &l : session.document.activeMix().layers)
         if (l.trackId == rowAt(e.y))
         {
@@ -1159,6 +1412,18 @@ bool MultitrackEditor::keyPressed(const juce::KeyPress &k)
         splitSelected();
         return true;
     }
+    if (k.getModifiers().isCommandDown() && c == 'd' && session.document.selectedMidiClip.isNotEmpty())
+    {
+        auto *clip = findMidiClip(session.document.activeMix(), session.document.selectedMidiClip);
+        if (clip)
+        {
+            auto id = clip->id, owner = clip->track;
+            auto at = midiFrame(clip->start + clip->length, session.document.activeMix().midiTiming,
+                                session.document.sampleRate);
+            session.edit("Duplicate MIDI clip", [&](auto &d) { moveMidiClip(d, id, owner, at, true); });
+        }
+        return true;
+    }
     if (k.getModifiers().isCommandDown() && c == 'd')
     {
         if (auto *l = session.selectedLayer())
@@ -1167,16 +1432,20 @@ bool MultitrackEditor::keyPressed(const juce::KeyPress &k)
     }
     if (k.isKeyCode(juce::KeyPress::deleteKey) || k.isKeyCode(juce::KeyPress::backspaceKey))
     {
+        auto midi = session.document.selectedMidiClip;
         auto ids = session.selectedIds;
         auto selected = session.document.selectedTrack;
         session.edit("Delete selection",
                      [&](auto &d)
                      {
-                         if (ids.empty() && selected != "master" && findTrack(d.activeMix(), selected))
+                         if (midi.isNotEmpty())
+                             std::erase_if(d.activeMix().midiClips, [&](auto &c) { return c.id == midi; });
+                         else if (ids.empty() && selected != "master" && findTrack(d.activeMix(), selected))
                              deleteTrack(d.activeMix(), selected);
                          else
                              std::erase_if(d.activeMix().layers, [&](auto &l) { return ids.contains(l.id); });
                          d.selectedLayer.clear();
+                         d.selectedMidiClip.clear();
                      });
         return true;
     }
@@ -1205,6 +1474,12 @@ bool MultitrackEditor::isInterestedInFileDrag(const juce::StringArray &files)
 }
 void MultitrackEditor::filesDropped(const juce::StringArray &files, int x, int y)
 {
+    if (auto *t = findTrack(session.document.activeMix(), rowAt((float)y));
+        t && t->kind == TrackKind::midiInstrument)
+    {
+        session.assignSampler(t->id, juce::File(files[0]));
+        return;
+    }
     dropOwner((float)y);
     session.addExternals(files, std::max<int64_t>(0, viewport.frame((float)x, session.document.sampleRate)));
 }
@@ -1222,6 +1497,25 @@ bool MultitrackEditor::isInterestedInDragSource(const SourceDetails &d)
 void MultitrackEditor::itemDropped(const SourceDetails &d)
 {
     auto v = d.description;
+    if (auto *t = findTrack(session.document.activeMix(), rowAt((float)d.localPosition.y));
+        t && t->kind == TrackKind::midiInstrument)
+    {
+        try
+        {
+            auto captured = designFromJson(juce::JSON::parse(v.toString()));
+            if (!captured.original.layers.empty())
+            {
+                auto &l = captured.original.layers.front();
+                session.assignSampler(t->id, juce::File(l.source.path), false, l.region.startSample,
+                                      l.region.endSample);
+            }
+        }
+        catch (const std::exception &e)
+        {
+            session.message = e.what();
+        }
+        return;
+    }
     dropOwner((float)d.localPosition.y);
     if (onAssetDrop)
         onAssetDrop(

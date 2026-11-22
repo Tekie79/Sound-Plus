@@ -3,6 +3,7 @@
 #include "DesignSession.h"
 #include "PluginProcessing.h"
 #include "UIComponents.h"
+#include "DesignControls.h"
 namespace sp
 {
 class HostedRackView final : public juce::Component
@@ -493,6 +494,9 @@ class HostedRackView final : public juce::Component
     ChannelLayout bus(const Owner &o)
     {
         auto &mix = session.document.activeMix();
+        if (o.layer.startsWith("instrument:"))
+            if (auto *t = findTrack(mix, o.layer.substring(11)))
+                return t->layout;
         if (auto *t = findTrack(mix, o.layer))
             return t->layout;
         if (mix.layout.id.isEmpty())
@@ -519,7 +523,29 @@ class HostedRackView final : public juce::Component
                      [&](auto &)
                      {
                          if (auto *rack = find(o))
+                         {
                              fn(*rack);
+                             if (o.layer.startsWith("instrument:") && rack->slots.empty())
+                             {
+                                 if (auto *t = findTrack(session.document.activeMix(), o.layer.substring(11));
+                                     t && t->instrument)
+                                 {
+                                     t->instrument->format = "none";
+                                     t->instrument->identifier = "none";
+                                     rack->instrument = false;
+                                 }
+                             }
+                             if (o.layer.startsWith("instrument:"))
+                                 if (auto *t = findTrack(session.document.activeMix(), o.layer.substring(11));
+                                     t && t->instrument && !rack->slots.empty())
+                                 {
+                                     auto identity = juce::JSON::parse(rack->slots[0].settings)["plugin"];
+                                     t->instrument->format = identity["format"].toString();
+                                     t->instrument->identifier = identity["id"].toString();
+                                     t->instrument->samples.clear();
+                                     rack->instrument = true;
+                                 }
+                         }
                      });
         refresh();
     }
@@ -583,6 +609,8 @@ class HostedRackView final : public juce::Component
                 {
                     auto *o = new juce::DynamicObject();
                     o->setProperty("mode", "describe");
+                    if (target.layer.startsWith("instrument:"))
+                        o->setProperty("instrument", true);
                     o->setProperty("plugin", plugin);
                     o->setProperty("rate", rate);
                     o->setProperty("block", 512);
@@ -612,6 +640,8 @@ class HostedRackView final : public juce::Component
                         safe->change(target, "Add external insert",
                                      [&](auto &rack)
                                      {
+                                         if (target.layer.startsWith("instrument:"))
+                                             rack.slots.clear();
                                          if (rack.slots.size() < 8)
                                              rack.slots.push_back(
                                                  {newSlot, juce::JSON::toString(settings, true), false});
@@ -635,6 +665,7 @@ class HostedRackView final : public juce::Component
         juce::var snapshot;
         juce::String wantedSelection, wantedFormat, wantedCanonical;
         bool refreshingRows = false, wantedBundleOnly = false;
+        bool instruments = false;
         ChannelLayout expected;
         std::function<void(juce::var)> choose;
         ui::LookAndFeel look;
@@ -643,7 +674,8 @@ class HostedRackView final : public juce::Component
             available.setModel(nullptr);
             setLookAndFeel(nullptr);
         }
-        Chooser(ChannelLayout layout, const juce::String &ownerName) : expected(layout)
+        Chooser(ChannelLayout layout, const juce::String &ownerName, bool instrumentMode = false)
+            : expected(layout), instruments(instrumentMode)
         {
             setLookAndFeel(&look);
             setSize(560, 420);
@@ -778,7 +810,8 @@ class HostedRackView final : public juce::Component
         void populate()
         {
             refreshingRows = true;
-            choices = pluginCandidateRows(snapshot, expected, search.getText(), attention.getToggleState());
+            choices = pluginCandidateRows(snapshot, expected, search.getText(), attention.getToggleState(),
+                                          instruments);
             if (!attention.getToggleState())
                 for (int i = choices.size(); --i >= 0;)
                     if (!(bool)choices[i]["canInsert"])
@@ -823,7 +856,8 @@ class HostedRackView final : public juce::Component
             for (auto &l : session.document.activeMix().layers)
                 if (l.id == target.layer)
                     ownerName = l.name;
-        auto content = std::make_unique<Chooser>(bus(target), ownerName);
+        auto content =
+            std::make_unique<Chooser>(bus(target), ownerName, target.layer.startsWith("instrument:"));
         chooser = content.get();
         juce::Component::SafePointer<HostedRackView> safe(this);
         auto view = chooser;

@@ -40,7 +40,13 @@ juce::var recipeJson(const PerformTake &t)
     auto o = obj();
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
-        put(o, "recipeVersion", t.trackRecipe ? 4 : t.pluginAware ? 3 : 2);
+        put(o, "recipeVersion",
+            hasMidi((const DesignMix &)t.recipe) ? 5
+            : t.trackRecipe                      ? 4
+            : t.pluginAware                      ? 3
+                                                 : 2);
+    if (hasMidi((const DesignMix &)t.recipe))
+        put(o, "midiPolicy", "constant-tempo-sample-offset-instruments-v1");
     if (t.trackRecipe)
         put(o, "trackPolicy", "project-automation-before-perform-v1");
     if (t.pluginAware)
@@ -216,16 +222,20 @@ PerformTake takeFromJson(const juce::var &o)
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
     if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3 &&
-        (int)r["recipeVersion"] != 4)
+        (int)r["recipeVersion"] != 4 && (int)r["recipeVersion"] != 5)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
-    t.trackRecipe = (int)r["recipeVersion"] == 4;
+    t.trackRecipe = (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5;
     t.pluginAware = (int)r["recipeVersion"] == 3 || (t.trackRecipe && r.hasProperty("pluginPolicy"));
     if (t.trackRecipe && r["trackPolicy"].toString() != "project-automation-before-perform-v1")
         throw std::runtime_error("Unsupported track take policy");
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
+    if (hasMidi((const DesignMix &)t.recipe) != ((int)r["recipeVersion"] == 5) ||
+        ((int)r["recipeVersion"] == 5 &&
+         r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
+        throw std::runtime_error("Unsupported MIDI take policy/version");
     t.sampleRate = (double)r["rate"];
     t.processing = r["processing"].toString();
     t.recipeHash = o["recipeHash"].toString();
@@ -288,12 +298,13 @@ void validateTake(const PerformTake &t)
         (t.pluginAware && !t.orderedRecipe))
         throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
     if (t.trackRecipe != t.recipe->trackSchema ||
-        (t.processing == "track-automation-takes-v1") != t.trackRecipe)
+        ((t.processing == "track-automation-takes-v1" || t.processing == "midi-instrument-takes-v1")) !=
+            t.trackRecipe)
         throw std::runtime_error("Track take processing contract mismatch");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
          t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1" &&
-         t.processing != "track-automation-takes-v1") ||
+         t.processing != "track-automation-takes-v1" && t.processing != "midi-instrument-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -345,6 +356,9 @@ void validateTake(const PerformTake &t)
         if (!ids.contains(l.source.id))
             throw std::runtime_error("Take source fingerprint missing");
     }
+    for (auto *a : mixAssets((const DesignMix &)t.recipe))
+        if (!ids.contains(a->id))
+            throw std::runtime_error("Instrument source fingerprint missing");
     validatePoolOrigins(t);
 }
 juce::var takePluginProvenance(const PerformTake &t)
@@ -406,6 +420,8 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
         t.processing = "track-automation-takes-v1";
         t.orderedRecipe = true;
     }
+    if (hasMidi(mix))
+        t.processing = "midi-instrument-takes-v1";
     auto fixed = [](InsertChain &c)
     {
         c.hosted.runtimeEndpoint = juce::File();
@@ -419,7 +435,11 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     };
     fixed(mix.inserts);
     for (auto &track : mix.tracks)
+    {
         fixed(track.inserts);
+        if (track.instrument)
+            fixed(track.instrument->hostedInstrument);
+    }
     for (auto &l : mix.layers)
         fixed(l.inserts);
     freezePoolOrigins(t, mix);
@@ -428,19 +448,18 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     t.captureRate = d.sampleRate;
     t.reason = "Interrupted draft";
     std::set<juce::String> ids;
-    for (auto &l : t.recipe->layers)
-        if (ids.insert(l.source.id).second)
+    for (auto *asset : mixAssets((const DesignMix &)t.recipe))
+        if (ids.insert(asset->id).second)
         {
             FileStamp before, after;
-            if (t.pluginAware &&
-                (!fileStamp(juce::File(l.source.path), before) || before.size != l.source.size ||
-                 before.modified != l.source.modified || before.inode != l.source.inode))
+            if (t.pluginAware && (!fileStamp(juce::File(asset->path), before) || before.size != asset->size ||
+                                  before.modified != asset->modified || before.inode != asset->inode))
                 throw std::runtime_error("Source changed before plugin-aware recipe freeze");
-            auto in = juce::File(l.source.path).createInputStream();
+            auto in = juce::File(asset->path).createInputStream();
             if (!in)
-                throw std::runtime_error("Take source unavailable: " + l.source.name.toStdString());
-            t.sources.push_back({l.source.id, juce::SHA256(*in).toHexString(), {}});
-            if (t.pluginAware && (!fileStamp(juce::File(l.source.path), after) || before.size != after.size ||
+                throw std::runtime_error("Take source unavailable: " + asset->name.toStdString());
+            t.sources.push_back({asset->id, juce::SHA256(*in).toHexString(), {}});
+            if (t.pluginAware && (!fileStamp(juce::File(asset->path), after) || before.size != after.size ||
                                   before.modified != after.modified || before.inode != after.inode))
                 throw std::runtime_error("Source changed during plugin-aware recipe freeze");
         }
@@ -487,17 +506,17 @@ void verifyTakeSources(const PerformTake &t)
     for (auto &s : t.sources)
     {
         bool found = false;
-        for (auto &l : t.recipe->layers)
-            if (l.source.id == s.id)
+        for (auto *asset : mixAssets((const DesignMix &)t.recipe))
+            if (asset->id == s.id)
             {
                 found = true;
-                auto path = s.overridePath.isEmpty() ? l.source.path : s.overridePath;
+                auto path = s.overridePath.isEmpty() ? asset->path : s.overridePath;
                 if (checked.insert(path + ":" + s.sha256).second)
                 {
                     auto in = juce::File(path).createInputStream();
                     if (!in || juce::SHA256(*in).toHexString() != s.sha256)
                         throw std::runtime_error("Take source offline or changed: " +
-                                                 l.source.name.toStdString());
+                                                 asset->name.toStdString());
                 }
                 if (!t.pluginAware)
                     break; // Preserve historical stock source-resolution behavior.
@@ -528,7 +547,11 @@ void verifyTakePlugins(const PerformTake &t)
     };
     check(t.recipe->inserts);
     for (auto &track : t.recipe->tracks)
+    {
         check(track.inserts);
+        if (track.instrument)
+            check(track.instrument->hostedInstrument);
+    }
     for (auto &l : t.recipe->layers)
         check(l.inserts);
 }
@@ -560,6 +583,20 @@ DesignDocument takeDocument(const DesignDocument &d)
                 a.layoutOverride = l.source.layoutOverride;
                 l.source = a;
             }
+    for (auto &track : result.original.tracks)
+        if (track.instrument)
+            for (auto &entry : track.instrument->samples)
+                for (auto &source : (*t).sources)
+                    if (source.id == entry.source.id && source.overridePath.isNotEmpty())
+                    {
+                        auto a = inspectDesignSource(juce::File(source.overridePath));
+                        a.id = entry.source.id;
+                        a.revision = entry.source.revision;
+                        entry.source = a;
+                        entry.region.size = a.size;
+                        entry.region.modified = a.modified;
+                        entry.region.inode = a.inode;
+                    }
     result.takeProcessing = true;
     return result;
 }
@@ -577,6 +614,20 @@ DesignMix takeDisplayMix(const PerformTake &t)
                 l.source.error.clear();
                 l.source.online = true;
             }
+    for (auto &track : mix.tracks)
+        if (track.instrument)
+            for (auto &entry : track.instrument->samples)
+                for (auto &source : (t).sources)
+                    if (source.id == entry.source.id && source.overridePath.isNotEmpty())
+                    {
+                        auto a = inspectDesignSource(juce::File(source.overridePath));
+                        a.id = entry.source.id;
+                        a.revision = entry.source.revision;
+                        entry.source = a;
+                        entry.region.size = a.size;
+                        entry.region.modified = a.modified;
+                        entry.region.inode = a.inode;
+                    }
     return mix;
 }
 } // namespace sp

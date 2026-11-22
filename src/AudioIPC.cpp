@@ -167,7 +167,7 @@ bool AudioClient::stopIfOwned(const juce::String &id, uint64_t generation)
 uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
                                  const juce::File &capture, const juce::String &mode)
 {
-    if (inputOwned || captureOwned || (captureReserved && mode != "record"))
+    if (inputOwned || midiOwned || captureOwned || (captureReserved && mode != "record"))
         return 0;
     if (mode == "record")
         captureOwned = true;
@@ -195,7 +195,7 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
 void AudioClient::inputCommand(juce::var v)
 {
     auto command = v["command"].toString();
-    if (!command.startsWith("input_"))
+    if (!command.startsWith("input_") && !command.startsWith("midi_"))
         throw std::runtime_error("Invalid input command");
     std::lock_guard lock(mutex);
     if (outgoing.size() >= 16)
@@ -206,6 +206,13 @@ void AudioClient::inputCommand(juce::var v)
             throw std::runtime_error("Another recording owns transport");
         inputOperation = v["plan"]["id"].toString();
         inputOwned = true;
+    }
+    if (command == "midi_record")
+    {
+        if (captureBusy())
+            throw std::runtime_error("Another recording owns transport");
+        midiOperation = v["id"].toString();
+        midiOwned = true;
     }
     if (command == "input_finish")
     {
@@ -490,6 +497,9 @@ void AudioClient::run()
                         }
                         std::lock_guard lock(mutex);
                         latest = state;
+                        auto midi = state["midi"];
+                        if (midi["receipt"]["id"].toString() == midiOperation && !(bool)midi["recording"])
+                            midiOwned = false;
                         auto recording = state["inputRecording"];
                         auto phase = recording["state"].toString();
                         if ((recording["id"].toString() == inputOperation &&
@@ -600,6 +610,7 @@ void AudioClient::run()
             outgoing.clear();
             captureOwned = false;
             inputOwned = false;
+            midiOwned = false;
             desiredPlaying = false;
             desiredId.clear();
             latest = message("status");

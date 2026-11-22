@@ -77,7 +77,8 @@ const DesignMix &DesignSession::performanceMix() const
 }
 void DesignSession::recordTake()
 {
-    if (inputBusy() || takeBusy() || replacing || working || rendering || document.activeMix().layers.empty())
+    if (midiBusy() || inputBusy() || takeBusy() || replacing || working || rendering ||
+        (document.activeMix().layers.empty() && !hasMidi(document.activeMix())))
         return;
     const bool plugins = hasHostedInserts(document.activeMix());
     if (plugins && (liveFlushing || !liveCommands.empty()))

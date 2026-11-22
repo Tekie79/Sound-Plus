@@ -1,3 +1,4 @@
+#include "NativeSampler.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
 #include "SourcePools.h"
@@ -640,6 +641,11 @@ struct DesignGraph::Impl
     struct TrackNode
     {
         DesignTrack track;
+        std::unique_ptr<NativeSampler> sampler;
+        std::unique_ptr<HostedRackClient> instrument;
+        bool panic = false, endedMidi = false;
+        std::vector<MidiPacket> midi;
+        size_t nextMidi = 0;
         ChannelLayout bus, destinationBus;
         LayerRouting route;
         std::array<std::array<juce::SmoothedValue<float>, 16>, 16> matrixGains;
@@ -665,14 +671,27 @@ struct DesignGraph::Impl
         {
             if (t.kind == TrackKind::folder)
                 continue;
-            if (t.kind == TrackKind::midiInstrument)
-            {
-                if (t.instrument.has_value())
-                    throw std::runtime_error("MIDI instrument processing is a subsequent increment");
-                continue;
-            }
             auto node = std::make_unique<TrackNode>();
             node->track = t;
+            if (t.kind == TrackKind::midiInstrument)
+            {
+                node->midi = compileMidi(mix, t.id, sampleRate);
+                if (t.instrument && t.instrument->version == 1)
+                {
+                    if (t.instrument->format == "SoundPlus")
+                        node->sampler = std::make_unique<NativeSampler>(*t.instrument, t.layout, sampleRate);
+                    else if (t.instrument->format != "none")
+                    {
+                        auto rack = t.instrument->hostedInstrument.hosted;
+                        rack.runtimeFixedState = fixed;
+                        node->instrument =
+                            std::make_unique<HostedRackClient>(rack, t.layout, sampleRate, cancelled);
+                        node->inputLatency = node->instrument->latency();
+                    }
+                }
+                else if (!node->midi.empty())
+                    throw std::runtime_error("Choose an Instrument for MIDI Track: " + t.name.toStdString());
+            }
             node->audible = trackAudible(mix, t.id);
             auto *volume = automationCurve(t.automation, {{}, "volume"});
             node->volumeAutomated = volume && volume->read;
@@ -702,6 +721,12 @@ struct DesignGraph::Impl
                 v->compensate(node->inputLatency - v->latency());
             tracks.push_back(std::move(node));
         }
+        size_t samplerFloats = 0;
+        for (auto &node : tracks)
+            if (node->sampler)
+                samplerFloats += node->sampler->sourceFloats();
+        if (samplerFloats > 64 * 1024 * 1024)
+            throw std::runtime_error("Sampler project exceeds prepared PCM budget");
         for (auto &node : tracks)
         {
             if (node->track.output.isNotEmpty())
@@ -772,11 +797,22 @@ struct DesignGraph::Impl
         {
             n->track = *findTrack(mix, n->track.id);
             n->automation = std::make_unique<CompiledAutomation>(mix, n->track.id);
-            n->audible = trackAudible(mix, n->track.id);
+            auto audible = trackAudible(mix, n->track.id);
+            if (n->audible && !audible)
+            {
+                n->panic = true;
+                if (n->sampler)
+                    n->sampler->allNotesOff(true);
+            }
+            n->audible = audible;
             auto *c = automationCurve(n->track.automation, {{}, "volume"});
             n->volumeAutomated = c && c->read;
             n->gain.setTargetValue(juce::Decibels::decibelsToGain((float)n->track.volumeDb));
             n->rack->update(n->track.inserts);
+            if (n->sampler && n->track.instrument)
+                n->sampler->update(*n->track.instrument);
+            if (n->instrument && n->track.instrument)
+                n->instrument->update(n->track.instrument->hostedInstrument.hosted);
         }
     }
     void renderTracks(int frames)
@@ -788,6 +824,21 @@ struct DesignGraph::Impl
             auto &node = *tracks[(size_t)index];
             if (node.legacyInput)
                 node.legacyClips.clear();
+            if (node.sampler)
+                node.sampler->render(node.pcm, frames, cursor, node.midi, node.nextMidi,
+                                     node.automation.get(), inputEnd);
+            if (node.instrument)
+            {
+                bool ending = inputEnd >= 0 && cursor >= inputEnd && !node.endedMidi;
+                node.instrument->process(node.pcm, frames, &node.midi, cursor,
+                                         document.activeMix().midiTiming, node.audible && !node.endedMidi,
+                                         node.panic || ending);
+                node.panic = false;
+                if (ending)
+                    node.endedMidi = true;
+            }
+            if (!node.audible && node.sampler)
+                node.sampler->allNotesOff(true);
             for (auto *clip : node.clips)
             {
                 clip->automate(*node.automation, cursor);
@@ -946,6 +997,9 @@ struct DesignGraph::Impl
             {
                 for (auto &voice : voices)
                     voice->verify();
+                for (auto &node : tracks)
+                    if (node->sampler)
+                        node->sampler->verify();
                 lastVerified = cursor;
             }
             if (masterAutomation)
@@ -1024,6 +1078,39 @@ void DesignGraph::seek(int64_t frame, const std::function<bool()> &cancelled, in
             throw QueryCancelled();
         impl->render(discard, 0, (int)std::min<int64_t>(512, frame - impl->cursor));
     }
+}
+int64_t DesignGraph::injectMidi(const juce::String &owner, MidiPacket packet)
+{
+    packet.frame =
+        std::clamp<int64_t>(packet.frame, impl->cursor, impl->cursor + (int64_t)(impl->sampleRate * 5));
+    packet.flags |= 128;
+    for (auto &node : impl->tracks)
+        if (node->track.id == owner)
+        {
+            if (!node->sampler && !node->instrument)
+                throw std::runtime_error("Choose an Instrument before MIDI monitoring");
+            if (node->midi.size() >= 196608)
+                throw std::runtime_error("Live MIDI capacity exceeded");
+            auto at = std::upper_bound(node->midi.begin() + node->nextMidi, node->midi.end(), packet.frame,
+                                       [](int64_t frame, const auto &e) { return frame < e.frame; });
+            node->midi.insert(at, packet);
+            return packet.frame;
+        }
+    throw std::runtime_error("MIDI monitor track missing");
+}
+void DesignGraph::midiPanic(const juce::String &owner)
+{
+    for (auto &node : impl->tracks)
+        if (owner.isEmpty() || node->track.id == owner)
+        {
+            if (node->sampler)
+                node->sampler->allNotesOff(true);
+            node->panic = true;
+            auto next = node->midi.begin() + node->nextMidi;
+            node->midi.erase(
+                std::remove_if(next, node->midi.end(), [](auto &e) { return (e.flags & 128) != 0; }),
+                node->midi.end());
+        }
 }
 int DesignGraph::layers() const
 {
@@ -1157,6 +1244,14 @@ int64_t DesignReader::producedFrame() const
 int64_t DesignReader::endFrame() const
 {
     return impl->end;
+}
+int64_t DesignReader::injectMidi(const juce::String &owner, MidiPacket packet)
+{
+    return impl->graph.injectMidi(owner, packet);
+}
+void DesignReader::midiPanic(const juce::String &owner)
+{
+    impl->graph.midiPanic(owner);
 }
 int DesignReader::layers() const
 {
@@ -1341,6 +1436,23 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     result.samples = totalFrames;
     if (effectiveInput.activeMix().trackSchema)
         result.processing = "multitrack-automation-v1";
+    if (hasMidi(effectiveInput.activeMix()))
+    {
+        result.processing = "midi-instruments-v1";
+        auto p = juce::var(new juce::DynamicObject);
+        p.getDynamicObject()->setProperty("midi", midiMixJson(effectiveInput.activeMix()));
+        juce::Array<juce::var> instruments;
+        for (auto &t : effectiveInput.activeMix().tracks)
+            if (t.instrument)
+            {
+                auto v = juce::var(new juce::DynamicObject);
+                v.getDynamicObject()->setProperty("track", t.id);
+                v.getDynamicObject()->setProperty("instrument", instrumentJson(*t.instrument));
+                instruments.add(v);
+            }
+        p.getDynamicObject()->setProperty("instruments", instruments);
+        result.sourceProvenance = p;
+    }
     if (hostedPass)
     {
         if (result.processing.isEmpty())

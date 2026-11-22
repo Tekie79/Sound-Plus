@@ -15,6 +15,7 @@ class MultitrackEditor final : public juce::Component,
     SnapSettings snapping;
     bool audibleScrub = false;
     std::function<void()> onRowsChanged;
+    std::function<void(const juce::String &)> onOpenMidi, onInstrument;
     std::function<void(juce::var, int64_t)> onAssetDrop;
     void refresh();
     void transportTick();
@@ -31,6 +32,7 @@ class MultitrackEditor final : public juce::Component,
     void renameTrack(const juce::String &, const juce::String &);
     void moveClip(const juce::String &, const juce::String &, int64_t, bool copy);
     void splitSelected();
+    void midiInputMenu(const juce::String &, juce::Component &);
     void inputMenu(const juce::String &, juce::Component &);
     void mouseDown(const juce::MouseEvent &) override;
     void mouseDrag(const juce::MouseEvent &) override;
@@ -58,6 +60,8 @@ class MultitrackEditor final : public juce::Component,
     bool refreshing = false;
     CanvasTarget hit = CanvasTarget::none;
     int fadePoint = -1;
+    juce::Rectangle<float> midiGeometry(const MidiClip &) const;
+    bool midiDrag = false;
     bool active = false, copied = false, slip = false;
     DesignDocument original;
     juce::Point<float> anchor;

@@ -104,6 +104,8 @@ juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
     auto o = object();
     if (mix.trackSchema)
         put(o, "trackEdit", tracksToJson(mix));
+    if (hasMidi(mix))
+        put(o, "midi", midiMixJson(mix));
     if (!mix.layout.id.isEmpty())
     {
         put(o, "busLayout", layoutJson(mix.layout));
@@ -326,6 +328,8 @@ DesignMix mixFrom(const juce::var &o)
     }
     if (o.hasProperty("trackEdit"))
         tracksFromJson(mix, o["trackEdit"]);
+    if (o.hasProperty("midi"))
+        midiMixFromJson(mix, o["midi"]);
     return mix;
 }
 juce::var renderJson(const DesignRenderSettings &s)
@@ -371,6 +375,8 @@ juce::var insertChainToJson(const InsertChain &chain)
     auto o = object();
     put(o, "version", 1);
     put(o, "bypass", chain.bypass);
+    if (chain.hosted.instrument)
+        put(o, "purpose", "midi-instrument-v1");
     if (!chain.hosted.slots.empty())
         put(o, "serviceRack", chain.hosted.id);
     if (chain.hosted.bypass)
@@ -411,6 +417,9 @@ InsertChain insertChainFromJson(const juce::var &o)
         throw std::runtime_error("Unsupported ordered insert chain");
     InsertChain c;
     c.bypass = (bool)o["bypass"];
+    c.hosted.instrument = o["purpose"].toString() == "midi-instrument-v1";
+    if (o.hasProperty("purpose") && !c.hosted.instrument)
+        throw std::runtime_error("Unsupported insert purpose");
     if (o.hasProperty("serviceRack"))
         c.hosted.id = o["serviceRack"].toString();
     c.hosted.bypass = (bool)o["legacyHostedBypass"];
@@ -531,6 +540,8 @@ int64_t mixDuration(const DesignMix &m, double rate)
     int64_t end = 1;
     for (auto &l : m.layers)
         end = std::max(end, l.placement + layerDuration(l, rate));
+    for (auto &c : m.midiClips)
+        end = std::max(end, midiFrame(c.start + c.length, m.midiTiming, rate));
     return m.duration > 0 ? m.duration : end;
 }
 int64_t designPreviewEnd(const DesignDocument &d)
@@ -742,7 +753,8 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        inputs                ? 13
+        hasMidi(d)            ? 14
+        : inputs              ? 13
         : continuations       ? 12
         : tracks              ? 11
         : plugins             ? 10
@@ -753,7 +765,8 @@ juce::var designToJson(const DesignDocument &d)
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        tracks                      ? "multitrack-automation-v1"
+        hasMidi(d)                  ? "midi-instruments-v1"
+        : tracks                    ? "multitrack-automation-v1"
         : plugins                   ? "plugin-takes-v1"
         : ordered                   ? "ordered-inserts-v1"
         : hasHostedInserts(d)       ? "hosted-racks-v1"
@@ -771,6 +784,8 @@ juce::var designToJson(const DesignDocument &d)
     put(o, "original", mixJson(d.original));
     put(o, "activeVariation", d.activeVariation);
     put(o, "selectedLayer", d.selectedLayer);
+    if (hasMidi(d))
+        put(o, "selectedMidiClip", d.selectedMidiClip);
     if (tracks)
         put(o, "selectedTrack", d.selectedTrack);
     put(o, "playhead", (juce::int64)d.playhead);
@@ -871,8 +886,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 13) ||
-        (version >= 11   ? dsp != "multitrack-automation-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 14) ||
+        (version == 14   ? dsp != "midi-instruments-v1"
+         : version >= 11 ? dsp != "multitrack-automation-v1"
          : version == 10 ? dsp != "plugin-takes-v1"
          : version == 9  ? dsp != "ordered-inserts-v1"
          : version == 8  ? dsp != "hosted-racks-v1"
@@ -894,6 +910,7 @@ DesignDocument designFromJson(const juce::var &o)
     d.activeVariation = o["activeVariation"].toString();
     d.selectedLayer = o["selectedLayer"].toString();
     d.selectedTrack = o["selectedTrack"].toString();
+    d.selectedMidiClip = o["selectedMidiClip"].toString();
     d.playhead = integer(o, "playhead");
     if (auto *markers = o["markers"].getArray())
     {
@@ -991,6 +1008,8 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
+    if (version < 14 && hasMidi(d))
+        throw std::runtime_error("MIDI sequencing requires manifest14");
     if (version < 13 &&
         (hasInput(d.original) ||
          std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
@@ -1493,6 +1512,19 @@ void resolveDesignSources(DesignDocument &d, const juce::File &catalog)
     Catalog db(catalog, true);
     auto resolve = [&](DesignMix &m)
     {
+        for (auto &track : m.tracks)
+            if (track.instrument)
+                for (auto &entry : track.instrument->samples)
+                {
+                    try
+                    {
+                        verifyPoolEntry(entry);
+                    }
+                    catch (const std::exception &error)
+                    {
+                        entry.source.error = error.what();
+                    }
+                }
         for (auto &l : m.layers)
         {
             l.source.error.clear();
@@ -1545,7 +1577,11 @@ bool hasHostedInserts(const DesignMix &mix)
 {
     return !mix.inserts.hosted.slots.empty() ||
            std::any_of(mix.tracks.begin(), mix.tracks.end(),
-                       [](auto &t) { return !t.inserts.hosted.slots.empty(); }) ||
+                       [](auto &t)
+                       {
+                           return !t.inserts.hosted.slots.empty() ||
+                                  (t.instrument && !t.instrument->hostedInstrument.hosted.slots.empty());
+                       }) ||
            std::any_of(mix.layers.begin(), mix.layers.end(),
                        [](auto &l) { return !l.inserts.hosted.slots.empty(); });
 }

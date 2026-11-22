@@ -19,4 +19,19 @@ inline bool negotiatePluginMainBus(juce::AudioProcessor &p, const ChannelLayout 
     return p.checkBusesLayoutSupported(buses) && p.setBusesLayout(buses) && p.getBusesLayout() == buses &&
            p.getTotalNumInputChannels() == layout.size() && p.getTotalNumOutputChannels() == layout.size();
 }
+inline bool negotiateInstrumentMainBus(juce::AudioProcessor &p, const ChannelLayout &layout)
+{
+    if (!p.acceptsMidi() || p.isMidiEffect())
+        return false;
+    auto buses = p.getBusesLayout();
+    if (buses.outputBuses.isEmpty())
+        return false;
+    for (int i = 0; i < buses.inputBuses.size(); ++i)
+        buses.inputBuses.set(i, juce::AudioChannelSet::disabled());
+    buses.outputBuses.set(0, juceChannelSet(layout));
+    for (int i = 1; i < buses.outputBuses.size(); ++i)
+        buses.outputBuses.set(i, juce::AudioChannelSet::disabled());
+    return p.checkBusesLayoutSupported(buses) && p.setBusesLayout(buses) && p.getBusesLayout() == buses &&
+           p.getTotalNumInputChannels() == 0 && p.getTotalNumOutputChannels() == layout.size();
+}
 } // namespace sp

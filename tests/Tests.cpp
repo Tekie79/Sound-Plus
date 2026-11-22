@@ -39,6 +39,8 @@ void runPluginCorrectnessTests(const juce::File &, const juce::File &, const juc
                                const juce::File &);
 void runMultitrackTests(const juce::File &);
 void runInputRecordingTests(const juce::File &);
+void runMidiInstrumentTests(const juce::File &, const juce::File &, const juce::File &);
+void runMidiTests(const juce::File &);
 namespace
 {
 int checks = 0;
@@ -104,6 +106,16 @@ int main(int argc, char **argv)
         if (argc >= 4 && juce::String(argv[1]) == "--ordered-corrections")
         {
             runOrderedCorrectionTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 5 && juce::String(argv[1]) == "--midi-instruments")
+        {
+            runMidiInstrumentTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--midi")
+        {
+            runMidiTests(juce::File(argv[2]));
             return 0;
         }
         if (argc >= 3 && juce::String(argv[1]) == "--audio-input")

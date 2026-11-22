@@ -87,7 +87,7 @@ juce::StringArray pluginDisplayNames(const juce::Array<juce::var> &plugins)
 juce::String pluginEffectGroup(const juce::var &plugin)
 {
     if ((bool)plugin["instrument"])
-        return "Instruments (not supported)";
+        return "Instruments";
     auto category = plugin["category"].toString();
     for (auto [token, group] :
          std::initializer_list<std::pair<const char *, const char *>>{{"Reverb", "Reverb"},
@@ -1008,7 +1008,7 @@ juce::var publishPluginCopy(const juce::var &result, const juce::File &folder, b
 namespace sp
 {
 juce::Array<juce::var> pluginCandidateRows(const juce::var &snapshot, const ChannelLayout &bus,
-                                           const juce::String &query, bool attentionOnly)
+                                           const juce::String &query, bool attentionOnly, bool instruments)
 {
     juce::Array<juce::var> rows;
     if (auto *entries = snapshot["entries"].getArray())
@@ -1033,6 +1033,8 @@ juce::Array<juce::var> pluginCandidateRows(const juce::var &snapshot, const Chan
             }
             for (auto &p : classes)
             {
+                if ((bool)p["instrument"] != instruments)
+                    continue;
                 auto row = object();
                 set(row, "plugin", p);
                 set(row, "path", entry["path"]);

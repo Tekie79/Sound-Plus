@@ -3,6 +3,7 @@
 #include "AudioRegion.h"
 #include "FadeCurve.h"
 #include "HostedRack.h"
+#include "MidiModel.h"
 #include <array>
 #include <atomic>
 #include <map>
@@ -185,6 +186,13 @@ struct AutomationLane
 struct InstrumentSlot
 {
     juce::String id = juce::Uuid().toString(), format, identifier, state;
+    int version = 0;
+    std::vector<SourcePoolEntry> samples;
+    int rootNote = 60, polyphony = 32;
+    double attack = .005, decay = .1, sustain = .8, release = .2, bendRange = 2, instrumentGainDb = 0,
+           transpose = 0;
+    bool sampleLoop = false, oneShot = false, roundRobin = false;
+    InsertChain hostedInstrument;
 };
 struct TrackInput
 {
@@ -202,8 +210,10 @@ struct DesignTrack
     double volumeDb = 0, pan = 0, azimuth = 0, width = 60;
     InsertChain inserts; // Clip-source compatibility chains stay on clips, before their routing.
     std::optional<InstrumentSlot>
-        instrument; // Reserved dedicated instrument identity/state; never an audio effect slot.
+        instrument; // Dedicated processor before the Track inserts; version0 is historical reserved metadata.
     AutomationLane automation;
+    juce::String midiInputUID;
+    int midiChannel = 0;             // All=0, otherwise 1–16. Arm/monitor remain transient.
     std::optional<TrackInput> input; // Configuration only. Arm and monitoring never reopen automatically.
 };
 struct DesignMix
@@ -212,6 +222,9 @@ struct DesignMix
     int routingVersion = 2; // Version1 remains immutable in historical layout-aware takes.
     PerformanceState performance;
     std::vector<DesignLayer> layers; // Persistent audio clips; old IDs and source-stage semantics retained.
+    MidiTiming midiTiming;
+    bool midiEnabled = false;
+    std::vector<MidiClip> midiClips;
     bool trackSchema = false;
     std::vector<DesignTrack> tracks;
     AutomationLane masterAutomation;
@@ -394,6 +407,7 @@ struct DesignDocument
 {
     juce::String id = juce::Uuid().toString(), name = "Untitled design", activeVariation, selectedLayer,
                  outputFolder, activeTake, selectedTrack;
+    juce::String selectedMidiClip;
     int64_t revision = 1, playhead = 0;
     double sampleRate = 48000;
     int64_t liveControlTicks = 0; // Transient UI control-event clock.

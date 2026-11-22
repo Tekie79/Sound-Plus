@@ -19,6 +19,8 @@ juce::var hostedRackJson(const HostedRack &rack)
     o->setProperty("version", 1);
     o->setProperty("id", rack.id);
     o->setProperty("bypass", rack.bypass);
+    if (rack.instrument)
+        o->setProperty("purpose", "midi-instrument-v1");
     juce::Array<juce::var> slots;
     for (auto &slot : rack.slots)
     {
@@ -40,6 +42,9 @@ HostedRack hostedRackFromJson(const juce::var &v)
         throw std::runtime_error("Unsupported hosted rack version");
     rack.id = v["id"].toString();
     rack.bypass = (bool)v["bypass"];
+    rack.instrument = v["purpose"].toString() == "midi-instrument-v1";
+    if (v.hasProperty("purpose") && !rack.instrument)
+        throw std::runtime_error("Unsupported hosted rack purpose");
     for (auto &s : *v["slots"].getArray())
         rack.slots.push_back(
             {s["id"].toString(), juce::JSON::toString(s["settings"], true), (bool)s["bypass"]});
@@ -50,6 +55,8 @@ void validateHostedRack(const HostedRack &r)
 {
     if (r.id.isEmpty() || r.slots.size() > 8)
         throw std::runtime_error("Hosted rack requires an identity and at most eight slots");
+    if (r.instrument && r.slots.size() != 1)
+        throw std::runtime_error("Dedicated Instrument requires exactly one processor");
     juce::StringArray ids;
     for (auto &s : r.slots)
     {
@@ -190,6 +197,7 @@ HostedRackClient::HostedRackClient(const HostedRack &rack, const ChannelLayout &
             {
                 HostedRack single;
                 single.id = slot.id;
+                single.instrument = rack.instrument;
                 single.bypass = rack.bypass;
                 single.slots = {slot};
                 single.runtimeOwnerRack = rack.id;
@@ -351,12 +359,14 @@ int HostedRackClient::latency() const
 {
     return impl->composite ? impl->compositeLatency : impl->exchange->latency;
 }
-void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
+void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames,
+                               const std::vector<MidiPacket> *midi, int64_t first, const MidiTiming &timing,
+                               bool notesAllowed, bool panic)
 {
     if (impl->composite)
     {
         for (auto &child : impl->children)
-            child->process(buffer, frames);
+            child->process(buffer, frames, midi, first, timing, notesAllowed, panic);
         return;
     }
     auto *e = impl->exchange;
@@ -367,6 +377,36 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames)
     for (int c = 0; c < e->channels; ++c)
         std::copy_n(buffer.getReadPointer(c), frames, e->input[c]);
     e->frames = frames;
+    e->midiCount = 0;
+    e->projectFrame = first;
+    e->bpm = timing.bpm;
+    e->numerator = timing.numerator;
+    e->denominator = timing.denominator;
+    auto add = [&](int offset, uint8_t status, uint8_t a, uint8_t b)
+    {
+        if (e->midiCount >= HostedRackExchange::midiLimit)
+            throw std::runtime_error("Instrument MIDI block exceeds bounded packet capacity");
+        e->midi[e->midiCount++] = {offset, status, a, b, 0};
+    };
+    if (impl->configuration.instrument)
+    {
+        if (panic)
+            for (int ch = 0; ch < 16; ++ch)
+            {
+                add(0, 0xb0 | ch, 64, 0);
+                add(0, 0xb0 | ch, 123, 0);
+            }
+        if (midi)
+        {
+            auto at = std::lower_bound(midi->begin(), midi->end(), first,
+                                       [](const auto &p, int64_t f) { return p.frame < f; });
+            for (; at != midi->end() && at->frame < first + frames; ++at)
+                if (notesAllowed || (at->status & 0xf0) != 0x90 || at->data2 == 0)
+                    add((int)(at->frame - first), at->status, at->data1, at->data2);
+        }
+    }
+    else if (midi)
+        throw std::runtime_error("MIDI cannot enter an ordinary effect rack");
     e->lastRequestTicks.store(juce::Time::getHighResolutionTicks(), std::memory_order_release);
     e->request.store(++impl->sequence, std::memory_order_release);
     // Producer-thread wait only. The device callback never touches this mapping.
@@ -401,6 +441,7 @@ void HostedRackClient::update(const HostedRack &rack)
         {
             HostedRack single;
             single.id = rack.slots[i].id;
+            single.instrument = rack.instrument;
             single.bypass = rack.bypass;
             single.slots = {rack.slots[i]};
             impl->children[i]->update(single);

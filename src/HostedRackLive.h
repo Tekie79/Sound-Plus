@@ -368,6 +368,19 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     std::lock_guard operation(dspOperationMutex);
                     for (auto &slot : slots)
                     {
+                        if (requested.instrument)
+                        {
+                            MidiBuffer panic;
+                            for (int ch = 1; ch <= 16; ++ch)
+                            {
+                                panic.addEvent(MidiMessage::controllerEvent(ch, 64, 0), 0);
+                                panic.addEvent(MidiMessage::allSoundOff(ch), 0);
+                                panic.addEvent(MidiMessage::allNotesOff(ch), 0);
+                            }
+                            AudioBuffer<float> silence(slot.effect->getTotalNumOutputChannels(), 1);
+                            silence.clear();
+                            slot.effect->processBlock(silence, panic);
+                        }
                         slot.effect->reset();
                         slot.dry.clear();
                         slot.write = 0;

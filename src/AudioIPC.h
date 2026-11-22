@@ -43,7 +43,7 @@ class AudioClient
     void inputCommand(juce::var);
     bool captureBusy() const
     {
-        return captureOwned.load() || captureReserved.load() || inputOwned.load();
+        return captureOwned.load() || captureReserved.load() || inputOwned.load() || midiOwned.load();
     }
     float monitorGain() const
     {
@@ -59,7 +59,8 @@ class AudioClient
     juce::File executable, liveRoot;
     std::atomic<bool> quitting{false}, restartRequested{false};
     std::atomic<bool> captureOwned{false}, captureReserved{false};
-    std::atomic<bool> inputOwned{false};
+    std::atomic<bool> inputOwned{false}, midiOwned{false};
+    juce::String midiOperation;
     juce::String inputOperation;
     std::atomic<uint64_t> captureReservationId{0};
     std::atomic<float> targetGain{0.7f};

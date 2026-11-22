@@ -159,7 +159,8 @@ struct PluginDeleter
     }
 };
 using HostedInstance = std::unique_ptr<AudioPluginInstance, PluginDeleter>;
-HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, double rate, int block)
+HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, double rate, int block,
+                        bool instrument = false)
 {
     PluginDescription d;
     auto xml = parseXML(identity["xml"].toString());
@@ -169,8 +170,8 @@ HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, 
               d.createIdentifierString() == identity["id"].toString() &&
               d.fileOrIdentifier == identity["path"].toString(),
           "Plugin identity fields disagree with its class descriptor");
-    check(!d.isInstrument && (d.pluginFormatName == "VST3" || d.pluginFormatName == "AudioUnit"),
-          "Only VST3 / Audio Unit audio effects are supported");
+    check(d.isInstrument == instrument && (d.pluginFormatName == "VST3" || d.pluginFormatName == "AudioUnit"),
+          "Processor classification does not match dedicated effect / Instrument purpose");
     check(d.pluginFormatName == identity["format"].toString(), "Plugin format identity mismatch");
     check(sp::pluginFingerprint(
               File(d.pluginFormatName == "AudioUnit" ? identity["bundle"].toString() : d.fileOrIdentifier)) ==
@@ -192,20 +193,21 @@ HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, 
     error = outcome.second;
     check(p != nullptr, "Plugin unavailable/native architecture unsupported: " + error);
     stage("audio-effect-classification");
-    check(!p->isMidiEffect() && p->getBusCount(true) >= 1 && p->getBusCount(false) >= 1,
+    check(!p->isMidiEffect() && p->getBusCount(false) >= 1 &&
+              (instrument ? p->acceptsMidi() : p->getBusCount(true) >= 1),
           "Instrument/MIDI-only processing or absent main audio bus is unsupported");
     diagnostic.getDynamicObject()->setProperty("declaredBuses", busesJson(*p));
     diagnostic.getDynamicObject()->setProperty("acceptsMidi", p->acceptsMidi());
     diagnostic.getDynamicObject()->setProperty("producesMidi", p->producesMidi());
     return p;
 }
-void layout(AudioPluginInstance &p, const sp::ChannelLayout &l)
+void layout(AudioPluginInstance &p, const sp::ChannelLayout &l, bool instrument = false)
 {
     sp::validateLayout(l);
     check(!l.id.startsWith("unknown-"), "Explicit channel interpretation required");
     stage("main-bus-negotiation");
     diagnostic.getDynamicObject()->setProperty("requestedLayout", sp::layoutJson(l));
-    bool accepted = sp::negotiatePluginMainBus(p, l);
+    bool accepted = instrument ? sp::negotiateInstrumentMainBus(p, l) : sp::negotiatePluginMainBus(p, l);
     diagnostic.getDynamicObject()->setProperty("activeBuses", busesJson(p));
     check(accepted, "Incompatible main layout " + sp::layoutName(l) +
                         " or mandatory auxiliary bus; optional auxiliaries must accept disabled layouts. No "
@@ -409,13 +411,13 @@ var execute(const var &job)
             {
                 check(StringArray::fromTokens(architectures, "+", "").contains("arm64"),
                       "Native arm64 required; bundle architecture: " + architectures + "; no bridging");
-                auto effect = instance(formats, p, 48000, 512);
+                auto effect = instance(formats, p, 48000, 512, d->isInstrument);
                 validateParameterSchema(*effect);
                 for (auto l : sp::namedLayouts())
                 {
                     try
                     {
-                        layout(*effect, l);
+                        layout(*effect, l, d->isInstrument);
                         supported.add(l.id);
                         auto attempt = diagnostic.clone();
                         put(attempt, "accepted", true);
@@ -434,7 +436,7 @@ var execute(const var &job)
                     auto l = sp::discreteLayout(n);
                     try
                     {
-                        layout(*effect, l);
+                        layout(*effect, l, d->isInstrument);
                         supported.add(l.id);
                         auto attempt = diagnostic.clone();
                         put(attempt, "accepted", true);
@@ -475,7 +477,7 @@ var execute(const var &job)
     check(rate >= 8000 && rate <= 192000 && block >= 32 && block <= 4096,
           "Unsupported sample rate/block bound");
     auto identity = job["plugin"];
-    auto effect = instance(formats, identity, rate, block);
+    auto effect = instance(formats, identity, rate, block, (bool)job["instrument"]);
     if (mode == "inspect-parameter-schema")
     {
         var schema;
@@ -506,7 +508,7 @@ var execute(const var &job)
         [&]
         {
             restore(*effect, job);
-            layout(*effect, bus);
+            layout(*effect, bus, (bool)job["instrument"]);
             effect->setNonRealtime(mode != "editor");
             effect->setRateAndBufferSizeDetails(rate, block);
             stage("preparation");

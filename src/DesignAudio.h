@@ -15,6 +15,8 @@ class DesignGraph
     void
     seek(int64_t frame, const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1);
     void updateParameters(const juce::var &);
+    int64_t injectMidi(const juce::String &, MidiPacket);
+    void midiPanic(const juce::String &);
     int layers() const;
     int64_t position() const;
     double rate() const;
@@ -42,6 +44,8 @@ class DesignReader
     int64_t consumed() const;
     int64_t producedFrame() const;
     int64_t endFrame() const;
+    int64_t injectMidi(const juce::String &, MidiPacket);
+    void midiPanic(const juce::String &);
     int layers() const;
 
   private:

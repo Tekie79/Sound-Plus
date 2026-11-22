@@ -23,6 +23,15 @@ class PcmStream
         bool grain = false);
     void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
+    int64_t injectMidi(const juce::String &owner, MidiPacket p)
+    {
+        return designReader ? designReader->injectMidi(owner, p) : p.frame;
+    }
+    void midiPanic(const juce::String &owner)
+    {
+        if (designReader)
+            designReader->midiPanic(owner);
+    }
     void startTake(std::shared_ptr<TakeCapture> value)
     {
         takeCapture = std::move(value);
@@ -187,6 +196,10 @@ class AuditionCore
                     const juce::File &capture = {});
     void stop();
     void service(int ahead = 1536);
+    PcmStream *producerStream()
+    {
+        return stream.get();
+    }
     void adopt(std::unique_ptr<PcmStream>);
     void updateParameters(const juce::var &p, uint64_t sequence, double event)
     {

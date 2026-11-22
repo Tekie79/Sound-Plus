@@ -203,6 +203,13 @@ juce::String designStructure(const DesignDocument &document)
                              "spatial", "azimuth", "width", "automation", "input"})
                 track.getDynamicObject()->removeProperty(key);
             stripChain(track["insertChain"], document.liveInserts);
+            if (auto *instrument = track["instrument"].getDynamicObject())
+            {
+                for (auto key : {"gainDb", "transpose", "attack", "decay", "sustain", "release", "bendRange",
+                                 "polyphony", "rootNote", "loop", "oneShot", "roundRobin"})
+                    instrument->removeProperty(key);
+                stripChain(track["instrument"]["hostedInstrument"], document.liveInserts);
+            }
             rows.add(track);
         }
         std::sort(rows.begin(), rows.end(),
@@ -277,6 +284,13 @@ juce::var designParameters(const DesignDocument &base)
             o->setProperty("automation", automationLaneJson(track.automation));
             o->setProperty("chainBypass", track.inserts.bypass);
             o->setProperty("effects", rackParameters(track.inserts.stock));
+            if (track.instrument)
+            {
+                o->setProperty("instrument", instrumentJson(*track.instrument));
+                if (!track.instrument->hostedInstrument.hosted.slots.empty())
+                    o->setProperty("instrumentControls",
+                                   hostedControls(track.instrument->hostedInstrument.hosted));
+            }
             if (!track.inserts.hosted.slots.empty())
                 o->setProperty("hostedRack", hostedControls(track.inserts.hosted));
             tracks.add(v);
@@ -365,6 +379,18 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
             track->azimuth = (double)v["azimuth"];
             track->width = (double)v["width"];
             track->automation = automationLaneFromJson(v["automation"]);
+            if (track->instrument)
+            {
+                auto next = instrumentFromJson(v["instrument"]);
+                if (next.id != track->instrument->id || next.format != track->instrument->format ||
+                    next.identifier != track->instrument->identifier)
+                    throw std::runtime_error("Live Instrument identity changed");
+                auto rack = track->instrument->hostedInstrument;
+                *track->instrument = std::move(next);
+                track->instrument->hostedInstrument = std::move(rack);
+                if (!track->instrument->hostedInstrument.hosted.slots.empty())
+                    applyHostedControls(track->instrument->hostedInstrument.hosted, v["instrumentControls"]);
+            }
             track->inserts.bypass = (bool)v["chainBypass"];
             applyRack(track->inserts.stock, v["effects"]);
             if (!track->inserts.hosted.slots.empty())

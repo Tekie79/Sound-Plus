@@ -19,8 +19,9 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
+  src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/InputRecording.cpp
-  src/DesignInputSession.cpp
+  src/DesignInputSession.cpp src/DesignMidiSession.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
@@ -59,7 +60,7 @@ target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp src/MacAudioInput.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+target_sources(SoundPlus PRIVATE src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/MidiEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI SoundPlusPlugin SoundPlusPluginEditor)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>" "$<TARGET_FILE:SoundPlusPlugin>")
@@ -88,10 +89,12 @@ add_custom_command(TARGET SoundPlus POST_BUILD
 include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
-  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/MidiEditor.cpp)
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   target_sources(SoundPlusTests PRIVATE tests/PlaybackSearchTests.cpp)
-  target_sources(SoundPlusTests PRIVATE tests/InputRecordingTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/InputRecordingTests.cpp tests/MidiTests.cpp)
+  add_test(NAME midi_sequencing COMMAND SoundPlusTests --midi "${CMAKE_BINARY_DIR}/midi-tests")
+  set_tests_properties(midi_sequencing PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   add_test(NAME audio_input_recording COMMAND SoundPlusTests --audio-input "${CMAKE_BINARY_DIR}/audio-input-tests")
   set_tests_properties(audio_input_recording PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
   target_sources(SoundPlusTests PRIVATE tests/SourcePoolTests.cpp tests/PoolCorrectionTests.cpp)
@@ -185,6 +188,16 @@ endif()
 if(BUILD_TESTING)
   target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp)
   target_include_directories(SoundPlusTests PRIVATE "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
+  juce_add_plugin(SoundPlusMidiFixture COMPANY_NAME "SoundPlus" BUNDLE_ID "org.soundplus.midi-fixture" PLUGIN_MANUFACTURER_CODE SpQA
+    PLUGIN_CODE SpM1 FORMATS VST3 PRODUCT_NAME "SoundPlus MIDI Oracle" COPY_PLUGIN_AFTER_BUILD FALSE
+    VST3_CATEGORIES Instrument Synth IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE)
+  target_sources(SoundPlusMidiFixture PRIVATE tests/MidiInstrumentFixture.cpp)
+  target_compile_definitions(SoundPlusMidiFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
+  target_link_libraries(SoundPlusMidiFixture PRIVATE juce::juce_audio_processors)
+  target_sources(SoundPlusTests PRIVATE tests/MidiInstrumentTests.cpp)
+  add_dependencies(SoundPlusTests SoundPlusMidiFixture_VST3)
+  add_test(NAME midi_instruments COMMAND SoundPlusTests --midi-instruments "${CMAKE_BINARY_DIR}/midi-instrument-tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusMidiFixture_VST3>/../..")
+  set_tests_properties(midi_instruments PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusInstrumentFixture_VST3 SoundPlusPlugin)
   add_test(NAME plugin_processing COMMAND SoundPlusTests --plugin-processing "${CMAKE_BINARY_DIR}/plugin-processing-test-output" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
   add_test(NAME plugin_correctness COMMAND SoundPlusTests --plugin-correctness "${CMAKE_BINARY_DIR}/plugin-correctness/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../.." "$<TARGET_FILE_DIR:SoundPlusStereoFixture_VST3>/../..")
@@ -216,7 +229,7 @@ if(SOUNDPLUS_BUILD_PLUGIN_ASAN_QA)
   target_compile_options(soundplus_plugin_asan_core PRIVATE -fsanitize=address -g -fno-omit-frame-pointer -O1)
   target_link_libraries(soundplus_plugin_asan_core PUBLIC ${SOUNDPLUS_ASAN_LIBRARIES})
   juce_add_console_app(SoundPlusPublicationDebug PRODUCT_NAME "SoundPlusPublicationDebug")
-  target_sources(SoundPlusPublicationDebug PRIVATE src/DesignerView.cpp src/DesignerLayouts.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp tests/PluginProcessingDebugMain.cpp tests/PluginProcessingTests.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/PluginProcessPanel.cpp src/LibraryView.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+  target_sources(SoundPlusPublicationDebug PRIVATE src/DesignerView.cpp src/DesignerLayouts.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/MidiEditor.cpp tests/PluginProcessingDebugMain.cpp tests/PluginProcessingTests.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/PluginProcessPanel.cpp src/LibraryView.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
   target_include_directories(SoundPlusPublicationDebug PRIVATE "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
   target_compile_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address -g -fno-omit-frame-pointer -O1)
   target_link_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address)

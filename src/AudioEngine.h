@@ -25,6 +25,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     void command(const juce::var &);
     void sendStatus();
     InputTimelineClock inputClock;
+    MidiInputService midiInput{inputClock};
     AudioPlaybackService playback;
     InputRecordingService inputRecorder{inputClock, &playback.core.underruns};
     MacAudioInput inputDevice{inputRecorder};
@@ -34,7 +35,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     uint64_t requestedGeneration = 0;
     juce::Array<juce::var> outputs;
     juce::Array<juce::var> availableInputs;
-    juce::String inputError, inputRequest, inputMonitorError;
+    juce::String inputError, inputRequest, inputMonitorError, midiError;
     int64_t inputUnderrunBaseline = 0;
     uint64_t inputConfigSerial = 0;
     uint64_t inputMonitorSerial = 0;

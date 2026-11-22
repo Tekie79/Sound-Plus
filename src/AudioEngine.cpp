@@ -8,6 +8,7 @@ namespace sp
 AudioEngine::AudioEngine(bool connectHardware) : hardware(connectHardware)
 {
     playback.core.inputClock = &inputClock;
+    playback.midiInput = &midiInput;
     if (!hardware)
         return;
     int noSig = 1;
@@ -47,6 +48,7 @@ void AudioEngine::audioDeviceStopped()
 {
     if (inputRecorder.busy())
         inputRecorder.fault(InputRecordingService::deviceLost);
+    midiInput.interrupt("Output device stopped during MIDI capture");
     deviceRate = 0;
     playback.deviceFault(CaptureDeviceLifecycle::stopped);
     deviceChanged = true;
@@ -55,6 +57,7 @@ void AudioEngine::audioDeviceError(const juce::String &error)
 {
     if (inputRecorder.busy())
         inputRecorder.fault(InputRecordingService::deviceLost);
+    midiInput.interrupt("Output device error during MIDI capture");
     playback.deviceFault(CaptureDeviceLifecycle::error, &error);
     deviceChanged = true;
 }
@@ -74,6 +77,29 @@ void AudioEngine::command(const juce::var &message)
     }
     if (!hello)
         return;
+    if (name.startsWith("midi_"))
+    {
+        try
+        {
+            midiError.clear();
+            if (name == "midi_configure")
+                midiInput.configure(message);
+            else if (name == "midi_record")
+            {
+                if (inputRecorder.busy() || playback.captureBusy())
+                    throw std::runtime_error("Another recording owns transport");
+                midiInput.begin(message);
+            }
+            else if (name == "midi_finish")
+                midiInput.finish((bool)message["cancel"]);
+        }
+        catch (const std::exception &e)
+        {
+            midiInput.interrupt(e.what());
+            midiError = e.what();
+        }
+        return;
+    }
     if (name.startsWith("input_"))
     {
         try
@@ -148,6 +174,8 @@ void AudioEngine::command(const juce::var &message)
             playback.releaseCaptureReservation();
         return;
     }
+    if (name == "stop")
+        midiInput.interrupt("Transport stopped before MIDI finalization");
     if (name == "quit")
     {
         juce::JUCEApplicationBase::quit();
@@ -296,6 +324,7 @@ void AudioEngine::handleDeviceChanges()
 }
 void AudioEngine::timerCallback()
 {
+    midiInput.poll();
     inputDevice.poll();
     if (hardware && ticks % 400 == 0)
         availableInputs = MacAudioInput::devices();
@@ -385,6 +414,10 @@ void AudioEngine::sendStatus()
     inputState.getDynamicObject()->setProperty("configurationSerial", (juce::int64)inputConfigSerial);
     inputState.getDynamicObject()->setProperty("monitorSerial", (juce::int64)inputMonitorSerial);
     object->setProperty("inputRecording", inputState);
+    auto midiState = midiInput.status();
+    if (midiError.isNotEmpty())
+        midiState.getDynamicObject()->setProperty("error", midiError);
+    object->setProperty("midi", midiState);
     object->setProperty("peakResidentBytes", performance.json()["peakResidentBytes"]);
     object->setProperty("cpuSeconds", performance.json()["cpuSeconds"]);
     if (deviceError.isNotEmpty())

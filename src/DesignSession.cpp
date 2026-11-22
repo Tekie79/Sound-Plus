@@ -306,6 +306,8 @@ void DesignSession::enqueue(Stamp token, std::function<std::function<void()>()> 
                             safe->previewWaiting = false;
                         if (token.kind == Operation::input)
                             safe->finishInputContext();
+                        if (token.kind == Operation::midi)
+                            safe->clearMidiContext();
                         // Source verification also uses this operation serial. A rejected
                         // relocation leaves an existing complete take and its audition intact.
                         if (token.kind == Operation::take && safe->takeBusy())
@@ -400,6 +402,11 @@ bool DesignSession::openLiveEditor(const juce::String &slot)
         for (auto &s : t.inserts.hosted.slots)
             if (s.id == slot)
                 owner = t.id;
+    for (auto &t : document.activeMix().tracks)
+        if (t.instrument)
+            for (auto &s : t.instrument->hostedInstrument.hosted.slots)
+                if (s.id == slot)
+                    owner = "instrument:" + t.id;
     if (owner.isEmpty())
         return false;
     syncLive();
@@ -632,6 +639,20 @@ void DesignSession::restoreDerivedState()
 }
 void DesignSession::reconcileSelection(const DesignDocument *before)
 {
+    if (auto *c = findMidiClip(document.activeMix(), document.selectedMidiClip))
+    {
+        if (before && before->selectedLayer != document.selectedLayer && document.selectedLayer.isNotEmpty())
+            document.selectedMidiClip.clear();
+        else
+        {
+            document.selectedTrack = c->track;
+            document.selectedLayer.clear();
+            selectedIds.clear();
+            return;
+        }
+    }
+    else
+        document.selectedMidiClip.clear();
     if (document.activeMix().trackSchema && document.selectedTrack != "master" &&
         !findTrack(document.activeMix(), document.selectedTrack))
         document.selectedTrack.clear();
@@ -661,7 +682,11 @@ void DesignSession::stampLiveIntents(int64_t ticks)
         };
         add(liveIntentBase->activeMix().inserts.hosted);
         for (auto &t : liveIntentBase->activeMix().tracks)
+        {
             add(t.inserts.hosted);
+            if (t.instrument)
+                add(t.instrument->hostedInstrument.hosted);
+        }
         for (auto &layer : liveIntentBase->activeMix().layers)
             add(layer.inserts.hosted);
     }
@@ -693,7 +718,11 @@ void DesignSession::stampLiveIntents(int64_t ticks)
     };
     stamp(document.activeMix().inserts.hosted);
     for (auto &t : document.activeMix().tracks)
+    {
         stamp(t.inserts.hosted);
+        if (t.instrument)
+            stamp(t.instrument->hostedInstrument.hosted);
+    }
     for (auto &layer : document.activeMix().layers)
         stamp(layer.inserts.hosted);
 }
@@ -718,6 +747,12 @@ void DesignSession::changed(ChangeImpact impact)
 void DesignSession::edit(const juce::String &label, const std::function<void(DesignDocument &)> &edit,
                          ChangeImpact impact)
 {
+    if (midiBusy() && !midiMutation && impact != ChangeImpact::metadata)
+    {
+        message = "Stop MIDI recording before editing";
+        notify();
+        return;
+    }
     if (inputBusy() && !inputMutation && !liveApplying && impact != ChangeImpact::metadata)
     {
         message = "Stop input recording before editing the design";
@@ -768,7 +803,11 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
                 normaliseInsertChain(l.inserts);
             }
             for (auto &t : m.tracks)
+            {
                 normaliseInsertChain(t.inserts);
+                if (t.instrument)
+                    normaliseInsertChain(t.instrument->hostedInstrument);
+            }
         };
         normalise(document.original);
         for (auto &v : document.variations)
@@ -893,7 +932,7 @@ void DesignSession::cancelGesture()
 void DesignSession::undo()
 {
     invalidatePoolWork();
-    if (takeBusy() || inputBusy())
+    if (takeBusy() || inputBusy() || midiBusy())
     {
         message = "Stop recording before Undo";
         notify();
@@ -926,7 +965,7 @@ void DesignSession::undo()
 void DesignSession::redo()
 {
     invalidatePoolWork();
-    if (takeBusy() || inputBusy())
+    if (takeBusy() || inputBusy() || midiBusy())
         return;
     if (replacing)
         return;
@@ -968,7 +1007,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
             },
             (bool)close))
         return;
-    if (takeBusy() || inputBusy())
+    if (takeBusy() || inputBusy() || midiBusy())
     {
         message = "Stop or cancel the take before closing or changing designs";
         notify();
@@ -1087,6 +1126,14 @@ void DesignSession::open(const juce::File &file)
 }
 void DesignSession::closeWhenSafe(std::function<void()> close)
 {
+    if (midiBusy())
+    {
+        midiClose = std::move(close);
+        stopMidiRecording();
+        message = "Finalizing MIDI before closing";
+        notify();
+        return;
+    }
     if (inputBusy())
     {
         inputClose = std::move(close);
@@ -1296,6 +1343,7 @@ void DesignSession::replaceSource(const juce::String &id, const juce::File &file
 void DesignSession::selectLayer(const juce::String &id, bool additive)
 {
     protectStartupEdits();
+    document.selectedMidiClip.clear();
     if (id.isEmpty())
     {
         selectedIds.clear();
@@ -1318,6 +1366,70 @@ void DesignSession::selectLayer(const juce::String &id, bool additive)
     if (auto *clip = selectedLayer(); clip && document.activeMix().trackSchema)
         document.selectedTrack = clip->trackId;
     notify();
+}
+void DesignSession::selectMidiClip(const juce::String &id)
+{
+    protectStartupEdits();
+    if (auto *c = findMidiClip(document.activeMix(), id))
+    {
+        document.selectedMidiClip = id;
+        document.selectedLayer.clear();
+        selectedIds.clear();
+        document.selectedTrack = c->track;
+        notify();
+    }
+}
+void DesignSession::assignSampler(const juce::String &track, const juce::File &file, bool alternate,
+                                  int64_t first, int64_t last)
+{
+    if (replacing || inputBusy() || takeBusy() || midiBusy())
+        return;
+    auto *t = findTrack(document.activeMix(), track);
+    if (!t || t->kind != TrackKind::midiInstrument)
+        return;
+    protectStartupEdits();
+    auto token = stamp(Operation::midiSource);
+    auto bus = t->layout;
+    auto variation = document.activeVariation;
+    working = true;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    enqueue(token,
+            [safe, track, file, bus, alternate, first, last, variation]
+            {
+                auto asset = inspectDesignSource(file);
+                auto entry = inspectPoolEntry(asset, first, last > first ? last : asset.samples, true);
+                auto layer = makeDesignLayer(asset, first, last > first ? last : asset.samples, true);
+                initialiseRouting(layer, bus);
+                reviewPoolEntry(entry, layer.routing, bus);
+                return [safe, track, entry, bus, alternate, variation]
+                {
+                    if (!safe)
+                        return;
+                    safe->working = false;
+                    if (safe->document.activeVariation != variation)
+                        return;
+                    safe->edit("Assign sampler source",
+                               [&](auto &d)
+                               {
+                                   auto *owner = findTrack(d.activeMix(), track);
+                                   if (!owner || owner->layout != bus)
+                                       return;
+                                   if (!alternate || !owner->instrument ||
+                                       owner->instrument->format != "SoundPlus")
+                                   {
+                                       InstrumentSlot slot;
+                                       slot.version = 1;
+                                       slot.format = "SoundPlus";
+                                       slot.identifier = "sampler-v1";
+                                       owner->instrument = slot;
+                                   }
+                                   if (owner->instrument->samples.size() >= 8)
+                                       throw std::runtime_error("At most eight sampler alternates");
+                                   owner->instrument->samples.push_back(entry);
+                                   d.activeMix().midiEnabled = true;
+                               });
+                };
+            });
 }
 void DesignSession::selectVariation(const juce::String &id)
 {
@@ -1406,12 +1518,14 @@ void DesignSession::saveSnapshot(const juce::String &name)
 }
 void DesignSession::schedulePreview(const juce::String &mode)
 {
-    if (performanceMix().layers.empty())
+    if (performanceMix().layers.empty() && !hasMidi(performanceMix()))
         return;
     auto token = stamp(Operation::preview);
     auto serial = ++*previewSerial;
     auto snapshot = document;
     auto position = document.playhead;
+    if (mode == "midi-monitor" || mode == "midi-record" || !monitoredMidi.empty())
+        snapshot.activeMix().duration = (int64_t)std::llround(snapshot.sampleRate * 3600);
     auditionContext = designPlaybackContext(snapshot);
     auto file =
         directory.getChildFile("designer-preview").getChildFile(juce::Uuid().toString() + ".soundplus");
@@ -1466,7 +1580,7 @@ void DesignSession::play()
         stop();
         return;
     }
-    if (performanceMix().layers.empty() || replacing)
+    if ((performanceMix().layers.empty() && !hasMidi(performanceMix())) || replacing)
         return;
     document.playhead = designPlayStart(document, document.playhead);
     if (onBeforePlay)
@@ -1477,9 +1591,9 @@ void DesignSession::play()
 }
 void DesignSession::playAccurate()
 {
-    if (takeBusy() || inputBusy())
+    if (takeBusy() || inputBusy() || midiBusy())
         return;
-    if (performanceMix().layers.empty() || replacing)
+    if ((performanceMix().layers.empty() && !hasMidi(performanceMix())) || replacing)
         return;
     auto parked = document.playhead;
     stop();
@@ -1493,6 +1607,11 @@ void DesignSession::playAccurate()
 }
 void DesignSession::stop()
 {
+    if (midiBusy())
+    {
+        stopMidiRecording();
+        return;
+    }
     if (inputBusy())
     {
         stopInputRecording();
@@ -1518,6 +1637,12 @@ void DesignSession::stop()
 }
 void DesignSession::seek(int64_t frame)
 {
+    if (midiBusy())
+    {
+        message = "Stop MIDI recording before seeking";
+        notify();
+        return;
+    }
     if (inputBusy())
     {
         message = "Stop input recording before seeking";
@@ -1537,7 +1662,7 @@ void DesignSession::seek(int64_t frame)
 }
 void DesignSession::beginSeekGesture(bool audible)
 {
-    if (takeBusy() || inputBusy() || document.activeTake.isNotEmpty())
+    if (takeBusy() || inputBusy() || midiBusy() || document.activeTake.isNotEmpty())
         return;
     seekWasPlaying = active;
     seekGesture = true;
@@ -1585,6 +1710,7 @@ void DesignSession::timerCallback()
     }
     auto state = services.status();
     auto now = services.now();
+    pollMidi(state);
     pollInput(state);
     pollTake(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
@@ -1610,10 +1736,15 @@ void DesignSession::timerCallback()
         if (active && document.activeTake.isEmpty())
         {
             auto controls = document;
-            if (inputBusy())
+            if (inputBusy() || midiBusy() || !monitoredMidi.empty())
                 controls.activeMix().duration = (int64_t)std::llround(document.sampleRate * 3600);
             if (publishedStructure == designStructure(controls))
                 services.parameters(controls, expectedGeneration, lastEdit);
+            else if (midiBusy())
+            {
+                stopMidiRecording(true);
+                message = "MIDI topology changed; acknowledged journal retained";
+            }
             else if (inputBusy())
             {
                 stopInputRecording(true);

@@ -8,6 +8,23 @@
 // Included after the isolated worker's instance/layout/restore functions.
 namespace
 {
+struct InstrumentPlayHead final : AudioPlayHead
+{
+    double bpm = 120, rate = 48000;
+    int numerator = 4, denominator = 4;
+    int64_t frame = 0;
+    Optional<PositionInfo> getPosition() const override
+    {
+        PositionInfo p;
+        p.setBpm(bpm);
+        p.setTimeSignature(AudioPlayHead::TimeSignature{numerator, denominator});
+        p.setTimeInSamples(frame);
+        p.setTimeInSeconds(frame / rate);
+        p.setPpqPosition(frame / rate * bpm / 60);
+        p.setIsPlaying(true);
+        return p;
+    }
+};
 var serveRack(const var &job, AudioPluginFormatManager &formats)
 {
     auto path = File(job["exchange"].toString());
@@ -46,17 +63,21 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             std::vector<float> requestedValues, opaqueValues, baselineRequests;
         };
         std::vector<Slot> slots;
+        InstrumentPlayHead playhead;
+        playhead.rate = rate;
         int totalLatency = 0;
         for (auto &slot : rack.slots)
         {
             auto settings = JSON::parse(slot.settings);
-            auto p = instance(formats, settings["plugin"], rate, 512);
+            auto p = instance(formats, settings["plugin"], rate, 512, rack.instrument);
             std::vector<float> opaqueValues;
             onPluginMessageThread(
                 [&]
                 {
                     restore(*p, settings, &opaqueValues);
-                    layout(*p, bus);
+                    layout(*p, bus, rack.instrument);
+                    if (rack.instrument)
+                        p->setPlayHead(&playhead);
                     p->setNonRealtime(false);
                     p->setRateAndBufferSizeDetails(rate, 512);
                     stage("rack-preparation");
@@ -190,6 +211,30 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             check(frames > 0 && frames <= 512, "Invalid hosted block size");
             for (int c = 0; c < bus.size(); ++c)
                 std::copy_n(e->input[c], frames, audio.getWritePointer(c));
+            midi.clear();
+            if (rack.instrument)
+            {
+                check(e->midiCount >= 0 && e->midiCount <= sp::HostedRackExchange::midiLimit,
+                      "Invalid instrument MIDI bound");
+                playhead.frame = e->projectFrame;
+                playhead.bpm = e->bpm;
+                playhead.numerator = e->numerator;
+                playhead.denominator = e->denominator;
+                check(std::isfinite(playhead.bpm) && playhead.bpm >= 20 && playhead.bpm <= 300,
+                      "Invalid instrument tempo");
+                for (int n = 0; n < e->midiCount; ++n)
+                {
+                    auto p = e->midi[n];
+                    check(p.offset >= 0 && p.offset < frames && p.status >= 0x80 && p.status <= 0xef &&
+                              p.data1 < 128 && p.data2 < 128,
+                          "Invalid sample-offset MIDI event");
+                    uint8_t bytes[]{p.status, p.data1, p.data2};
+                    int count = (p.status & 0xf0) == 0xc0 || (p.status & 0xf0) == 0xd0 ? 2 : 3;
+                    midi.addEvent(bytes, count, p.offset);
+                }
+            }
+            else
+                check(e->midiCount == 0, "Effect rack rejects instrument MIDI");
             const auto blockBegan = Time::getHighResolutionTicks();
             for (auto &slot : slots)
             {

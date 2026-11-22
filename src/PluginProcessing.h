@@ -9,12 +9,12 @@ juce::String processingHash(const juce::File &);
 std::vector<juce::File> defaultVst3Locations();
 juce::String pluginEffectGroup(const juce::var &);
 juce::String pluginFormatLabel(const juce::var &);
-inline constexpr int pluginProbePolicy = 3;
+inline constexpr int pluginProbePolicy = 4;
 juce::String pluginParameterSchemaSignature(const juce::var &);
 juce::StringArray pluginDisplayNames(const juce::Array<juce::var> &);
 juce::String pluginCandidateSelectionKey(const juce::var &);
 juce::Array<juce::var> pluginCandidateRows(const juce::var &, const ChannelLayout &, const juce::String &,
-                                           bool attentionOnly);
+                                           bool attentionOnly, bool instruments = false);
 void saveProcessingJson(const juce::File &, const juce::var &);
 juce::var loadProcessingJson(const juce::File &);
 struct PluginInput

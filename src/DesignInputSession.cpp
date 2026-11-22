@@ -71,7 +71,7 @@ void DesignSession::configureTrackInput(const juce::String &owner, TrackInput in
 }
 void DesignSession::armInputTrack(const juce::String &id, bool arm)
 {
-    if (inputBusy() || takeBusy() || transitionPending() || document.activeTake.isNotEmpty())
+    if (midiBusy() || inputBusy() || takeBusy() || transitionPending() || document.activeTake.isNotEmpty())
     {
         message = "Stop recording and choose Live Design before changing input arms";
         notify();
@@ -250,7 +250,8 @@ void DesignSession::monitorInputTrack(const juce::String &id, bool enabled)
 }
 void DesignSession::startInputRecording()
 {
-    if (inputBusy() || takeBusy() || replacing || rendering || working || document.activeTake.isNotEmpty())
+    if (midiBusy() || inputBusy() || takeBusy() || replacing || rendering || working ||
+        document.activeTake.isNotEmpty())
         return;
     if (!inputReady())
     {
@@ -593,7 +594,7 @@ void DesignSession::findInputRecoveries(std::function<void(juce::Array<juce::var
 }
 void DesignSession::recoverInputRecording(const juce::File &partial, bool allowUnverifiedLegacy)
 {
-    if (inputBusy() || takeBusy() || replacing || document.activeTake.isNotEmpty())
+    if (midiBusy() || inputBusy() || takeBusy() || replacing || document.activeTake.isNotEmpty())
         return;
     if (partial.getParentDirectory() != inputRecordingRoot())
     {

@@ -8,16 +8,18 @@ Reviewed/starting HEAD:949dbc5619c9921cd52f5588a5b91a94d9523884. No newer commit
 
 ✓ Stage A relevant final gate:7/7 in34.37s,195 input checks; source/build identity captured. Stage A code checkpoint committed before MIDI implementation.
 
-○ B Separate MIDI Tracks, stable typed clips/notes/controllers, tempo/tick/sample conversion, edit commands and persistence/historical compatibility.
+✓ B Separate MIDI Tracks, stable typed clips/notes/controllers, tempo/tick/sample conversion, edit commands and persistence/historical compatibility.
 
-○ B Contextual piano roll and CoreMIDI recording/monitoring with timestamped bounded queues, shared transport and note-off safety.
+◉ B Contextual piano roll and CoreMIDI recording/monitoring with timestamped bounded queues, shared transport and note-off safety.
 
-○ C Native polyphonic referenced-sample instrument, sustain/envelopes/pitch/loops/voice stealing and independent PCM oracle.
+✓ C Native polyphonic referenced-sample instrument, sustain/envelopes/pitch/loops/voice stealing and independent PCM oracle.
 
-○ C Dedicated isolated VST3/AUv2 instrument processing/state/editor, exact bus/MIDI packets/PDC; qualify an installed instrument if available.
+◉ C Dedicated isolated VST3/AUv2 instrument processing/state/editor, exact bus/MIDI packets/PDC; qualify an installed instrument if available.
 
 ○ C One collapsed automation lane per track, native/hosted target registry, shared live/offline rendering, snapshots/frozen recipes and receipts.
 
 ○ Final native1040×680/normal workflow, complete unchanged-build vendor/AU/device gate, preservation audit, report and checkpoint commits.
 
 Keep simulated fixtures, actual CoreMIDI devices, installed instruments, human listening, physical surround and receiver drag evidence separate. VST2/AUv3/universal vendor compatibility are not qualified by this increment.
+
+Current relevant gate: six suites passed in19.05s (MIDI, audio input, recorded takes, actual view commands, session, MIDI instruments). New MIDI tests include actual owned CoreMIDI virtual input, controlled shared timestamps, journal integrity/overflow, actual piano-roll/timeline commands and a native sampler PCM oracle. Actual installed Apple DLSMusicDevice AUv2 produces finite note PCM; human listening and physical MIDI remain open. Native UI/final gate are still pending.

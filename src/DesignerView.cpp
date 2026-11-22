@@ -47,6 +47,21 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     canvas = std::make_unique<Canvas>(*this);
     tracks = std::make_unique<MultitrackEditor>(
         session, [this](const Asset &a) { return peakPool->get(a); }, preferences);
+    midiEditor =
+        std::make_unique<MidiEditor>(session, catalog.getParentDirectory().getChildFile("plugins.json"));
+    addChildComponent(*midiEditor);
+    midiEditor->onClose = [this]
+    {
+        midiEditorOpen = false;
+        resized();
+    };
+    tracks->onOpenMidi = [this](const auto &id)
+    {
+        midiEditorOpen = true;
+        midiEditor->open(id);
+        resized();
+    };
+    tracks->onInstrument = [this](const auto &id) { midiEditor->instrument(id, addTrackButton); };
     tracks->onRowsChanged = [this]
     {
         if (session.document.activeMix().trackSchema)
@@ -75,7 +90,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     addAndMakeVisible(inputOptions);
     recordAudio.setTooltip("Record armed Audio Tracks from the playhead (R). Stop finalizes source WAVs; "
                            "Escape cancels and retains a recoverable prefix. Monitoring starts off.");
-    recordAudio.onClick = [this] { session.startInputRecording(); };
+    recordAudio.onClick = [this] { session.startTrackRecording(); };
     inputOptions.onClick = [this] { showInputRecordingOptions(); };
     addTrackButton.onClick = [this] { tracks->addTrackMenu(addTrackButton); };
     perform = std::make_unique<PerformView>(session, peakPool);
@@ -320,6 +335,11 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     duplicate.onClick = [this]
     {
         session.protectStartupEdits();
+        if (session.document.selectedMidiClip.isNotEmpty())
+        {
+            tracks->keyPressed(juce::KeyPress('d', juce::ModifierKeys::commandModifier, 0));
+            return;
+        }
         const auto selected = session.document.selectedLayer, document = session.document.id,
                    variation = session.document.activeVariation;
         const auto generation = session.documentGeneration();
@@ -352,6 +372,11 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     };
     remove.onClick = [this]
     {
+        if (session.document.selectedMidiClip.isNotEmpty())
+        {
+            tracks->keyPressed(juce::KeyPress(juce::KeyPress::deleteKey));
+            return;
+        }
         if (!session.selectedLayer())
             return;
         auto id = session.document.selectedLayer;
@@ -1067,6 +1092,8 @@ juce::String DesignerView::waveformKey(const Asset &a) const
 }
 void DesignerView::refresh()
 {
+    if (midiEditor)
+        midiEditor->refresh();
     updating = true;
     auto &d = session.document;
     effectiveDisplay = resolvePerformance(session.performanceMix());
@@ -1179,6 +1206,8 @@ void DesignerView::refresh()
     redoButton.setEnabled(session.canRedo());
     for (auto *button : {&duplicate, &remove, &up, &down, &renderSelection, &copyOriginal})
         button->setEnabled(layer != nullptr);
+    duplicate.setEnabled(layer != nullptr || d.selectedMidiClip.isNotEmpty());
+    remove.setEnabled(layer != nullptr || d.selectedMidiClip.isNotEmpty());
     if (layer)
     {
         auto &layers = d.activeMix().layers;
@@ -1189,8 +1218,9 @@ void DesignerView::refresh()
     renderSelection.setButtonText(hasHostedInserts(d.activeMix()) ? "Render selected layer (pre-master stem)"
                                                                   : "Render selected layer");
     renderSelection.setTooltip(renderSelection.getButtonText());
-    render.setEnabled(!d.activeMix().layers.empty() && !session.rendering);
-    accurate.setEnabled(!d.activeMix().layers.empty() && !session.transitionPending());
+    render.setEnabled((!d.activeMix().layers.empty() || hasMidi(d.activeMix())) && !session.rendering);
+    accurate.setEnabled((!d.activeMix().layers.empty() || hasMidi(d.activeMix())) &&
+                        !session.transitionPending());
     cancel.setVisible(session.rendering);
     newButton.setEnabled(!session.rendering);
     openButton.setEnabled(!session.rendering);
@@ -1310,18 +1340,19 @@ void DesignerView::timerCallback()
     }
     bool owned = state["id"].toString() == "design:" + session.document.id;
     bool playing = session.ownsPlayback();
-    play.setIcon(playing || session.inputBusy() ? ActionIcon::stop : ActionIcon::play);
+    play.setIcon(playing || session.inputBusy() || session.midiBusy() ? ActionIcon::stop : ActionIcon::play);
     play.setButtonText(
         session.inputBusy() ? "Stop audio recording"
         : session.document.activeTake.isNotEmpty()
             ? (playing ? "Stop take audition" : "Audition take: " + selectedTake(session.document)->name)
             : (playing ? "Stop design" : "Play design"));
-    play.setEnabled(session.inputBusy() ||
-                    (!session.performanceMix().layers.empty() &&
+    play.setEnabled(session.inputBusy() || session.midiBusy() ||
+                    ((!session.performanceMix().layers.empty() || hasMidi(session.performanceMix())) &&
                      (!selectedTake(session.document) || selectedTake(session.document)->complete)));
-    recordAudio.setEnabled(!performMode && session.inputReady() && !session.inputBusy() &&
-                           !session.takeBusy() && session.document.activeTake.isEmpty());
-    stopButton.setEnabled(session.inputBusy() || session.ownsPlayback());
+    recordAudio.setEnabled(!performMode && (session.inputReady() || (bool)session.midiStatus()["open"]) &&
+                           !session.midiBusy() && !session.inputBusy() && !session.takeBusy() &&
+                           session.document.activeTake.isEmpty());
+    stopButton.setEnabled(session.midiBusy() || session.inputBusy() || session.ownsPlayback());
     peak = std::max(owned && playing ? (float)state["preMonitorPeak"] : 0.f, peak * .88f);
     clipHeld |= peak >= 1;
     meter.setText(clipHeld ? "CLIP" : "", juce::dontSendNotification);
@@ -1498,7 +1529,12 @@ void DesignerView::resized()
         b->setBounds(x, 16, 30, 32);
         x += 32;
     }
-    canvasViewport.setBounds(12, 136, std::max(280, creative - 24), getHeight() - 340);
+    int pianoHeight = midiEditorOpen && !performMode ? std::clamp((getHeight() - 340) / 2, 170, 250) : 0;
+    midiEditor->setVisible(pianoHeight > 0);
+    midiEditor->setBounds(12, getHeight() - 204 - pianoHeight, std::max(280, creative - 24), pianoHeight);
+    midiEditor->refresh();
+    canvasViewport.setBounds(12, 136, std::max(280, creative - 24),
+                             std::max(30, getHeight() - 340 - pianoHeight));
     if (session.document.activeMix().trackSchema)
         tracks->setSize(std::max(280, canvasViewport.getWidth() - 14),
                         std::max(canvasViewport.getHeight() - 2, tracks->contentHeight()));
@@ -2178,10 +2214,12 @@ bool DesignerView::keyPressed(const juce::KeyPress &key, juce::Component *)
     if (!performMode && !key.getModifiers().isCommandDown() && !key.getModifiers().isAltDown() &&
         (key.isKeyCode('R') || key.isKeyCode('r')))
     {
-        if (session.inputBusy())
+        if (session.midiBusy())
+            session.stopMidiRecording();
+        else if (session.inputBusy())
             session.stopInputRecording();
         else
-            session.startInputRecording();
+            session.startTrackRecording();
         return true;
     }
     if (session.inputBusy() && key.isKeyCode(juce::KeyPress::escapeKey))

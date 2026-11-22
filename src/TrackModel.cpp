@@ -1,5 +1,6 @@
 #include "TrackModel.h"
 #include "CanvasEditing.h"
+#include "SourcePools.h"
 #include <algorithm>
 #include <cmath>
 #include <functional>
@@ -157,6 +158,11 @@ const DesignLayer *findClip(const DesignMix &m, const juce::String &id)
 }
 InsertChain *ownerInserts(DesignMix &m, const juce::String &id)
 {
+    if (id.startsWith("instrument:"))
+    {
+        auto *t = findTrack(m, id.substring(11));
+        return t && t->instrument ? &t->instrument->hostedInstrument : nullptr;
+    }
     if (id.isEmpty() || id == "master")
         return &m.inserts;
     if (auto *t = findTrack(m, id))
@@ -290,6 +296,8 @@ void enableTrackSchema(DesignMix &m)
 }
 juce::String addTrack(DesignMix &m, TrackKind kind, const juce::String &parent)
 {
+    if (kind == TrackKind::midiInstrument)
+        m.midiEnabled = true;
     enableTrackSchema(m);
     require(m.tracks.size() < maxDesignTracks, "At most64 tracks");
     require(kind != TrackKind::master, "Master is the unique root bus");
@@ -341,6 +349,7 @@ void deleteTrack(DesignMix &m, const juce::String &id)
         if (other.parent == id)
             other.parent = t.parent;
     std::erase_if(m.layers, [&](auto &l) { return l.trackId == id; });
+    std::erase_if(m.midiClips, [&](auto &c) { return c.track == id; });
     std::erase_if(m.tracks, [&](auto &v) { return v.id == id; });
 }
 std::vector<juce::String> visibleTracks(const DesignMix &m)
@@ -458,6 +467,14 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
             out.push_back({{{}, "width"}, "Track Controls", "Width", "degrees", 0, 360, track->width});
         }
     }
+    if (track && track->instrument && track->instrument->version == 1 &&
+        track->instrument->format == "SoundPlus")
+    {
+        auto &s = *track->instrument;
+        out.push_back(
+            {{s.id, "instrument-gain"}, "Instrument", "Sampler gain", "dB", -90, 24, s.instrumentGainDb});
+        out.push_back({{s.id, "tuning"}, "Instrument", "Sampler tuning", "semitones", -48, 48, s.transpose});
+    }
     auto rack = [&](const InsertChain &c, const juce::String &prefix)
     {
         int index = 0;
@@ -539,6 +556,16 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
                     }
         }
     };
+    if (track && track->instrument && !track->instrument->hostedInstrument.hosted.slots.empty())
+    {
+        auto first = out.size();
+        rack(track->instrument->hostedInstrument, {});
+        for (size_t i = first; i < out.size(); ++i)
+        {
+            out[i].group = "Instrument";
+            out[i].writable = false;
+        }
+    }
     rack(master ? m.inserts : track->inserts, {});
     if (!master)
         for (auto &clip : m.layers)
@@ -675,6 +702,7 @@ void validateTracks(const DesignMix &m, double rate)
         return;
     }
     require(m.tracks.size() <= maxDesignTracks, "Track bound exceeded");
+    validateMidi(m, rate);
     std::set<juce::String> ids;
     int pointCount = 0;
     for (auto &t : m.tracks)
@@ -682,6 +710,11 @@ void validateTracks(const DesignMix &m, double rate)
         require(t.id.isNotEmpty() && ids.insert(t.id).second && t.id != "master",
                 "Duplicate/invalid track identity");
         validateLayout(t.layout);
+        require(t.midiChannel >= 0 && t.midiChannel <= 16 &&
+                    (t.midiInputUID.isEmpty() || t.kind == TrackKind::midiInstrument),
+                "Invalid MIDI input assignment");
+        if (t.instrument)
+            validateInstrument(*t.instrument, t.layout);
         if (t.instrument)
             require(t.instrument->id.isNotEmpty() && t.instrument->identifier.isNotEmpty() &&
                         t.instrument->state.getNumBytesAsUTF8() <= 2 * 1024 * 1024,
@@ -789,6 +822,13 @@ juce::var tracksToJson(const DesignMix &m)
         put(x, "azimuth", t.azimuth);
         put(x, "width", t.width);
         put(x, "insertChain", insertChainToJson(t.inserts));
+        if (t.midiInputUID.isNotEmpty())
+        {
+            auto input = obj();
+            put(input, "uid", t.midiInputUID);
+            put(input, "channel", t.midiChannel);
+            put(x, "midiInput", input);
+        }
         if (t.input)
         {
             auto input = obj();
@@ -804,12 +844,7 @@ juce::var tracksToJson(const DesignMix &m)
         }
         if (t.instrument)
         {
-            auto slot = obj();
-            put(slot, "id", t.instrument->id);
-            put(slot, "format", t.instrument->format);
-            put(slot, "identifier", t.instrument->identifier);
-            put(slot, "state", t.instrument->state);
-            put(x, "instrument", slot);
+            put(x, "instrument", instrumentJson(*t.instrument));
         }
         put(x, "automation", laneJson(t.automation));
         tracks.add(x);
@@ -857,12 +892,16 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
                 input.channels.push_back((int)c);
             t.input = std::move(input);
         }
+        if (x.hasProperty("midiInput"))
+        {
+            t.midiInputUID = x["midiInput"]["uid"].toString();
+            t.midiChannel = (int)x["midiInput"]["channel"];
+        }
         if (x.hasProperty("instrument"))
         {
             auto slot = x["instrument"];
             require(slot.isObject(), "Invalid Instrument slot");
-            t.instrument = InstrumentSlot{slot["id"].toString(), slot["format"].toString(),
-                                          slot["identifier"].toString(), slot["state"].toString()};
+            t.instrument = instrumentFromJson(slot);
         }
         t.automation = laneFrom(x["automation"]);
         m.tracks.push_back(std::move(t));
