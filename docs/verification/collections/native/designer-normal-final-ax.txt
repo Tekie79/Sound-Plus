@@ -1,0 +1,99 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 1-2, 4-5, 7-35, 37-38, 41-47, 55-56
++	60 button New Collection
++	61 button Collection and selection actions
++	62 button Process selected source/range with Plug-in
++	63 button Favorites, Help: Browse Favorites · All sources. Collections and source filters intersect.
++	64 outline
++		65 row Rain texture.wav, saved original samples [36000, 120000), reference fc0516d6ceb54c0e878e907ac357220e, 5.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
++			66 row Rain texture.wav, saved original samples [36000, 120000), reference fc0516d6ceb54c0e878e907ac357220e, 5.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
++	67 button Per-channel source waveforms
++	68 button Add marked region to Designer, Help: Add this marked source range to Designer. Layout-aware designs keep all supported channels; wider sources require an explicit subset. Legacy designs retain pair semantics. I / O mark the range.
++	69 container Library sidebar divider
++	70 container
++	71 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 7, Value: Untitled design
++	72 button Render Design, Help: Render Design (Command-R)
++	73 button Render settings
++	74 button Choose permanent output folder
++	75 button Library
++	76 button (settable) Browser, Help: Hide sound browser, Value: On
++	77 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
++	78 text (settable)
++	79 button New design, Help: New design (Command-N)
++	80 button Open design, Help: Open design (Command-O)
++	81 button Save design, Help: Save design (Command-S)
++	82 button Recover autosave
++	83 button Add source
++	84 button Add track
++	85 button (settable) Edit, Value: On
++	86 button (settable) Perform, Value: Off
++	87 button (settable) Hide layer inspector, Value: On
++	88 button Zoom out
++	89 button Zoom in (Command-wheel)
++	90 button Decrease track height
++	91 button Increase track height (Command-Option-wheel)
++	92 button Fit design
++	93 button Fit selected layers
++	94 button (settable) Enable snapping (Command temporarily bypasses), Value: On
++	95 button Snap targets and grid
++	96 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
++	97 text (settable) 0.0000 s
++	98 button (settable) Instrument, Value: On
++	99 button Rain texture.wav, Help: Instrument: Rain texture.wav. Source, editor, sampler controls and tempo.
++	100 button (settable) Track inserts, Value: On
++	101 text (settable) MIDI
++	102 button Add effect
++	103 button (settable) Master inserts, Value: On
++	104 text (settable) Master
++	105 button Add effect
++	106 button (settable) Output, Value: Off
++	107 container Multitrack Edit timeline
++	108 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Rain texture.wav
++	109 button Track colour
++	110 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
++	111 button (settable) Mute track, Value: Off
++	112 button (settable) Solo track, Value: Off
++	113 button (settable) Arm audio input: Rain texture.wav, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
++	114 button Track options
++	115 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
++	116 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Rain texture.wav
++	117 button Track colour
++	118 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
++	119 button (settable) Mute track, Value: Off
++	120 button (settable) Solo track, Value: Off
++	121 button (settable) Arm audio input: Rain texture.wav, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
++	122 button Track options
++	123 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
++	124 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Folder
++	125 button Track colour
++	126 button (settable) Folder disclosure, Help: Expand / collapse folder, Value: On
++	127 button (settable) Mute track, Value: Off
++	128 button (settable) Solo track, Value: Off
++	129 button Track options
++	130 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: MIDI
++	131 button Track colour
++	132 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
++	133 button (settable) Mute track, Value: Off
++	134 button (settable) Solo track, Value: Off
++	135 button (settable) Arm MIDI Track, Help: MIDI arm. Choose device, channel and monitoring in Track options., Value: Off
++	136 button Track options
++	137 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
++	138 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
++	139 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
++	140 button Generate 5
++	141 button Variation bounds and enabled parameters
++	142 pop up button (settable) Original and variation candidates, Value: Original
++	143 text (settable) /Users/harvest/Music/SoundPlus/Renders
++	144 button Play design, Help: Play / Stop (Space). MIDI seeks rebuild full voice/effect history in the background; Stop cancels preparation.
++	145 button Audio recording options
++	146 button Go to start (Home)
++	147 button Previous marker
++	148 button Next marker
++	149 button Go to end (End)
++	150 button Add marker (M)
++	151 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
++	152 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
++	153 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
++	154 text (settable) Reopened saved design
++	155 text SoundPlus
+The focused UI element is 70 container

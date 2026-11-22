@@ -1382,7 +1382,7 @@ void DesignSession::selectMidiClip(const juce::String &id)
     }
 }
 void DesignSession::assignSampler(const juce::String &track, const juce::File &file, bool alternate,
-                                  int64_t first, int64_t last)
+                                  int64_t first, int64_t last, std::optional<Asset> catalogSource)
 {
     if (replacing || inputBusy() || takeBusy() || midiBusy())
         return;
@@ -1396,11 +1396,21 @@ void DesignSession::assignSampler(const juce::String &track, const juce::File &f
     working = true;
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,
-            [safe, track, file, bus, alternate, first, last, variation]
+            [safe, track, file, bus, alternate, first, last, variation, catalogSource]
             {
                 auto asset = inspectDesignSource(file);
-                auto entry = inspectPoolEntry(asset, first, last > first ? last : asset.samples, true);
-                auto layer = makeDesignLayer(asset, first, last > first ? last : asset.samples, true);
+                if (catalogSource)
+                {
+                    auto &source = *catalogSource;
+                    if (!source.deliverable() || source.size != asset.size ||
+                        source.modified != asset.modified || source.inode != asset.inode ||
+                        source.samples != asset.samples || source.sampleRate != asset.sampleRate)
+                        throw std::runtime_error("Library source changed before sampler assignment");
+                    asset = source;
+                }
+                const bool external = !catalogSource || catalogSource->rootId.isEmpty();
+                auto entry = inspectPoolEntry(asset, first, last > first ? last : asset.samples, external);
+                auto layer = makeDesignLayer(asset, first, last > first ? last : asset.samples, external);
                 initialiseRouting(layer, bus);
                 reviewPoolEntry(entry, layer.routing, bus);
                 return [safe, track, entry, bus, alternate, variation]

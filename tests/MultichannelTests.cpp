@@ -482,8 +482,9 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
                   hash(juce::File(split.path)) == o.sha256,
               "Split staging failure leaves no partial published set and preserves prior durable output");
         auto controlled = d;
-        controlled.original.layers[0].inserts.stock = {sp::makeStockEffect("gain"), sp::makeStockEffect("filter"),
-                                                 sp::makeStockEffect("delay"), sp::makeStockEffect("reverb")};
+        controlled.original.layers[0].inserts.stock = {
+            sp::makeStockEffect("gain"), sp::makeStockEffect("filter"), sp::makeStockEffect("delay"),
+            sp::makeStockEffect("reverb")};
         controlled.original.inserts.stock = controlled.original.layers[0].inserts.stock;
         for (auto &e : controlled.original.inserts.stock)
             e.id = juce::Uuid().toString();
@@ -693,6 +694,10 @@ void runMultichannelTests(const juce::File &parent, const juce::File &applicatio
             sp::Catalog db(file);
             draft.original.layers[0].source = db.asset(catalogId);
             draft.original.layers[0].external = false;
+            // Reconstruct the old schema rather than only lowering its version label.
+            // A genuine v4/v5 catalog predates all v7 virtual-library sidecars.
+            db.exec("DROP TABLE collection_members;DROP TABLE collection_history;DROP TABLE "
+                    "collection_cursor;DROP TABLE library_refs;DROP TABLE collections;");
             db.exec("ALTER TABLE assets DROP COLUMN layout_override");
             if (schema == 4)
                 db.exec("ALTER TABLE assets DROP COLUMN channel_layout");

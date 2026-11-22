@@ -1,0 +1,1556 @@
+{
+  "capturedUTC": "2026-11-22T21:33:23.308815+00:00",
+  "workspace": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/gain-hover-native",
+  "protected": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/perform-sizing/protected-1795376705953156000",
+  "restoredOldBackup": false,
+  "nativeObservedDocument": {
+    "name": "Workflow demonstration",
+    "revision": 4478,
+    "workspace": "Perform",
+    "browserVisible": true
+  },
+  "tables": {
+    "roots": {
+      "rows": 1,
+      "sha256": "ffe4b540d89972fc2829424527ef9ec42c7dd6525af7be0f8992b32acc928dcc",
+      "baseline": {
+        "rows": 1,
+        "sha256": "ffe4b540d89972fc2829424527ef9ec42c7dd6525af7be0f8992b32acc928dcc"
+      },
+      "byteIdenticalRows": true
+    },
+    "assets": {
+      "rows": 43,
+      "sha256": "b965c0dcf613cde79d21939bfabdbb73eb4c34884475a0e94c6b12665d8a16ec",
+      "baseline": {
+        "rows": 43,
+        "sha256": "60f027da301d05f5b6df0fd519af61812967d6436d2a9358df1b61d6c954f085"
+      },
+      "byteIdenticalRows": false,
+      "changedColumns": {
+        "seen": 43
+      },
+      "meaning": "Only scan encounter tokens changed after automatic startup presence check; source IDs, paths, content revisions, availability and analysis metadata retained."
+    },
+    "directories": {
+      "rows": 1,
+      "sha256": "472382ec29b32311e2b6181ee32203fd4bd28a0b9061cf276ae4117bd33cfdf6",
+      "baseline": {
+        "rows": 1,
+        "sha256": "472382ec29b32311e2b6181ee32203fd4bd28a0b9061cf276ae4117bd33cfdf6"
+      },
+      "byteIdenticalRows": true
+    },
+    "analysis_jobs": {
+      "rows": 43,
+      "sha256": "5038866d5a85656657f5de67fc9d448fb65a4119bb9b0267b3ed14555efed7fb",
+      "baseline": {
+        "rows": 43,
+        "sha256": "5038866d5a85656657f5de67fc9d448fb65a4119bb9b0267b3ed14555efed7fb"
+      },
+      "byteIdenticalRows": true
+    },
+    "embeddings": {
+      "rows": 74,
+      "sha256": "d28240179ac8aa59e6b1fb60ef44ea102ae68ad2211d2278eb96a792be9e52ec",
+      "baseline": {
+        "rows": 74,
+        "sha256": "d28240179ac8aa59e6b1fb60ef44ea102ae68ad2211d2278eb96a792be9e52ec"
+      },
+      "byteIdenticalRows": true
+    },
+    "vector_changes": {
+      "rows": 74,
+      "sha256": "c120b4d2d637ea0772564a62db1d5ff4ffcb2404de6abe47a4acb11f8ecd730f",
+      "baseline": {
+        "rows": 74,
+        "sha256": "c120b4d2d637ea0772564a62db1d5ff4ffcb2404de6abe47a4acb11f8ecd730f"
+      },
+      "byteIdenticalRows": true
+    },
+    "retrieval_meta": {
+      "rows": 1,
+      "sha256": "a4b99724b7939d8c1229ac57036390754c9269fc704bbc1144228d9f8c6c68a0",
+      "baseline": {
+        "rows": 1,
+        "sha256": "a4b99724b7939d8c1229ac57036390754c9269fc704bbc1144228d9f8c6c68a0"
+      },
+      "byteIdenticalRows": true
+    },
+    "sqlite_sequence": {
+      "rows": 1,
+      "sha256": "2568ecffab065e95feba96389ec427ec23a753323312c92ef384595802c4d0ad",
+      "baseline": {
+        "rows": 1,
+        "sha256": "2568ecffab065e95feba96389ec427ec23a753323312c92ef384595802c4d0ad"
+      },
+      "byteIdenticalRows": true
+    }
+  },
+  "schemaVersion": 7,
+  "integrityCheck": "ok",
+  "media": {
+    "verifiedFiles": 37,
+    "allSHA256Match": true,
+    "files": {
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-006.wav": {
+        "expectedSHA256": "2d31544f7e5ba3eb21f20e115d7bf8dc1ad23508806625ed628436c8a77852ca",
+        "actualSHA256": "2d31544f7e5ba3eb21f20e115d7bf8dc1ad23508806625ed628436c8a77852ca"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/0d106235042f4a468f13d6114ee050bb/pass.json": {
+        "expectedSHA256": "625d5cb070c258c0a1d0973cc75a8a828398f5ec1dd09ae82ddf158dc5fce89d",
+        "actualSHA256": "625d5cb070c258c0a1d0973cc75a8a828398f5ec1dd09ae82ddf158dc5fce89d"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/2ad4b151cc314bd9afb103ce11816e3e/Raw.wav": {
+        "expectedSHA256": "3bf5c4100ad32de5e75037b91291dd68f032dbbaaeaedef9fa6963fae9a1b8bb",
+        "actualSHA256": "3bf5c4100ad32de5e75037b91291dd68f032dbbaaeaedef9fa6963fae9a1b8bb"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/93807480c84e488f8570c190259015b3/pass.json": {
+        "expectedSHA256": "5d4ff35f8bf0a417b316089d9cf373ca9956d8cebc119ec2548ce04c0bafbb84",
+        "actualSHA256": "5d4ff35f8bf0a417b316089d9cf373ca9956d8cebc119ec2548ce04c0bafbb84"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r15-80ea102e.wav": {
+        "expectedSHA256": "83c3eb80619e51ad79ea1c301ff2d8cb6287bd7177dd94695bd4cc00b0b1e796",
+        "actualSHA256": "83c3eb80619e51ad79ea1c301ff2d8cb6287bd7177dd94695bd4cc00b0b1e796"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-85bbabd5.wav": {
+        "expectedSHA256": "f14ae2923f8b5b2885f72b7f96328c6cfa50e8c0eac0ec9d7245a5d10d1aea1d",
+        "actualSHA256": "f14ae2923f8b5b2885f72b7f96328c6cfa50e8c0eac0ec9d7245a5d10d1aea1d"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/93807480c84e488f8570c190259015b3/Raw.wav": {
+        "expectedSHA256": "9d4a6d5ffc1d383d197752b5fa174fc520b497f4a95f800ae1b099e0d0be8b12",
+        "actualSHA256": "9d4a6d5ffc1d383d197752b5fa174fc520b497f4a95f800ae1b099e0d0be8b12"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-7aac8604.wav": {
+        "expectedSHA256": "4057ce9bdf1e9d3bd8338a7bfa933d0cf13f9b5c805c3be4d2fcba116ba7dbe4",
+        "actualSHA256": "4057ce9bdf1e9d3bd8338a7bfa933d0cf13f9b5c805c3be4d2fcba116ba7dbe4"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/LV50A vendor QA stereo-v1-r7-571fe382.wav": {
+        "expectedSHA256": "2713054b68cfbae43e986c14e710932d9358872e898db9cd89df06dfdefeb2a2",
+        "actualSHA256": "2713054b68cfbae43e986c14e710932d9358872e898db9cd89df06dfdefeb2a2"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/2ad4b151cc314bd9afb103ce11816e3e/pass.json": {
+        "expectedSHA256": "63fa3dc1fee8700920b308d71ca20113fb3c03038191f3e78fd53df0d146c297",
+        "actualSHA256": "63fa3dc1fee8700920b308d71ca20113fb3c03038191f3e78fd53df0d146c297"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/eec43883a8864d0a9d77e808d476ecef/Raw.wav": {
+        "expectedSHA256": "826ab4bd0258c0edb176386376cb7a10ddcfae78f8d970706b0cf24b29cc07af",
+        "actualSHA256": "826ab4bd0258c0edb176386376cb7a10ddcfae78f8d970706b0cf24b29cc07af"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-ee4c299f.wav": {
+        "expectedSHA256": "01558723db9d9232554d16fa426b7f3a9639ecae51fa9baf9fc306431d423210",
+        "actualSHA256": "01558723db9d9232554d16fa426b7f3a9639ecae51fa9baf9fc306431d423210"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r18-b19d7f63.wav": {
+        "expectedSHA256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868",
+        "actualSHA256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Take 1-take-r27-c6375de9.wav": {
+        "expectedSHA256": "51a34f2fd4b4fe3ac0eba87793970bde073f9a90374aa877d2f116fc22b47f95",
+        "actualSHA256": "51a34f2fd4b4fe3ac0eba87793970bde073f9a90374aa877d2f116fc22b47f95"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r88-5992d015.wav": {
+        "expectedSHA256": "e9a426bb9adc72c9ee12f362138983e2801610df557f15bba653e51efefc34b3",
+        "actualSHA256": "e9a426bb9adc72c9ee12f362138983e2801610df557f15bba653e51efefc34b3"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r5-4a2257bb.wav": {
+        "expectedSHA256": "16bd7c0a19abdcc2a5f7bd8faa7c46d686bf4590908f20790e07db0e2402406f",
+        "actualSHA256": "16bd7c0a19abdcc2a5f7bd8faa7c46d686bf4590908f20790e07db0e2402406f"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r88-d2369762.wav": {
+        "expectedSHA256": "b284c1f1dade597e9fc6b0374ba06113584429d3beef93cd0b3b42af06b53987",
+        "actualSHA256": "b284c1f1dade597e9fc6b0374ba06113584429d3beef93cd0b3b42af06b53987"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Correctness QA-r17-8dabd06c.wav": {
+        "expectedSHA256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868",
+        "actualSHA256": "851e4895fc9d2a6d015f773a0c92cf714e9ccf167dec0b3a1b551378e5eb1868"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/0d106235042f4a468f13d6114ee050bb/Raw.wav": {
+        "expectedSHA256": "d1b638baa13fa2ace37382867329ffd3e31dabf35cdeb153e7de60a6b8d6e237",
+        "actualSHA256": "d1b638baa13fa2ace37382867329ffd3e31dabf35cdeb153e7de60a6b8d6e237"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Take 2-take-r30-4ffdfa50.wav": {
+        "expectedSHA256": "b12b19f8cb39094b324592878e4489b9983eb540d6bbe90184e745d8c6ce85d2",
+        "actualSHA256": "b12b19f8cb39094b324592878e4489b9983eb540d6bbe90184e745d8c6ce85d2"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained Performance QA-r5-7badd05e.wav": {
+        "expectedSHA256": "8aac2f02b3d5899cef97a0bbb14b5784d8b864df6bf1cca604c02244ec5efe22",
+        "actualSHA256": "8aac2f02b3d5899cef97a0bbb14b5784d8b864df6bf1cca604c02244ec5efe22"
+      },
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-001.wav": {
+        "expectedSHA256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849",
+        "actualSHA256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Untitled design-r2-ddebe7af.wav": {
+        "expectedSHA256": "08c7537f32242229869388f1de5c4403a0f3e9a39e41c7769eef6ded26898f88",
+        "actualSHA256": "08c7537f32242229869388f1de5c4403a0f3e9a39e41c7769eef6ded26898f88"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/OldSkoolVerb vendor QA stereo-v1-r7-04eb6eb9.wav": {
+        "expectedSHA256": "83c3eb80619e51ad79ea1c301ff2d8cb6287bd7177dd94695bd4cc00b0b1e796",
+        "actualSHA256": "83c3eb80619e51ad79ea1c301ff2d8cb6287bd7177dd94695bd4cc00b0b1e796"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r6-21962716.wav": {
+        "expectedSHA256": "e9a426bb9adc72c9ee12f362138983e2801610df557f15bba653e51efefc34b3",
+        "actualSHA256": "e9a426bb9adc72c9ee12f362138983e2801610df557f15bba653e51efefc34b3"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r6-9048ade0.wav": {
+        "expectedSHA256": "e40f92e5950f41e586fdc65251572ce7f2c7918081824c4a63981d3883b574d4",
+        "actualSHA256": "e40f92e5950f41e586fdc65251572ce7f2c7918081824c4a63981d3883b574d4"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r88-5fb359e3.wav": {
+        "expectedSHA256": "e40f92e5950f41e586fdc65251572ce7f2c7918081824c4a63981d3883b574d4",
+        "actualSHA256": "e40f92e5950f41e586fdc65251572ce7f2c7918081824c4a63981d3883b574d4"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/08b7a7723503425f934c1472b37fcb9a/Raw.wav": {
+        "expectedSHA256": "d70cf54eb9b3539afeb9bd0e149a15cb87b0d93dc90ea789406cf4ed363c97b9",
+        "actualSHA256": "d70cf54eb9b3539afeb9bd0e149a15cb87b0d93dc90ea789406cf4ed363c97b9"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Workflow demonstration-r33-035ab55c.wav": {
+        "expectedSHA256": "6a06d852bcdca6d5a2c0c5246e0ffc96f5974efceb3c34e507138968c1315814",
+        "actualSHA256": "6a06d852bcdca6d5a2c0c5246e0ffc96f5974efceb3c34e507138968c1315814"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/eec43883a8864d0a9d77e808d476ecef/pass.json": {
+        "expectedSHA256": "9053f92f2efc63546c524fede499b22fedf49b561f69f73b935bd4a4adbf23f0",
+        "actualSHA256": "9053f92f2efc63546c524fede499b22fedf49b561f69f73b935bd4a4adbf23f0"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r6-21b518de.wav": {
+        "expectedSHA256": "b284c1f1dade597e9fc6b0374ba06113584429d3beef93cd0b3b42af06b53987",
+        "actualSHA256": "b284c1f1dade597e9fc6b0374ba06113584429d3beef93cd0b3b42af06b53987"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r88-66f720ad.wav": {
+        "expectedSHA256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d",
+        "actualSHA256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r87-32177bff.wav": {
+        "expectedSHA256": "f14ae2923f8b5b2885f72b7f96328c6cfa50e8c0eac0ec9d7245a5d10d1aea1d",
+        "actualSHA256": "f14ae2923f8b5b2885f72b7f96328c6cfa50e8c0eac0ec9d7245a5d10d1aea1d"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Replay integrity QA 40-take-r87-2b8d9b19.wav": {
+        "expectedSHA256": "16bd7c0a19abdcc2a5f7bd8faa7c46d686bf4590908f20790e07db0e2402406f",
+        "actualSHA256": "16bd7c0a19abdcc2a5f7bd8faa7c46d686bf4590908f20790e07db0e2402406f"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Plugin Passes/08b7a7723503425f934c1472b37fcb9a/pass.json": {
+        "expectedSHA256": "1ab0001929c625d0e224e316f0f56b9e1c0fdb2fe446488b1a4a1a0d0f60f1c0",
+        "actualSHA256": "1ab0001929c625d0e224e316f0f56b9e1c0fdb2fe446488b1a4a1a0d0f60f1c0"
+      },
+      "/Users/harvest/Music/SoundPlus/Renders/Sustained recorded motion-take-r6-623730d0.wav": {
+        "expectedSHA256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d",
+        "actualSHA256": "6f4c1baa88dc74e3dd0e28c11df66e5546f824a2e441086a7185684cd289cb7d"
+      },
+      "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-005.wav": {
+        "expectedSHA256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b",
+        "actualSHA256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b"
+      }
+    }
+  },
+  "oldRecordingFiles": {
+    "verifiedFiles": 26,
+    "allSHA256Match": true,
+    "files": {
+      "build/input-recording/native/designer-autosave/active.json": {
+        "expectedSHA256": "593408c1190581d99fa99e600bdd5e84118860bed2774315a4b260ebf6938060",
+        "actualSHA256": "593408c1190581d99fa99e600bdd5e84118860bed2774315a4b260ebf6938060"
+      },
+      "build/input-recording/native/designer-autosave/803fb3b44c0544a5ab66e030a65f20ff.json": {
+        "expectedSHA256": "f56d79571b77b6b547bbc1561627c3950e4737bfcac744772153202e8e7de1c8",
+        "actualSHA256": "f56d79571b77b6b547bbc1561627c3950e4737bfcac744772153202e8e7de1c8"
+      },
+      "build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/journal.json": {
+        "expectedSHA256": "b96fa321466f5758bd2f70ad3b7cbb4cdee0e39bf70ade965e448d83677d146c",
+        "actualSHA256": "b96fa321466f5758bd2f70ad3b7cbb4cdee0e39bf70ade965e448d83677d146c"
+      },
+      "build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/Recording-1.wav": {
+        "expectedSHA256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7",
+        "actualSHA256": "abfba8e8db9b5ecc7955762a1ce5d54791613191a34721c395994d0344eb62c7"
+      },
+      "build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/source-0.f32": {
+        "expectedSHA256": "39d04a49af9535cc7f1f75bfc343b8e269330bf3c960f6ab32748cb87cedde40",
+        "actualSHA256": "39d04a49af9535cc7f1f75bfc343b8e269330bf3c960f6ab32748cb87cedde40"
+      },
+      "build/input-recording/native/recorded-audio/02e5f259d1c04e4287fc60fab3ee6ea2/receipt.json": {
+        "expectedSHA256": "a425a7a68ecf3acc1bf072f01c52a68e2d134ad156b6658333733ff63c697050",
+        "actualSHA256": "a425a7a68ecf3acc1bf072f01c52a68e2d134ad156b6658333733ff63c697050"
+      },
+      "build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/journal.json": {
+        "expectedSHA256": "1bd433bc917a1a755317cc42e32c07869abb79fe6bd4d693c99f68636544b65e",
+        "actualSHA256": "1bd433bc917a1a755317cc42e32c07869abb79fe6bd4d693c99f68636544b65e"
+      },
+      "build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/Recording-1.wav": {
+        "expectedSHA256": "ed962413e973a8f45cc4c3f6208873a7a527dc886682c047d5b9d97d8fd36f8d",
+        "actualSHA256": "ed962413e973a8f45cc4c3f6208873a7a527dc886682c047d5b9d97d8fd36f8d"
+      },
+      "build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/source-0.f32": {
+        "expectedSHA256": "3fd7c060d321e0bb7bbe0ac9c6125f10a5206f0e9eb07d2f06799b60ec597fb2",
+        "actualSHA256": "3fd7c060d321e0bb7bbe0ac9c6125f10a5206f0e9eb07d2f06799b60ec597fb2"
+      },
+      "build/input-recording/native/recorded-audio/6bc5235dd2554ae3a1e0c0c34e10c2d7/receipt.json": {
+        "expectedSHA256": "85da59ed7e601ef182f30f9f442cdfa4f371e57f834d7d4cf41c483db37ac66e",
+        "actualSHA256": "85da59ed7e601ef182f30f9f442cdfa4f371e57f834d7d4cf41c483db37ac66e"
+      },
+      "build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/journal.json": {
+        "expectedSHA256": "2050c5be5f792075e63fefca319856083d21992f5646c3f5760125f673212c8d",
+        "actualSHA256": "2050c5be5f792075e63fefca319856083d21992f5646c3f5760125f673212c8d"
+      },
+      "build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/Recording-1.wav": {
+        "expectedSHA256": "62f0940ccfa0da689cf02d76bf5d35119ee2277521cee9805019d1d8c674c76e",
+        "actualSHA256": "62f0940ccfa0da689cf02d76bf5d35119ee2277521cee9805019d1d8c674c76e"
+      },
+      "build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/source-0.f32": {
+        "expectedSHA256": "05d7dfcd506a0d720ab173e0da0c674680214584edbbf55b83be026b15f8c804",
+        "actualSHA256": "05d7dfcd506a0d720ab173e0da0c674680214584edbbf55b83be026b15f8c804"
+      },
+      "build/input-recording/native/recorded-audio/a6846ca86cb746deadf8fab50de14fc0/receipt.json": {
+        "expectedSHA256": "10a5f72ed6e71a588821561179e465405d0c15be172263e1b940c619e849813c",
+        "actualSHA256": "10a5f72ed6e71a588821561179e465405d0c15be172263e1b940c619e849813c"
+      },
+      "build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/journal.json": {
+        "expectedSHA256": "6187381fb3c10f985e3d38ab8c330f0e52aeaf93d870649c660213d90a2d70a2",
+        "actualSHA256": "6187381fb3c10f985e3d38ab8c330f0e52aeaf93d870649c660213d90a2d70a2"
+      },
+      "build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/Recording-1.wav": {
+        "expectedSHA256": "997d9ec9ef4978b6d9310a77b1ccd2d49c8e8df058d20cae3ad2e8965f801325",
+        "actualSHA256": "997d9ec9ef4978b6d9310a77b1ccd2d49c8e8df058d20cae3ad2e8965f801325"
+      },
+      "build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/source-0.f32": {
+        "expectedSHA256": "a37b2632b4a2926f307e51e17f43f22b340836361607835d42e63acc4cf355f9",
+        "actualSHA256": "a37b2632b4a2926f307e51e17f43f22b340836361607835d42e63acc4cf355f9"
+      },
+      "build/input-recording/native/recorded-audio/68b5423c7e744e829d96fd5b41861cd2/receipt.json": {
+        "expectedSHA256": "b139fb66e23b4893c2de38ca91c85d3a09f67894ea0272ee9de4a34b9b409615",
+        "actualSHA256": "b139fb66e23b4893c2de38ca91c85d3a09f67894ea0272ee9de4a34b9b409615"
+      },
+      "build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/journal.json": {
+        "expectedSHA256": "7344037d57116ffcb39fbca7486cbcb484a1dbd1dcf0780ea23c2ada1a358c9e",
+        "actualSHA256": "7344037d57116ffcb39fbca7486cbcb484a1dbd1dcf0780ea23c2ada1a358c9e"
+      },
+      "build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/Recording-1.wav": {
+        "expectedSHA256": "2671a1785acab1558c0c0b4c9fd67fbd5c47a688c50dbd21d40e9ac78202a1b3",
+        "actualSHA256": "2671a1785acab1558c0c0b4c9fd67fbd5c47a688c50dbd21d40e9ac78202a1b3"
+      },
+      "build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/source-0.f32": {
+        "expectedSHA256": "3ff935911a369e857fdde081828bd51a82cfb71465d4aa4e5f8d0ed5760bfe2a",
+        "actualSHA256": "3ff935911a369e857fdde081828bd51a82cfb71465d4aa4e5f8d0ed5760bfe2a"
+      },
+      "build/input-recording/native/recorded-audio/c7f5337470ec49039423541af0ec3f2c/receipt.json": {
+        "expectedSHA256": "89ed23395cda33f791dc93b02666c0df80bbbf1a84afa8a5d4ac715d44fc63a8",
+        "actualSHA256": "89ed23395cda33f791dc93b02666c0df80bbbf1a84afa8a5d4ac715d44fc63a8"
+      },
+      "build/input-recording/native/recorded-audio/.baf223f5a49d4f77bcdec4ec397c7e35.partial/journal.json": {
+        "expectedSHA256": "57e80428427f2f01000e6fea0eb4584590b9d28bcc0f2d9295509e8604cdb887",
+        "actualSHA256": "57e80428427f2f01000e6fea0eb4584590b9d28bcc0f2d9295509e8604cdb887"
+      },
+      "build/input-recording/native/recorded-audio/.baf223f5a49d4f77bcdec4ec397c7e35.partial/source-0.f32": {
+        "expectedSHA256": "239502fb77d671113cad867618685052a0a89492f4de6c1d0192105583b0c643",
+        "actualSHA256": "239502fb77d671113cad867618685052a0a89492f4de6c1d0192105583b0c643"
+      },
+      "build/input-recording/native/recorded-audio/.acaeebcaae1d4469870029fe00dc987f.partial/journal.json": {
+        "expectedSHA256": "d47d45c3e5a1c666621f9af7cf784f95b8d8f9665b12ddf40c0899709f9fff56",
+        "actualSHA256": "d47d45c3e5a1c666621f9af7cf784f95b8d8f9665b12ddf40c0899709f9fff56"
+      },
+      "build/input-recording/native/recorded-audio/.acaeebcaae1d4469870029fe00dc987f.partial/source-0.f32": {
+        "expectedSHA256": "8484bb992d1c42dd9ec7cb554950a72b08046cf8a5971768f5b33e91ab9cfe99",
+        "actualSHA256": "8484bb992d1c42dd9ec7cb554950a72b08046cf8a5971768f5b33e91ab9cfe99"
+      }
+    }
+  },
+  "activeDocument": {
+    "id": "0403deec259f4169857b336246f201da",
+    "revision": 4478,
+    "activePointerAndDesignStateIdentical": true,
+    "changedWrapperKeys": [
+      "updated"
+    ],
+    "sha256": "92232dd3b56ed5da3e3a9aa3a8f2cf29be1017ec5cfea1bf21518e39678e907a",
+    "meaning": "Autosave heartbeat updated the wrapper timestamp; document state, revision, saved-file identity and pointer are unchanged."
+  },
+  "retainedSessionTakePreviewFiles": {
+    "verifiedFiles": 195,
+    "byteIdenticalFiles": 194,
+    "onlyChange": "Active JSON wrapper updated timestamp; state and revision unchanged.",
+    "files": [
+      {
+        "relativePath": "designer-autosave/recovery.soundplus",
+        "beforeSHA256": "80d109a1f828b910d6249926637561f3f6ac1c25f5221b76e4cfd815fb56833c",
+        "afterSHA256": "80d109a1f828b910d6249926637561f3f6ac1c25f5221b76e4cfd815fb56833c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/active.json",
+        "beforeSHA256": "b64b846c5f96ebb163733ea41369ae0ecca6ee49a4a6938ea834a25d5e1be0ad",
+        "afterSHA256": "b64b846c5f96ebb163733ea41369ae0ecca6ee49a4a6938ea834a25d5e1be0ad",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.json",
+        "beforeSHA256": "51512b7b61582c5e6ffb60aacf062a1e39ca1da24081a33bcc390e3b5941510e",
+        "afterSHA256": "51512b7b61582c5e6ffb60aacf062a1e39ca1da24081a33bcc390e3b5941510e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/0403deec259f4169857b336246f201da.json",
+        "beforeSHA256": "af8da42de26901d83e3a3cd79b82d62aa2e8b8a0fd1e8c484c022dd957bd705c",
+        "afterSHA256": "92232dd3b56ed5da3e3a9aa3a8f2cf29be1017ec5cfea1bf21518e39678e907a",
+        "byteIdentical": false
+      },
+      {
+        "relativePath": "designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus",
+        "beforeSHA256": "68d3d88e94cfaacd3c9b26818ac136dd79d86fe91eab03b32ca6cff63e399e0f",
+        "afterSHA256": "68d3d88e94cfaacd3c9b26818ac136dd79d86fe91eab03b32ca6cff63e399e0f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/0403deec259f4169857b336246f201da.soundplus",
+        "beforeSHA256": "003f4f8b719b428899088943a65a427f36cca05c73eac0ef8bd261539e57e5e0",
+        "afterSHA256": "003f4f8b719b428899088943a65a427f36cca05c73eac0ef8bd261539e57e5e0",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/recovery.soundplus.bak",
+        "beforeSHA256": "d126e51f0f9e9b7c48c6ba7eafff0fde86adff7e72f11274a627a9c195521053",
+        "afterSHA256": "d126e51f0f9e9b7c48c6ba7eafff0fde86adff7e72f11274a627a9c195521053",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/0403deec259f4169857b336246f201da.soundplus.bak",
+        "beforeSHA256": "003f4f8b719b428899088943a65a427f36cca05c73eac0ef8bd261539e57e5e0",
+        "afterSHA256": "003f4f8b719b428899088943a65a427f36cca05c73eac0ef8bd261539e57e5e0",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-autosave/f079cfb5d0bd4d3db119805d64b35d0a.soundplus.bak",
+        "beforeSHA256": "68d3d88e94cfaacd3c9b26818ac136dd79d86fe91eab03b32ca6cff63e399e0f",
+        "afterSHA256": "68d3d88e94cfaacd3c9b26818ac136dd79d86fe91eab03b32ca6cff63e399e0f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-takes/0c9a2501848f479da3e3c18f578260c5.soundplus",
+        "beforeSHA256": "d2da61461deaf2f64cb4acc6203b43790d0f536973b8c11438d8a00cd8cdb3f7",
+        "afterSHA256": "d2da61461deaf2f64cb4acc6203b43790d0f536973b8c11438d8a00cd8cdb3f7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-takes/fe5c40d2dd8040e0a53df36e6dc016ec.soundplus",
+        "beforeSHA256": "cac4f9c8942074c7be9d8467103981038c59d7b50f5469573c020e11bfb2bfbc",
+        "afterSHA256": "cac4f9c8942074c7be9d8467103981038c59d7b50f5469573c020e11bfb2bfbc",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-takes/fe5c40d2dd8040e0a53df36e6dc016ec.soundplus.bak",
+        "beforeSHA256": "7ae75847a4a68c1b545009982327296e2022a7e2ddb3d0490b520d4f262dc62c",
+        "afterSHA256": "7ae75847a4a68c1b545009982327296e2022a7e2ddb3d0490b520d4f262dc62c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-takes/0c9a2501848f479da3e3c18f578260c5.soundplus.bak",
+        "beforeSHA256": "50e7a2a510d948036e235002d804313f4867e791456d61958d3ddba761cd494a",
+        "afterSHA256": "50e7a2a510d948036e235002d804313f4867e791456d61958d3ddba761cd494a",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d3018e0d984746ed8cbfc3ac1d1120fd.soundplus",
+        "beforeSHA256": "3f15b152661864b5f14c01db390b3cce2ec31ffa145e860f772fadee17cf7cb2",
+        "afterSHA256": "3f15b152661864b5f14c01db390b3cce2ec31ffa145e860f772fadee17cf7cb2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/60403c8b09c04195909f71823c58cd07.soundplus",
+        "beforeSHA256": "5f9f4aecf0f0ee4a0a5c1462e58bd59aa5e6e841dccc42e2169ec417dd93a4d3",
+        "afterSHA256": "5f9f4aecf0f0ee4a0a5c1462e58bd59aa5e6e841dccc42e2169ec417dd93a4d3",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c39590a43b79461d925db9905eb7479c.soundplus",
+        "beforeSHA256": "615c6315d599214fbc3dc8643e6f0b6f7edf19e26314cba81ba85afaef4755d4",
+        "afterSHA256": "615c6315d599214fbc3dc8643e6f0b6f7edf19e26314cba81ba85afaef4755d4",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/2ec6abf7bd4d4960b1e967d2be7ece1c.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a5f77c7db41b4f618e341bce40701e1e.soundplus",
+        "beforeSHA256": "88613b08ce89dce9056ead70f2eeaf61f92535aa23ab4bba1e5e90e00d533cd6",
+        "afterSHA256": "88613b08ce89dce9056ead70f2eeaf61f92535aa23ab4bba1e5e90e00d533cd6",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7b252a04c0204c85b7a5960bd5a9d4cc.soundplus",
+        "beforeSHA256": "e5872f598514f7b5ece44b6b4f573ac2faeaaec3e51fdd648faba82dc8132a0a",
+        "afterSHA256": "e5872f598514f7b5ece44b6b4f573ac2faeaaec3e51fdd648faba82dc8132a0a",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/91debbee8c064ca8b216185a9d4b4441.soundplus",
+        "beforeSHA256": "1c9dd59711fe0ad3ac463b5788fb5a41db2fe0a5324b3b3561c09d8fbfe0cee2",
+        "afterSHA256": "1c9dd59711fe0ad3ac463b5788fb5a41db2fe0a5324b3b3561c09d8fbfe0cee2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7615b66fafef4a2a92cefd5fc22f5334.soundplus",
+        "beforeSHA256": "114d7732c5bf237e8f09f380b28921ad0f43db22a383d88e13c6bf7244f2e3ba",
+        "afterSHA256": "114d7732c5bf237e8f09f380b28921ad0f43db22a383d88e13c6bf7244f2e3ba",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/83a889c0ff8c4757986a793caa708178.soundplus",
+        "beforeSHA256": "47fc8f4f9d8f21c7773f88c8f57528a43e39caadb805728fc3fbe52dd30b95ff",
+        "afterSHA256": "47fc8f4f9d8f21c7773f88c8f57528a43e39caadb805728fc3fbe52dd30b95ff",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b883686fce964fe6a2f5ba1b980dcef1.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3ea2247826c24215938f0ab1ca9e5e6c.soundplus",
+        "beforeSHA256": "07077174a3ec14a3a1822cfb41f762045cd8ce93850e4160fe96b129ff7b90ab",
+        "afterSHA256": "07077174a3ec14a3a1822cfb41f762045cd8ce93850e4160fe96b129ff7b90ab",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f9df3e2589834b15ab48c8295946a7d0.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a85cc452211342dbb6e581a0a9fba50b.soundplus",
+        "beforeSHA256": "f9a2794986c73e1032b0657dda68202ff89f82c85777ca6a31a7bece46ca2833",
+        "afterSHA256": "f9a2794986c73e1032b0657dda68202ff89f82c85777ca6a31a7bece46ca2833",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/83e5a490e6ea49a48f33fba50937bda3.soundplus",
+        "beforeSHA256": "10d9ed19434dda3e8b428188210a36cc94ae9c18f645136fddf62e7c6e45d9b6",
+        "afterSHA256": "10d9ed19434dda3e8b428188210a36cc94ae9c18f645136fddf62e7c6e45d9b6",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/87a719d6923d48709b1e396fa09d4b32.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/2559c83b13024699b84b20d1b016262f.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/95ddc5eb43de48899d4eee3f43eb7ed0.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7ea1d9fe930a49c9895d9054eb13744e.soundplus",
+        "beforeSHA256": "5ec47419272f798e4bb756e3199be96952178d624df826014bc6579d5a4bb1fd",
+        "afterSHA256": "5ec47419272f798e4bb756e3199be96952178d624df826014bc6579d5a4bb1fd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/9e766183d3bd4d69bcbb847613da319a.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/54e6ef1ec8484a3d974e101e4a156fa2.soundplus",
+        "beforeSHA256": "fd36edb0e3e0aa0f34318b604e53cc7c311fd9cae550dc6f41eacd47d0d71b50",
+        "afterSHA256": "fd36edb0e3e0aa0f34318b604e53cc7c311fd9cae550dc6f41eacd47d0d71b50",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/2f3e2f1dfbde4b5aad0af34acab936a9.soundplus",
+        "beforeSHA256": "1da38bab05d38a74bc158e473ec7923f84d853ed87c929622fe0f3b5d07d0aa5",
+        "afterSHA256": "1da38bab05d38a74bc158e473ec7923f84d853ed87c929622fe0f3b5d07d0aa5",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b44ba617b0c344e8986011851a582cdb.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/bb1eb86a4a2841ea961bd92a9a8d936c.soundplus",
+        "beforeSHA256": "fd65c09c02d9d64a465b4203c59705c124326afa83c997d20e8e427a468015e3",
+        "afterSHA256": "fd65c09c02d9d64a465b4203c59705c124326afa83c997d20e8e427a468015e3",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e0f4234540344cd59d2c28db8c3d887e.soundplus",
+        "beforeSHA256": "a44e37d40210be7e0c5148b49898ce37ae141d76ef8e161bce20c9242404d4cb",
+        "afterSHA256": "a44e37d40210be7e0c5148b49898ce37ae141d76ef8e161bce20c9242404d4cb",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/00e3f29804474d63b4b3a4e6e190d7fd.soundplus",
+        "beforeSHA256": "61e5358f4f0ae909baa8c9f821c0aef96d82a2bce6a9257eb5cb87f4539e1a40",
+        "afterSHA256": "61e5358f4f0ae909baa8c9f821c0aef96d82a2bce6a9257eb5cb87f4539e1a40",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/503c177d04f84089ae55fd4f32b2cf04.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/cb22154cf38545bdbb6f172a741f57b2.soundplus",
+        "beforeSHA256": "e0d1d44a71533861b3c70135fb095a2e49c0ebadcec3399cc4a2712bcd6c1e99",
+        "afterSHA256": "e0d1d44a71533861b3c70135fb095a2e49c0ebadcec3399cc4a2712bcd6c1e99",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f8636e1074a44f559ef3bee37933df8b.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/20eea2dce85e43bd8bfdfc38327792f2.soundplus",
+        "beforeSHA256": "35325cfe3c31da25066f4e0026a9e3a3706969b7762a20b81ac31d3d41ac8c53",
+        "afterSHA256": "35325cfe3c31da25066f4e0026a9e3a3706969b7762a20b81ac31d3d41ac8c53",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/99ffaad5c4c1450cbab14a5800f731ca.soundplus",
+        "beforeSHA256": "99a55cc585348a1496ad3e0daf11f3ce75ed31a1a7401e96b19223f4257181d4",
+        "afterSHA256": "99a55cc585348a1496ad3e0daf11f3ce75ed31a1a7401e96b19223f4257181d4",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/76599122a1964e1983613bb3296c74cd.soundplus",
+        "beforeSHA256": "f634ac30d0ff901f94f4ed420702cb471373a0cd8b991ed141fb7551d08e9867",
+        "afterSHA256": "f634ac30d0ff901f94f4ed420702cb471373a0cd8b991ed141fb7551d08e9867",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c7eb2a2cb41949d3977b8018e6eb0357.soundplus",
+        "beforeSHA256": "290c93ed268f3ac899fab50b42a90d119f1dd70e7f855ab582c68dbd13de6981",
+        "afterSHA256": "290c93ed268f3ac899fab50b42a90d119f1dd70e7f855ab582c68dbd13de6981",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/17094d951db746ecaca4c2497004504d.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/570b4894b192420c96c8d01461300fbd.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/68cd340c899c4d8da58758f9ac3f8cdc.soundplus",
+        "beforeSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "afterSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7aed44e8a72a42158420acef1d17a353.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d618433f0f4240c0b61092b191d123d2.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8ddddc7b189c40aebcdea16d8ef7cec9.soundplus",
+        "beforeSHA256": "34298540a92e01c8d1ea9784c07e0ed0bb00fefb3c23def778d7d6455d701dae",
+        "afterSHA256": "34298540a92e01c8d1ea9784c07e0ed0bb00fefb3c23def778d7d6455d701dae",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d9da93776d964d7fba51167ca1e0a14a.soundplus",
+        "beforeSHA256": "1ab336f80a9ee5c8488125edb3f6056b3f23974612df6d2c7bb1760b8bc10965",
+        "afterSHA256": "1ab336f80a9ee5c8488125edb3f6056b3f23974612df6d2c7bb1760b8bc10965",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/46a421cf0c5e4e4abc320669bbb7079c.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/258a6ba2832542569adc8d63d4ce62b0.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c3fa6c073420473fbba671b89e6919e5.soundplus",
+        "beforeSHA256": "bfd7c39b03c37f5a2c77111b8ed80f86769e39f4670579f7b1a229d25567e34c",
+        "afterSHA256": "bfd7c39b03c37f5a2c77111b8ed80f86769e39f4670579f7b1a229d25567e34c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/36c3e174e7da43fa9281b3bbe8374e57.soundplus",
+        "beforeSHA256": "ef773668fa1bbd4cbc6e994c5bb85a892dbe079ae1bc057d81db900c9313d1c2",
+        "afterSHA256": "ef773668fa1bbd4cbc6e994c5bb85a892dbe079ae1bc057d81db900c9313d1c2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/367cb95cd3bf45e1907943f65102793c.soundplus",
+        "beforeSHA256": "b489cdaf91d4ebc61dcf141cac8045e842df23707ba6c66a891622aa4992b307",
+        "afterSHA256": "b489cdaf91d4ebc61dcf141cac8045e842df23707ba6c66a891622aa4992b307",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/505bd59c68754a18aee67689a9324688.soundplus",
+        "beforeSHA256": "ca3b8644a03c1e422647730f1b0327f1d60f6f78a852325f126720c89adcdd7c",
+        "afterSHA256": "ca3b8644a03c1e422647730f1b0327f1d60f6f78a852325f126720c89adcdd7c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ea9e518fa2b44b6ea647439d0d085f61.soundplus",
+        "beforeSHA256": "c12d8d07df0f115beff7fd18d0a71758922e62392832cc98663981d9976da9f8",
+        "afterSHA256": "c12d8d07df0f115beff7fd18d0a71758922e62392832cc98663981d9976da9f8",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/14b0a835d71940ff946f4813420bb8fe.soundplus",
+        "beforeSHA256": "7108f3ec0ce19619e9f18dfe608d1ec7275fecc6911f4d747679cef3df582100",
+        "afterSHA256": "7108f3ec0ce19619e9f18dfe608d1ec7275fecc6911f4d747679cef3df582100",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d4e00cecfe9e4f448e8c43b0dd385e09.soundplus",
+        "beforeSHA256": "cd859746e1f874df7195862abe38773c03b25002cc8a4c7921c1d89fa05af496",
+        "afterSHA256": "cd859746e1f874df7195862abe38773c03b25002cc8a4c7921c1d89fa05af496",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3a516f9ee7524fe49b8afdb16ab9306b.soundplus",
+        "beforeSHA256": "587e391a312356baa4b911f655131653cd593d16d3837547e0833436b680a4dc",
+        "afterSHA256": "587e391a312356baa4b911f655131653cd593d16d3837547e0833436b680a4dc",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e9a2e137320745fbbe69bacfdc6bd41c.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/97e88b4d3840433fa5ee3d8d886be944.soundplus",
+        "beforeSHA256": "65a9debe7f7baadbea4409a1758d339fb2d4bd116d222e2c0b9449d18215e25c",
+        "afterSHA256": "65a9debe7f7baadbea4409a1758d339fb2d4bd116d222e2c0b9449d18215e25c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f3a2d02738044de9af6ac6f20420a221.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d36e82eb13bb481d9c1c1bdeb7f49e9c.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a5665b096d46423eb382517159b2f12b.soundplus",
+        "beforeSHA256": "f8af98de4037a309cc0bcf6cdd4553a9c0072580a974df1de9574ce77735c37a",
+        "afterSHA256": "f8af98de4037a309cc0bcf6cdd4553a9c0072580a974df1de9574ce77735c37a",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8b4b3038b8e145b2b4a3c1dcbc50783c.soundplus",
+        "beforeSHA256": "58840a4e0f469b56cf4d8484f8c09602bacdcb9999d42610dd0f2e20d34e1359",
+        "afterSHA256": "58840a4e0f469b56cf4d8484f8c09602bacdcb9999d42610dd0f2e20d34e1359",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/1f9f510c5dbe497fb58ca5797c355f53.soundplus",
+        "beforeSHA256": "3d8c84ba66e3447ef1d9cb84fe9fe5f40c0886ef6cd91af6a09d1271cdcc6ee2",
+        "afterSHA256": "3d8c84ba66e3447ef1d9cb84fe9fe5f40c0886ef6cd91af6a09d1271cdcc6ee2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e5176afded024401a644cc85196822cb.soundplus",
+        "beforeSHA256": "ff8ff5e0a1cab281a4bfc11e024677affbb902de3acc0cab3ddd14951000ae39",
+        "afterSHA256": "ff8ff5e0a1cab281a4bfc11e024677affbb902de3acc0cab3ddd14951000ae39",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/905a0648d1b641b1a420147d11fe0d0b.soundplus",
+        "beforeSHA256": "22776a5047f15b470406949c525bf5adff9aab6bf7a6afa49bbd2eb5c0b6b14f",
+        "afterSHA256": "22776a5047f15b470406949c525bf5adff9aab6bf7a6afa49bbd2eb5c0b6b14f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/81affe0a109d4ff982a0ffdecbb5b26f.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/9981ccca9d534a9ba32624bac795cbe2.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b50d56a5f4fb432fbb3dfc7dfada20c4.soundplus",
+        "beforeSHA256": "91fb3ebcd2c0ac991a749657efb5f0dd77be8063a55b4f9adf0c1542484c081d",
+        "afterSHA256": "91fb3ebcd2c0ac991a749657efb5f0dd77be8063a55b4f9adf0c1542484c081d",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ca8028d1396646c79142549f1d0c8d3d.soundplus",
+        "beforeSHA256": "ff65d69219a256586d38d200a0e430b04c101b3b9d7a3bee607c5667a294a6dd",
+        "afterSHA256": "ff65d69219a256586d38d200a0e430b04c101b3b9d7a3bee607c5667a294a6dd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/13192164d1c946b8bc41dc1ba5e04e55.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b7d9d70a264b4b06baa03928efc8edc6.soundplus",
+        "beforeSHA256": "0ada1df1ceedd15abd3e8fa1b5056577a85af1ca7277268f7ac401435c611507",
+        "afterSHA256": "0ada1df1ceedd15abd3e8fa1b5056577a85af1ca7277268f7ac401435c611507",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ac5a019e86b24425b5778f989a442a06.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f2aca9b811394a96a2bc4c2c842dc6a2.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/18db63ae39984c2998bacf17258b2c1c.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/078296282e0a4521b6f5842dce614ac2.soundplus",
+        "beforeSHA256": "6e1ce810497c8493aac0cf0fe8b5c8e4465048809139e9fe76fb1218ec0421f3",
+        "afterSHA256": "6e1ce810497c8493aac0cf0fe8b5c8e4465048809139e9fe76fb1218ec0421f3",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ce94d62f7ba2447e97fb6834b398d256.soundplus",
+        "beforeSHA256": "be6e2f74598b3958a28471c0db6965d6ee44719d7e80f08309f388e91980874e",
+        "afterSHA256": "be6e2f74598b3958a28471c0db6965d6ee44719d7e80f08309f388e91980874e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3e2a4f71ab534fa5af277f84d08f7d30.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ba9ed21c78d1422884a147ed351bf4f3.soundplus",
+        "beforeSHA256": "71eb0718b81fd98f1cfc98bd6994b465b409815abfa1b50e0bcde2039cb648f8",
+        "afterSHA256": "71eb0718b81fd98f1cfc98bd6994b465b409815abfa1b50e0bcde2039cb648f8",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c306e56d2f63425fac24236424b51935.soundplus",
+        "beforeSHA256": "558fb32678ad77d3f46a24fe7a9b70d2d7b67c4130f58f60047fcaa2e0d5779e",
+        "afterSHA256": "558fb32678ad77d3f46a24fe7a9b70d2d7b67c4130f58f60047fcaa2e0d5779e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/0e945b1fd80f4f5bb9454eca29db9b3b.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/af64ef2925524905a6cc64de449af095.soundplus",
+        "beforeSHA256": "3a97f193233a00c6a003958395e8a1fe21404c7bd2eadd47a25ab8ba95e683f7",
+        "afterSHA256": "3a97f193233a00c6a003958395e8a1fe21404c7bd2eadd47a25ab8ba95e683f7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/65ac7db95e944eee8f4cd6c10d605a74.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/5b537700ae7b4e398834935b89a3e775.soundplus",
+        "beforeSHA256": "cecbb952cb1c65ee11e2834b3d73104b6171d008ff3b085b574cf91108ea6620",
+        "afterSHA256": "cecbb952cb1c65ee11e2834b3d73104b6171d008ff3b085b574cf91108ea6620",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3ae75b45d6c34aa7bf67ac15f1c407b4.soundplus",
+        "beforeSHA256": "b5de432679e062b350530207c44511281b72609dabf39b4df3d78a0c6639eb0c",
+        "afterSHA256": "b5de432679e062b350530207c44511281b72609dabf39b4df3d78a0c6639eb0c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a765f19f84d14ac8a0ad0bf325810edf.soundplus",
+        "beforeSHA256": "32e77fb82999b1411cb4936ea5d4cb77b2c4a00822b38ccff9fd21f65bf4c39c",
+        "afterSHA256": "32e77fb82999b1411cb4936ea5d4cb77b2c4a00822b38ccff9fd21f65bf4c39c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7b4ac8e97c3647ae9e2d1b8500a10b36.soundplus",
+        "beforeSHA256": "59982b598b4c92be286a071c45d16e1be782b79689baabbe9a65503f87b3df31",
+        "afterSHA256": "59982b598b4c92be286a071c45d16e1be782b79689baabbe9a65503f87b3df31",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/36076579d739487aba263a373f887e50.soundplus",
+        "beforeSHA256": "58b46380b9f3cbb8b98a8e4c4cff66f68065c1a68b781c8f402b4e7fe4455919",
+        "afterSHA256": "58b46380b9f3cbb8b98a8e4c4cff66f68065c1a68b781c8f402b4e7fe4455919",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/4b363cf1acf446bc8482d91643bd0f69.soundplus",
+        "beforeSHA256": "3740f6643845d1895b9e57d708c96f3669990828d6bc90761f6888d9e17cf1b2",
+        "afterSHA256": "3740f6643845d1895b9e57d708c96f3669990828d6bc90761f6888d9e17cf1b2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7bc4e4bd951a4477a00cc3ba62430077.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3158c419fa714da1ae82abcc8b428d61.soundplus",
+        "beforeSHA256": "3446233708033e103a6bc76d89ae045038478751661b7eb0ffeca5cc35b416c0",
+        "afterSHA256": "3446233708033e103a6bc76d89ae045038478751661b7eb0ffeca5cc35b416c0",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/041ec094ad574c60aa0cb35652d09faa.soundplus",
+        "beforeSHA256": "0f7f0f2fc79edd133c091a5a77853473dc82cbee04495492cf5531a828c6ef55",
+        "afterSHA256": "0f7f0f2fc79edd133c091a5a77853473dc82cbee04495492cf5531a828c6ef55",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/240fcb8c841c4782a0065d8697059e0b.soundplus",
+        "beforeSHA256": "c06abdf3b37f84d0e893163243c4fd2619fa06207fd3b89c8e8a978a710df7f7",
+        "afterSHA256": "c06abdf3b37f84d0e893163243c4fd2619fa06207fd3b89c8e8a978a710df7f7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8979cfe03b634484b955954061d8ef85.soundplus",
+        "beforeSHA256": "32e9cbd142a97db0fbb84a3b6e8c04aeec0839ac9e844dcb1a62b5d38e3f5ccd",
+        "afterSHA256": "32e9cbd142a97db0fbb84a3b6e8c04aeec0839ac9e844dcb1a62b5d38e3f5ccd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/16cafbdab2844d2f8da2f2c494bc8840.soundplus",
+        "beforeSHA256": "13c67b24ee81252620084d57fd59b9140fda896cd9642c41e834fa8bb8f1dde6",
+        "afterSHA256": "13c67b24ee81252620084d57fd59b9140fda896cd9642c41e834fa8bb8f1dde6",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/621a005b77b6446887767ce50e95d8ee.soundplus",
+        "beforeSHA256": "fc6a1c84c7d1b6e66e94e02c9dfb459f932e670c120e377539f09b93d3bdf550",
+        "afterSHA256": "fc6a1c84c7d1b6e66e94e02c9dfb459f932e670c120e377539f09b93d3bdf550",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/5f571741f2ad484bbcf8ae971dcece68.soundplus",
+        "beforeSHA256": "b162099a8c55228ac7870b61a9175ad4be6d7439b4266504c16d38b41ecc84e4",
+        "afterSHA256": "b162099a8c55228ac7870b61a9175ad4be6d7439b4266504c16d38b41ecc84e4",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/970f392d818f473c9ddd68e1a17630b1.soundplus",
+        "beforeSHA256": "982042afc7fbb26762e625b57d1a036f8a9f25bf0b04581ef2418f1a3f82ad52",
+        "afterSHA256": "982042afc7fbb26762e625b57d1a036f8a9f25bf0b04581ef2418f1a3f82ad52",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a95a66de4e3845b8b9850349f3f29513.soundplus",
+        "beforeSHA256": "5429b7fe00d6e38dfc91b154417779869868038ea32a6da4affe418c77b51f60",
+        "afterSHA256": "5429b7fe00d6e38dfc91b154417779869868038ea32a6da4affe418c77b51f60",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/569c360e99364594b737f167d4491ca0.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/9a116c9b90fc4b6fa75f78c1fcd83578.soundplus",
+        "beforeSHA256": "f7ef59259cd22f4bc97758abde99d0e9d05f7105f6f7aa578f2b098236ec4cad",
+        "afterSHA256": "f7ef59259cd22f4bc97758abde99d0e9d05f7105f6f7aa578f2b098236ec4cad",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d96510b0f9b4457299bbd4d24d8ca53c.soundplus",
+        "beforeSHA256": "5bf12dc84d649814e76773be73e1b603d7c7d3bf860f997ab535d9d2fe1ebbcb",
+        "afterSHA256": "5bf12dc84d649814e76773be73e1b603d7c7d3bf860f997ab535d9d2fe1ebbcb",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/211e613980f544508c86a1a7cdb6e012.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/93251c8974e64e388191f1d1d65c81d0.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/98d72552b4fa4ad0b2aeaa21bb770b59.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e9044a4dc79f4d24affb34715dfa6d13.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3d07339598074b3aa96bc68398ba1e2f.soundplus",
+        "beforeSHA256": "24c5fde916197458423711636b609de71d022640c870fd949bc2b2bbb1e76b19",
+        "afterSHA256": "24c5fde916197458423711636b609de71d022640c870fd949bc2b2bbb1e76b19",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/5071e23833ef49048bd82502a274834d.soundplus",
+        "beforeSHA256": "60038935f49325dbc122e84ce8c8f6f9fe65249afbefd44112d886977abba69b",
+        "afterSHA256": "60038935f49325dbc122e84ce8c8f6f9fe65249afbefd44112d886977abba69b",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/4a01d23797c94908992c15250e37cf2d.soundplus",
+        "beforeSHA256": "42ec6fd3fc918132bcc92671f68e4d839aba68b08efe77a28c07b73daa7cc65c",
+        "afterSHA256": "42ec6fd3fc918132bcc92671f68e4d839aba68b08efe77a28c07b73daa7cc65c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e05ea94d2e014348bd23dcd5650dc11c.soundplus",
+        "beforeSHA256": "9e6e0cfcfbf20b50b140ed5bf4cb0d7872ca056aa987a50a4a32f88dbec993dd",
+        "afterSHA256": "9e6e0cfcfbf20b50b140ed5bf4cb0d7872ca056aa987a50a4a32f88dbec993dd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e24bf39c8a0741c791926c4c3ca9df88.soundplus",
+        "beforeSHA256": "3f16a2f35ebc2968addb157bd6f97b64ee69165caec329c85439f2033dec49c8",
+        "afterSHA256": "3f16a2f35ebc2968addb157bd6f97b64ee69165caec329c85439f2033dec49c8",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8351259ff8ef4e87a3689788813f20ff.soundplus",
+        "beforeSHA256": "46c55cb48070087c4d748e3110e7d5a511f2f04ccf9621fdc793b10989206414",
+        "afterSHA256": "46c55cb48070087c4d748e3110e7d5a511f2f04ccf9621fdc793b10989206414",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/768dd39ab61543619658024f0242a486.soundplus",
+        "beforeSHA256": "9b106ed7778f977e3da4b78d29d36b55cadb5c424b499d30191f4c081f3f63d5",
+        "afterSHA256": "9b106ed7778f977e3da4b78d29d36b55cadb5c424b499d30191f4c081f3f63d5",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/da6a23e6409d46869a557003a89626a7.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/6714c7fdd7574f51b8cb6568d3b96dcd.soundplus",
+        "beforeSHA256": "40fbb7edb1c8990861256a2f56617d00765aa86440786f4df345796ded34e5b2",
+        "afterSHA256": "40fbb7edb1c8990861256a2f56617d00765aa86440786f4df345796ded34e5b2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7e862798930c43e6b4717f0d2a74a27f.soundplus",
+        "beforeSHA256": "cdd0e8862e3a5de159e9a4540f6fea4aad48e8f610eb15c60d167ee4e9a68918",
+        "afterSHA256": "cdd0e8862e3a5de159e9a4540f6fea4aad48e8f610eb15c60d167ee4e9a68918",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8c20b4a05872401d9293b3ae37adb7dc.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3901f09314e946fb9fd7e6f9affa5b3a.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/1ef0c4a5e2b740a3bc27f6836b90348a.soundplus",
+        "beforeSHA256": "304444e40c0f03f5552f0218340c7e5f8edda2fbfd985a24c93a7ffa00627497",
+        "afterSHA256": "304444e40c0f03f5552f0218340c7e5f8edda2fbfd985a24c93a7ffa00627497",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/55a7cf618c4c43d5a1775f26bda1f170.soundplus",
+        "beforeSHA256": "9264b3f3171eacf338d7c21ba043c9ab8b2c8a72666d9410add57f3b67ee62ea",
+        "afterSHA256": "9264b3f3171eacf338d7c21ba043c9ab8b2c8a72666d9410add57f3b67ee62ea",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/aea8bf53c19d4bb18bf1bb789b7815e9.soundplus",
+        "beforeSHA256": "3338f8fc41e97b0cf197da2f414163785e7fbe630c0466f52cc6351537b1ae5c",
+        "afterSHA256": "3338f8fc41e97b0cf197da2f414163785e7fbe630c0466f52cc6351537b1ae5c",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/3599d283ba754c028543fc903ec77fad.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/2a0c5629e50f4d0e98ed9cd3f0971587.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/53022547728b4ab88052f372d14825b0.soundplus",
+        "beforeSHA256": "ae0628e6095cd53aa22ce1f0c3a53f638bc25843610a606a407223f8202bbe1a",
+        "afterSHA256": "ae0628e6095cd53aa22ce1f0c3a53f638bc25843610a606a407223f8202bbe1a",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b09da5d17d6c44b7a3d55372f4079692.soundplus",
+        "beforeSHA256": "a4253e14c6906126ceb23b40b2e79574bf62ee2a32568896e5acdd76dfd4ed98",
+        "afterSHA256": "a4253e14c6906126ceb23b40b2e79574bf62ee2a32568896e5acdd76dfd4ed98",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/9eb2b4ac60454722abf660cc948921ea.soundplus",
+        "beforeSHA256": "e7a11ccacaaa4e1f1a451b1b2cb4631d7e8cf2f4c5dc76b68f543bdbb4108f06",
+        "afterSHA256": "e7a11ccacaaa4e1f1a451b1b2cb4631d7e8cf2f4c5dc76b68f543bdbb4108f06",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d613f30cb2494493930de9c28b696aac.soundplus",
+        "beforeSHA256": "6e1ce810497c8493aac0cf0fe8b5c8e4465048809139e9fe76fb1218ec0421f3",
+        "afterSHA256": "6e1ce810497c8493aac0cf0fe8b5c8e4465048809139e9fe76fb1218ec0421f3",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/60c254da8d0d4639b0a3cd32a73d806e.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8100a418e64043eb98a455e20b2070f0.soundplus",
+        "beforeSHA256": "b4de80a263cf3a5661db925db33e81786d9129fdea75b5e66c5f6ca4f91b72d5",
+        "afterSHA256": "b4de80a263cf3a5661db925db33e81786d9129fdea75b5e66c5f6ca4f91b72d5",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8983816046b440a0824436d79b560677.soundplus",
+        "beforeSHA256": "c3fb369ba2fa40036f180bcbcae0fe3413bb8108384767dbebf38ec8859c70cc",
+        "afterSHA256": "c3fb369ba2fa40036f180bcbcae0fe3413bb8108384767dbebf38ec8859c70cc",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8ca6d7c0aa99465cae097b90e88febe9.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b20b2e5907f449f19a3be1605eccce59.soundplus",
+        "beforeSHA256": "3c8a3670a6f2809e25a9ee1aeee352fb26df9ec1e15f22306751bd40b1f762e7",
+        "afterSHA256": "3c8a3670a6f2809e25a9ee1aeee352fb26df9ec1e15f22306751bd40b1f762e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/60784b5c4cdb4c449fa002e4046bc969.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/aa561fe1f3314630b534c199ba8ae0a8.soundplus",
+        "beforeSHA256": "20b9da03a2486c645aa211e13b60b7126f1fcc669b88a015f4223a9f70987b23",
+        "afterSHA256": "20b9da03a2486c645aa211e13b60b7126f1fcc669b88a015f4223a9f70987b23",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ef598f51f9704cbc9c11cb6db48b6180.soundplus",
+        "beforeSHA256": "1c0ad3a291e065cd8551fdc9eaf1a7acb647da696bc9213def9fa9e8ef352f45",
+        "afterSHA256": "1c0ad3a291e065cd8551fdc9eaf1a7acb647da696bc9213def9fa9e8ef352f45",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/1223cad5594e406f8c539ae1f3f469e1.soundplus",
+        "beforeSHA256": "ac3954c8d6ed3f443e8d361b14272b43eadc012cfe9c0ea5b7ad427e84fb4676",
+        "afterSHA256": "ac3954c8d6ed3f443e8d361b14272b43eadc012cfe9c0ea5b7ad427e84fb4676",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/1deefe7f915c4275a85b21b3a47152f3.soundplus",
+        "beforeSHA256": "73f096504246ffcd8f178716feb5e2b641f6e33247c1dec431465fbeddbe8aa2",
+        "afterSHA256": "73f096504246ffcd8f178716feb5e2b641f6e33247c1dec431465fbeddbe8aa2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/0a62e0c736634486b37571b62348963c.soundplus",
+        "beforeSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "afterSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/fe0bd510f40048c1ba5b314e3be1a2cd.soundplus",
+        "beforeSHA256": "f24f8483efe5915a27880d760f16b517720648ce27ab73e5472ae345cccb4102",
+        "afterSHA256": "f24f8483efe5915a27880d760f16b517720648ce27ab73e5472ae345cccb4102",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/fa3ac220c60e44d69aa6f144af75ea14.soundplus",
+        "beforeSHA256": "f5cade47e9f2110c281d918e8519af7bcd07239dc454eb341b027be445448e88",
+        "afterSHA256": "f5cade47e9f2110c281d918e8519af7bcd07239dc454eb341b027be445448e88",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8b1772b6bd294c83a6030121fa7650af.soundplus",
+        "beforeSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "afterSHA256": "03295ebec6c692c6b24911be0ef8c79cbae541acd9dd203b09f41b2928a6f842",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c62d6ceef81948b2b8ce88e49f20f756.soundplus",
+        "beforeSHA256": "b1753a8ecc07d7275403de480d002e7359a1f0b33b2f1aa460e1e5831bd80086",
+        "afterSHA256": "b1753a8ecc07d7275403de480d002e7359a1f0b33b2f1aa460e1e5831bd80086",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/70c0c6c637564c3489cc178563e9cbba.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b0df3a8ac79f477abf14fbdc191eef55.soundplus",
+        "beforeSHA256": "9b106ed7778f977e3da4b78d29d36b55cadb5c424b499d30191f4c081f3f63d5",
+        "afterSHA256": "9b106ed7778f977e3da4b78d29d36b55cadb5c424b499d30191f4c081f3f63d5",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/6fdcac50cf6d49ea8517d2c5f49f0f25.soundplus",
+        "beforeSHA256": "5f9f4aecf0f0ee4a0a5c1462e58bd59aa5e6e841dccc42e2169ec417dd93a4d3",
+        "afterSHA256": "5f9f4aecf0f0ee4a0a5c1462e58bd59aa5e6e841dccc42e2169ec417dd93a4d3",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/5324c87a943046c5a46a41be0298ec83.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/19112e873e4848bb97a05e7e4a58b1ac.soundplus",
+        "beforeSHA256": "d58d4c0434a845219ff8bb8bdac474aded887d36e9241cf1640bda73cc9ef747",
+        "afterSHA256": "d58d4c0434a845219ff8bb8bdac474aded887d36e9241cf1640bda73cc9ef747",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/8b73cab83c8a49909acffe7e9dbf478c.soundplus",
+        "beforeSHA256": "40fbb7edb1c8990861256a2f56617d00765aa86440786f4df345796ded34e5b2",
+        "afterSHA256": "40fbb7edb1c8990861256a2f56617d00765aa86440786f4df345796ded34e5b2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d1e8ea0486064f10888332af38679676.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/0e4ae2a8c78847459d17bd0c5d0e7c7e.soundplus",
+        "beforeSHA256": "d455c8d6f8c2e5fdd341663f04b16c2d5a83e96be7a5d0494b509ec9c687b792",
+        "afterSHA256": "d455c8d6f8c2e5fdd341663f04b16c2d5a83e96be7a5d0494b509ec9c687b792",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b2c19a130db94f2688a6b1cb7eeb834a.soundplus",
+        "beforeSHA256": "ca706755bb4ed5d51406e7abbe28aa3fb75de9ab17a992c9d40969f935b21ea5",
+        "afterSHA256": "ca706755bb4ed5d51406e7abbe28aa3fb75de9ab17a992c9d40969f935b21ea5",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/56735e9e658f424c853b7b329d7b4ee0.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/04cfaef0139d4ba2a92ad544a7fde285.soundplus",
+        "beforeSHA256": "dbcc15cf19b42f569fe669633694890bfbc99a9dc0afe7dcd49acd8594f3da30",
+        "afterSHA256": "dbcc15cf19b42f569fe669633694890bfbc99a9dc0afe7dcd49acd8594f3da30",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f5ee34105af14cf1b66e714e7e998ba3.soundplus",
+        "beforeSHA256": "b8c44dcc611d2a2c9e27b85d2c55804b02374493aa17cc279410a018a3e112ca",
+        "afterSHA256": "b8c44dcc611d2a2c9e27b85d2c55804b02374493aa17cc279410a018a3e112ca",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/9db219f6a77e4e1ba95d5cc9b8603a22.soundplus",
+        "beforeSHA256": "bf123d83e7a913401ee5bf29b78964f160a2d3d2f8b5c9e42b32969889e61bf7",
+        "afterSHA256": "bf123d83e7a913401ee5bf29b78964f160a2d3d2f8b5c9e42b32969889e61bf7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/56513713f8014161bb2776860616a8be.soundplus",
+        "beforeSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "afterSHA256": "e240da0da1dcc3e0b70a904c591677bed0897e4a84f47a2542439b70ded2b9e7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7ca28ad3645d452a9d32edf79a4cb18b.soundplus",
+        "beforeSHA256": "986a333cfc1ee9905942e53a91a86a7dc5640eaf13aa0ac7208c80ad928bdae1",
+        "afterSHA256": "986a333cfc1ee9905942e53a91a86a7dc5640eaf13aa0ac7208c80ad928bdae1",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f10cc0af4c15452eb7f3ba19f5d13158.soundplus",
+        "beforeSHA256": "e7e9824f50ca2b8ce0b0517a040db3f394d0b5eba67e3dc30ee5fbb2e9c5da03",
+        "afterSHA256": "e7e9824f50ca2b8ce0b0517a040db3f394d0b5eba67e3dc30ee5fbb2e9c5da03",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/bb5971f468fa4dabb5907ab2cbe159fc.soundplus",
+        "beforeSHA256": "41fc085dff058f6f640e91f191be95d968574c2348bd702be080c32240df659f",
+        "afterSHA256": "41fc085dff058f6f640e91f191be95d968574c2348bd702be080c32240df659f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/60dd5a52aff149d88eb8d1ce98b3872a.soundplus",
+        "beforeSHA256": "27818b2eba1bda84c1016ec4f27a8ce182274e3a1836ed17ae81d919bf6fde69",
+        "afterSHA256": "27818b2eba1bda84c1016ec4f27a8ce182274e3a1836ed17ae81d919bf6fde69",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/366fe9021cd24de89bba9564c8d18341.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/bb712b2a21d6426bb218777cca14145f.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/42a7dc7c0f8f45f6bd6ac86aca56bbb4.soundplus",
+        "beforeSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "afterSHA256": "617aaeb0c222509ab91314af50319c18592d972a07bc2fda9150462a011350dd",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f7a37562c9984c6b9334bf0ff41111ed.soundplus",
+        "beforeSHA256": "3f6c0a42ab550f5041eebf8cf6e27c20996ab74748a66b764aade473a05c2063",
+        "afterSHA256": "3f6c0a42ab550f5041eebf8cf6e27c20996ab74748a66b764aade473a05c2063",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/6abda7f6758b42e78f641311c6c0aab3.soundplus",
+        "beforeSHA256": "aba1656d88f53f0df1b79c4c9cf71103cf55841459e1fb9e85e71454ee83b215",
+        "afterSHA256": "aba1656d88f53f0df1b79c4c9cf71103cf55841459e1fb9e85e71454ee83b215",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/56699982fb424baf9a983ab3064400f0.soundplus",
+        "beforeSHA256": "d29097392177e4a65ef77121cdb9c47c7f93b7b70953e93d988e712d7082623e",
+        "afterSHA256": "d29097392177e4a65ef77121cdb9c47c7f93b7b70953e93d988e712d7082623e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/de11f2041f82457bae950c7decfb5ee6.soundplus",
+        "beforeSHA256": "92d40799a425616700401bb0d065556a5bdff1310b11facdb512a511a46f6fcf",
+        "afterSHA256": "92d40799a425616700401bb0d065556a5bdff1310b11facdb512a511a46f6fcf",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/d2af73d5bbe948adbaed4842d5f21a4c.soundplus",
+        "beforeSHA256": "edbeeb2534d981299e5552ad7514d77785358e80868d3e2d96e06247c5796ea2",
+        "afterSHA256": "edbeeb2534d981299e5552ad7514d77785358e80868d3e2d96e06247c5796ea2",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ba5334b673f047a78b23d4a2f4ef4020.soundplus",
+        "beforeSHA256": "48e5188c22f9101945cc5b9e62d7f4d6d148c366c4181207a2a7e4ab9250591f",
+        "afterSHA256": "48e5188c22f9101945cc5b9e62d7f4d6d148c366c4181207a2a7e4ab9250591f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/322eeeb49d3f4ebf955b0362f573a347.soundplus",
+        "beforeSHA256": "d6293cb2221163c7d5f5748605926ad00d809f1a0bab8c68c1ecb6c88828a53d",
+        "afterSHA256": "d6293cb2221163c7d5f5748605926ad00d809f1a0bab8c68c1ecb6c88828a53d",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a8ce1507885d4d0e8f3e9cdad7a9fc17.soundplus",
+        "beforeSHA256": "bbf5780795dd9d69e48d1dc21fcf61ba11292711ba6786a5c1fcd8db582247c7",
+        "afterSHA256": "bbf5780795dd9d69e48d1dc21fcf61ba11292711ba6786a5c1fcd8db582247c7",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/f55673846769433ea18a70f23ca50e93.soundplus",
+        "beforeSHA256": "320dade3078d577ee9dd054c16ae7cd6c4bc479bbe0669f62a05a9dcf4884e80",
+        "afterSHA256": "320dade3078d577ee9dd054c16ae7cd6c4bc479bbe0669f62a05a9dcf4884e80",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/ef28891838ae4f549a9009ef6090371c.soundplus",
+        "beforeSHA256": "e8a5f797a1c3b2780f343d89fce8f8ac6a8161bf6ec6a638a1ec727bb698be9f",
+        "afterSHA256": "e8a5f797a1c3b2780f343d89fce8f8ac6a8161bf6ec6a638a1ec727bb698be9f",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/57a0bf6170a24edaa1dfbe10bcf76839.soundplus",
+        "beforeSHA256": "12e8c79eb7f0668079b694d2571621aaf472841dde7dc3ae0a1301e90945fc10",
+        "afterSHA256": "12e8c79eb7f0668079b694d2571621aaf472841dde7dc3ae0a1301e90945fc10",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/1a71436720554a90a5ab57f9f6521f80.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a6f23f3fa15848d9b70919feae7bc5b6.soundplus",
+        "beforeSHA256": "39a58ce1e61c589e33d6143e1888c9cde6562ad63bc181cd692acefc25be72e8",
+        "afterSHA256": "39a58ce1e61c589e33d6143e1888c9cde6562ad63bc181cd692acefc25be72e8",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b42151423aa24972872a819df0359bd8.soundplus",
+        "beforeSHA256": "51330150357f59b20943c5449b4aacb730f76d4c548b1e94749ae4e022af19aa",
+        "afterSHA256": "51330150357f59b20943c5449b4aacb730f76d4c548b1e94749ae4e022af19aa",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/e8e6c6b832db40be948937b00c34ff53.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/b862ff663f9345e48ab14805231e1f90.soundplus",
+        "beforeSHA256": "7149eeac4f11c4655122ada858b82a0804d7b1877e6229a5b8be91e3f8f13090",
+        "afterSHA256": "7149eeac4f11c4655122ada858b82a0804d7b1877e6229a5b8be91e3f8f13090",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/c001fb200fc44b2e82c1429dcd071985.soundplus",
+        "beforeSHA256": "5adbcde273df7b56edb60875a9230d5eda3e60f536ff81df3a0f23265cfd57d1",
+        "afterSHA256": "5adbcde273df7b56edb60875a9230d5eda3e60f536ff81df3a0f23265cfd57d1",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a46c003a612441d09b402f0b490650c4.soundplus",
+        "beforeSHA256": "01d96640af0dd1dc0ee6610b6aeeb7af77b320d7ea2c33503b97ea5ee4469dda",
+        "afterSHA256": "01d96640af0dd1dc0ee6610b6aeeb7af77b320d7ea2c33503b97ea5ee4469dda",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/761e1e7b342243f8ab0ba9714970bb52.soundplus",
+        "beforeSHA256": "304444e40c0f03f5552f0218340c7e5f8edda2fbfd985a24c93a7ffa00627497",
+        "afterSHA256": "304444e40c0f03f5552f0218340c7e5f8edda2fbfd985a24c93a7ffa00627497",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/242a01a4c02545e7a6f02bf5e56ef162.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/7586a39697864791b0b73063e83e0f27.soundplus",
+        "beforeSHA256": "5d8be5e3aa72705fb97cae00e8ba4b61991f2b256d4f19efd0cea2fcf8e55d76",
+        "afterSHA256": "5d8be5e3aa72705fb97cae00e8ba4b61991f2b256d4f19efd0cea2fcf8e55d76",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/048c39c7300b455e8ecb31dd436419e3.soundplus",
+        "beforeSHA256": "e259e0cdae2fbb53dcac26abf2fecfb3effb892cf21762e3fe3251e9fdecd616",
+        "afterSHA256": "e259e0cdae2fbb53dcac26abf2fecfb3effb892cf21762e3fe3251e9fdecd616",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/cde0255411f641c184a4a3d5948ad872.soundplus",
+        "beforeSHA256": "b3701dab79c8964be1e9c27ee5b33d350efc8538e04fc1f3c1ea643751b6d6a8",
+        "afterSHA256": "b3701dab79c8964be1e9c27ee5b33d350efc8538e04fc1f3c1ea643751b6d6a8",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/4e0b556a63964a43865f25633508af34.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/350704bc7dc4426fb4d7670e725eb44a.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/a64c0d1939964f81a0f4f4cde77f2375.soundplus",
+        "beforeSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "afterSHA256": "c17cca533b5f88136163418b37cec9f606facbe0e064a93eac29af9631ddc974",
+        "byteIdentical": true
+      },
+      {
+        "relativePath": "designer-preview/724bc604d59c4980b0512781a4af4331.soundplus",
+        "beforeSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "afterSHA256": "06febdd4aee2e7d2491ece21979c5f6e8aaf98e78e589af76ddf7c8ad091ec4e",
+        "byteIdentical": true
+      }
+    ]
+  },
+  "preferences": {
+    "allOtherKeysRetained": true,
+    "difference": {
+      "window": {
+        "preQuitBackup": "82 85 1487 962",
+        "persisted": "82 85 1465 962"
+      }
+    },
+    "protectedMtimeNS": 1795376706025686480,
+    "currentMtimeNS": 1795376716456370677,
+    "reopenLogMtimeNS": 1795382506884437927,
+    "explanation": "Window geometry persisted at the original initial normal quit, after the pre-quit backup and before the final in-place reopen. Retained the newer persisted geometry. Main.cpp Window destructor owns this write; no old preferences were restored."
+  }
+}

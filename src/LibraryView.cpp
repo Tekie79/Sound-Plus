@@ -22,6 +22,7 @@ juce::String duration(double seconds)
            juce::String((int)(seconds * 10) % 10);
 }
 } // namespace
+#include "LibraryCollections.inc"
 LibraryView::LibraryView(const juce::File &db, const juce::File &executable, bool enableAI,
                          const juce::File &modelDirectory, bool controlledSemantic)
     : library(db, enableAI ? executable : juce::File(), modelDirectory, controlledSemantic),
@@ -29,6 +30,35 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
       peakPool(std::make_shared<WaveformPool>(db.getParentDirectory().getChildFile("waveforms"))),
       referenceWaveformCache(db.getParentDirectory().getChildFile("waveforms"))
 {
+    favoriteButton.setToggleable(true);
+    addAndMakeVisible(collectionActions);
+    collectionActions.onClick = [this]
+    {
+        collectionMenu(selectedAsset.has_value(),
+                       selectedAsset                                                   ? juce::String()
+                       : collectionScope == "favorites" || collectionScope == "recent" ? juce::String()
+                                                                                       : collectionScope);
+    };
+    addAndMakeVisible(favoriteButton);
+    addAndMakeVisible(collectionSelector);
+    addAndMakeVisible(newCollection);
+    collectionSelector.setLabelAlignedLeft();
+    favoriteButton.onClick = [this]
+    {
+        auto e = CollectionEdit{};
+        e.action = "favorite";
+        e.items = selectedBookmarks();
+        e.enabled = !favoriteSelected;
+        submitCollectionEdit(std::move(e));
+    };
+    collectionSelector.onClick = [this] { collectionMenu(); };
+    newCollection.onClick = [this]
+    {
+        nameCollection(false, collectionScope == "favorites" || collectionScope == "recent"
+                                  ? juce::String()
+                                  : collectionScope);
+    };
+    rebuildNavigation();
     pauseIndex.setToggleable(true);
     for (auto *button : {&repeatOne, &repeatAll})
         button->setToggleable(true);
@@ -57,7 +87,11 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     look.setColour(juce::Slider::trackColourId, accent);
     setLookAndFeel(&look);
     addAndMakeVisible(processPlugin);
-    processPlugin.onClick = [this] { if (selectedAsset && onProcess && !audio.captureBusy()) onProcess(*selectedAsset, regionStart, regionEnd); };
+    processPlugin.onClick = [this]
+    {
+        if (selectedAsset && selectedAsset->deliverable() && onProcess && !audio.captureBusy())
+            onProcess(*selectedAsset, regionStart, regionEnd);
+    };
     addAndMakeVisible(scopeLabel);
     addAndMakeVisible(clearScope);
     scopeLabel.setFont(juce::FontOptions(12.f));
@@ -143,6 +177,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     search.onTextChange = [this]
     {
         similarMode = false;
+        preserveScopeSelection = false;
         requestSearch();
     };
     search.onReturnKey = [this] { library.semanticNow(); };
@@ -166,7 +201,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     };
     addDesigner.onClick = [this]
     {
-        if (selectedAsset && onAddToDesigner && selectedAsset->samples > 0)
+        if (selectedAsset && selectedAsset->deliverable() && onAddToDesigner && selectedAsset->samples > 0)
             onAddToDesigner(*selectedAsset, regionEnd > regionStart ? regionStart : 0,
                             regionEnd > regionStart ? regionEnd : selectedAsset->samples, false,
                             selectedAsset->channels > 16 ? (auditionChannels.getSelectedId() == 1 ||
@@ -174,6 +209,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                                 ? -3
                                                                 : auditionChannels.getSelectedId() - 2)
                                                          : 0);
+        if (selectedAsset && selectedAsset->deliverable())
+            library.editCollections(CollectionEdit{"used", {}, {}, {}, 0, true, {currentBookmark()}});
     };
     addDesigner.setTooltip(
         "Add this marked source range to Designer. Layout-aware designs keep all supported channels; wider "
@@ -212,9 +249,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     h.addColumn("MATCH", 6, 170, 120, 240, juce::TableHeaderComponent::visible);
     table.setRowHeight(58);
     table.setHeaderHeight(34);
-    table.setMultipleSelectionEnabled(false);
+    table.setMultipleSelectionEnabled(true);
     table.setOutlineThickness(0);
-    sources.setRowHeight(70);
+    sources.setRowHeight(30);
     sources.setOutlineThickness(0);
     sources.selectRow(0);
     status.setText(juce::String::fromUTF8("Opening local catalog…"), juce::dontSendNotification);
@@ -591,7 +628,8 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
 {
     if (snapshot.total == 0 || snapshot.error.isNotEmpty())
     {
-        auto bounds = table.getBounds().reduced(compact ? 12 : 18, 12);
+        auto bounds =
+            table.getBounds().withTrimmedTop(table.getHeaderHeight()).reduced(compact ? 12 : 18, 12);
         bool pending =
             snapshot.request != requested || (snapshot.semantic.ready && search.getText().isNotEmpty() &&
                                               snapshot.semanticCompletedRequest != requested);
@@ -611,6 +649,13 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
         {
             heading = juce::String::fromUTF8("Searching sounds…");
             description = "Discovered filenames remain searchable during analysis.";
+        }
+        else if (search.isEmpty() && collectionScope.isNotEmpty())
+        {
+            heading = collectionScope == "favorites" ? "No Favorites yet"
+                      : collectionScope == "recent"  ? "No recent sounds"
+                                                     : "No sounds in this collection";
+            description = "Choose All Sounds, then add a recording or marked region.";
         }
         else if (search.isEmpty())
         {
@@ -645,7 +690,11 @@ void LibraryView::resized()
         add.setBounds(getWidth() - 46, 13, 30, 30);
         search.setBounds(12, 54, getWidth() - 24, 38);
         auto layout = libraryLayout(getWidth(), getHeight(), true, false);
-        scopeLabel.setBounds(12, 98, getWidth() - 58, 28);
+        collectionSelector.setBounds(12, 98, getWidth() - 82, 28);
+        favoriteButton.setBounds(getWidth() - 68, 98, 26, 28);
+        scopeLabel.setBounds(0, 0, 0, 0);
+        newCollection.setBounds(getWidth() - 150, 12, 28, 28);
+        collectionActions.setBounds(getWidth() - 114, 12, 28, 28);
         clearScope.setBounds(getWidth() - 40, 98, 26, 28);
         updateScope();
         table.setBounds(layout.results);
@@ -674,7 +723,11 @@ void LibraryView::resized()
     installAI.setBounds(64, 140, 40, 32);
     cancelInstall.setBounds(64, 140, 40, 32);
     retryAI.setBounds(112, 140, 40, 32);
-    sources.setBounds(12, 270, 216, std::max(70, getHeight() - 396));
+    sources.setBounds(12, 286, 216, std::max(70, getHeight() - 410));
+    collectionSelector.setVisible(false);
+    newCollection.setBounds(194, 250, 30, 30);
+    favoriteButton.setBounds(16, 250, 30, 30);
+    collectionActions.setBounds(158, 250, 30, 30);
     scopeLabel.setVisible(false);
     clearScope.setVisible(false);
     bool hasReference = snapshot.reference.present;
@@ -749,8 +802,10 @@ void LibraryView::compactVisibility()
         if (dynamic_cast<juce::CallOutBox *>(c))
             continue;
         c->setVisible(c == &search || c == &add || c == &table || c == &waveform || c == &play ||
-                      c == &addDesigner || c == &processPlugin || c == &channelDetails || c == &dragOriginal || c == &scopeLabel ||
-                      c == &clearScope || c == &repeatOne || c == &repeatAll ||
+                      c == &addDesigner || c == &processPlugin || c == &channelDetails ||
+                      c == &dragOriginal || c == &scopeLabel || c == &clearScope ||
+                      c == &collectionSelector || c == &collectionActions || c == &favoriteButton ||
+                      c == &newCollection || c == &repeatOne || c == &repeatAll ||
                       (c == &transport && transport.getText().isNotEmpty()));
     }
 }
@@ -769,6 +824,15 @@ void LibraryView::updateScope()
     }
     scopeLabel.setText((similarMode ? "Similar / " : "") + name, juce::dontSendNotification);
     scopeLabel.setTooltip(path.isEmpty() ? name : path);
+    juce::String scopeName = collectionScope == "favorites" ? "Favorites"
+                             : collectionScope == "recent"  ? "Recently Used"
+                                                            : "All Sounds";
+    for (auto &c : snapshot.organization.nodes)
+        if (c.id == collectionScope)
+            scopeName = c.name;
+    collectionSelector.setButtonText(scopeName);
+    collectionSelector.setTooltip("Browse " + scopeName + " · " + name +
+                                  ". Collections and source filters intersect.");
     clearScope.setEnabled(rootFilter.isNotEmpty() || similarMode);
 }
 void LibraryView::setCompact(bool value)
@@ -789,6 +853,10 @@ void LibraryView::setCompact(bool value)
 void LibraryView::bindPreferences(juce::PropertiesFile &prefs)
 {
     preferences = &prefs;
+    collectionScope = prefs.getValue("library.collectionScope");
+    for (auto id : juce::StringArray::fromTokens(prefs.getValue("library.collapsedCollections"), ",", ""))
+        collapsedCollections.insert(id);
+    requestSearch();
     minimumSimilarity = prefs.getDoubleValue("library.minimumSimilarity", .55);
     auto id = (int)std::llround(minimumSimilarity * 100);
     if (id != 25 && id != 40 && id != 55 && id != 70 && id != 85 && id != 95)
@@ -879,7 +947,7 @@ void LibraryView::updateRepeat(const juce::var &state)
             continue;
         }
         updating = true;
-        table.selectRow(navigationToPlay, true, false);
+        table.selectRow(navigationToPlay, true, true);
         updating = false;
         updateSelection(false);
         bool useMatch = navigationAuto ? playingUseMatch : matchMode;
@@ -902,8 +970,14 @@ juce::var LibraryView::getDragSourceDescription(const juce::SparseSet<int> &rows
     if (!a || a->samples <= 0)
         return {};
     DesignDocument captured;
-    auto first = rangeAssetId == a->id ? regionStart : 0,
-         last = rangeAssetId == a->id ? regionEnd : a->samples;
+    if (!a->deliverable())
+        return {};
+    auto first = rangeKey == a->resultKey() ? regionStart
+                 : a->bookmarkFirst >= 0    ? a->bookmarkFirst
+                                            : 0,
+         last = rangeKey == a->resultKey() ? regionEnd
+                : a->bookmarkFirst >= 0    ? a->bookmarkLast
+                                           : a->samples;
     captured.original.layers = {makeDesignLayer(*a, first, last)};
     if (a->channels > 16)
     {
@@ -923,7 +997,11 @@ juce::String LibraryView::getCellTooltip(int row, int column)
     if (!a)
         return "Loading recording";
     if (column != 3)
-        return a->path;
+        return a->path + "\n" + a->error +
+               (a->bookmarkFirst >= 0
+                    ? "\nSaved original samples [" + juce::String(a->bookmarkFirst) + ", " +
+                          juce::String(a->bookmarkLast) + ") · Reference " + a->libraryReference
+                    : juce::String());
     auto effective = a->layoutOverride.id.isNotEmpty() ? a->layoutOverride : a->detectedChannels;
     return "Detected: " + layoutBadge(a->detectedChannels) + " (" + a->layoutConfidence + ")\nOverride: " +
            (a->layoutOverride.id.isEmpty() ? juce::String("None") : layoutName(a->layoutOverride)) +
@@ -938,7 +1016,7 @@ const Asset *LibraryView::rowAsset(int row) const
 }
 const Asset *LibraryView::selected() const
 {
-    int row = table.getSelectedRow();
+    int row = table.getLastRowSelected();
     if (row < 0)
         return selectedAsset && selectedAsset->id == selectedId && rangeRequest == requested ? &*selectedAsset
                                                                                              : nullptr;
@@ -1008,7 +1086,8 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
     juce::String value;
     if (column == 1)
     {
-        g.drawText(a.name, 12, 3, w - (compact ? 112 : 24), 23, juce::Justification::centredLeft, true);
+        g.drawText(a.name + (a.bookmarkFirst >= 0 ? " · Region" : ""), 12, 3, w - (compact ? 112 : 24), 23,
+                   juce::Justification::centredLeft, true);
         if (compact && a.channels > 0)
         {
             g.setFont(juce::FontOptions(9.f));
@@ -1023,7 +1102,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         const int previewX = compact ? 12 : w - previewWidth - 12;
         const juce::Rectangle<float> area((float)previewX, 31, (float)previewWidth, 19);
         auto peaks = peakPool->get(a);
-        if (!a.online || a.state == "failed" || (peaks && !peaks->error.isEmpty()))
+        if (!a.deliverable() || !a.online || a.state == "failed" || (peaks && !peaks->error.isEmpty()))
         {
             if (benchmark)
             {
@@ -1035,12 +1114,16 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
             }
             g.setFont(juce::FontOptions(10.5f));
             g.setColour(muted);
-            g.drawText(!a.online || (peaks && peaks->status == WaveformData::Status::offline) ? "Offline"
-                       : a.state == "failed"                                                  ? "Unreadable"
+            g.drawText(a.needsReview  ? "Needs Review"
+                       : a.unresolved ? "Unresolved"
+                       : !a.online || (peaks && peaks->status == WaveformData::Status::offline) ? "Offline"
+                       : a.state == "failed"                                                    ? "Unreadable"
                                              : "Waveform unavailable",
                        area, juce::Justification::centredLeft);
         }
-        else if (auto columns = peakPool->columns(a, 0, a.samples, false, previewWidth))
+        else if (auto columns = peakPool->columns(a, a.bookmarkFirst >= 0 ? a.bookmarkFirst : 0,
+                                                  a.bookmarkFirst >= 0 ? a.bookmarkLast : a.samples, false,
+                                                  previewWidth))
         {
             ++rowPreviewPaints;
             if (benchmark)
@@ -1126,16 +1209,17 @@ void LibraryView::selectedRowsChanged(int)
 }
 void LibraryView::updateSelection(bool explicitUserSelection)
 {
-    if (explicitUserSelection && navigationAuto && table.getSelectedRow() != navigationToPlay)
+    if (explicitUserSelection && navigationAuto && table.getLastRowSelected() != navigationToPlay)
         cancelNavigation();
     if (auto *a = selected())
     {
         const auto playback = audio.status();
-        const bool continueAudition = auditionOwner.isNotEmpty() && auditionOwner != a->id &&
+        const bool continueAudition = auditionOwner.isNotEmpty() && selectedKey != a->resultKey() &&
                                       navigationToPlay < 0 &&
                                       playback["intentId"].toString() == auditionOwner &&
                                       ((bool)playback["playing"] || (bool)playback["pendingPlayback"]);
-        bool newFile = rangeAssetId != a->id || rangeRevision != a->revision || rangeSamples != a->samples;
+        bool newFile = rangeKey != a->resultKey() || rangeAssetId != a->id || rangeRevision != a->revision ||
+                       rangeSamples != a->samples;
         bool newRange =
             newFile || rangeRequest != requested ||
             (!rangeEdited && !a->matches.empty() && (!selectedAsset || selectedAsset->matches.empty()));
@@ -1145,8 +1229,10 @@ void LibraryView::updateSelection(bool explicitUserSelection)
             (explicitUserSelection && !library.pinSelection(snapshot.request, snapshot.pageSerial, a->id)))
             return;
         selectedId = a->id;
+        selectedKey = a->resultKey();
+        rangeKey = a->resultKey();
         selectedAsset = *a;
-        selectedAssetRow = table.getSelectedRow();
+        selectedAssetRow = table.getLastRowSelected();
         library.prioritizeAnalysis(a->id);
         if (newFile)
         {
@@ -1160,11 +1246,15 @@ void LibraryView::updateSelection(bool explicitUserSelection)
         {
             rangeRequest = requested;
             rangeEdited = false;
-            matchMode = !a->matches.empty();
-            regionStart = matchMode ? a->matches.front().startSample : 0;
-            regionEnd = matchMode ? a->matches.front().endSample : a->samples;
+            matchMode = a->bookmarkFirst >= 0 || !a->matches.empty();
+            regionStart = a->bookmarkFirst >= 0 ? a->bookmarkFirst
+                          : matchMode           ? a->matches.front().startSample
+                                                : 0;
+            regionEnd = a->bookmarkFirst >= 0 ? a->bookmarkLast
+                        : matchMode           ? a->matches.front().endSample
+                                              : a->samples;
             waveformNeedsZoom = matchMode;
-            setRegion(regionStart, regionEnd, matchMode, false);
+            setRegion(regionStart, regionEnd, matchMode, a->bookmarkFirst >= 0);
         }
         updatingRange = true;
         moments.clear(juce::dontSendNotification);
@@ -1180,7 +1270,13 @@ void LibraryView::updateSelection(bool explicitUserSelection)
         for (size_t i = 0; i < a->matches.size(); ++i)
             if (a->matches[i].startSample == regionStart && a->matches[i].endSample == regionEnd)
                 moment = (int)i + 1;
-        moments.setTextWhenNothingSelected(a->matches.empty() ? "Whole recording" : "Custom range");
+        moments.setTextWhenNothingSelected(
+            regionSelected
+                ? (a->bookmarkFirst >= 0 && regionStart == a->bookmarkFirst && regionEnd == a->bookmarkLast
+                       ? "Saved region"
+                       : "Marked range")
+            : a->matches.empty() ? "Whole recording"
+                                 : "Custom range");
         moments.setSelectedId(moment, juce::dontSendNotification);
         updatingRange = false;
         detail.setText(a->name, juce::dontSendNotification);
@@ -1195,21 +1291,22 @@ int LibraryView::restoreSelection(bool sameQuery)
 {
     if (navigationToPlay >= 0 && rowAsset(navigationToPlay))
     {
-        table.selectRow(navigationToPlay, true, false);
+        table.selectRow(navigationToPlay, true, true);
         return navigationToPlay;
     }
     int row = -1;
     for (size_t i = 0; i < snapshot.results.size(); ++i)
-        if (snapshot.results[i].id == selectedId)
+        if (snapshot.results[i].resultKey() == selectedKey)
             row = (int)i + snapshot.offset;
     const bool removed = snapshot.selectedAssetId == selectedId && snapshot.selectedAssetRemoved;
     if (row >= 0 && !removed)
     {
-        table.selectRow(row, true, false);
+        if (!sameQuery || table.getNumSelectedRows() <= 1)
+            table.selectRow(row, true, true);
         return row;
     }
     table.deselectAllRows();
-    if (removed || !sameQuery)
+    if (removed || (!sameQuery && !preserveScopeSelection))
     {
         if (removed)
         {
@@ -1231,40 +1328,46 @@ void LibraryView::cellDoubleClicked(int, int, const juce::MouseEvent &)
 {
     toggle();
 }
-void LibraryView::cellClicked(int row, int, const juce::MouseEvent &)
+void LibraryView::cellClicked(int row, int, const juce::MouseEvent &e)
 {
-    if (!updating && row == table.getSelectedRow())
+    if (e.mods.isPopupMenu())
+    {
+        collectionMenu(true);
+        return;
+    }
+    if (!updating && row == table.getLastRowSelected())
         updateSelection(true);
 }
-void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool chosen)
+void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool)
 {
-    if (chosen)
+    if (!juce::isPositiveAndBelow(n, (int)navigationRows.size()))
+        return;
+    auto &r = navigationRows[(size_t)n];
+    const bool selected =
+        r.kind == "source" ? r.id == rootFilter : r.kind == "scope" && r.id == collectionScope;
+    if (selected)
     {
-        g.setColour(juce::Colour(0xff253d52));
-        g.fillRoundedRectangle(0, 4, (float)w, (float)h - 8, 6);
+        g.setColour(ui::accent.withAlpha(.12f));
+        g.fillRoundedRectangle(0, 1, (float)w, (float)h - 2, 5);
     }
-    g.setColour(text);
-    g.setFont(juce::FontOptions(14.0f));
-    if (n == 0)
+    int x = 10 + r.depth * 13;
+    if (r.children)
     {
-        g.drawText("All recordings", 12, 12, w - 24, 22, juce::Justification::centredLeft);
+        icons::draw(g, collapsedCollections.contains(r.id) ? ActionIcon::chevron : ActionIcon::chevronDown,
+                    {(float)x, 6, 16, 16});
+        x += 20;
+    }
+    else
+        x += 20;
+    g.setColour(r.kind == "heading" ? muted : selected ? accent : text);
+    g.setFont(juce::FontOptions(r.kind == "heading" ? 10.5f : 12.f));
+    g.drawText(r.name, x, 0, w - x - 35, h, juce::Justification::centredLeft, true);
+    if (r.count > 0)
+    {
         g.setColour(muted);
-        g.setFont(juce::FontOptions(12.0f));
-        g.drawText("One library across every folder", 12, 35, w - 24, 20, juce::Justification::centredLeft);
-        return;
+        g.setFont(juce::FontOptions(10.f));
+        g.drawText(juce::String(r.count), w - 34, 0, 27, h, juce::Justification::centredRight);
     }
-    if (!juce::isPositiveAndBelow(n - 1, (int)snapshot.roots.size()))
-        return;
-    const auto &r = snapshot.roots[(size_t)n - 1];
-    g.drawText(juce::File(r.path).getFileName(), 12, 10, w - 24, 23, juce::Justification::centredLeft, true);
-    g.setColour(!r.online ? amber : muted);
-    g.setFont(juce::FontOptions(12.0f));
-    auto label = !r.online              ? "Offline"
-                 : r.scanning           ? juce::String::fromUTF8("Scanning…")
-                 : r.error.isNotEmpty() ? "Check folder access"
-                                        : "Online";
-    g.drawText(juce::String(label) + juce::String::fromUTF8("  ·  ") + juce::String(r.discovered) + " files",
-               12, 35, w - 24, 22, juce::Justification::centredLeft, true);
 }
 void LibraryView::chooseSource(int n)
 {
@@ -1275,17 +1378,40 @@ void LibraryView::chooseSource(int n)
     updateScope();
     requestSearch();
 }
-void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &)
+void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &e)
 {
-    chooseSource(n);
+    if (!juce::isPositiveAndBelow(n, (int)navigationRows.size()))
+        return;
+    auto r = navigationRows[(size_t)n];
+    if (e.mods.isPopupMenu())
+    {
+        if (r.kind == "scope" && r.id.isNotEmpty() && r.id != "favorites" && r.id != "recent")
+            collectionMenu(false, r.id);
+        return;
+    }
+    if (r.children && e.x < 32 + r.depth * 13)
+    {
+        if (!collapsedCollections.erase(r.id))
+            collapsedCollections.insert(r.id);
+        if (preferences)
+        {
+            juce::StringArray ids;
+            for (auto &id : collapsedCollections)
+                ids.add(id);
+            preferences->setValue("library.collapsedCollections", ids.joinIntoString(","));
+        }
+        rebuildNavigation();
+        return;
+    }
+    chooseNavigation(n);
 }
 void LibraryView::requestSearch()
 {
     cancelNavigation();
     requestedPage = -1;
     dispatchedMs = monotonicMs();
-    requested = similarMode ? library.findSimilar(pinnedReference, rootFilter)
-                            : library.search(search.getText(), rootFilter);
+    requested = similarMode ? library.findSimilar(pinnedReference, rootFilter, collectionScope)
+                            : library.search(search.getText(), rootFilter, collectionScope);
 }
 uint64_t LibraryView::benchmarkSearch(const juce::String &q, const juce::String &root)
 {
@@ -1304,6 +1430,29 @@ uint64_t LibraryView::benchmarkSemanticSearch(const juce::String &q, const juce:
 }
 bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
 {
+    if (sources.hasKeyboardFocus(true) &&
+        (key.isKeyCode(juce::KeyPress::leftKey) || key.isKeyCode(juce::KeyPress::rightKey)))
+    {
+        int row = sources.getSelectedRow();
+        if (juce::isPositiveAndBelow(row, (int)navigationRows.size()))
+        {
+            auto r = navigationRows[(size_t)row];
+            if (r.children)
+            {
+                if (key.isKeyCode(juce::KeyPress::leftKey))
+                    collapsedCollections.insert(r.id);
+                else
+                    collapsedCollections.erase(r.id);
+                rebuildNavigation();
+            }
+        }
+        return true;
+    }
+    if (key.getModifiers().isCommandDown() && key.isKeyCode('Z') && !search.hasKeyboardFocus(true))
+    {
+        submitCollectionEdit(CollectionEdit{key.getModifiers().isShiftDown() ? "redo" : "undo"});
+        return true;
+    }
     if (key.getModifiers().isCommandDown() && (key.isKeyCode('F') || key.isKeyCode('f')))
     {
         search.grabKeyboardFocus();
@@ -1314,7 +1463,7 @@ bool LibraryView::keyPressed(const juce::KeyPress &key, juce::Component *)
         (key.isKeyCode(juce::KeyPress::downKey) || key.isKeyCode(juce::KeyPress::escapeKey)))
     {
         table.grabKeyboardFocus();
-        if (table.getSelectedRow() < 0 && snapshot.total > 0)
+        if (table.getLastRowSelected() < 0 && snapshot.total > 0)
             table.selectRow(0);
         return true;
     }
@@ -1381,9 +1530,16 @@ void LibraryView::setRegion(int64_t start, int64_t end, bool zoom, bool selected
         if (selectedAsset->matches[i].startSample == regionStart &&
             selectedAsset->matches[i].endSample == regionEnd)
             moment = (int)i + 1;
-    moments.setTextWhenNothingSelected(selectedAsset->matches.empty() ? "Whole recording" : "Custom range");
+    moments.setTextWhenNothingSelected(
+        regionSelected ? (selectedAsset->bookmarkFirst >= 0 && regionStart == selectedAsset->bookmarkFirst &&
+                                  regionEnd == selectedAsset->bookmarkLast
+                              ? "Saved region"
+                              : "Marked range")
+        : selectedAsset->matches.empty() ? "Whole recording"
+                                         : "Custom range");
     moments.setSelectedId(moment, juce::dontSendNotification);
     updatingRange = false;
+    favoriteInspectionKey.clear();
 }
 void LibraryView::showRangeEditor(bool forReference)
 {
@@ -1455,6 +1611,13 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
         a = &*selectedAsset;
     if (!a)
         return;
+    if (!a->deliverable())
+    {
+        playbackError = a->error;
+        return;
+    }
+    library.editCollections(
+        CollectionEdit{"used", {}, {}, {}, 0, true, {{*a, a->bookmarkFirst, a->bookmarkLast}}});
     bool online = a->online;
     juce::String path = a->path;
     for (auto &root : snapshot.roots)
@@ -1506,7 +1669,7 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     playingSource = *a;
     playingGeneration = audio.playRegion(a->id, juce::File(path), region);
     playingRequest = requested;
-    playingRow = table.getSelectedRow();
+    playingRow = table.getLastRowSelected();
     playingUseMatch = useMatch;
     allArmedGeneration = repeatMode == RepeatMode::all ? playingGeneration : 0;
 }
@@ -1532,6 +1695,29 @@ void LibraryView::toggle()
 void LibraryView::timerCallback()
 {
     auto next = library.snapshot();
+    if (next.organization.version != organizationVersion)
+    {
+        organizationVersion = next.organization.version;
+        snapshot.organization = next.organization;
+        if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent" &&
+            std::none_of(next.organization.nodes.begin(), next.organization.nodes.end(),
+                         [&](const auto &c) { return c.id == collectionScope; }))
+            selectCollectionScope({});
+        favoriteInspectionKey.clear();
+        rebuildNavigation();
+        if (next.organization.error.isNotEmpty())
+            status.setText(next.organization.error, juce::dontSendNotification);
+    }
+    inspectFavorite();
+    auto bookmarkKey = currentBookmarkKey();
+    if (next.bookmarkInspection == bookmarkKey)
+    {
+        favoriteSelected = next.bookmarkFavorite;
+        favoriteButton.setToggleState(favoriteSelected, juce::dontSendNotification);
+        favoriteButton.setButtonText(next.bookmarkFavorite ? "Remove Favorite"
+                                                           : "Favorite selected sound or range");
+    }
+    favoriteButton.setEnabled(selectedAsset.has_value());
     bool referenceVisibilityChanged = next.reference.present != snapshot.reference.present;
     snapshot.reference = next.reference;
     updateReference(next.reference);
@@ -1606,12 +1792,13 @@ void LibraryView::timerCallback()
         table.updateContent();
         int row = restoreSelection(sameQuery);
         table.getViewport()->setViewPosition(scroll);
-        sources.updateContent();
-        int sourceRow = 0;
-        for (size_t i = 0; i < snapshot.roots.size(); ++i)
-            if (snapshot.roots[i].id == rootFilter)
-                sourceRow = (int)i + 1;
-        sources.selectRow(sourceRow, true, false);
+        rebuildNavigation();
+        int sourceRow = -1;
+        for (size_t i = 0; i < navigationRows.size(); ++i)
+            if (navigationRows[i].kind == "scope" && navigationRows[i].id == collectionScope)
+                sourceRow = (int)i;
+        if (sourceRow >= 0)
+            sources.selectRow(sourceRow, true, false);
         updating = false;
         if (row >= 0)
             updateSelection(false);
@@ -1647,7 +1834,7 @@ void LibraryView::timerCallback()
     }
     else if (next.error.isNotEmpty())
         status.setText(next.error, juce::dontSendNotification);
-    if (next.error.isEmpty())
+    if (next.error.isEmpty() && next.organization.error.isEmpty())
         status.setText(progressText + (snapshot.newResultsAvailable
                                            ? " | Updated results available - Refresh Results"
                                            : ""),
@@ -1661,13 +1848,14 @@ void LibraryView::timerCallback()
     play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
     play.setIcon(navigationAuto || (libraryOwned && (isPlaying || pending)) ? ActionIcon::stop
                                                                             : ActionIcon::play);
-    processPlugin.setEnabled(selectedAsset && selectedAsset->samples > 0 && !audio.captureBusy());
-    addDesigner.setEnabled(selectedAsset && selectedAsset->samples > 0);
+    processPlugin.setEnabled(selectedAsset && selectedAsset->deliverable() && selectedAsset->samples > 0 &&
+                             !audio.captureBusy());
+    addDesigner.setEnabled(selectedAsset && selectedAsset->deliverable() && selectedAsset->samples > 0);
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
     dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples > 0 &&
                             regionStart == 0 && regionEnd == selectedAsset->samples);
     referenceDesigner.setEnabled(pinnedReference.source.samples > 0);
-    bool canPlay = selectedAsset.has_value();
+    bool canPlay = selectedAsset && selectedAsset->deliverable();
     previous.setEnabled(snapshot.total > 0);
     this->next.setEnabled(snapshot.total > 0);
     findSimilar.setEnabled(canPlay && ai.ready && selectedAsset->samples > 0 &&
@@ -1744,6 +1932,12 @@ void LibraryView::timerCallback()
         state["intentId"].toString().startsWith("design:") ? juce::String() : state["error"].toString();
     if (err.isEmpty())
         err = playbackError;
+    if (err.isEmpty())
+        err = organizationUiError;
+    if (err.isEmpty() && compact)
+        err = next.organization.error;
+    if (next.organization.error.isNotEmpty() && !compact)
+        status.setText(next.organization.error, juce::dontSendNotification);
     transport.setText(err, juce::dontSendNotification);
     transport.setVisible(err.isNotEmpty());
     updating = true;
@@ -1843,7 +2037,7 @@ void LibraryView::submitReference(const AudioReference &ref)
     requestedPage = -1;
     search.setText({}, juce::dontSendNotification);
     dispatchedMs = monotonicMs();
-    requested = library.findSimilar(pinnedReference, rootFilter);
+    requested = library.findSimilar(pinnedReference, rootFilter, collectionScope);
 }
 void LibraryView::updateAuditionInterpretation(const Asset &source, const ChannelLayout &layout)
 {
@@ -1905,8 +2099,8 @@ void LibraryView::navigate(int direction)
         return;
     cancelNavigation();
     int target = repeatMode == RepeatMode::all
-                     ? (table.getSelectedRow() + direction + snapshot.total) % snapshot.total
-                     : juce::jlimit(0, snapshot.total - 1, table.getSelectedRow() + direction);
+                     ? (table.getLastRowSelected() + direction + snapshot.total) % snapshot.total
+                     : juce::jlimit(0, snapshot.total - 1, table.getLastRowSelected() + direction);
     navigationToPlay = target;
     table.selectRow(target);
     requestPageForRow(target);

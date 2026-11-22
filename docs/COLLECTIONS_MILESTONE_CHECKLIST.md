@@ -1,6 +1,6 @@
 # Collections and MIDI correction — tasks in progress
 
-Starting/reviewed HEAD: f3c5b89e6e77a6666233a695f27760b672054840. Working tree clean; no later commits at start. Read attached review/request and repository guidance. Preserve current in-place user catalog/session, media, embeddings, raw/journal prefixes, takes and durable outputs. No push.
+Starting/reviewed HEAD: f3c5b89e6e77a6666233a695f27760b672054840. Working tree clean; no later commits at start. Read attached review/request and repository guidance. Preserve current in-place user catalog/session, media, embeddings, raw/journal prefixes, takes and durable outputs. Latest user steering: always push completed commits after committing; this supersedes the attachment's earlier no-push instruction.
 
 ✓ A Reproduce/fix interleaved MIDI continuation with two/three fragments, edits/separation, rates, session history/recall and native/hosted PCM.
 
@@ -8,12 +8,12 @@ Starting/reviewed HEAD: f3c5b89e6e77a6666233a695f27760b672054840. Working tree c
 
 ✓ A Relevant regression gate and independent Stage A commit before collection implementation.
 
-◉ B Transactional Catalog v7 migration; stable nested collections/order/cycles/delete policy, many-to-many members, Favorites/Recent, undoable bulk metadata, unresolved/reviewed exact region references.
+✓ B Transactional Catalog v7 migration; stable nested collections/order/cycles/delete policy, many-to-many members, Favorites/Recent, undoable bulk metadata, unresolved/reviewed exact region references.
 
-○ C Shared Library/Designer navigation and search/root/collection scope; exact stored-region audition/drag, offline/paused metadata and live synchronization without audio/embedding invalidation.
+✓ C Shared Library/Designer navigation and search/root/collection scope; exact stored-region audition/drag, offline/paused metadata and live synchronization without audio/embedding invalidation.
 
-○ D Small/100k/500k scoped regression/performance, legacy/migration/integrity and historical hashes/PCM; native normal/minimum Browser+Inspector and preserved Perform.
+✓ D Small/100k/500k scoped regression/performance, legacy/migration/integrity and historical hashes/PCM; native normal/minimum Browser+Inspector and preserved Perform.
 
-○ D Complete unchanged-build Release vendor/AUv2/device gate, source/binary identities, current-workspace audit/reopen, report/evidence and commits.
+✓ D Complete unchanged-build Release vendor/AUv2/device gate (39/39,396.09s),303 source/resource +8 binary identities, current-workspace audit/in-place r4478 reopen and report/evidence. Stage A independently committed/pushed; final Collections source/tests/docs/evidence prepared for the completion commit and push.
 
 Physical controller/loopback, listening, physical surround and actual receiver drag remain separate open qualification. Future pads/overdubs, new effects and external AI generation are outside this increment.

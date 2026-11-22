@@ -1,0 +1,7 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~	21 text (settable)
+~	85 text (settable) Saved Collection region QA.soundplus
+Selected:
+	8 row Rain texture.wav, saved original samples [36000, 120000), reference fc0516d6ceb54c0e878e907ac357220e, 5.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).

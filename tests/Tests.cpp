@@ -42,6 +42,8 @@ void runInputRecordingTests(const juce::File &);
 void runMidiInstrumentTests(const juce::File &, const juce::File &, const juce::File &);
 void runMidiResponsivenessTests(const juce::File &);
 void runMidiTests(const juce::File &);
+void runCollectionTests(const juce::File &, const juce::File &);
+void runCollectionScale(const juce::File &, const juce::File &);
 namespace
 {
 int checks = 0;
@@ -99,6 +101,16 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 4 && juce::String(argv[1]) == "--collection-scale")
+        {
+            runCollectionScale(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 4 && juce::String(argv[1]) == "--collections")
+        {
+            runCollectionTests(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
         if (argc >= 5 && juce::String(argv[1]) == "--plugin-takes")
         {
             runPluginTakeTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));

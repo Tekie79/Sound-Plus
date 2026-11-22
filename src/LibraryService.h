@@ -16,6 +16,9 @@ struct IndexProgress
 struct LibrarySnapshot
 {
     std::vector<Root> roots;
+    CollectionState organization;
+    juce::String bookmarkInspection;
+    bool bookmarkFavorite = false;
     std::vector<Asset> results;
     juce::String error;
     uint64_t request = 0, version = 0, pageSerial = 0;
@@ -31,35 +34,37 @@ struct LibrarySnapshot
         juce::String status, error, model, preprocessing, asset;
         AnalysisCounts coverage;
         int64_t downloadedBytes = 0, downloadTotalBytes = 0, windowsThisSession = 0, helperPeakBytes = 0;
-        double modelLoadMs = 0, analysisWallMs = 0, sourceSecondsThisSession = 0,
-               firstWindowStartedMs = 0, lastWindowPublishedMs = 0;
+        double modelLoadMs = 0, analysisWallMs = 0, sourceSecondsThisSession = 0, firstWindowStartedMs = 0,
+               lastWindowPublishedMs = 0;
         juce::String indexStatus;
-        bool indexReady=false,indexReused=false,indexBuilding=false;
-        int64_t indexRegions=0,indexBytes=0,indexGeneration=-1;
-        double indexOpenMs=0,indexBuildMs=0;
+        bool indexReady = false, indexReused = false, indexBuilding = false;
+        int64_t indexRegions = 0, indexBytes = 0, indexGeneration = -1;
+        double indexOpenMs = 0, indexBuildMs = 0;
     } semantic;
     struct SemanticTiming
     {
-        double textPreprocessMs = 0, textEncodeMs = 0, workerRoundTripMs = 0,
-               fetchFilterMs = 0, vectorScoreMs = 0, rankGroupMs = 0, fusionMs = 0;
+        double textPreprocessMs = 0, textEncodeMs = 0, workerRoundTripMs = 0, fetchFilterMs = 0,
+               vectorScoreMs = 0, rankGroupMs = 0, fusionMs = 0;
         int vectors = 0;
         bool textCacheHit = false;
     } semanticTiming;
     uint64_t semanticCompletedRequest = 0, semanticSerial = 0;
     ReferenceState reference;
-    bool exampleMode=false;
+    bool exampleMode = false;
 };
 class LibraryService
 {
   public:
     explicit LibraryService(juce::File database, juce::File applicationExecutable = {},
-                             juce::File modelDirectory = {}, bool controlledSemantic = false);
+                            juce::File modelDirectory = {}, bool controlledSemantic = false);
     ~LibraryService();
     void addFolder(const juce::File &);
     void rescan();
     void setLayoutOverride(const Asset &, const ChannelLayout &);
     void pause(bool);
-    uint64_t search(const juce::String &, const juce::String &root = {});
+    bool editCollections(CollectionEdit);
+    void inspectBookmark(BookmarkRequest, const juce::String &key);
+    uint64_t search(const juce::String &, const juce::String &root = {}, const juce::String &scope = {});
     void page(int offset, int limit = 256);
     bool pinSelection(uint64_t request, uint64_t pageSerial, const juce::String &assetId);
     bool pageForRequest(uint64_t request, int offset, int limit = 256);
@@ -73,11 +78,13 @@ class LibraryService
     void semanticNow();
     void prioritizeAnalysis(const juce::String &assetId);
     void setAuditionActive(bool);
-    uint64_t findSimilar(const AudioReference &,const juce::String &root = {});
+    uint64_t findSimilar(const AudioReference &, const juce::String &root = {},
+                         const juce::String &scope = {});
     void clearReference();
 
   private:
     friend struct LibraryReliabilityTestAccess;
+    friend struct CollectionViewTestAccess;
     friend struct PlaybackSearchTestAccess;
     void publishControlledSemantic(uint64_t, std::vector<Asset>);
     struct Impl;

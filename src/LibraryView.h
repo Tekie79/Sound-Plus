@@ -5,6 +5,7 @@
 #include "WaveformPreview.h"
 #include "UIComponents.h"
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <set>
 namespace sp
 {
 class Benchmark;
@@ -120,17 +121,11 @@ class LibraryView final : public juce::Component,
         explicit SourceModel(LibraryView &v) : owner(v) {}
         int getNumRows() override
         {
-            return (int)owner.snapshot.roots.size() + 1;
+            return (int)owner.navigationRows.size();
         }
         juce::String getNameForRow(int n) override
         {
-            if (n == 0)
-                return "All recordings";
-            if (!juce::isPositiveAndBelow(n - 1, (int)owner.snapshot.roots.size()))
-                return {};
-            const auto &root = owner.snapshot.roots[(size_t)n - 1];
-            return root.path + (root.online ? " Online" : " Offline") + ", " + juce::String(root.discovered) +
-                   " recordings";
+            return owner.navigationName(n);
         }
         void paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool s) override
         {
@@ -143,9 +138,36 @@ class LibraryView final : public juce::Component,
         void selectedRowsChanged(int n) override
         {
             if (!owner.updating && n >= 0)
-                owner.chooseSource(n);
+                owner.chooseNavigation(n);
         }
     } sourceModel{*this};
+    friend struct CollectionViewTestAccess;
+    struct NavigationRow
+    {
+        juce::String kind, id, name;
+        int depth = 0, count = 0;
+        bool children = false;
+    };
+    std::vector<NavigationRow> navigationRows;
+    std::set<juce::String> collapsedCollections;
+    juce::String collectionScope, selectedKey, rangeKey, favoriteInspectionKey, organizationUiError;
+    uint64_t organizationVersion = 0;
+    bool preserveScopeSelection = false, favoriteSelected = false;
+    IconButton collectionActions{"Collection and selection actions", ActionIcon::more};
+    IconButton favoriteButton{"Favorite selected sound or range", ActionIcon::keep};
+    IconButton collectionSelector{"All Sounds", ActionIcon::chevronDown, true};
+    IconButton newCollection{"New Collection", ActionIcon::newDocument};
+    void rebuildNavigation();
+    juce::String navigationName(int) const;
+    void chooseNavigation(int);
+    void selectCollectionScope(const juce::String &);
+    void collectionMenu(bool selection = false, const juce::String &node = {});
+    void nameCollection(bool rename = false, const juce::String &node = {});
+    void submitCollectionEdit(CollectionEdit);
+    std::vector<BookmarkRequest> selectedBookmarks() const;
+    BookmarkRequest currentBookmark() const;
+    juce::String currentBookmarkKey() const;
+    void inspectFavorite();
     IconButton channelDetails{"Per-channel source waveforms", ActionIcon::layers};
     ui::LookAndFeel look;
     LibraryService library;
@@ -169,15 +191,24 @@ class LibraryView final : public juce::Component,
             if (!asset)
                 return "Loading recording";
             const auto &a = *asset;
-            return a.name + ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
+            return a.name +
+                   (a.bookmarkFirst >= 0
+                        ? ", saved original samples [" + juce::String(a.bookmarkFirst) + ", " +
+                              juce::String(a.bookmarkLast) + "), reference " + a.libraryReference
+                        : juce::String()) +
+                   ", " + juce::String(a.duration, 2) + " seconds, " + juce::String(a.channels) +
                    " channels, " +
                    (a.layoutOverride.id.isNotEmpty()
                         ? layoutName(a.layoutOverride) + " explicit override; detected " +
                               layoutName(a.detectedChannels)
                     : a.detectedChannels.id.isEmpty() ? juce::String("Unknown layout")
                                                       : layoutName(a.detectedChannels)) +
-                   ", " + juce::String(a.sampleRate, 0) + " Hz, " + (a.online ? a.state : "Offline") + ", " +
-                   a.matchReason +
+                   ", " + juce::String(a.sampleRate, 0) + " Hz, " +
+                   (a.needsReview  ? juce::String("Needs Review")
+                    : a.unresolved ? juce::String("Unresolved")
+                    : a.online     ? a.state
+                                   : juce::String("Offline")) +
+                   ", " + a.matchReason +
                    (!a.matches.empty() && a.sampleRate > 0
                         ? ", match " + juce::String(a.matches.front().startSample / a.sampleRate, 3) +
                               " to " + juce::String(a.matches.front().endSample / a.sampleRate, 3) +

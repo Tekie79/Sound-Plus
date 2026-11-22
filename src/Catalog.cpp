@@ -102,8 +102,12 @@ Asset readAsset(Statement &s)
         if (proposed.size() == a.channels)
             a.layoutOverride = proposed;
     }
+    if (sqlite3_column_count(s.s) > 18 && juce::String(sqlite3_column_name(s.s, 18)) == "is_favorite")
+        a.favorite = s.integer(18) != 0;
     return a;
 }
+constexpr auto favoriteColumn = ",COALESCE((SELECT favorite FROM library_refs lr WHERE lr.asset=a.id AND "
+                                "lr.first=-1 AND lr.last=-1 AND lr.revision=0),0) AS is_favorite";
 constexpr auto currentColumns = "a.id,a.root_id,a.relative,a.name,a.size,a.modified,a.inode,a.revision,"
                                 "a.duration,a.channels,a.sample_rate,a.state,a.error,(a.online AND "
                                 "r.online),r.path,a.samples,a.channel_layout,a.layout_override";
@@ -112,7 +116,9 @@ constexpr auto currentColumns = "a.id,a.root_id,a.relative,a.name,a.size,a.modif
 bool fileStamp(const juce::File &f, FileStamp &out)
 {
     ++performance.fileStats;
-    struct stat st{};
+    struct stat st
+    {
+    };
     if (lstat(f.getFullPathName().toRawUTF8(), &st) != 0 || !S_ISREG(st.st_mode))
         return false;
     out = {st.st_size, st.st_mtimespec.tv_sec * 1000000000LL + st.st_mtimespec.tv_nsec, (int64_t)st.st_ino};
@@ -122,7 +128,8 @@ bool supportedExtension(const juce::File &f)
 {
     return f.hasFileExtension("wav;bwf;aif;aiff;flac;ogg;mp3;m4a;mp4;caf;w64");
 }
-Catalog::Catalog(const juce::File &file, bool readOnly) : columns(currentColumns)
+Catalog::Catalog(const juce::File &file, bool readOnly, std::function<void()> beforeMigrationCommit)
+    : columns(currentColumns)
 {
     const int flags = readOnly ? SQLITE_OPEN_READONLY : SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE;
     if (sqlite3_open_v2(file.getFullPathName().toRawUTF8(), &db, flags | SQLITE_OPEN_NOMUTEX, nullptr) !=
@@ -144,7 +151,7 @@ Catalog::Catalog(const juce::File &file, bool readOnly) : columns(currentColumns
             version.step();
             schemaVersion = version.integer(0);
         }
-        if (schemaVersion > 6)
+        if (schemaVersion > 7)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         if (readOnly)
         {
@@ -262,7 +269,7 @@ Catalog::Catalog(const juce::File &file, bool readOnly) : columns(currentColumns
               PRAGMA user_version=3; COMMIT;
             )SQL");
         }
-        if (schemaVersion<4)
+        if (schemaVersion < 4)
         {
             exec(R"SQL(BEGIN IMMEDIATE;
               CREATE TABLE retrieval_meta(key TEXT PRIMARY KEY,value TEXT NOT NULL);
@@ -286,6 +293,31 @@ Catalog::Catalog(const juce::File &file, bool readOnly) : columns(currentColumns
         if (schemaVersion < 6)
             exec("BEGIN IMMEDIATE;ALTER TABLE assets ADD COLUMN layout_override TEXT NOT NULL DEFAULT "
                  "'';PRAGMA user_version=6;COMMIT;");
+        if (schemaVersion < 7)
+        {
+            exec(R"SQL(BEGIN IMMEDIATE;
+              CREATE TABLE collections(id TEXT PRIMARY KEY,parent TEXT NOT NULL DEFAULT '',name TEXT NOT NULL,
+                folded TEXT NOT NULL,position INTEGER NOT NULL,UNIQUE(parent,folded));
+              CREATE INDEX collection_parent ON collections(parent,position,id);
+              CREATE TABLE library_refs(id TEXT PRIMARY KEY,asset TEXT NOT NULL,root TEXT NOT NULL,name TEXT NOT NULL,
+                first INTEGER NOT NULL,last INTEGER NOT NULL,revision INTEGER NOT NULL,samples INTEGER NOT NULL,
+                rate REAL NOT NULL,snapshot TEXT NOT NULL,catalog TEXT NOT NULL,
+                favorite INTEGER NOT NULL DEFAULT 0,recent INTEGER NOT NULL DEFAULT 0,
+                UNIQUE(asset,first,last,revision));
+              CREATE INDEX reference_asset ON library_refs(asset);
+              CREATE INDEX reference_favorites ON library_refs(favorite,name,id);
+              CREATE INDEX reference_recent ON library_refs(recent DESC,id);
+              CREATE TABLE collection_members(collection TEXT NOT NULL REFERENCES collections(id) ON DELETE CASCADE,
+                reference TEXT NOT NULL REFERENCES library_refs(id),PRIMARY KEY(collection,reference));
+              CREATE INDEX member_reference ON collection_members(reference,collection);
+              CREATE TABLE collection_history(sequence INTEGER PRIMARY KEY AUTOINCREMENT,forward TEXT NOT NULL,inverse TEXT NOT NULL);
+              CREATE TABLE collection_cursor(singleton INTEGER PRIMARY KEY CHECK(singleton=1),value INTEGER NOT NULL);
+              INSERT INTO collection_cursor VALUES(1,0);
+            )SQL");
+            if (beforeMigrationCommit)
+                beforeMigrationCommit();
+            exec("PRAGMA user_version=7;COMMIT;");
+        }
     }
     catch (...)
     {
@@ -546,15 +578,16 @@ void Catalog::metadata(const Asset &a, double duration, int channels, double rat
     if (retained.size() != channels)
         retained = {};
     Statement s(
-        db, "UPDATE assets SET "
-            "duration=?,channels=?,sample_rate=?,state=?,error=?,samples=?,channel_layout=?,layout_override=? "
-            "WHERE id=? AND revision=? AND modified=? AND size=? AND inode=?");
+        db,
+        "UPDATE assets SET "
+        "duration=?,channels=?,sample_rate=?,state=?,error=?,samples=?,channel_layout=?,layout_override=? "
+        "WHERE id=? AND revision=? AND modified=? AND size=? AND inode=?");
     sqlite3_bind_double(s.s, 1, duration);
     s.bind(2, (int64_t)channels);
     sqlite3_bind_double(s.s, 3, rate);
     s.bind(4, error.isEmpty() ? "ready" : "failed");
     s.bind(5, error);
-    s.bind(6, sourceSamples > 0 ? sourceSamples : (int64_t)std::llround(duration*rate));
+    s.bind(6, sourceSamples > 0 ? sourceSamples : (int64_t)std::llround(duration * rate));
     juce::var info(new juce::DynamicObject());
     auto layout = a.detectedChannels.id.isEmpty()
                       ? (channels <= 2 ? channelLayout(channels == 1 ? "mono-v1" : "stereo-v1")
@@ -596,6 +629,7 @@ bool uuidQuery(const juce::String &q)
     return q.length() == 32 && q.containsOnly("0123456789abcdefABCDEF");
 }
 } // namespace
+#include "CatalogCollections.inc"
 void Catalog::cancelWhen(const std::atomic<uint64_t> *generation, uint64_t expected)
 {
     cancellation = generation;
@@ -611,6 +645,15 @@ void Catalog::cancelWhen(const std::atomic<uint64_t> *generation, uint64_t expec
 }
 int Catalog::countMatches(const juce::String &q, const juce::String &root)
 {
+    if (activeScope.isNotEmpty())
+    {
+        Statement scoped(db,
+                         ("SELECT count(*) FROM library_refs lr LEFT JOIN assets a ON a.id=lr.asset WHERE " +
+                          referenceWhere(q, root))
+                             .toRawUTF8());
+        scoped.step();
+        return (int)scoped.integer(0);
+    }
     auto match = matchText(q, root);
     juce::String sql;
     if (uuidQuery(q))
@@ -637,13 +680,16 @@ int Catalog::countMatches(const juce::String &q, const juce::String &root)
 std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &root, int limit, int offset)
 {
     ++performance.queries;
+    if (activeScope.isNotEmpty())
+        return scopedRows(q, root, limit, offset);
     std::vector<Asset> result;
     auto collect = [&](Statement &s)
     {
         while (s.step())
             result.push_back(readAsset(s));
     };
-    const auto base = "SELECT " + juce::String(columns) + " FROM assets a JOIN roots r ON r.id=a.root_id ";
+    const auto base =
+        "SELECT " + juce::String(columns) + favoriteColumn + " FROM assets a JOIN roots r ON r.id=a.root_id ";
     if (uuidQuery(q))
     {
         Statement s(
@@ -709,9 +755,16 @@ std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &ro
 }
 void Catalog::materialize(const juce::String &q, const juce::String &root, bool empty)
 {
+    scopedBrowse = activeScope.isNotEmpty();
+    if (scopedBrowse)
+    {
+        scopedMaterialize(q, root, empty);
+        return;
+    }
     exec("DROP TABLE IF EXISTS temp.browse_ids; CREATE TEMP TABLE browse_ids(position INTEGER PRIMARY KEY,id "
          "TEXT NOT NULL);");
-    if (empty) return;
+    if (empty)
+        return;
     auto match = matchText(q, root);
     juce::String sql;
     if (uuidQuery(q))
@@ -753,7 +806,23 @@ void Catalog::materialize(const juce::String &q, const juce::String &root, bool 
 }
 std::vector<Asset> Catalog::page(int offset, int limit)
 {
-    Statement s(db, ("SELECT " + juce::String(columns) +
+    if (scopedBrowse)
+    {
+        Statement s(
+            db,
+            ("SELECT " + juce::String(columns) +
+             ",lr.id,lr.first,lr.last,lr.revision,lr.samples,lr.rate,lr.snapshot,lr.favorite FROM "
+             "browse_refs b JOIN library_refs lr ON lr.id=b.reference LEFT JOIN assets a ON a.id=lr.asset "
+             "LEFT JOIN roots r ON r.id=a.root_id WHERE b.position>? ORDER BY b.position LIMIT ?")
+                .toRawUTF8());
+        s.bind(1, (int64_t)offset);
+        s.bind(2, (int64_t)juce::jlimit(1, 512, limit));
+        std::vector<Asset> rows;
+        while (s.step())
+            rows.push_back(readReference(s));
+        return rows;
+    }
+    Statement s(db, ("SELECT " + juce::String(columns) + favoriteColumn +
                      " FROM temp.browse_ids b JOIN assets a ON a.id=b.id JOIN roots r ON r.id=a.root_id "
                      "WHERE b.position>? ORDER BY b.position LIMIT ?")
                         .toRawUTF8());
@@ -766,14 +835,28 @@ std::vector<Asset> Catalog::page(int offset, int limit)
 }
 int Catalog::reconcileBrowse()
 {
-    bool compact=false;
-    {Statement missing(db,"SELECT count(*) FROM browse_ids b LEFT JOIN assets a ON a.id=b.id WHERE a.id IS NULL");
-    missing.step();compact=missing.integer(0)>0;}
-    if(compact)
-        exec("DROP TABLE IF EXISTS temp.remaining_ids; CREATE TEMP TABLE remaining_ids(position INTEGER PRIMARY KEY,id TEXT NOT NULL);"
-             "INSERT INTO remaining_ids(id) SELECT b.id FROM browse_ids b JOIN assets a ON a.id=b.id ORDER BY b.position;"
+    if (scopedBrowse)
+    {
+        Statement c(db, "SELECT count(*) FROM browse_refs");
+        c.step();
+        return (int)c.integer(0);
+    }
+    bool compact = false;
+    {
+        Statement missing(
+            db, "SELECT count(*) FROM browse_ids b LEFT JOIN assets a ON a.id=b.id WHERE a.id IS NULL");
+        missing.step();
+        compact = missing.integer(0) > 0;
+    }
+    if (compact)
+        exec("DROP TABLE IF EXISTS temp.remaining_ids; CREATE TEMP TABLE remaining_ids(position INTEGER "
+             "PRIMARY KEY,id TEXT NOT NULL);"
+             "INSERT INTO remaining_ids(id) SELECT b.id FROM browse_ids b JOIN assets a ON a.id=b.id ORDER "
+             "BY b.position;"
              "DROP TABLE browse_ids; ALTER TABLE remaining_ids RENAME TO browse_ids;");
-    Statement count(db,"SELECT count(*) FROM browse_ids");count.step();return (int)count.integer(0);
+    Statement count(db, "SELECT count(*) FROM browse_ids");
+    count.step();
+    return (int)count.integer(0);
 }
 Asset Catalog::existing(const juce::String &root, const juce::String &relative)
 {
@@ -899,41 +982,78 @@ void Catalog::removeEmptyRoot(const juce::String &id)
 }
 Asset Catalog::asset(const juce::String &id)
 {
-    Statement row(db,("SELECT "+juce::String(columns)+
-        " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.id=?").toRawUTF8());
-    row.bind(1,id); return row.step() ? readAsset(row) : Asset{};
+    Statement row(
+        db, ("SELECT " + juce::String(columns) + " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.id=?")
+                .toRawUTF8());
+    row.bind(1, id);
+    return row.step() ? readAsset(row) : Asset{};
 }
 int Catalog::promote(const std::vector<Asset> &prefix, bool keepLexicalTail)
 {
-    exec("DROP TABLE IF EXISTS temp.next_browse_ids; CREATE TEMP TABLE next_browse_ids(position INTEGER PRIMARY KEY,id TEXT NOT NULL UNIQUE);");
+    if (scopedBrowse)
+    {
+        exec("CREATE TEMP TABLE next_refs(position INTEGER PRIMARY KEY,reference TEXT UNIQUE NOT NULL)");
+        for (auto &a : prefix)
+        {
+            Statement s(db,
+                        "INSERT OR IGNORE INTO next_refs(reference) SELECT id FROM library_refs WHERE id=?");
+            s.bind(1, a.libraryReference);
+            s.step();
+        }
+        if (keepLexicalTail)
+            exec("INSERT OR IGNORE INTO next_refs(reference) SELECT reference FROM browse_refs ORDER BY "
+                 "position");
+        exec("DROP TABLE browse_refs;ALTER TABLE next_refs RENAME TO browse_refs");
+        Statement c(db, "SELECT count(*) FROM browse_refs");
+        c.step();
+        return (int)c.integer(0);
+    }
+    exec("DROP TABLE IF EXISTS temp.next_browse_ids; CREATE TEMP TABLE next_browse_ids(position INTEGER "
+         "PRIMARY KEY,id TEXT NOT NULL UNIQUE);");
     for (auto &a : prefix)
     {
-        Statement insert(db,"INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM assets WHERE id=? AND revision=?");
-        insert.bind(1,a.id); insert.bind(2,a.revision); insert.step();
+        Statement insert(
+            db, "INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM assets WHERE id=? AND revision=?");
+        insert.bind(1, a.id);
+        insert.bind(2, a.revision);
+        insert.step();
     }
-    if (keepLexicalTail) exec("INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM browse_ids ORDER BY position;");
+    if (keepLexicalTail)
+        exec("INSERT OR IGNORE INTO next_browse_ids(id) SELECT id FROM browse_ids ORDER BY position;");
     exec("DROP TABLE browse_ids; ALTER TABLE next_browse_ids RENAME TO browse_ids;");
-    Statement count(db,"SELECT count(*) FROM browse_ids"); count.step(); return (int)count.integer(0);
+    Statement count(db, "SELECT count(*) FROM browse_ids");
+    count.step();
+    return (int)count.integer(0);
 }
 void Catalog::seedAnalysis(const juce::String &model, const juce::String &preprocessing,
                            const juce::String &id)
 {
-    Statement s(db,("INSERT OR IGNORE INTO analysis_jobs(asset_id,revision,root_id,model,preprocessing,rate) "
-        "SELECT id,revision,root_id,?,?,sample_rate FROM assets WHERE state='ready' AND samples>0"+
-        (id.isEmpty() ? juce::String() : " AND id=?")).toRawUTF8());
-    s.bind(1,model); s.bind(2,preprocessing); if (id.isNotEmpty()) s.bind(3,id); s.step();
+    Statement s(db,
+                ("INSERT OR IGNORE INTO analysis_jobs(asset_id,revision,root_id,model,preprocessing,rate) "
+                 "SELECT id,revision,root_id,?,?,sample_rate FROM assets WHERE state='ready' AND samples>0" +
+                 (id.isEmpty() ? juce::String() : " AND id=?"))
+                    .toRawUTF8());
+    s.bind(1, model);
+    s.bind(2, preprocessing);
+    if (id.isNotEmpty())
+        s.bind(3, id);
+    s.step();
 }
 std::optional<AnalysisTask> Catalog::nextAnalysis(const juce::String &model,
-                                                 const juce::String &preprocessing,
-                                                 const juce::String &preferred)
+                                                  const juce::String &preprocessing,
+                                                  const juce::String &preferred)
 {
-    auto select = "SELECT "+juce::String(columns)+",j.next_start FROM analysis_jobs j JOIN assets a ON "
+    auto select =
+        "SELECT " + juce::String(columns) +
+        ",j.next_start FROM analysis_jobs j JOIN assets a ON "
         "a.id=j.asset_id AND a.revision=j.revision JOIN roots r ON r.id=a.root_id WHERE j.model=? "
         "AND j.preprocessing=? AND j.state='pending' AND a.state='ready' AND a.online=1 AND r.online=1 ";
     if (preferred.isNotEmpty())
     {
-        Statement s(db,(select+"AND j.asset_id=? LIMIT 1").toRawUTF8());
-        s.bind(1,model); s.bind(2,preprocessing); s.bind(3,preferred);
+        Statement s(db, (select + "AND j.asset_id=? LIMIT 1").toRawUTF8());
+        s.bind(1, model);
+        s.bind(2, preprocessing);
+        s.bind(3, preferred);
         if (s.step())
             return AnalysisTask{readAsset(s), s.integer(18)};
     }
@@ -941,9 +1061,12 @@ std::optional<AnalysisTask> Catalog::nextAnalysis(const juce::String &model,
     for (size_t n = 0; n < sources.size(); ++n)
     {
         auto i = (size_t)(analysisRootCursor++ % (int)sources.size());
-        if (!sources[i].online) continue;
-        Statement s(db,(select+"AND j.root_id=? LIMIT 1").toRawUTF8());
-        s.bind(1,model); s.bind(2,preprocessing); s.bind(3,sources[i].id);
+        if (!sources[i].online)
+            continue;
+        Statement s(db, (select + "AND j.root_id=? LIMIT 1").toRawUTF8());
+        s.bind(1, model);
+        s.bind(2, preprocessing);
+        s.bind(3, sources[i].id);
         if (s.step())
             return AnalysisTask{readAsset(s), s.integer(18)};
     }
@@ -954,117 +1077,211 @@ bool Catalog::commitAnalysis(const AnalysisUpdate &u)
     auto a = asset(u.asset.id);
     if (a.id.isEmpty() || a.revision != u.asset.revision || a.modified != u.asset.modified ||
         a.size != u.asset.size || a.inode != u.asset.inode || a.state != "ready" ||
-        a.samples != u.asset.samples || a.sampleRate != u.asset.sampleRate) return false;
+        a.samples != u.asset.samples || a.sampleRate != u.asset.sampleRate)
+        return false;
     if (u.error.isEmpty())
     {
         if (u.embedding.size() != 512 || u.start < 0 || u.end <= u.start || u.end > a.samples)
             throw std::runtime_error("Invalid derived source range or vector");
-        for (auto v : u.embedding) if (!std::isfinite(v)) throw std::runtime_error("Nonfinite embedding");
-        Statement s(db,"INSERT OR REPLACE INTO embeddings(asset_id,revision,model,preprocessing,start_sample,end_sample,rate,vector) VALUES(?,?,?,?,?,?,?,?)");
-        s.bind(1,a.id); s.bind(2,a.revision); s.bind(3,u.model); s.bind(4,u.preprocessing);
-        s.bind(5,u.start); s.bind(6,u.end); sqlite3_bind_double(s.s,7,a.sampleRate);
-        sqlite3_bind_blob(s.s,8,u.embedding.data(),2048,SQLITE_TRANSIENT); s.step();
+        for (auto v : u.embedding)
+            if (!std::isfinite(v))
+                throw std::runtime_error("Nonfinite embedding");
+        Statement s(db, "INSERT OR REPLACE INTO "
+                        "embeddings(asset_id,revision,model,preprocessing,start_sample,end_sample,rate,"
+                        "vector) VALUES(?,?,?,?,?,?,?,?)");
+        s.bind(1, a.id);
+        s.bind(2, a.revision);
+        s.bind(3, u.model);
+        s.bind(4, u.preprocessing);
+        s.bind(5, u.start);
+        s.bind(6, u.end);
+        sqlite3_bind_double(s.s, 7, a.sampleRate);
+        sqlite3_bind_blob(s.s, 8, u.embedding.data(), 2048, SQLITE_TRANSIENT);
+        s.step();
     }
-    Statement job(db,"INSERT INTO analysis_jobs(asset_id,revision,root_id,model,preprocessing,state,next_start,max_end,rate,error) "
+    Statement job(
+        db,
+        "INSERT INTO "
+        "analysis_jobs(asset_id,revision,root_id,model,preprocessing,state,next_start,max_end,rate,error) "
         "VALUES(?,?,?,?,?,?,?,?,?,?) ON CONFLICT(asset_id,revision,model,preprocessing) DO UPDATE SET "
-        "state=excluded.state,next_start=excluded.next_start,max_end=max(analysis_jobs.max_end,excluded.max_end),error=excluded.error");
-    job.bind(1,a.id); job.bind(2,a.revision); job.bind(3,a.rootId); job.bind(4,u.model); job.bind(5,u.preprocessing);
-    job.bind(6,u.error.isNotEmpty() ? "failed" : u.done ? "complete" : "pending");
-    job.bind(7,u.error.isEmpty() ? u.nextStart : u.start); job.bind(8,u.error.isEmpty() ? u.end : 0);
-    sqlite3_bind_double(job.s,9,a.sampleRate); job.bind(10,u.error); job.step();
+        "state=excluded.state,next_start=excluded.next_start,max_end=max(analysis_jobs.max_end,excluded.max_"
+        "end),error=excluded.error");
+    job.bind(1, a.id);
+    job.bind(2, a.revision);
+    job.bind(3, a.rootId);
+    job.bind(4, u.model);
+    job.bind(5, u.preprocessing);
+    job.bind(6, u.error.isNotEmpty() ? "failed" : u.done ? "complete" : "pending");
+    job.bind(7, u.error.isEmpty() ? u.nextStart : u.start);
+    job.bind(8, u.error.isEmpty() ? u.end : 0);
+    sqlite3_bind_double(job.s, 9, a.sampleRate);
+    job.bind(10, u.error);
+    job.step();
     return true;
 }
 AnalysisCounts Catalog::analysisCounts(const juce::String &model, const juce::String &preprocessing)
 {
     AnalysisCounts c;
     {
-        Statement s(db,"SELECT count(*) FROM assets WHERE state='ready' AND samples>0");
-        s.step(); c.total = (int)s.integer(0);
+        Statement s(db, "SELECT count(*) FROM assets WHERE state='ready' AND samples>0");
+        s.step();
+        c.total = (int)s.integer(0);
     }
     {
-        Statement s(db,"SELECT sum(j.state='complete'),sum(j.state='failed'),sum(j.max_end/j.rate) "
-            "FROM analysis_jobs j JOIN assets a ON a.id=j.asset_id AND a.revision=j.revision "
-            "WHERE j.model=? AND j.preprocessing=?");
-        s.bind(1,model); s.bind(2,preprocessing); s.step();
-        c.complete = (int)s.integer(0); c.failed = (int)s.integer(1); c.analyzedSeconds = s.real(2);
+        Statement s(db, "SELECT sum(j.state='complete'),sum(j.state='failed'),sum(j.max_end/j.rate) "
+                        "FROM analysis_jobs j JOIN assets a ON a.id=j.asset_id AND a.revision=j.revision "
+                        "WHERE j.model=? AND j.preprocessing=?");
+        s.bind(1, model);
+        s.bind(2, preprocessing);
+        s.step();
+        c.complete = (int)s.integer(0);
+        c.failed = (int)s.integer(1);
+        c.analyzedSeconds = s.real(2);
     }
     {
-        Statement s(db,"SELECT count(*),coalesce(sum(length(e.vector)),0) FROM embeddings e JOIN assets a "
-            "ON a.id=e.asset_id AND a.revision=e.revision WHERE e.model=? AND e.preprocessing=?");
-        s.bind(1,model); s.bind(2,preprocessing); s.step();
-        c.regions = (int)s.integer(0); c.vectorBytes = s.integer(1);
+        Statement s(db, "SELECT count(*),coalesce(sum(length(e.vector)),0) FROM embeddings e JOIN assets a "
+                        "ON a.id=e.asset_id AND a.revision=e.revision WHERE e.model=? AND e.preprocessing=?");
+        s.bind(1, model);
+        s.bind(2, preprocessing);
+        s.step();
+        c.regions = (int)s.integer(0);
+        c.vectorBytes = s.integer(1);
     }
-    c.pending = std::max(0,c.total-c.complete-c.failed);
+    c.pending = std::max(0, c.total - c.complete - c.failed);
     return c;
 }
 void Catalog::retryAnalysis(const juce::String &model, const juce::String &preprocessing)
 {
-    Statement s(db,"UPDATE analysis_jobs SET state='pending',error='' WHERE model=? AND preprocessing=? AND state='failed'");
-    s.bind(1,model); s.bind(2,preprocessing); s.step();
+    Statement s(db, "UPDATE analysis_jobs SET state='pending',error='' WHERE model=? AND preprocessing=? AND "
+                    "state='failed'");
+    s.bind(1, model);
+    s.bind(2, preprocessing);
+    s.step();
 }
 IndexState Catalog::indexState()
 {
     IndexState state;
-    Statement id(db,"SELECT value FROM retrieval_meta WHERE key='catalog'");if(id.step()) state.catalog=id.str(0);
-    Statement latest(db,"SELECT seq FROM sqlite_sequence WHERE name='vector_changes'");if(latest.step()) state.sequence=latest.integer(0);
-    Statement oldest(db,"SELECT min(sequence) FROM vector_changes");oldest.step();state.oldest=oldest.integer(0);
-    if (!state.oldest) state.oldest=state.sequence+1;
+    Statement id(db, "SELECT value FROM retrieval_meta WHERE key='catalog'");
+    if (id.step())
+        state.catalog = id.str(0);
+    Statement latest(db, "SELECT seq FROM sqlite_sequence WHERE name='vector_changes'");
+    if (latest.step())
+        state.sequence = latest.integer(0);
+    Statement oldest(db, "SELECT min(sequence) FROM vector_changes");
+    oldest.step();
+    state.oldest = oldest.integer(0);
+    if (!state.oldest)
+        state.oldest = state.sequence + 1;
     return state;
 }
 juce::StringArray Catalog::indexChanges(int64_t since)
 {
-    juce::StringArray ids;Statement s(db,"SELECT DISTINCT asset_id FROM vector_changes WHERE sequence>?");s.bind(1,since);
-    while(s.step()) ids.add(s.str(0));return ids;
+    juce::StringArray ids;
+    Statement s(db, "SELECT DISTINCT asset_id FROM vector_changes WHERE sequence>?");
+    s.bind(1, since);
+    while (s.step())
+        ids.add(s.str(0));
+    return ids;
 }
-void Catalog::visitRegions(const juce::String &model,const juce::String &preprocessing,
-                          const juce::String &assetId,const std::function<void(const StoredRegion &)> &visit)
+void Catalog::visitRegions(const juce::String &model, const juce::String &preprocessing,
+                           const juce::String &assetId,
+                           const std::function<void(const StoredRegion &)> &visit)
 {
-    Statement s(db,("SELECT e.asset_id,a.root_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
-        "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision WHERE e.model=? AND e.preprocessing=? AND a.state='ready'"+
-        (assetId.isEmpty() ? juce::String() : " AND e.asset_id=?")+" ORDER BY e.asset_id,e.start_sample").toRawUTF8());
-    s.bind(1,model);s.bind(2,preprocessing);if(assetId.isNotEmpty())s.bind(3,assetId);
-    while(s.step())
+    Statement s(
+        db,
+        ("SELECT e.asset_id,a.root_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
+         "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision WHERE e.model=? AND e.preprocessing=? "
+         "AND a.state='ready'" +
+         (assetId.isEmpty() ? juce::String() : " AND e.asset_id=?") + " ORDER BY e.asset_id,e.start_sample")
+            .toRawUTF8());
+    s.bind(1, model);
+    s.bind(2, preprocessing);
+    if (assetId.isNotEmpty())
+        s.bind(3, assetId);
+    while (s.step())
     {
-        if(sqlite3_column_bytes(s.s,5)!=2048)continue;
-        StoredRegion row;row.asset=s.str(0);row.root=s.str(1);row.revision=s.integer(2);row.first=s.integer(3);row.last=s.integer(4);
-        std::memcpy(row.vector.data(),sqlite3_column_blob(s.s,5),2048);visit(row);
+        if (sqlite3_column_bytes(s.s, 5) != 2048)
+            continue;
+        StoredRegion row;
+        row.asset = s.str(0);
+        row.root = s.str(1);
+        row.revision = s.integer(2);
+        row.first = s.integer(3);
+        row.last = s.integer(4);
+        std::memcpy(row.vector.data(), sqlite3_column_blob(s.s, 5), 2048);
+        visit(row);
     }
 }
-std::vector<Asset> Catalog::semanticSearch(const std::vector<float> &query,
-                                          const juce::String &model, const juce::String &preprocessing,
-                                          const juce::String &root, int limit, RetrievalMetrics *metrics,
-                                          const juce::String &excludeAsset)
+std::vector<Asset> Catalog::semanticSearch(const std::vector<float> &query, const juce::String &model,
+                                           const juce::String &preprocessing, const juce::String &root,
+                                           int limit, RetrievalMetrics *metrics,
+                                           const juce::String &excludeAsset)
 {
     auto began = monotonicMs();
     RetrievalMetrics measured;
-    if (query.size() != 512) throw std::runtime_error("Invalid query embedding dimensions");
+    if (query.size() != 512)
+        throw std::runtime_error("Invalid query embedding dimensions");
     RegionRanking ranking(limit);
-    Statement rows(db,("SELECT e.asset_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
-        "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision JOIN roots r ON r.id=a.root_id "
-        "WHERE e.model=? AND e.preprocessing=? AND a.state='ready'"+
-        (root.isEmpty() ? juce::String() : " AND a.root_id=?")+
-        (excludeAsset.isEmpty() ? juce::String() : " AND a.id<>?")+" ORDER BY e.asset_id,e.start_sample").toRawUTF8());
-    rows.bind(1,model); rows.bind(2,preprocessing); int binding=3;
-    if (root.isNotEmpty()) rows.bind(binding++,root);
-    if (excludeAsset.isNotEmpty()) rows.bind(binding,excludeAsset);
+    auto eligible = scopeRanges(root);
+    Statement rows(
+        db, ("SELECT e.asset_id,e.revision,e.start_sample,e.end_sample,e.vector FROM embeddings e "
+             "JOIN assets a ON a.id=e.asset_id AND a.revision=e.revision JOIN roots r ON r.id=a.root_id "
+             "WHERE e.model=? AND e.preprocessing=? AND a.state='ready'" +
+             (root.isEmpty() ? juce::String() : " AND a.root_id=?") +
+             (excludeAsset.isEmpty() ? juce::String() : " AND a.id<>?") +
+             (activeScope.isEmpty() ? juce::String()
+                                    : " AND a.id IN(SELECT lr.asset FROM library_refs lr LEFT JOIN assets a "
+                                      "ON a.id=lr.asset WHERE " +
+                                          referenceWhere({}, root) + ")") +
+             " ORDER BY e.asset_id,e.start_sample")
+                .toRawUTF8());
+    rows.bind(1, model);
+    rows.bind(2, preprocessing);
+    int binding = 3;
+    if (root.isNotEmpty())
+        rows.bind(binding++, root);
+    if (excludeAsset.isNotEmpty())
+        rows.bind(binding, excludeAsset);
     int seen = 0;
-    measured.fetchFilterMs = monotonicMs()-began;
+    measured.fetchFilterMs = monotonicMs() - began;
     for (;;)
     {
-        auto stepAt = monotonicMs(); bool row = rows.step();
-        measured.fetchFilterMs += monotonicMs()-stepAt;
-        if (!row) break;
-        if ((++seen % 64) == 0 && cancellation && cancellation->load() != expectedGeneration) throw QueryCancelled();
-        if (sqlite3_column_bytes(rows.s,4) != 2048) continue;
-        auto *vector = static_cast<const float *>(sqlite3_column_blob(rows.s,4));
+        auto stepAt = monotonicMs();
+        bool row = rows.step();
+        measured.fetchFilterMs += monotonicMs() - stepAt;
+        if (!row)
+            break;
+        if ((++seen % 64) == 0 && cancellation && cancellation->load() != expectedGeneration)
+            throw QueryCancelled();
+        if (sqlite3_column_bytes(rows.s, 4) != 2048)
+            continue;
+        auto found = eligible.find(rows.str(0));
+        if (activeScope.isNotEmpty() && found == eligible.end())
+            continue;
+        auto first = rows.integer(2), last = rows.integer(3);
+        if (activeScope.isNotEmpty() &&
+            std::none_of(found->second.begin(), found->second.end(),
+                         [&](const auto &r) { return first < r.endSample && last > r.startSample; }))
+            continue;
+        auto *vector = static_cast<const float *>(sqlite3_column_blob(rows.s, 4));
         auto scoreAt = monotonicMs();
-        float score = 0; vDSP_dotpr(query.data(),1,vector,1,&score,512);
-        measured.vectorScoreMs += monotonicMs()-scoreAt; ++measured.vectors;
-        ranking.add(rows.str(0),rows.integer(1),rows.integer(2),rows.integer(3),score);
+        float score = 0;
+        vDSP_dotpr(query.data(), 1, vector, 1, &score, 512);
+        measured.vectorScoreMs += monotonicMs() - scoreAt;
+        ++measured.vectors;
+        if (activeScope.isEmpty())
+            ranking.add(rows.str(0), rows.integer(1), first, last, score);
+        else
+            for (auto &r : found->second)
+                if (first < r.endSample && last > r.startSample)
+                    ranking.add(rows.str(0), rows.integer(1), std::max(first, r.startSample),
+                                std::min(last, r.endSample), score);
     }
-    auto result=ranking.finish(*this,root);
-    measured.rankGroupMs = std::max(0.0,monotonicMs()-began-measured.fetchFilterMs-measured.vectorScoreMs);
-    if (metrics) *metrics = measured;
+    auto result = ranking.finish(*this, root);
+    measured.rankGroupMs =
+        std::max(0.0, monotonicMs() - began - measured.fetchFilterMs - measured.vectorScoreMs);
+    if (metrics)
+        *metrics = measured;
     return result;
 }
 } // namespace sp

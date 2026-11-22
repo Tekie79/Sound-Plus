@@ -1,0 +1,18 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 238
++	240 button (settable) Remove Favorite, Value: On
+~	225 text (settable) Value: Rain texture.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
+Asset d192a500b10b4183802a2f43f30a3dd0 | Revision 1
++	241 button Process selected source/range with Plug-in
++	242 button Add marked region to Designer, Help: Add this marked source range to Designer. Layout-aware designs keep all supported channels; wider sources require an explicit subset. Legacy designs retain pair semantics. I / O mark the range.
+~	227 text (settable) /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
+
++	243 button Zoom Range
++	244 button Show All
++	245 button Play  [Space]
++	246 button Play Whole
++	247 button Play Match
++	248 button Set IN at playhead, Help: Set IN at playhead (I)
++	249 button Set OUT at playhead, Help: Set OUT at playhead, exclusive (O)
++	250 text SoundPlus
+The focused UI element is 200 button Choose reference file, Help: Use a local audio file as a temporary search reference. You can also drop one file here.

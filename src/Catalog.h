@@ -6,6 +6,7 @@
 #include <optional>
 #include <array>
 #include <functional>
+#include <map>
 
 namespace sp
 {
@@ -32,11 +33,53 @@ struct Asset
     int waveformChannel = -1; // Derivative request only, never catalog/source identity.
     juce::String waveformLayoutKey;
     bool online = false;
+    // Virtual Library reference only. Never serialized into a design/audio recipe.
+    juce::String libraryReference;
+    int64_t bookmarkFirst = -1, bookmarkLast = -1;
+    bool favorite = false, needsReview = false, unresolved = false;
+    juce::String resultKey() const
+    {
+        return libraryReference.isEmpty() ? id : libraryReference;
+    }
+    bool deliverable() const
+    {
+        return !needsReview && !unresolved;
+    }
     int64_t samples = 0;
     juce::String matchReason;
     std::vector<MatchRegion> matches;
 };
-struct AnalysisTask { Asset asset; int64_t nextStart = 0; };
+struct LibraryCollection
+{
+    juce::String id, parent, name;
+    int position = 0, members = 0;
+};
+struct CollectionState
+{
+    std::vector<LibraryCollection> nodes;
+    int favorites = 0, recent = 0;
+    bool canUndo = false, canRedo = false;
+    uint64_t version = 0;
+    juce::String error;
+};
+struct BookmarkRequest
+{
+    Asset asset;
+    int64_t first = -1, last = -1;
+};
+struct CollectionEdit
+{
+    juce::String action, id, parent, name;
+    int position = 0;
+    bool enabled = true;
+    std::vector<BookmarkRequest> items;
+};
+using ScopeRanges = std::map<juce::String, std::vector<MatchRegion>>;
+struct AnalysisTask
+{
+    Asset asset;
+    int64_t nextStart = 0;
+};
 struct AnalysisUpdate
 {
     Asset asset;
@@ -51,9 +94,22 @@ struct AnalysisCounts
     int64_t vectorBytes = 0;
     double analyzedSeconds = 0;
 };
-struct RetrievalMetrics { double fetchFilterMs = 0, vectorScoreMs = 0, rankGroupMs = 0; int vectors = 0; };
-struct StoredRegion { juce::String asset,root;int64_t revision=0,first=0,last=0;std::array<float,512> vector; };
-struct IndexState { juce::String catalog;int64_t sequence=0,oldest=1; };
+struct RetrievalMetrics
+{
+    double fetchFilterMs = 0, vectorScoreMs = 0, rankGroupMs = 0;
+    int vectors = 0;
+};
+struct StoredRegion
+{
+    juce::String asset, root;
+    int64_t revision = 0, first = 0, last = 0;
+    std::array<float, 512> vector;
+};
+struct IndexState
+{
+    juce::String catalog;
+    int64_t sequence = 0, oldest = 1;
+};
 struct FileStamp
 {
     int64_t size = 0, modified = 0, inode = 0;
@@ -79,11 +135,27 @@ bool supportedExtension(const juce::File &);
 class Catalog
 {
   public:
-    explicit Catalog(const juce::File &, bool readOnly = false);
+    explicit Catalog(const juce::File &, bool readOnly = false,
+                     std::function<void()> beforeMigrationCommit = {});
     ~Catalog();
     Catalog(const Catalog &) = delete;
     Catalog &operator=(const Catalog &) = delete;
     std::vector<Root> roots();
+    CollectionState collections();
+    bool bookmarkFavorite(const BookmarkRequest &);
+    void editCollections(const CollectionEdit &);
+    void setScope(const juce::String &value)
+    {
+        activeScope = value;
+    }
+    const juce::String &scope() const
+    {
+        return activeScope;
+    }
+    ScopeRanges scopeRanges(const juce::String &root = {});
+    std::vector<Asset> expandScope(const std::vector<Asset> &);
+    Asset referenceAsset(const juce::String &);
+
     Root addRoot(const juce::File &);
     Root addRootRecord(const juce::File &);
     void removeEmptyRoot(const juce::String &);
@@ -107,16 +179,16 @@ class Catalog
     Asset asset(const juce::String &id);
     int promote(const std::vector<Asset> &prefix, bool keepLexicalTail = true);
     void seedAnalysis(const juce::String &model, const juce::String &preprocessing,
-                       const juce::String &assetId = {});
+                      const juce::String &assetId = {});
     std::optional<AnalysisTask> nextAnalysis(const juce::String &model, const juce::String &preprocessing,
-                                            const juce::String &preferred = {});
+                                             const juce::String &preferred = {});
     bool commitAnalysis(const AnalysisUpdate &);
     AnalysisCounts analysisCounts(const juce::String &model, const juce::String &preprocessing);
     void retryAnalysis(const juce::String &model, const juce::String &preprocessing);
     IndexState indexState();
     juce::StringArray indexChanges(int64_t since);
-    void visitRegions(const juce::String &model,const juce::String &preprocessing,
-                      const juce::String &asset,const std::function<void(const StoredRegion &)> &);
+    void visitRegions(const juce::String &model, const juce::String &preprocessing, const juce::String &asset,
+                      const std::function<void(const StoredRegion &)> &);
     std::vector<Asset> semanticSearch(const std::vector<float> &, const juce::String &model,
                                       const juce::String &preprocessing, const juce::String &root = {},
                                       int limit = 100, RetrievalMetrics *metrics = nullptr,
@@ -132,6 +204,13 @@ class Catalog
     void exec(const char *);
 
   private:
+    juce::String activeScope;
+    bool scopedBrowse = false;
+    juce::String referenceWhere(const juce::String &, const juce::String &);
+    std::vector<Asset> scopedRows(const juce::String &, const juce::String &, int, int);
+    void scopedMaterialize(const juce::String &, const juce::String &, bool);
+    juce::String ensureReference(const BookmarkRequest &);
+    void applyCollectionPatch(const juce::var &);
     sqlite3 *db = nullptr;
     juce::String columns;
     const std::atomic<uint64_t> *cancellation = nullptr;

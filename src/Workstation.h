@@ -45,6 +45,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     }
     bool keyPressed(const juce::KeyPress &key) override
     {
+        if(library.hasKeyboardFocus(true) && key.getModifiers().isCommandDown() && key.isKeyCode('Z'))return false;
         if(designerActive && key.getModifiers().isCommandDown())
         {
             auto command=juce::CharacterFunctions::toUpperCase((juce::juce_wchar)key.getKeyCode());

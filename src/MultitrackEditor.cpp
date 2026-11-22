@@ -1520,7 +1520,7 @@ void MultitrackEditor::itemDropped(const SourceDetails &d)
             {
                 auto &l = captured.original.layers.front();
                 session.assignSampler(t->id, juce::File(l.source.path), false, l.region.startSample,
-                                      l.region.endSample);
+                                      l.region.endSample, l.source);
             }
         }
         catch (const std::exception &e)

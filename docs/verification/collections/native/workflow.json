@@ -1,0 +1,38 @@
+{
+  "nativeApp": "SoundPlus arm64",
+  "device": "MacBook Pro Speakers",
+  "catalog": "build/collections/native/data/library.sqlite",
+  "savedDesign": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/data/Collection region QA.soundplus",
+  "sha256": "aeeb3d89e62cbd7bfb911241f001d24c3b2fc2cce31b5b933547b457008a0815",
+  "revision": 7,
+  "audio": [
+    {
+      "source": "d192a500b10b4183802a2f43f30a3dd0",
+      "first": 36000,
+      "last": 120000
+    },
+    {
+      "source": "d192a500b10b4183802a2f43f30a3dd0",
+      "first": 36000,
+      "last": 120000
+    }
+  ],
+  "samplers": [
+    {
+      "source": "d192a500b10b4183802a2f43f30a3dd0",
+      "first": 36000,
+      "last": 120000,
+      "external": false
+    }
+  ],
+  "sourcePath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav",
+  "humanListening": false,
+  "receivingAppDrag": "Not tested; internal native Audio/sampler drags only",
+  "nativeSaveAndRestart": "Observed Reopened saved design at r7; SHA and exact source intervals retained",
+  "nativePostDialogFocus": "Collection and selection actions",
+  "nativeOrganizationUndoAfterDialog": true,
+  "finalCollectionNames": [
+    "Weather",
+    "Soft rain"
+  ]
+}

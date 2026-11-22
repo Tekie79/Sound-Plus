@@ -221,7 +221,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void selectLayer(const juce::String &, bool additive = false);
     void selectMidiClip(const juce::String &);
     void assignSampler(const juce::String &track, const juce::File &, bool alternate = false,
-                       int64_t first = 0, int64_t last = 0);
+                       int64_t first = 0, int64_t last = 0, std::optional<Asset> catalogSource = {});
     void selectVariation(const juce::String &);
     void generate(uint64_t);
     void saveSnapshot(const juce::String &name);

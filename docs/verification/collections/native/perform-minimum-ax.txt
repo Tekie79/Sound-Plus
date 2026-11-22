@@ -1,0 +1,62 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+Removed element IDs: 132, 135-187, 191, 193-198
+~	133 button (settable) Edit, Value: Off
+~	134 button (settable) Perform, Value: On
++	206 button Save Snapshot, Help: Save the current static sound and its control settings as a named snapshot. No control motion is recorded.
++	207 pop up button (settable) Live Design or recorded take context, Help: Live Design
++	208 button Record, Help: Record a performance take
++	209 button Take options
++	210 text (settable) Take capture starts at frame zero; replay and render rebuild complete history. 120 seconds /8192 applied events maximum.
++	211 button (settable) Blend off, Value: Off, Help: Enable equal-power blending explicitly. Assigned layers change level; unassigned layers stay unchanged.
++	212 button Centre blend surface
++	213 text (settable) Help: While Blend is off, movement prepares a position. Enable Blend to hear it., Value: Move to prepare; enable to hear
++	214 text entry area (settable) Help: Macro 1 · double-click to rename, Value: Macro 1
++	215 button (settable) Enable Macro 1, Value: Off
++	216 button Reset Macro 1
++	217 button Edit mappings for Macro 1
++	218 slider (settable) Macro 1 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	219 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	220 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	221 pop up button (settable) Assign Top left blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	222 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	223 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	224 pop up button (settable) Assign Top right blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	225 container Source Blend pad. Arrow keys move; Shift is fine; Home centres; Escape cancels a drag.
++	226 slider (settable) Blend Y, zero top to one bottom, Value: 0.500, Secondary Actions: Delete
++	227 text (settable) Y X
++	228 slider (settable) Blend X, zero left to one right, Value: 0.500, Secondary Actions: Delete
++	229 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	230 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	231 pop up button (settable) Assign Bottom left blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	232 container Drop sound. Choose layer or drop sound., Description: Waveform: Drop sound
++	233 text entry area (settable) Value: Drop sound, Help: Drop a Library sound or design layer, or choose a layer with the arrow.
+Double-click title to edit alias.
++	234 pop up button (settable) Assign Bottom right blend layer, Help: Choose, replace or clear this blend assignment, Value: Unassigned
++	235 text (settable) No mapped targets
++	236 text entry area (settable) Help: Macro 2 · double-click to rename, Value: Macro 2
++	237 button (settable) Enable Macro 2, Value: Off
++	238 button Reset Macro 2
++	239 button Edit mappings for Macro 2
++	240 slider (settable) Macro 2 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	241 text (settable) No mapped targets
++	242 text entry area (settable) Help: Macro 3 · double-click to rename, Value: Macro 3
++	243 button (settable) Enable Macro 3, Value: Off
++	244 button Reset Macro 3
++	245 button Edit mappings for Macro 3
++	246 slider (settable) Macro 3 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	247 text (settable) No mapped targets
++	248 text entry area (settable) Help: Macro 4 · double-click to rename, Value: Macro 4
++	249 button (settable) Enable Macro 4, Value: Off
++	250 button Reset Macro 4
++	251 button Edit mappings for Macro 4
++	252 slider (settable) Macro 4 value, zero to one, Value: 0.500, Secondary Actions: Delete
++	253 text (settable) No mapped targets
++	254 text (settable) /Users/harvest/Music/SoundPlus/Renders
++	255 text SoundPlus
+Selected:
+	108 row Rain texture.wav, saved original samples [36000, 120000), reference fc0516d6ceb54c0e878e907ac357220e, 5.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/collections/native/media/Rain texture.wav
+
+Note: Pay special attention to the content selected by the user. If the user asks a question or refers to the content they are looking at on-screen, they might be referring to the selected content (but they might be referring to something else that's visible, too).
