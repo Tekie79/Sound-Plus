@@ -97,7 +97,7 @@ external-815ba01f625c4bf9bbe53fe40079e488
 	93 container Automation lane
 	94 button (settable) Read, Value: On
 	95 button (settable) Touch, Value: Off
-	96 button Volume · dB, Help: Show curve: Volume / dB. Stable instance 
+	96 button Volume · dB, Help: Show curve: Volume / dB. Stable instance
 	97 text (settable) 0.00 dB
 	98 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
 	99 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off

@@ -12,7 +12,7 @@ Current insert ordering, retained native editors and plugin-aware take behavior 
 
 **MIDI sequencing and instruments v1:** create a separate MIDI Track, load a referenced sample or an accepted VST3/AUv2 Instrument, then double-click its clip to edit notes/controllers. CoreMIDI Record uses the shared transport; recording arm/monitor reopen off. The native sampler provides polyphony, ADSR, sustain, pitch bend and alternates. MIDI-only designs render and freeze with their instrument/score. See the [timing, persistence and hosting contract](docs/MIDI_INSTRUMENT_CONTRACT.md) and [milestone report, native evidence and exact commands](docs/MIDI_MILESTONE_REPORT.md). Hosted VST3/AUv2 Read and qualified Touch now use the existing single track lane; see the [automation contract](docs/HOSTED_AUTOMATION_CONTRACT.md). Physical-keyboard and human-listening qualification remain open.
 
-**Square Surround in Edit** positions a Mono or Stereo Audio or MIDI Instrument Track on a named 5.1 Side or Rear bus. Open **Track options → Square Surround**, preview and enable XY, then drag the object or record paired Touch motion. Position X/Y and Stereo Spread use the existing automation lane. [Routing and editing contract](docs/SURROUND_XY_CONTRACT.md)
+**Square Surround in Edit** positions a Mono or Stereo Audio or MIDI Instrument Track on a named 5.1 Side or Rear bus. Open **Track options → Square Surround**, preview and enable XY, then drag the object or record paired Touch motion. Position X/Y and Stereo Spread use the existing automation lane. [Routing and editing contract](docs/SURROUND_XY_CONTRACT.md), [milestone report and native checks](docs/SURROUND_XY_MILESTONE_REPORT.md)
 
 ## Build and launch
 

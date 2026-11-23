@@ -1,0 +1,39 @@
+{
+  "beforeGate": {
+    "revision": 4499,
+    "latestPayloadUnchanged": true,
+    "protectedFilesCompared": 392,
+    "protectedFilesByteIdentical": true,
+    "stateFilesByteIdentical": 197,
+    "catalogTablesCompared": 18,
+    "catalogRowsUnchanged": true
+  },
+  "afterGate": {
+    "revision": 4499,
+    "latestPayloadUnchanged": true,
+    "protectedFilesCompared": 392,
+    "protectedFilesByteIdentical": true,
+    "stateFilesByteIdentical": 197,
+    "catalogTablesCompared": 18,
+    "catalogRowsUnchanged": true
+  },
+  "afterFirstLaunch": {
+    "revision": 4499,
+    "latestPayloadUnchanged": true,
+    "protectedFilesCompared": 392,
+    "protectedFilesByteIdentical": true,
+    "stateFilesByteIdentical": 197,
+    "catalogTablesCompared": 18,
+    "catalogRowsUnchanged": true
+  },
+  "afterNativeReopen": {
+    "revision": 4499,
+    "latestPayloadUnchanged": true,
+    "protectedFilesCompared": 392,
+    "protectedFilesByteIdentical": true,
+    "stateFilesByteIdentical": 197,
+    "catalogTablesCompared": 18,
+    "catalogRowsUnchanged": true
+  },
+  "openedInEditAtRevision": 4499
+}
