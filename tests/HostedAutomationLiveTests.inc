@@ -86,3 +86,92 @@ void runHostedOverlayTests(const juce::var &settings, const juce::File &root)
           "Fresh worker reopens coherent base/opaque state without automation contamination");
 }
 } // namespace
+namespace
+{
+void runHostedProgramOverlayTests(const juce::var &settings, const juce::File &root)
+{
+    using namespace sp;
+    using namespace juce;
+    auto folder = root.getChildFile("program-under-read");
+    folder.createDirectory();
+    setenv("SOUNDPLUS_FIXTURE_PROGRAMS", "1", 1);
+    setenv("SOUNDPLUS_FIXTURE_LIVE_QA", folder.getFullPathName().toRawUTF8(), 1);
+    PluginWorker worker(File(SystemStats::getEnvironmentVariable("SOUNDPLUS_PLUGIN_HELPER", {})));
+    auto seed = settings.clone();
+    put(seed, "mode", "describe");
+    auto description = worker.call(seed, folder, 20000);
+    for (auto key : {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
+        put(seed, key, description[key]);
+    var gain;
+    for (auto &p : *seed["parameters"].getArray())
+        if (p["name"].toString() == "Gain")
+            gain = p;
+    HostedRack rack;
+    rack.id = Uuid().toString();
+    rack.slots = {{rack.id, JSON::toString(seed, true), false}};
+    auto binding = obj();
+    put(binding, "rack", rack.id);
+    put(binding, "owner", "track");
+    put(binding, "slot", rack.id);
+    HostedRackClient owner(
+        rack, channelLayout("mono-v1"), 48000, [] { return false; },
+        folder.getChildFile(rack.id).getChildFile("generation"), binding);
+    auto endpoint = loadProcessingJson(folder.getChildFile(rack.id).getChildFile("endpoint.json"));
+    auto pid = endpoint["pid"].toString();
+    auto attached = rack;
+    attached.runtimeEndpoint = folder;
+    HostedRackClient reader(attached, channelLayout("mono-v1"), 48000, [] { return false; });
+    owner.editor(rack.id, true);
+    AudioBuffer<float> pcm(1, 512);
+    int64_t first = 0;
+    auto process = [&](bool read)
+    {
+        for (int n = 0; n < 512; ++n)
+            pcm.setSample(0, n, .2f);
+        HostedParameterEvent e{hostedParameterToken(rack.id, seed["plugin"], gain["stableId"].toString()),
+                               1,
+                               first,
+                               first,
+                               0,
+                               (int)gain["index"],
+                               0,
+                               0,
+                               .25f,
+                               .25f};
+        reader.process(pcm, 512, nullptr, first, {}, true, false, -1,
+                       read ? std::span<const HostedParameterEvent>(&e, 1)
+                            : std::span<const HostedParameterEvent>());
+        first += 512;
+        Thread::sleep(10);
+    };
+    for (int n = 0; n < 8; ++n)
+        process(true);
+    auto command = obj();
+    put(command, "sequence", 1);
+    put(command, "program", 1);
+    saveProcessingJson(folder.getChildFile(pid + ".json"), command);
+    for (int n = 0; n < 20; ++n)
+        process(true);
+    owner.capture(10);
+    for (int n = 0; n < 10; ++n)
+        process(true);
+    auto state = owner.liveState();
+    check((int)state["slots"][0]["settings"]["program"] == 1, "Native program recall is retained under Read");
+    double base = -1;
+    for (auto &p : *state["slots"][0]["settings"]["parameters"].getArray())
+        if (p["name"].toString() == "Gain")
+            base = (double)p["value"];
+    if (std::abs(base - .75) > 1e-6)
+        std::cerr << "Program under Read manual base=" << base
+                  << " format=" << seed["plugin"]["format"].toString() << "\n";
+    check(std::abs(base - .75) < 1e-6, "Explicit program recall defines its new manual base underneath Read");
+    check(std::abs(pcm.getSample(0, 511) - .1f) < 1e-6, "Program recall cannot displace Read overlay");
+    for (int n = 0; n < 4; ++n)
+        process(false);
+    check(std::abs(pcm.getSample(0, 511) - .3f) < 1e-6,
+          "Read-off restores program's actual new manual value");
+    saveProcessingJson(folder.getChildFile("evidence.json"), state);
+    unsetenv("SOUNDPLUS_FIXTURE_PROGRAMS");
+    unsetenv("SOUNDPLUS_FIXTURE_LIVE_QA");
+}
+} // namespace

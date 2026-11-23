@@ -1,0 +1,21 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 38: hosted_automation
+1/2 Test #38: hosted_automation ................***Failed    1.59 sec
+Program under Read manual base=0.5 format=VST3
+FAIL after 0 checks: Explicit program recall defines its new manual base underneath Read
+
+    Start 39: hosted_automation_au
+2/2 Test #39: hosted_automation_au .............***Failed    1.28 sec
+Program under Read manual base=0.5 format=AudioUnit
+FAIL after 0 checks: Explicit program recall defines its new manual base underneath Read
+
+
+0% tests passed, 2 tests failed out of 2
+
+Total Test time (real) =   2.87 sec
+
+The following tests FAILED:
+	 38 - hosted_automation (Failed)
+	 39 - hosted_automation_au (Failed)
+Errors while running CTest

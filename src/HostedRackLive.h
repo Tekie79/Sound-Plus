@@ -60,6 +60,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     };
     std::vector<std::vector<float>> lastValues;
     std::vector<int> observedPrograms;
+    std::vector<std::unique_ptr<std::atomic<int>>> programSnapshots;
     std::atomic<bool> opaqueBoundary{false};
     std::vector<std::unique_ptr<std::atomic<int64_t>[]>> nativeParameterTicks;
     std::vector<std::unique_ptr<std::atomic<float>[]>> observedControlValues;
@@ -105,11 +106,36 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     {
         noteNativeParameter(processor, index, value);
     }
-    void audioProcessorChanged(AudioProcessor *,
+    void audioProcessorChanged(AudioProcessor *processor,
                                const AudioProcessorListener::ChangeDetails &details) override
     {
         if (!writing.load())
         {
+            if (details.programChanged)
+            {
+                // An explicit native program selection defines the new base
+                // snapshot even underneath Read. Capture before the next Read
+                // block reinstates its overlay. Host-origin writes are suppressed.
+                const auto tick = Time::getHighResolutionTicks();
+                for (size_t i = 0; i < slots.size(); ++i)
+                    if (slots[i].effect.get() == processor)
+                    {
+                        const auto program = processor->getCurrentProgram();
+                        const bool indexChanged = programSnapshots[i]->exchange(program) != program;
+                        // Generic all-flags metadata notifications are not program recall.
+                        if (!indexChanged && (details.latencyChanged || details.parameterInfoChanged))
+                            continue;
+                        for (int p = 0; p < slots[i].parameterIds.size(); ++p)
+                        {
+                            auto value = processor->getParameters()[p]->getValue();
+                            slots[i].manualValues[(size_t)p] = value;
+                            observedControlValues[i][p] = value;
+                            nativeParameterTicks[i][p] = tick;
+                        }
+                    }
+                nativeStateTicks = tick;
+                nativeAnyTicks = tick;
+            }
             if (details.nonParameterStateChanged)
             {
                 opaqueBoundary = true;
@@ -171,6 +197,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             }
             lastValues.push_back(std::move(values));
             observedPrograms.push_back(slot.effect->getCurrentProgram());
+            programSnapshots[i]->store(observedPrograms.back());
         }
     }
     bool idle() const
@@ -392,6 +419,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         for (auto &slot : slots)
         {
             auto count = slot.parameterIds.size();
+            programSnapshots.push_back(std::make_unique<std::atomic<int>>(-1));
             nativeParameterTicks.push_back(std::make_unique<std::atomic<int64_t>[]>((size_t)count));
             observedControlValues.push_back(std::make_unique<std::atomic<float>[]>((size_t)count));
         }

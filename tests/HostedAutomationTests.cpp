@@ -79,6 +79,11 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
     auto description = worker.call(settings, root, 20000);
     for (auto key : {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
         put(settings, key, description[key]);
+    if (juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_QA_OVERLAY_ONLY", {}).isNotEmpty())
+    {
+        runHostedProgramOverlayTests(settings, root);
+        return;
+    }
     if (juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_QA_TOUCH_ONLY", {}).isNotEmpty())
     {
         runHostedTouchWorkerTests(settings, root);
@@ -264,6 +269,7 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
             "Worker rejects wrong instance/native identity before processing");
     runHostedReadTests(settings, root);
     runHostedOverlayTests(settings, root);
+    runHostedProgramOverlayTests(settings, root);
     runHostedTouchWorkerTests(settings, root);
     if (au)
         unsetenv("SOUNDPLUS_QA_LOCAL_AU");
