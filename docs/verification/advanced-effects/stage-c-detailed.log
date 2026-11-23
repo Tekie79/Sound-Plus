@@ -1,0 +1,114 @@
+Start testing: Nov 22 20:27 EST
+----------------------------------------------------------
+2/42 Testing: advanced_effects
+2/42 Test: advanced_effects
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--advanced-effects" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/advanced-effect-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"advanced_effects" start time: Nov 22 20:27 EST
+Output:
+----------------------------------------------------------
+Delay reopen max error 7.02187e-16
+Advanced effects: 3870581 assertions passed
+<end of output>
+Test time =   1.65 sec
+----------------------------------------------------------
+Test Passed.
+"advanced_effects" end time: Nov 22 20:27 EST
+"advanced_effects" time elapsed: 00:00:01
+----------------------------------------------------------
+
+3/42 Testing: native_effects
+3/42 Test: native_effects
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--native-effects" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/native-effect-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"native_effects" start time: Nov 22 20:27 EST
+Output:
+----------------------------------------------------------
+EQ independent impulse/response/phase maximum error 9.35295e-08
+Independent dynamics/creative/limiter oracles passed; saturation alias -10.5258 dBc (1x)
+Native effects: 801611 assertions passed
+<end of output>
+Test time =   0.67 sec
+----------------------------------------------------------
+Test Passed.
+"native_effects" end time: Nov 22 20:27 EST
+"native_effects" time elapsed: 00:00:00
+----------------------------------------------------------
+
+7/42 Testing: multitrack_automation
+7/42 Test: multitrack_automation
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--multitrack" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/multitrack-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"multitrack_automation" start time: Nov 22 20:27 EST
+Output:
+----------------------------------------------------------
+stage legacy
+stage tracks
+stage clips
+stage automation
+stage take
+Multitrack: 212 checks passed
+<end of output>
+Test time =   0.81 sec
+----------------------------------------------------------
+Test Passed.
+"multitrack_automation" end time: Nov 22 20:27 EST
+"multitrack_automation" time elapsed: 00:00:00
+----------------------------------------------------------
+
+15/42 Testing: recorded_takes
+15/42 Test: recorded_takes
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--takes" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"recorded_takes" start time: Nov 22 20:27 EST
+Output:
+----------------------------------------------------------
+SoundPlus audio health: {"helperPid": 58953, "processGeneration": 1, "reason": "socket closed", "failureMs": 4.079927653836666e8, "lastHeartbeatMs": 4.079927524467083e8, "heartbeatAgeMs": 12.936958312988281, "lastCommandMs": 4.0799241327925e8, "lastCommand": "play_design", "sentSequence": 46, "statusesReceived": 92, "pendingResponseBytes": 0, "errno": 0, "exitCode": -1, "exitSignal": 9, "supervisorSignal": 0, "stderrTail": "", "lastStatus": {"version": 11, "command": "status", "id": "design:2a7b2f784fee466ca48edd71d0069e39", "playGeneration": 7, "graphEpoch": 8, "preparationsRequested": 8, "helperPid": 58953, "outputRate": 48000.0, "sourceSample": 15872, "acceptedSourceEnd": 15872, "sourceRate": 48000.0, "auditionPair": 0, "startSample": 0, "endSample": 144000, "playing": true, "completed": false, "loopCount": 0, "seconds": 0.330666666666667, "firstCallbackMs": 4.079924253609167e8, "peak": 0.000520975445397, "preMonitorPeak": 0.005209657829255, "busChannels": 2, "busLayout": {"id": "stereo-v1", "roles": ["L", "R"]}, "channelPeaks": [0.00431509828195, 0.005209657829255, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0], "monitorMap": [-2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2], "monitorSolo": -1, "design": true, "designLayers": 4, "nativeMeters": [], "producerMaxMs": 0.314625024795532, "error": "", "playbackContext": "live:2a7b2f784fee466ca48edd71d0069e39", "immutableReplay": false, "deviceFaultEpoch": 0, "captureLifecycleFailed": false, "captureDeviceError": "", "callbacks": 237, "frames": 121344, "underruns": 0, "designRevision": 13, "heardEdit": 0, "editLatencyMs": 0.0, "stalePreparationsDiscarded": 0, "preparing": false, "takeId": "490381e0b1aa41588868f8d83e2fd2b0", "takePhase": 1, "takeEnd": 15872, "takeEvents": 0, "takeCheckpoint": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/take-test-output/92cb090b3472465e8f35cffaf983002c/session/designer-takes/490381e0b1aa41588868f8d83e2fd2b0.soundplus", "takeCheckpointReady": false, "takePeakBacklog": 0, "takeError": "", "statusSequence": 92, "statusMs": 4.07992752059875e8, "lastCommandSequence": 46, "lastCommandMs": 4.079924207676666e8, "sampleRate": 48000.0, "deviceReservationId": 3, "outputs": ["MacBook Pro Speakers"], "inputRecording": {"device": {"uid": "", "name": "", "rate": 0.0, "channels": 0, "latency": 0, "safety": 0, "names": []}, "busy": false, "monitoring": false, "peaks": [], "callbacks": 0, "overruns": 0, "monitorDrops": 0, "maxInputPushUs": 0.0, "maxNativeInputCallbackUs": 0.0, "availableDevices": [{"uid": "BuiltInMicrophoneDevice", "name": "MacBook Pro Microphone", "rate": 48000.0, "channels": 1, "latency": 26, "safety": 48, "names": ["1"], "layout": {"id": "mono-v1", "roles": ["C"]}, "default": true}], "open": false, "error": "", "monitorError": "", "request": "", "configurationSerial": 0, "monitorSerial": 0}, "midi": {"open": false, "uid": "", "recording": false, "error": "", "receipt": {"id": null, "document": null, "variation": null, "complete": null, "cancelled": null, "reason": null, "first": null, "last": null, "journal": ""}, "events": 0, "lateEvents": 0, "maxLateFrames": 0, "schedulingLatency": {"policy": "acquisition-to-applied-v1", "events": 0, "window": 0, "p50Ms": 0.0, "p95Ms": 0.0, "p99Ms": 0.0, "maximumMs": 0.0}, "availableDevices": [], "request": ""}, "peakResidentBytes": 62586880, "cpuSeconds": 0.191902, "bufferFrames": 512, "deviceOutputChannels": ["1", "2"], "activeDeviceOutputChannels": [0, 1], "device": "MacBook Pro Speakers", "availableRates": [44100.0, 48000.0, 88200.0, 96000.0], "availableBufferFrames": [16, 32, 64, 96, 128, 160, 192, 224, 256, 288, 320, 352, 384, 416, 448, 480, 512, 544, 576, 608, 640, 672, 704, 736, 768, 800, 832, 864, 896, 928, 960, 992, 1024, 1056, 1088, 1120, 1152, 1184, 1216, 1248, 1280, 1312, 1344, 1376, 1408, 1440, 1472, 1504, 1536, 1568, 1600, 1632, 1664, 1696, 1728, 1760, 1792, 1824, 1856, 1888, 1920, 1952, 1984, 2016, 2048]}, "classification": "helperSignalExit"}
+Capture/replay 44100 -> 44100 error 0 body 1536 event 512
+Capture/replay 48000 -> 48000 error 0 body 1536 event 512
+Capture/replay 96000 -> 96000 error 0 body 1536 event 512
+Capture/replay 48000 -> 44100 error 0 body 1672 event 560
+Capture/replay 44100 -> 48000 error 0 body 1412 event 473
+PASS recorded takes: 2820 checks
+<end of output>
+Test time =   9.12 sec
+----------------------------------------------------------
+Test Passed.
+"recorded_takes" end time: Nov 22 20:27 EST
+"recorded_takes" time elapsed: 00:00:09
+----------------------------------------------------------
+
+37/42 Testing: ordered_corrections
+37/42 Test: ordered_corrections
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusTests_artefacts/Release/SoundPlusTests" "--ordered-corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/corrections" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/tests/fixtures/legacy-v7"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"ordered_corrections" start time: Nov 22 20:27 EST
+Output:
+----------------------------------------------------------
+Ordered corrections passed: 115; /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/plugin-takes/corrections/f72caec54409494b96da1b97d34ff4c7
+<end of output>
+Test time =   0.15 sec
+----------------------------------------------------------
+Test Passed.
+"ordered_corrections" end time: Nov 22 20:28 EST
+"ordered_corrections" time elapsed: 00:00:00
+----------------------------------------------------------
+
+42/42 Testing: advanced_effects_asan
+42/42 Test: advanced_effects_asan
+Command: "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/SoundPlusAdvancedSanity_artefacts/Release/SoundPlusAdvancedSanity" "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/advanced-asan-tests"
+Directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+"advanced_effects_asan" start time: Nov 22 20:28 EST
+Output:
+----------------------------------------------------------
+Delay reopen max error 7.02187e-16
+Advanced effects: 3870581 assertions passed
+<end of output>
+Test time =   3.57 sec
+----------------------------------------------------------
+Test Passed.
+"advanced_effects_asan" end time: Nov 22 20:28 EST
+"advanced_effects_asan" time elapsed: 00:00:03
+----------------------------------------------------------
+
+End testing: Nov 22 20:28 EST

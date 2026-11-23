@@ -127,6 +127,7 @@ void contracts(const juce::File &base)
 
 #include "AdvancedDelayTests.inc"
 #include "AdvancedIntegrationTests.inc"
+#include "AdvancedReverbTests.inc"
 void runAdvancedEffectsTests(const juce::File &base)
 {
     base.createDirectory();
@@ -136,6 +137,11 @@ void runAdvancedEffectsTests(const juce::File &base)
         delayTests(base);
         delayHistoryTests();
         delayGraphTests(base);
+    }
+    if (sp::nativeDSPAvailable("algorithmic-reverb"))
+    {
+        reverbTests(base);
+        reverbGraphTests(base);
     }
     std::cout << "Advanced effects: " << checks << " assertions passed\n";
 }

@@ -204,6 +204,7 @@ struct Delay final : Engine
         }
     }
 };
+#include "AdvancedReverb.inc"
 } // namespace
 struct AdvancedEffectProcessor::Impl
 {
@@ -221,6 +222,8 @@ struct AdvancedEffectProcessor::Impl
             throw std::runtime_error("Advanced preparation exceeds supported rate/memory");
         if (e.type == "advanced-delay")
             engine = std::make_unique<Delay>(e, bus, rate, timing);
+        else if (e.type == "algorithmic-reverb")
+            engine = std::make_unique<Reverb>(e, bus, rate);
         else
             throw std::runtime_error("Advanced processor is not available yet");
     }
@@ -282,6 +285,6 @@ uint64_t AdvancedEffectProcessor::memoryBytes() const
 }
 bool advancedDSPAvailable(const juce::String &t)
 {
-    return t == "advanced-delay";
+    return t == "advanced-delay" || t == "algorithmic-reverb";
 }
 } // namespace sp
