@@ -4,6 +4,7 @@
 #include "Waveform.h"
 #include "WaveformPreview.h"
 #include "UIComponents.h"
+#include "RecordingDetailsPanel.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <deque>
 #include <future>
@@ -159,19 +160,26 @@ class LibraryView final : public juce::Component,
     };
     std::vector<NavigationRow> navigationRows;
     std::set<juce::String> collapsedCollections;
-    juce::String collectionScope, selectedKey, rangeKey, favoriteInspectionKey, organizationUiError;
+    juce::String collectionScope, newCollectionScope, selectedKey, rangeKey, favoriteInspectionKey,
+        organizationUiError;
     uint64_t organizationVersion = 0;
     bool preserveScopeSelection = false, favoriteSelected = false;
     IconButton collectionActions{"Collection and selection actions", ActionIcon::more};
     IconButton favoriteButton{"Favorite selected sound or range", ActionIcon::keep};
     IconButton collectionSelector{"All Sounds", ActionIcon::chevronDown, true};
     IconButton newCollection{"New Collection", ActionIcon::newDocument};
+    IconButton addToCollection{"Add to Collection", ActionIcon::folder, true};
     void rebuildNavigation();
     juce::String navigationName(int) const;
     void chooseNavigation(int);
     void selectCollectionScope(const juce::String &);
-    void collectionMenu(bool selection = false, const juce::String &node = {});
-    void nameCollection(bool rename = false, const juce::String &node = {});
+    void collectionMenu(bool selection = false, const juce::String &node = {},
+                        juce::Rectangle<int> menuAnchor = {});
+    std::vector<std::pair<juce::String, juce::String>> collectionChoices() const;
+    void nameCollection(bool rename = false, const juce::String &node = {},
+                        std::vector<BookmarkRequest> items = {});
+    void showAddToCollection();
+    void addCollectionDestinations(juce::PopupMenu &, const std::vector<BookmarkRequest> &);
     void submitCollectionEdit(CollectionEdit);
     std::vector<BookmarkRequest> selectedBookmarks() const;
     BookmarkRequest currentBookmark() const;
@@ -289,7 +297,7 @@ class LibraryView final : public juce::Component,
     IconButton columnsButton{"Columns", ActionIcon::more};
     juce::String selectionNotice;
     juce::Label summary, detail, transport, status, volumeLabel;
-    juce::TextEditor recordingDetails;
+    RecordingDetailsPanel recordingDetails;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::String selectedId, rootFilter, playingId, playbackError;
     uint64_t requested = 1, appliedVersion = 0, appliedRequest = 0;

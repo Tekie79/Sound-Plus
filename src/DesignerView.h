@@ -219,8 +219,8 @@ class DesignerView final : public juce::Component,
     juce::Label title, info, status, position, outputInfo, meter;
     juce::ComboBox candidates, channelMap, deviceRate, readyOutputs;
     ui::TextActionButton instrumentControl{"Choose instrument"};
-    ui::TextActionButton layoutControl{"Design · Legacy stereo"}, routingButton{"Routing / Spatial Panner"},
-        monitorControl{"Monitor · Stereo"};
+    ui::TextActionButton layoutControl{juce::String::fromUTF8("Design · Legacy stereo")}, routingButton{"Routing / Spatial Panner"},
+        monitorControl{juce::String::fromUTF8("Monitor · Stereo")};
     IconButton channelDetail{"Per-channel waveforms", ActionIcon::layers};
     std::array<float, 16> channelLevels{};
     juce::String outputSignature;

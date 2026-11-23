@@ -837,9 +837,9 @@ void PerformView::updateMappingFields()
             juce::ignoreUnused(id);
             if (t.target == it->target)
                 units = t.units;
-            minimumLabel.setText(units == "%" ? "Minimum (0–1)" : "Minimum " + units,
+            minimumLabel.setText(units == "%" ? juce::String::fromUTF8("Minimum (0–1)") : "Minimum " + units,
                                  juce::dontSendNotification);
-            maximumLabel.setText(units == "%" ? "Maximum (0–1)" : "Maximum " + units,
+            maximumLabel.setText(units == "%" ? juce::String::fromUTF8("Maximum (0–1)") : "Maximum " + units,
                                  juce::dontSendNotification);
         }
         mappingFeedback.setText(

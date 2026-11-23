@@ -327,12 +327,12 @@ void SourcePoolView::options()
     auto target = layerId;
     auto key = binding;
     juce::PopupMenu menu;
-    menu.addItem(1, "Review input and mapping…");
+    menu.addItem(1, juce::String::fromUTF8("Review input and mapping…"));
     menu.addItem(2, "Use in source variations", true, e->enabled);
     menu.addItem(3, "Move up");
     menu.addItem(4, "Move down");
     menu.addSeparator();
-    menu.addItem(5, "Relocate identical content…");
+    menu.addItem(5, juce::String::fromUTF8("Relocate identical content…"));
     juce::Component::SafePointer<SourcePoolView> safe(this);
     bool enabled = e->enabled;
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&more),

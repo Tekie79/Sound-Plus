@@ -320,8 +320,8 @@ class HostedRackView final : public juce::Component
                                           : "Show external insert parameters");
         parameterViewport.setVisible(expanded && !sliders.isEmpty());
         if (session.liveInsertProblem(selected).isNotEmpty())
-            feedback.setText("Unavailable · use editor to reconnect", juce::dontSendNotification);
-        else if (feedback.getText() == "Unavailable · use editor to reconnect")
+            feedback.setText(juce::String::fromUTF8("Unavailable · use editor to reconnect"), juce::dontSendNotification);
+        else if (feedback.getText() == juce::String::fromUTF8("Unavailable · use editor to reconnect"))
             feedback.setText("Live", juce::dontSendNotification);
         updating = false;
         title.setText("Inserts", juce::dontSendNotification);
@@ -1083,7 +1083,7 @@ class HostedRackView final : public juce::Component
                                  if (safe)
                                      safe->preset(false, target, id);
                              }));
-        menu.addItem(3, "Copy / move…", transfer.isEnabled());
+        menu.addItem(3, juce::String::fromUTF8("Copy / move…"), transfer.isEnabled());
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());

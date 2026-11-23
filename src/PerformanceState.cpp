@@ -160,7 +160,7 @@ std::vector<PerformanceTargetInfo> performanceTargets(const DesignMix &mix)
             result.push_back({{l.id, {}, "pan"}, name + " · Balance", "", -1, 1, false});
         rack(l.inserts.stock, l.id, name);
     }
-    result.push_back({{{}, {}, "masterGain"}, "Master · Gain", "dB", -90, 24, false});
+    result.push_back({{{}, {}, "masterGain"}, juce::String::fromUTF8("Master · Gain"), "dB", -90, 24, false});
     rack(mix.inserts.stock, {}, "Master");
     return result;
 }

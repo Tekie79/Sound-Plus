@@ -1054,7 +1054,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
     auto snapshot = document;
     auto path = savedFile;
     bool changed = dirty;
-    message = "Retaining current design…";
+    message = juce::String::fromUTF8("Retaining current design…");
     notify();
     juce::Component::SafePointer<DesignSession> safe(this);
     auto next = DesignDocument();
@@ -1207,7 +1207,7 @@ void DesignSession::save(const juce::File &file)
     auto token = stamp(Operation::save);
     auto snapshot = document;
     working = true;
-    message = "Saving design…";
+    message = juce::String::fromUTF8("Saving design…");
     notify();
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,

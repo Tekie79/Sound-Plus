@@ -56,6 +56,31 @@ namespace sp
 {
 struct LibraryPreviewTestAccess
 {
+    static void checkZoom(const Asset &asset, std::shared_ptr<const WaveformData> overview)
+    {
+        WaveformView view;
+        view.setSize(500, 200);
+        view.setData(overview, &asset);
+        view.setRange(90, 115, true);
+        wait([&]
+        {
+            if (view.detailRequest != 0)
+                view.timerCallback();
+            return !view.detailOutline.isEmpty();
+        }, "A zoomed audition requests and displays sample detail");
+        juce::Image image(juce::Image::ARGB, 500, 200, true);
+        juce::Graphics painter(image);
+        view.paint(painter);
+        check(image.getPixelAt(200, 50) != image.getPixelAt(300, 50),
+              "Zoom draws the peak at its sample position inside an overview bin");
+        view.showWhole();
+        check(view.detailOutline.isEmpty() && view.detailRequest == 0,
+              "Show All returns to the overview");
+        view.zoomRange();
+        view.setData({});
+        check(view.detailOutline.isEmpty() && view.detailRequest == 0,
+              "Changing sources cancels pending detail");
+    }
     static void checkPaging(const juce::File &root, const Asset &asset)
     {
         LibraryView view(root.getChildFile("paging/library.sqlite"), {}, false);
@@ -124,6 +149,27 @@ void runWaveformPreviewTests(const juce::File &parent)
     check((int64_t)pool->metrics()["decodes"] == 5,
           "Five sources across repeated cards/rows decode exactly once");
     check(!wrongThread, "Decoder callbacks run outside the UI thread");
+    sp::LibraryPreviewTestAccess::checkZoom(stereo, pool->get(stereo));
+    sp::WaveformCache rangeWorker(root.getChildFile("unused-range-cache"));
+    const auto readRange = [&](juce::Range<int64_t> range, int bins)
+    {
+        auto generation = rangeWorker.requestRange(stereo, range, bins);
+        std::shared_ptr<const sp::WaveformData> result;
+        wait([&]
+        {
+            result = rangeWorker.snapshot();
+            return result && result->generation == generation;
+        }, "Read the requested half-open viewport in the background");
+        return result;
+    };
+    auto detail = readRange({98, 103}, 500);
+    check(detail->peaks.size() == 5 && detail->samples == 5 &&
+              detail->peaks[2].first < -.89f && detail->peaks[2].second > .89f &&
+              detail->peaks[1].second == 0.f && detail->peaks[3].second == 0.f,
+          "Deep zoom resolves real sample positions and preserves both polarities");
+    check(peak(readRange({101, 120}, 500)->peaks) == 0.f,
+          "A zoom excludes transients just outside its bounds even within the same overview bin");
+    check(!root.getChildFile("unused-range-cache").exists(), "Viewport detail adds no disk cache files");
     auto a = pool->columns(stereo, 0, 24000, false, 17), b = pool->columns(stereo, 24000, 48000, false, 17);
     check(a && b && peak(*a) > .89f && peak(*b) > .34f && peak(*b) < .36f,
           "Different source ranges retain their own isolated transients, including opposite phase channels");

@@ -63,8 +63,30 @@ void LibraryView::selectCollectionScope(const juce::String &id)
 {
     collectionScope = id;
     preserveScopeSelection = true;
+    bool reveal = false;
+    auto cursor = id;
+    for (int depth = 0; cursor.isNotEmpty() && depth < 16; ++depth)
+    {
+        auto found = std::find_if(snapshot.organization.nodes.begin(), snapshot.organization.nodes.end(),
+                                  [&](const auto &c) { return c.id == cursor; });
+        if (found == snapshot.organization.nodes.end())
+            break;
+        cursor = found->parent;
+        reveal |= collapsedCollections.erase(cursor) > 0;
+    }
     if (preferences)
+    {
         preferences->setValue("library.collectionScope", id);
+        if (reveal)
+        {
+            juce::StringArray collapsed;
+            for (const auto &key : collapsedCollections)
+                collapsed.add(key);
+            preferences->setValue("library.collapsedCollections", collapsed.joinIntoString(","));
+        }
+    }
+    if (reveal)
+        rebuildNavigation();
     updateScope();
     requestSearch();
     sources.repaint();
@@ -123,7 +145,9 @@ void LibraryView::submitCollectionEdit(CollectionEdit edit)
     organizationUiError.clear();
     preserveScopeSelection = true;
     favoriteInspectionKey.clear();
-    library.editCollections(std::move(edit));
+    const auto created = edit.action == "create" ? edit.id : juce::String();
+    if (library.editCollections(std::move(edit)) && created.isNotEmpty())
+        newCollectionScope = created;
     juce::Component::SafePointer<LibraryView> safe(this);
     juce::MessageManager::callAsync(
         [safe]
@@ -132,56 +156,112 @@ void LibraryView::submitCollectionEdit(CollectionEdit edit)
                 safe->collectionActions.grabKeyboardFocus();
         });
 }
-void LibraryView::nameCollection(bool rename, const juce::String &node)
+std::vector<std::pair<juce::String, juce::String>> LibraryView::collectionChoices() const
 {
-    juce::String initial = rename ? juce::String() : "New Collection";
-    for (auto &c : snapshot.organization.nodes)
-        if (c.id == node && rename)
-            initial = c.name;
+    std::map<juce::String, std::vector<const LibraryCollection *>> children;
+    for (const auto &c : snapshot.organization.nodes)
+        children[c.parent].push_back(&c);
+    std::vector<std::pair<juce::String, juce::String>> choices;
+    const auto visit = [&](const auto &self, const juce::String &parent, const juce::String &prefix, int depth) -> void
+    {
+        auto node = children.find(parent);
+        if (depth == 16 || node == children.end())
+            return;
+        for (const auto *child : node->second)
+        {
+            auto path = prefix + child->name;
+            choices.emplace_back(child->id, path);
+            self(self, child->id, path + " / ", depth + 1);
+        }
+    };
+    visit(visit, {}, {}, 0);
+    return choices;
+}
+void LibraryView::nameCollection(bool rename, const juce::String &node, std::vector<BookmarkRequest> items)
+{
+    juce::String initial;
+    if (rename)
+        for (auto &c : snapshot.organization.nodes)
+            if (c.id == node)
+                initial = c.name;
+    juce::String message;
+    if (items.size() == 1)
+        message = "Add " + items.front().asset.name;
+    else if (!items.empty())
+        message = "Add " + juce::String((int)items.size()) + " recordings";
     auto *dialog = new juce::AlertWindow(rename ? "Rename Collection" : "New Collection",
-                                         "Virtual collections leave source audio in place.",
-                                         juce::MessageBoxIconType::NoIcon);
+                                         message, juce::MessageBoxIconType::NoIcon, this);
     dialog->addTextEditor("name", initial, "Name");
+    juce::StringArray parentIds{juce::String()};
+    if (!rename)
+    {
+        juce::StringArray parentNames{"My Collections"};
+        for (const auto &[id, path] : collectionChoices())
+        {
+            parentIds.add(id);
+            parentNames.add(path);
+        }
+        dialog->addComboBox("parent", parentNames, "Parent");
+        dialog->getComboBoxComponent("parent")->setSelectedItemIndex(std::max(0, parentIds.indexOf(node)));
+    }
     dialog->addButton(rename ? "Rename" : "Create", 1, juce::KeyPress(juce::KeyPress::returnKey));
     dialog->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
     juce::Component::SafePointer<LibraryView> safe(this);
     dialog->enterModalState(true,
                             juce::ModalCallbackFunction::create(
-                                [safe, dialog, rename, node](int result)
+                                [safe, dialog, rename, node, parents = std::move(parentIds),
+                                 items = std::move(items)](int result) mutable
                                 {
                                     if (result == 1 && safe)
                                     {
                                         CollectionEdit e;
                                         e.action = rename ? "rename" : "create";
-                                        e.id = rename ? node : juce::String();
-                                        e.parent = rename ? juce::String() : node;
+                                        e.id = rename ? node : juce::Uuid().toString().removeCharacters("-");
+                                        if (!rename)
+                                            e.parent = parents[dialog->getComboBoxComponent("parent")
+                                                                   ->getSelectedItemIndex()];
                                         e.name = dialog->getTextEditorContents("name");
                                         e.position = 1024;
-                                        safe->submitCollectionEdit(e);
+                                        e.items = std::move(items);
+                                        safe->submitCollectionEdit(std::move(e));
                                     }
                                 }),
                             true);
+    dialog->getTextEditor("name")->grabKeyboardFocus();
 }
-void LibraryView::collectionMenu(bool selection, const juce::String &node)
+void LibraryView::addCollectionDestinations(juce::PopupMenu &menu, const std::vector<BookmarkRequest> &items)
+{
+    const auto safe = juce::Component::SafePointer<LibraryView>(this);
+    const auto selection = std::make_shared<const std::vector<BookmarkRequest>>(items);
+    const auto parent = collectionScope;
+    menu.addItem(juce::String::fromUTF8("New Collection…"), !items.empty(), false,
+                 [safe, selection, parent] { if (safe) safe->nameCollection(false, parent, *selection); });
+    if (!snapshot.organization.nodes.empty())
+        menu.addSeparator();
+    for (const auto &[id, path] : collectionChoices())
+        menu.addItem(path, !items.empty(), false, [safe, selection, id]
+        {
+            if (!safe)
+                return;
+            CollectionEdit e;
+            e.action = "member";
+            e.id = id;
+            e.items = *selection;
+            safe->submitCollectionEdit(std::move(e));
+        });
+}
+void LibraryView::showAddToCollection()
+{
+    juce::PopupMenu menu;
+    addCollectionDestinations(menu, selectedBookmarks());
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&addToCollection).withParentComponent(this));
+}
+void LibraryView::collectionMenu(bool selection, const juce::String &node, juce::Rectangle<int> menuAnchor)
 {
     juce::PopupMenu menu;
     std::map<int, std::function<void()>> actions;
     int nextId = 1;
     juce::Component::SafePointer<LibraryView> safe(this);
-    auto collectionPath = [&](juce::String id)
-    {
-        juce::StringArray names;
-        for (int depth = 0; id.isNotEmpty() && depth < 16; ++depth)
-        {
-            auto it = std::find_if(snapshot.organization.nodes.begin(), snapshot.organization.nodes.end(),
-                                   [&](const auto &n) { return n.id == id; });
-            if (it == snapshot.organization.nodes.end())
-                break;
-            names.insert(0, it->name);
-            id = it->parent;
-        }
-        return names.joinIntoString(" / ");
-    };
     auto add = [&](juce::PopupMenu &m, const juce::String &label, std::function<void()> callback,
                    bool enabled = true, bool ticked = false)
     {
@@ -202,13 +282,13 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
                 if (safe)
                     safe->selectCollectionScope(node);
             });
-        add(menu, "New Subcollection…",
+        add(menu, juce::String::fromUTF8("New Subcollection…"),
             [safe, node]
             {
                 if (safe)
                     safe->nameCollection(false, node);
             });
-        add(menu, "Rename…",
+        add(menu, juce::String::fromUTF8("Rename…"),
             [safe, node]
             {
                 if (safe)
@@ -231,11 +311,21 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
                     }
                 });
         };
-        destination({}, "My Collections");
-        for (auto &c : snapshot.organization.nodes)
-            if (c.id != node)
-                destination(c.id, collectionPath(c.id));
-        menu.addSubMenu("Move to", move);
+        if (current.parent.isNotEmpty())
+            destination({}, "My Collections");
+        for (const auto &[id, path] : collectionChoices())
+        {
+            auto cursor = id;
+            while (cursor.isNotEmpty() && cursor != node)
+            {
+                auto ancestor = std::find_if(snapshot.organization.nodes.begin(), snapshot.organization.nodes.end(),
+                                             [&](const auto &entry) { return entry.id == cursor; });
+                cursor = ancestor == snapshot.organization.nodes.end() ? juce::String() : ancestor->parent;
+            }
+            if (cursor != node && id != current.parent)
+                destination(id, path);
+        }
+        menu.addSubMenu("Move to", move, move.getNumItems() > 0);
         for (auto delta : {-1, 1})
             add(menu, delta < 0 ? "Move Up" : "Move Down",
                 [safe, current, delta]
@@ -251,7 +341,7 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
                     }
                 });
         menu.addSeparator();
-        add(menu, "Delete Collection…",
+        add(menu, juce::String::fromUTF8("Delete Collection…"),
             [safe, node]
             {
                 juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,
@@ -290,21 +380,8 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
             },
             !items.empty());
         juce::PopupMenu destinations;
-        for (auto &c : snapshot.organization.nodes)
-            add(destinations, collectionPath(c.id),
-                [safe, items, id = c.id]
-                {
-                    if (safe)
-                    {
-                        CollectionEdit e;
-                        e.action = "member";
-                        e.id = id;
-                        e.items = items;
-                        safe->submitCollectionEdit(e);
-                    }
-                });
-        menu.addSubMenu("Add to Collection", destinations,
-                        !items.empty() && !snapshot.organization.nodes.empty());
+        addCollectionDestinations(destinations, items);
+        menu.addSubMenu("Add to Collection", destinations, !items.empty());
         if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent")
             add(menu, "Remove from this Collection",
                 [safe, items, id = collectionScope]
@@ -394,7 +471,7 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
                 });
         menu.addSubMenu("Sources", roots);
         if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent")
-            add(menu, "Collection Actions…",
+            add(menu, juce::String::fromUTF8("Collection Actions…"),
                 [safe, id = collectionScope]
                 {
                     if (safe)
@@ -403,14 +480,14 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
     }
     if (selection && collectionScope.isNotEmpty() && collectionScope != "favorites" &&
         collectionScope != "recent")
-        add(menu, "Collection Actions…",
+        add(menu, juce::String::fromUTF8("Collection Actions…"),
             [safe, id = collectionScope]
             {
                 if (safe)
                     safe->collectionMenu(false, id);
             });
     menu.addSeparator();
-    add(menu, "New Collection…",
+    add(menu, juce::String::fromUTF8("New Collection…"),
         [safe]
         {
             if (safe)
@@ -432,10 +509,13 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node)
                 safe->submitCollectionEdit(CollectionEdit{"redo"});
         },
         snapshot.organization.canRedo);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(
-                           collectionSelector.isShowing() && node.isEmpty() && !selection
-                               ? static_cast<juce::Component *>(&collectionSelector)
-                               : &collectionActions),
+    auto options = juce::PopupMenu::Options().withParentComponent(this);
+    if (menuAnchor.isEmpty())
+        options = options.withTargetComponent(collectionSelector.isShowing() && node.isEmpty() && !selection
+                                                  ? &collectionSelector : &collectionActions);
+    else
+        options = options.withTargetScreenArea(menuAnchor);
+    menu.showMenuAsync(options,
                        [safe, actions = std::move(actions)](int id)
                        {
                            if (safe)

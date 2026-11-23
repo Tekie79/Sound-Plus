@@ -710,7 +710,7 @@ void SurroundPanner::paste()
 void SurroundPanner::motionMenu()
 {
     juce::PopupMenu menu;
-    menu.addItem(1, "Numeric time / position…", selected.size() == 1 && add.isEnabled());
+    menu.addItem(1, juce::String::fromUTF8("Numeric time / position…"), selected.size() == 1 && add.isEnabled());
     menu.addItem(2, "Linear", !selected.empty() && add.isEnabled());
     menu.addItem(3, "Hold", !selected.empty() && add.isEnabled());
     menu.addItem(4, "Smooth", !selected.empty() && add.isEnabled());

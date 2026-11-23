@@ -69,9 +69,9 @@ Asset readReference(Statement &s)
         a.bookmarkFirst >= 0 && (a.unresolved || a.revision != s.integer(21) || a.samples != s.integer(22) ||
                                  a.sampleRate != s.real(23) || a.bookmarkLast > a.samples);
     if (a.needsReview)
-        a.error = "Needs Review — source changed; select current audio and save a new region";
+        a.error = juce::String::fromUTF8("Needs Review — source changed; select current audio and save a new region");
     else if (a.unresolved)
-        a.error = "Unresolved source reference — source record is missing";
+        a.error = juce::String::fromUTF8("Unresolved source reference — source record is missing");
     return a;
 }
 constexpr auto referenceColumns =
@@ -392,6 +392,12 @@ void Catalog::editCollections(const CollectionEdit &edit)
                            {"position", c.position},
                            {"deleted", deleted}});
         };
+        const auto referenceFor = [&](const BookmarkRequest &item)
+        {
+            return item.asset.libraryReference.isNotEmpty() && item.first == item.asset.bookmarkFirst &&
+                           item.last == item.asset.bookmarkLast
+                       ? item.asset.libraryReference : ensureReference(item);
+        };
         if (edit.action == "create" || edit.action == "rename" || edit.action == "move")
         {
             auto c = edit.action == "create"
@@ -458,6 +464,14 @@ void Catalog::editCollections(const CollectionEdit &edit)
                     after.add(row(n));
                 }
             }
+            // Creating a destination and adding its selection is one history operation.
+            if (edit.action == "create")
+                for (const auto &item : edit.items)
+                {
+                    auto ref = referenceFor(item);
+                    after.add(fields({{"kind", "member"}, {"id", c.id}, {"ref", ref}, {"present", true}}));
+                    before.insert(0, fields({{"kind", "member"}, {"id", c.id}, {"ref", ref}, {"present", false}}));
+                }
         }
         else if (edit.action == "delete")
         {
@@ -505,11 +519,7 @@ void Catalog::editCollections(const CollectionEdit &edit)
                 find(edit.id);
             for (auto &item : edit.items)
             {
-                auto ref = item.asset.libraryReference.isNotEmpty() &&
-                                   item.first == item.asset.bookmarkFirst &&
-                                   item.last == item.asset.bookmarkLast
-                               ? item.asset.libraryReference
-                               : ensureReference(item);
+                auto ref = referenceFor(item);
                 if (edit.action == "used")
                 {
                     Statement used(db, "UPDATE library_refs SET recent=? WHERE id=?");

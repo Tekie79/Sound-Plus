@@ -62,7 +62,7 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
         g.setFont(juce::FontOptions(12.f));
         g.drawText(
             p.name + (p.units.isNotEmpty() ? juce::String::fromUTF8(" · ") + p.units : "") +
-                (p.writable ? " · " + juce::String(p.base, 3) : juce::String::fromUTF8(" · unavailable")),
+                (p.writable ? juce::String::fromUTF8(" · ") + juce::String(p.base, 3) : juce::String::fromUTF8(" · unavailable")),
             10, 0, w - 20, h, juce::Justification::centredLeft, true);
     }
     void listBoxItemClicked(int row, const juce::MouseEvent &) override

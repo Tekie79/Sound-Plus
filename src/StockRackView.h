@@ -38,7 +38,7 @@ class StockRackView final : public juce::Component
                 new juce::AlertWindow("Project tempo", "Constant tempo shared by MIDI and synced effects",
                                       juce::MessageBoxIconType::NoIcon);
             dialog->addTextEditor("bpm", juce::String(session.document.activeMix().midiTiming.bpm, 2),
-                                  "BPM (20–300)");
+                                  juce::String::fromUTF8("BPM (20–300)"));
             dialog->addButton("Apply", 1);
             dialog->addButton("Cancel", 0);
             juce::Component::SafePointer<StockRackView> safe(this);
@@ -130,7 +130,7 @@ class StockRackView final : public juce::Component
             if (external)
             {
                 menu.addSeparator();
-                menu.addItem(5, "Plug-in…",
+                menu.addItem(5, juce::String::fromUTF8("Plug-in…"),
                              external->currentRack() && external->currentRack()->slots.size() < 8);
             }
             juce::Component::SafePointer<StockRackView> safe(this);
@@ -743,7 +743,7 @@ class StockRackView final : public juce::Component
         juce::PopupMenu menu;
         menu.addItem(1, "Reset effect", reset.isEnabled());
         menu.addItem(2, "Lock for variations", lockSlot.isEnabled(), lockSlot.getToggleState());
-        menu.addItem(3, "Copy / move…", transfer.isEnabled());
+        menu.addItem(3, juce::String::fromUTF8("Copy / move…"), transfer.isEnabled());
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());
@@ -755,8 +755,8 @@ class StockRackView final : public juce::Component
         if (fx && at != fx->end() && at->nativeVersion)
         {
             menu.addSeparator();
-            menu.addItem(8, "Save preset…");
-            menu.addItem(9, "Load preset…");
+            menu.addItem(8, juce::String::fromUTF8("Save preset…"));
+            menu.addItem(9, juce::String::fromUTF8("Load preset…"));
             auto factory = nativeFactoryPresets(at->type);
             juce::PopupMenu presets;
             for (int i = 0; i < factory.size(); ++i)

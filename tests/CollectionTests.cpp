@@ -217,6 +217,21 @@ void runCollectionTests(const juce::File &base, const juce::File &app)
         reject(oversized, "Oversized operation rejected before mutation");
         auto add = action("member", child);
         add.items = {{a, -1, -1}, {a, 1000, 9000}, {a, 12000, 18000}};
+        auto createFromSelection = action("create", juce::Uuid().toString().removeCharacters("-"));
+        createFromSelection.name = "Selected rain";
+        createFromSelection.parent = child;
+        createFromSelection.items = add.items;
+        db.editCollections(createFromSelection);
+        db.setScope(createFromSelection.id);
+        check(db.countMatches("") == 3 && db.collections().nodes.size() == 4,
+              "Creating a nested collection from a selection retains whole sources and exact ranges");
+        db.editCollections(action("undo"));
+        check(db.countMatches("") == 0 && db.collections().nodes.size() == 3,
+              "One undo removes the new collection and its memberships");
+        db.editCollections(action("redo"));
+        check(db.countMatches("") == 3 && db.collections().nodes.size() == 4,
+              "One redo restores the collection and its memberships");
+        db.editCollections(action("undo"));
         db.editCollections(add);
         add.id = other;
         db.editCollections(add);

@@ -4,6 +4,48 @@
 #include <cmath>
 namespace sp
 {
+namespace
+{
+void decodePeaks(juce::AudioFormatManager &formats, const juce::File &source, const Asset &asset,
+                 juce::Range<int64_t> samples, int count, WaveformData &data,
+                 const WaveformCache::Checkpoint &checkpoint, const std::function<bool()> &obsolete)
+{
+    std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(source));
+    if (!reader || reader->numChannels == 0 || reader->numChannels > 64)
+        throw std::runtime_error("Cannot decode waveform");
+    if (reader->lengthInSamples != asset.samples || reader->sampleRate != asset.sampleRate)
+        throw std::runtime_error("Recording changed; refresh before preparing its waveform");
+    if (asset.waveformChannel >= (int)reader->numChannels)
+        throw std::runtime_error("Waveform channel unavailable");
+    data.peaks.assign((size_t)count, {std::numeric_limits<float>::max(), -std::numeric_limits<float>::max()});
+    juce::AudioBuffer<float> block((int)reader->numChannels, (int)std::min<int64_t>(samples.getLength(), 65536));
+    const auto scale = (double)count / samples.getLength();
+    for (int64_t at = samples.getStart(); at < samples.getEnd() && !obsolete(); at += block.getNumSamples())
+    {
+        if (checkpoint)
+            checkpoint(asset, at, obsolete);
+        if (obsolete())
+            return;
+        int n = (int)std::min<int64_t>(block.getNumSamples(), samples.getEnd() - at);
+        if (!reader->read(&block, 0, n, at, true, true))
+            throw std::runtime_error("Waveform decoding failed");
+        for (int j = 0; j < n; ++j)
+        {
+            auto bin = (size_t)std::min<int64_t>(count - 1, (int64_t)((at - samples.getStart() + j) * scale));
+            auto &[low, high] = data.peaks[bin];
+            for (int c = 0; c < block.getNumChannels(); ++c)
+            {
+                if (asset.waveformChannel >= 0 && c != asset.waveformChannel)
+                    continue;
+                const float sample = block.getSample(c, j);
+                const float value = std::isfinite(sample) ? sample : 0.f;
+                low = std::min(low, value);
+                high = std::max(high, value);
+            }
+        }
+    }
+}
+} // namespace
 struct WaveformCache::State
 {
     juce::File directory;
@@ -12,6 +54,8 @@ struct WaveformCache::State
     std::mutex mutex;
     std::condition_variable wake, completed;
     std::optional<Asset> pending;
+    std::optional<juce::Range<int64_t>> range;
+    int rangeBins = 0;
     std::shared_ptr<const WaveformData> validation;
     std::shared_ptr<const WaveformData> result;
     std::atomic<uint64_t> generation{0};
@@ -60,7 +104,19 @@ uint64_t WaveformCache::request(const Asset &asset, std::shared_ptr<const Wavefo
     std::lock_guard lock(state->mutex);
     auto id = ++state->generation;
     state->pending = asset;
+    state->range.reset();
     state->validation = std::move(validate);
+    state->wake.notify_all();
+    return id;
+}
+uint64_t WaveformCache::requestRange(const Asset &asset, juce::Range<int64_t> samples, int bins)
+{
+    std::lock_guard lock(state->mutex);
+    auto id = ++state->generation;
+    state->pending = asset;
+    state->range = samples;
+    state->rangeBins = std::clamp(bins, 1, 8192);
+    state->validation.reset();
     state->wake.notify_all();
     return id;
 }
@@ -92,6 +148,8 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
     {
         Asset a;
         std::shared_ptr<const WaveformData> validation;
+        std::optional<juce::Range<int64_t>> range;
+        int rangeBins;
         uint64_t token;
         {
             std::unique_lock lock(mutex);
@@ -100,6 +158,8 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                 return;
             a = *pending;
             validation = std::move(state->validation);
+            range = state->range;
+            rangeBins = state->rangeBins;
             pending.reset();
             token = generation;
         }
@@ -109,6 +169,7 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
         data->generation = token;
         data->samples = a.samples;
         data->rate = a.sampleRate;
+        const auto obsolete = [&] { return stopping || generation != token; };
         try
         {
             FileStamp before, after;
@@ -125,9 +186,20 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                 data->status = WaveformData::Status::changed;
                 throw std::runtime_error("Recording changed or is offline");
             }
-            // Stamp-only service retains immutable display data without rereading
-            // derivatives. Offline/error entries decode again only on recovery.
-            if (validation && validation->status == WaveformData::Status::ready)
+            if (range)
+            {
+                if (range->getStart() < 0 || range->getEnd() > a.samples || range->isEmpty())
+                    throw std::runtime_error("Invalid waveform viewport");
+                data->samples = range->getLength();
+                if (state->beforeRead)
+                    state->beforeRead();
+                if (obsolete())
+                    continue;
+                decodePeaks(formats, source, a, *range, (int)std::min<int64_t>(rangeBins, data->samples),
+                            *data, state->checkpoint, obsolete);
+            }
+            // Stamp-only service retains immutable overview data without rereading derivatives.
+            else if (validation && validation->status == WaveformData::Status::ready)
                 data->peaks = validation->peaks;
             else
             {
@@ -172,47 +244,13 @@ void WaveformCache::run(const std::shared_ptr<State> &state)
                     state->beforeRead();
                 if (stopping || generation != token)
                     continue;
-                std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(source));
-                if (!reader || reader->sampleRate <= 0 || reader->lengthInSamples <= 0 ||
-                    reader->numChannels == 0 || reader->numChannels > 64)
+                if (a.samples <= 0 || a.sampleRate <= 0)
                     throw std::runtime_error("Cannot decode waveform");
-                if (reader->lengthInSamples != a.samples || reader->sampleRate != a.sampleRate)
-                    throw std::runtime_error("Recording changed; refresh before preparing its waveform");
-                if (a.waveformChannel >= (int)reader->numChannels)
-                    throw std::runtime_error("Waveform channel unavailable");
                 auto count =
                     (int)std::min<int64_t>(a.waveformChannel >= 0 ? 2048 : 65536,
                                            std::max<int64_t>(1, a.samples / 256 + (a.samples % 256 != 0)));
-                double binScale = (double)count / a.samples;
-                data->peaks.assign((size_t)count,
-                                   {std::numeric_limits<float>::max(), -std::numeric_limits<float>::max()});
-                juce::AudioBuffer<float> block((int)reader->numChannels, 65536);
-                for (int64_t at = 0; at < a.samples && generation == token && !stopping;
-                     at += block.getNumSamples())
-                {
-                    if (state->checkpoint)
-                        state->checkpoint(a, at, [&] { return stopping || generation != token; });
-                    if (stopping || generation != token)
-                        break;
-                    int n = (int)std::min<int64_t>(block.getNumSamples(), a.samples - at);
-                    if (!reader->read(&block, 0, n, at, true, true))
-                        throw std::runtime_error("Waveform decoding failed");
-                    for (int j = 0; j < n; ++j)
-                    {
-                        auto bin = (size_t)std::min<int64_t>(count - 1, (int64_t)((at + j) * binScale));
-                        for (int c = 0; c < block.getNumChannels(); ++c)
-                        {
-                            if (a.waveformChannel >= 0 && c != a.waveformChannel)
-                                continue;
-                            float value = block.getSample(c, j);
-                            if (!std::isfinite(value))
-                                value = 0;
-                            data->peaks[bin].first = std::min(data->peaks[bin].first, value);
-                            data->peaks[bin].second = std::max(data->peaks[bin].second, value);
-                        }
-                    }
-                }
-                if (generation != token || stopping)
+                decodePeaks(formats, source, a, {0, a.samples}, count, *data, state->checkpoint, obsolete);
+                if (obsolete())
                     continue;
                 if (!fileStamp(source, after) || !same(after))
                     throw std::runtime_error("Recording changed while building waveform");
@@ -301,11 +339,21 @@ WaveformView::WaveformView()
     out.setTooltip("Set OUT at playhead, exclusive (O)");
     setData({});
 }
-void WaveformView::setData(std::shared_ptr<const WaveformData> value)
+void WaveformView::setData(std::shared_ptr<const WaveformData> value, const Asset *source)
 {
     bool different =
         !waveform || !value || waveform->assetId != value->assetId || waveform->revision != value->revision;
     waveform = std::move(value);
+    if (!source || !waveform || waveform->assetId != source->id || waveform->revision != source->revision)
+        detailSource.reset();
+    else if (!detailSource || detailSource->id != source->id || detailSource->revision != source->revision ||
+             detailSource->path != source->path || detailSource->size != source->size ||
+             detailSource->modified != source->modified || detailSource->inode != source->inode ||
+             detailSource->waveformChannel != source->waveformChannel)
+    {
+        detailSource = *source;
+        detailBins = 0;
+    }
     if (different)
     {
         rangeSelected = false;
@@ -315,6 +363,7 @@ void WaveformView::setData(std::shared_ptr<const WaveformData> value)
     bool available = waveform && !waveform->peaks.empty();
     for (auto *button : {&zoom, &all, &in, &out})
         button->setEnabled(available);
+    refreshDetail();
     repaint();
 }
 void WaveformView::setRange(int64_t start, int64_t end, bool zoomIn, bool selected)
@@ -350,6 +399,7 @@ void WaveformView::showWhole()
 {
     viewFirst = 0;
     viewLast = waveform ? std::max<int64_t>(1, waveform->samples) : 1;
+    refreshDetail();
     repaint();
 }
 void WaveformView::zoomRange()
@@ -358,6 +408,61 @@ void WaveformView::zoomRange()
         return;
     viewFirst = std::clamp<int64_t>(first, 0, waveform->samples - 1);
     viewLast = std::clamp<int64_t>(last, viewFirst + 1, waveform->samples);
+    refreshDetail();
+    repaint();
+}
+void WaveformView::refreshDetail()
+{
+    const juce::Range<int64_t> range{viewFirst, viewLast};
+    const auto length = range.getLength();
+    if (!detailSource || !waveform || waveform->status != WaveformData::Status::ready ||
+        waveform->peaks.empty() || length >= waveform->samples || getWidth() <= 0 ||
+        (double)length / waveform->samples * waveform->peaks.size() >= getWidth())
+    {
+        if (detailRequest != 0)
+            detailWorker->cancel();
+        detailRequest = 0;
+        detailBins = 0;
+        detailOutline.clear();
+        stopTimer();
+        return;
+    }
+    // Sample the envelope at up to two bins per logical pixel for Retina displays.
+    const auto bins = (int)std::min<int64_t>(length, std::min(8192, 2 * getWidth()));
+    if (detailRange == range && detailBins == bins)
+        return;
+    if (!detailWorker)
+        detailWorker = std::make_unique<WaveformCache>(juce::File());
+    detailRange = range;
+    detailBins = bins;
+    detailOutline.clear();
+    detailRequest = detailWorker->requestRange(*detailSource, range, bins);
+    startTimerHz(30);
+}
+void WaveformView::timerCallback()
+{
+    auto data = detailWorker->snapshot();
+    if (!data || data->generation != detailRequest)
+        return;
+    detailRequest = 0;
+    stopTimer();
+    if (data->peaks.empty())
+    {
+        detailBins = 0; // Allow a later zoom or data refresh to retry a failed read.
+        return;
+    }
+    const auto count = data->peaks.size();
+    const float inset = std::min(.04f, .65f / std::max(1.f, (getHeight() - 42) * .48f));
+    auto top = [&](size_t i) { return -std::clamp(data->peaks[i].second, -1.f, 1.f) - inset; };
+    auto bottom = [&](size_t i) { return -std::clamp(data->peaks[i].first, -1.f, 1.f) + inset; };
+    detailOutline.startNewSubPath(0, top(0));
+    for (size_t i = 1; i < count; ++i)
+        detailOutline.lineTo((float)i / count, top(i));
+    detailOutline.lineTo(1, top(count - 1));
+    detailOutline.lineTo(1, bottom(count - 1));
+    for (size_t i = count; i > 0; --i)
+        detailOutline.lineTo((float)(i - 1) / count, bottom(i - 1));
+    detailOutline.closeSubPath();
     repaint();
 }
 int64_t WaveformView::sampleAt(float x) const
@@ -379,6 +484,7 @@ void WaveformView::resized()
     }
     zoom.setBounds(getWidth() - 65, 0, 28, 28);
     all.setBounds(getWidth() - 33, 0, 28, 28);
+    refreshDetail();
 }
 void WaveformView::paint(juce::Graphics &g)
 {
@@ -402,21 +508,27 @@ void WaveformView::paint(juce::Graphics &g)
                        .getIntersection(area));
     }
     g.setColour(ui::accent.withAlpha(.9f));
-    for (int x = 0; x < getWidth(); ++x)
+    if (!detailOutline.isEmpty())
+        g.fillPath(detailOutline, juce::AffineTransform::scale(area.getWidth(), area.getHeight() * .48f)
+                                      .translated(area.getX(), area.getCentreY()));
+    else
     {
-        auto start = sampleAt((float)x), end = std::min(waveform->samples, sampleAt((float)x + 1) + 1);
-        size_t a = (size_t)((double)start / waveform->samples * waveform->peaks.size());
-        size_t b = (size_t)std::min<int64_t>(
-            (int64_t)waveform->peaks.size(),
-            (int64_t)((double)end / waveform->samples * waveform->peaks.size()) + 1);
-        float minimum = 0, maximum = 0;
-        for (size_t n = a; n < b; ++n)
+        for (int x = 0; x < getWidth(); ++x)
         {
-            minimum = std::min(minimum, waveform->peaks[n].first);
-            maximum = std::max(maximum, waveform->peaks[n].second);
+            auto start = sampleAt((float)x), end = std::min(waveform->samples, sampleAt((float)x + 1) + 1);
+            size_t a = (size_t)((double)start / waveform->samples * waveform->peaks.size());
+            size_t b = (size_t)std::min<int64_t>(
+                (int64_t)waveform->peaks.size(),
+                (int64_t)((double)end / waveform->samples * waveform->peaks.size()) + 1);
+            float minimum = 0, maximum = 0;
+            for (size_t n = a; n < b; ++n)
+            {
+                minimum = std::min(minimum, waveform->peaks[n].first);
+                maximum = std::max(maximum, waveform->peaks[n].second);
+            }
+            float y = area.getCentreY(), scale = area.getHeight() * 0.48f;
+            g.drawVerticalLine(x, y - std::min(1.0f, maximum) * scale, y - std::max(-1.0f, minimum) * scale + 1);
         }
-        float y = area.getCentreY(), scale = area.getHeight() * 0.48f;
-        g.drawVerticalLine(x, y - std::min(1.0f, maximum) * scale, y - std::max(-1.0f, minimum) * scale + 1);
     }
     g.setColour(ui::accent);
     if (rangeSelected)

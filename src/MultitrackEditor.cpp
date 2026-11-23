@@ -740,10 +740,10 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
         m.addSeparator();
     }
     if (t->kind == TrackKind::midiInstrument)
-        m.addItem(402, "Instrument…");
+        m.addItem(402, juce::String::fromUTF8("Instrument…"));
     if (t->kind == TrackKind::midiInstrument)
     {
-        m.addItem(403, "MIDI input…", !session.midiBusy());
+        m.addItem(403, juce::String::fromUTF8("MIDI input…"), !session.midiBusy());
         m.addItem(404, "MIDI monitoring", session.midiArmed(id), session.midiMonitored(id));
         m.addSeparator();
     }
@@ -783,7 +783,7 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
             layout.addItem(n++, layoutName(l), true, t->layout == l);
         }
         m.addSubMenu("Track bus", layout);
-        m.addItem(405, "Square Surround…", trackSquareSurroundSupported(session.document.activeMix(), *t));
+        m.addItem(405, juce::String::fromUTF8("Square Surround…"), trackSquareSurroundSupported(session.document.activeMix(), *t));
         m.addItem(4, "Angular spatial panning",
                   !t->surroundXY && t->layout.size() <= 2 &&
                       horizontalLayout(trackOutputLayout(session.document.activeMix(), *t)),

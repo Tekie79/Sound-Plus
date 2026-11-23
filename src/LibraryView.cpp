@@ -191,6 +191,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     addAndMakeVisible(favoriteButton);
     addAndMakeVisible(collectionSelector);
     addAndMakeVisible(newCollection);
+    addAndMakeVisible(addToCollection);
     collectionSelector.setLabelAlignedLeft();
     favoriteButton.onClick = [this]
     {
@@ -207,6 +208,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                   ? juce::String()
                                   : collectionScope);
     };
+    newCollection.setTooltip("Create a collection or subcollection");
+    addToCollection.onClick = [this] { showAddToCollection(); };
+    addToCollection.setEnabled(false);
     rebuildNavigation();
     pauseIndex.setToggleable(true);
     for (auto *button : {&repeatOne, &repeatAll})
@@ -316,16 +320,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
         l->setFont(juce::FontOptions(13.0f));
     }
     detail.setColour(juce::Label::textColourId, text);
-    detail.setFont(juce::FontOptions(16.0f));
-    recordingDetails.setTitle("Recording metadata");
-    recordingDetails.setMultiLine(true);
-    recordingDetails.setReadOnly(true);
-    recordingDetails.setColour(juce::TextEditor::backgroundColourId, panel);
-    recordingDetails.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
-    recordingDetails.setColour(juce::TextEditor::textColourId, muted);
-    recordingDetails.setFont(juce::FontOptions(13.0f));
-    recordingDetails.setLineSpacing(1.28f);
-    recordingDetails.setIndents(2, 2);
+    detail.setFont(juce::FontOptions(16.0f, juce::Font::bold));
     columnsButton.setLabelVisible(true);
     columnsButton.setTooltip("Choose recording columns");
     columnsButton.onClick = [this] { showMetadataColumns(); };
@@ -896,6 +891,7 @@ void LibraryView::resized()
     retryAI.setBounds(86, 54, 32, 28);
     aiStatusLabel.setBounds(14, 87, sidebar - 28, 42);
     favoriteButton.setBounds(14, 132, 30, 30);
+    addToCollection.setBounds(48, 132, sidebar - 132, 30);
     collectionActions.setBounds(sidebar - 82, 132, 30, 30);
     newCollection.setBounds(sidebar - 44, 132, 30, 30);
     sources.setBounds(6, 169, sidebar - 12, std::max(70, getHeight() - 187));
@@ -1487,7 +1483,7 @@ void LibraryView::updateSelection(bool explicitUserSelection)
         selectionNotice.clear();
         updateRecordingDetails();
         if (newFile)
-            recordingDetails.moveCaretToTop(false);
+            recordingDetails.setViewPosition(0, 0);
         if (explicitUserSelection && continueAudition)
             playSelected(matchMode);
     }
@@ -1538,7 +1534,7 @@ void LibraryView::cellClicked(int row, int, const juce::MouseEvent &e)
 {
     if (e.mods.isPopupMenu())
     {
-        collectionMenu(true);
+        collectionMenu(true, {}, {e.getScreenX(), e.getScreenY(), 1, 1});
         return;
     }
     if (!updating && row == table.getLastRowSelected())
@@ -1592,7 +1588,7 @@ void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &e)
     if (e.mods.isPopupMenu())
     {
         if (r.kind == "scope" && r.id.isNotEmpty() && r.id != "favorites" && r.id != "recent")
-            collectionMenu(false, r.id);
+            collectionMenu(false, r.id, {e.getScreenX(), e.getScreenY(), 1, 1});
         return;
     }
     if (r.children && e.x < 32 + r.depth * 13)
@@ -1895,55 +1891,58 @@ void LibraryView::updateRecordingDetails()
         detail.setText(selectionNotice.isEmpty() ? "Choose a recording" : selectionNotice,
                        juce::dontSendNotification);
         detail.setTooltip({});
-        recordingDetails.setText({}, false);
+        recordingDetails.setSections({});
         return;
     }
     const auto &a = *selectedAsset;
     detail.setText(a.name, juce::dontSendNotification);
     detail.setTooltip(a.name);
-    juce::StringArray fields;
+    std::vector<RecordingDetailsPanel::Section> sections;
+    const auto group = [&](const juce::String &name) { sections.push_back({name, {}}); };
     const auto field = [&](const juce::String &label, const juce::String &value)
     {
         if (value.isNotEmpty())
-            fields.add(label + ": " + value);
+            sections.back().fields.push_back({label, value});
     };
     const auto *header = cachedRecordingHeader(a);
+    group("Sound tags");
     field("Category", header ? recordingCategory(header->tags) : juce::String());
     field("Description", header ? recordingDescription(header->tags) : juce::String());
+    group("Audio");
     field("Duration", a.duration > 0 ? juce::String(a.duration, 3) + " s" : juce::String());
     field("Sample rate", a.sampleRate > 0 ? juce::String(a.sampleRate) + " Hz" : juce::String());
     field("Channels", a.channels > 0 ? juce::String(a.channels) : juce::String());
     field("Format", header && header->format.isNotEmpty() ? header->format : fileFormat(a));
     field("Bit depth (reader)", header ? header->depth : juce::String());
     field("Frames", a.samples > 0 ? juce::String(a.samples) : juce::String());
-    auto layout = a.layoutOverride.id.isNotEmpty() ? a.layoutOverride : a.detectedChannels;
+    const auto &layout = a.layoutOverride.id.isNotEmpty() ? a.layoutOverride : a.detectedChannels;
     field("Layout", layout.id.isEmpty() ? juce::String() : layoutName(layout));
     field("Channel order", layout.roles.joinIntoString(", "));
     if (a.layoutOverride.id.isNotEmpty())
         field("Detected layout", layoutName(a.detectedChannels));
     field("Layout confidence", a.layoutConfidence);
-    field("File size", a.size > 0 ? juce::File::descriptionOfSizeInBytes(a.size) : juce::String());
-    field("Modified", fileModified(a));
-    field("Status", recordingStatus(a));
-    field("Source", a.path);
     if (a.bookmarkFirst >= 0 && a.sampleRate > 0)
         field("Saved range", juce::String(a.bookmarkFirst / a.sampleRate, 3) + " - " +
                                  juce::String(a.bookmarkLast / a.sampleRate, 3) + " s");
+    group("File");
+    field("File size", a.size > 0 ? juce::File::descriptionOfSizeInBytes(a.size) : juce::String());
+    field("Modified", fileModified(a));
+    field("Status", recordingStatus(a));
+    field("Path", a.path);
     if (selectionNotice.isNotEmpty())
-        fields.add(selectionNotice);
+        field("Selection", selectionNotice);
     if (a.error.isNotEmpty())
-        fields.add(a.error);
+        field("Source issue", a.error);
     if (header && header->error.isNotEmpty())
-        fields.add(header->error);
+        field("Metadata", header->error);
     if (header && header->tags.size() > 0)
     {
-        fields.add("\nEmbedded tags");
+        group("Embedded tags");
         for (int i = 0; i < header->tags.size(); ++i)
             field(header->tags.getAllKeys()[i], header->tags.getAllValues()[i]);
     }
-    auto value = fields.joinIntoString("\n");
-    if (recordingDetails.getText() != value)
-        recordingDetails.setText(value, false);
+    std::erase_if(sections, [](const auto &section) { return section.fields.empty(); });
+    recordingDetails.setSections(std::move(sections));
 }
 void LibraryView::showRangeEditor(bool forReference)
 {
@@ -2018,7 +2017,7 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     if (!sourceAvailable(*a))
     {
         playbackError =
-            a->error.isNotEmpty() ? a->error : "Offline recording — reconnect its source folder to audition.";
+            a->error.isNotEmpty() ? a->error : juce::String::fromUTF8("Offline recording — reconnect its source folder to audition.");
         return;
     }
     library.editCollections(
@@ -2104,14 +2103,21 @@ void LibraryView::timerCallback()
     {
         organizationVersion = next.organization.version;
         snapshot.organization = next.organization;
-        if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent" &&
+        if (newCollectionScope.isNotEmpty() &&
+            std::any_of(next.organization.nodes.begin(), next.organization.nodes.end(),
+                        [&](const auto &c) { return c.id == newCollectionScope; }))
+            selectCollectionScope(std::exchange(newCollectionScope, {}));
+        else if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent" &&
             std::none_of(next.organization.nodes.begin(), next.organization.nodes.end(),
                          [&](const auto &c) { return c.id == collectionScope; }))
             selectCollectionScope({});
         favoriteInspectionKey.clear();
         rebuildNavigation();
         if (next.organization.error.isNotEmpty())
+        {
+            newCollectionScope.clear();
             status.setText(next.organization.error, juce::dontSendNotification);
+        }
     }
     inspectFavorite();
     auto bookmarkKey = currentBookmarkKey();
@@ -2123,6 +2129,7 @@ void LibraryView::timerCallback()
                                                            : "Favorite selected sound or range");
     }
     favoriteButton.setEnabled(selectedAsset.has_value());
+    addToCollection.setEnabled(selectedAsset.has_value());
     bool referenceVisibilityChanged = next.reference.present != snapshot.reference.present;
     snapshot.reference = next.reference;
     updateReference(next.reference);
@@ -2257,10 +2264,10 @@ void LibraryView::timerCallback()
                              !audio.captureBusy());
     addDesigner.setEnabled(selectedAsset && sourceAvailable(*selectedAsset) && selectedAsset->samples > 0);
     processPlugin.setTooltip(selectedAsset && !sourceAvailable(*selectedAsset)
-                                 ? "Source unavailable — reconnect or review the recording before processing"
+                                 ? juce::String::fromUTF8("Source unavailable — reconnect or review the recording before processing")
                                  : "Process with Plug-in");
     addDesigner.setTooltip(selectedAsset && !sourceAvailable(*selectedAsset)
-                               ? "Source unavailable — reconnect or review before adding to Designer"
+                               ? juce::String::fromUTF8("Source unavailable — reconnect or review before adding to Designer")
                                : "Add marked source range to Designer");
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
     dragOriginal.setEnabled(selectedAsset && sourceAvailable(*selectedAsset) && regionStart == 0 &&
@@ -2300,7 +2307,7 @@ void LibraryView::timerCallback()
         data && data->generation == referenceWaveRequest && referenceWaveApplied != referenceWaveRequest)
     {
         referenceWaveApplied = referenceWaveRequest;
-        referenceWaveform.setData(data);
+        referenceWaveform.setData(data, &pinnedReference.source);
         referenceWaveform.setRange(pinnedReference.startSample, pinnedReference.endSample, true,
                                    referenceSelected);
     }
@@ -2336,7 +2343,7 @@ void LibraryView::timerCallback()
     }
     if (auto data = selectedAsset ? peakPool->get(*selectedAsset) : nullptr; data && waveform.data() != data)
     {
-        waveform.setData(data);
+        waveform.setData(data, &*selectedAsset);
         waveform.setRange(regionStart, regionEnd, waveformNeedsZoom, regionSelected);
         waveformNeedsZoom = false;
     }

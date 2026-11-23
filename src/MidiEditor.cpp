@@ -720,12 +720,12 @@ void MidiEditor::instrument(const juce::String &owner, juce::Component &anchor)
         menu.addItem(8, "Open editor");
         menu.addSeparator();
     }
-    menu.addItem(1, "Load sample…");
-    menu.addItem(2, "Add sample alternate…", t->instrument && t->instrument->format == "SoundPlus");
-    menu.addItem(3, "Sampler controls…", t->instrument && t->instrument->format == "SoundPlus");
-    menu.addItem(4, "Tempo / signature…");
-    menu.addItem(6, "External instrument…");
-    menu.addItem(7, "Recover MIDI recording…");
+    menu.addItem(1, juce::String::fromUTF8("Load sample…"));
+    menu.addItem(2, juce::String::fromUTF8("Add sample alternate…"), t->instrument && t->instrument->format == "SoundPlus");
+    menu.addItem(3, juce::String::fromUTF8("Sampler controls…"), t->instrument && t->instrument->format == "SoundPlus");
+    menu.addItem(4, juce::String::fromUTF8("Tempo / signature…"));
+    menu.addItem(6, juce::String::fromUTF8("External instrument…"));
+    menu.addItem(7, juce::String::fromUTF8("Recover MIDI recording…"));
     menu.addItem(5, "Loop selected clip", model() != nullptr, model() && model()->loopLength > 0);
     juce::Component::SafePointer<MidiEditor> safe(this);
     auto token = session.beginDialog();

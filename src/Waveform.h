@@ -27,6 +27,7 @@ class WaveformCache
     explicit WaveformCache(juce::File directory, std::function<void()> beforeRead = {}, Checkpoint = {});
     ~WaveformCache();
     uint64_t request(const Asset &, std::shared_ptr<const WaveformData> validate = {});
+    uint64_t requestRange(const Asset &, juce::Range<int64_t> samples, int bins);
     uint64_t cancel();
     std::shared_ptr<const WaveformData> snapshot();
 
@@ -36,11 +37,11 @@ class WaveformCache
     std::shared_ptr<State> state;
     std::thread worker;
 };
-class WaveformView final : public juce::Component
+class WaveformView final : public juce::Component, private juce::Timer
 {
   public:
     WaveformView();
-    void setData(std::shared_ptr<const WaveformData>);
+    void setData(std::shared_ptr<const WaveformData>, const Asset *source = nullptr);
     void setRange(int64_t start, int64_t end, bool zoom = false, bool selected = true);
     bool isRangeSelected() const
     {
@@ -86,9 +87,18 @@ class WaveformView final : public juce::Component
     std::function<void()> onEditRange;
 
   private:
+    friend struct LibraryPreviewTestAccess;
+    void refreshDetail();
+    void timerCallback() override;
     int64_t sampleAt(float x) const;
     float xAt(int64_t sample) const;
     std::shared_ptr<const WaveformData> waveform;
+    std::optional<Asset> detailSource;
+    std::unique_ptr<WaveformCache> detailWorker;
+    juce::Path detailOutline;
+    uint64_t detailRequest = 0;
+    juce::Range<int64_t> detailRange;
+    int detailBins = 0;
     int64_t first = 0, last = 0, viewFirst = 0, viewLast = 1, cursor = -1, anchor = 0;
     int dragMode = 0;
     bool dragging = false;

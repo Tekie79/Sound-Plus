@@ -146,7 +146,7 @@ void DesignerView::takePopup()
         }
         menu.addSubMenu("Verified source relink", sources, !session.takeBusy());
     }
-    menu.addSectionHeader("Frame zero · fresh history");
+    menu.addSectionHeader(juce::String::fromUTF8("Frame zero · fresh history"));
     juce::Component::SafePointer<DesignerView> safe(this);
     menu.showMenuAsync(
         juce::PopupMenu::Options().withTargetComponent(&takeOptions),
