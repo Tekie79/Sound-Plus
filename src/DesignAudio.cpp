@@ -2302,8 +2302,11 @@ std::vector<DesignOutput> renderMixerStems(const DesignDocument &d, const juce::
     auto stemName = [&](int index)
     {
         const auto &track = *findTrack(mix, owners[index]);
+        auto name = juce::File::createLegalFileName(track.name).trim();
+        if (name.endsWithIgnoreCase(".wav"))
+            name = name.dropLastCharacters(4).trimEnd();
         return juce::String(index + 1).paddedLeft('0', 2) + " " +
-               juce::File::createLegalFileName(track.name).substring(0, 80) + ".wav";
+               (name.isEmpty() ? juce::String("Stem") : name.substring(0, 80)) + ".wav";
     };
     for (int i = 0; i < owners.size(); ++i)
     {

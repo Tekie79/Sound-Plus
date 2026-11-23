@@ -227,6 +227,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
                 looks.insert(look);
             for (int id : {int(juce::Label::textColourId), int(juce::TextEditor::textColourId),
                            int(juce::Label::backgroundColourId), int(juce::TextEditor::backgroundColourId),
+                           int(juce::TextEditor::outlineColourId),
                            int(juce::Slider::textBoxTextColourId), int(juce::Slider::trackColourId),
                            int(juce::ListBox::backgroundColourId), int(juce::ComboBox::textColourId)})
             {
@@ -236,8 +237,15 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
                 auto rgb = colour.withAlpha(1.f).getARGB();
                 auto match = std::find(before.begin(), before.end(), rgb);
                 if (match != before.end())
-                    component.setColour(id, juce::Colour(after[(size_t)(match - before.begin())])
-                                                .withAlpha(colour.getFloatAlpha()));
+                {
+                    auto themed = juce::Colour(after[(size_t)(match - before.begin())])
+                                      .withAlpha(colour.getFloatAlpha());
+                    if (auto *editor = dynamic_cast<juce::TextEditor *>(&component);
+                        editor && id == juce::TextEditor::textColourId)
+                        editor->applyColourToAllText(themed);
+                    else
+                        component.setColour(id, themed);
+                }
             }
             for (auto *child : component.getChildren())
                 self(self, *child);

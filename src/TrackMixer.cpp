@@ -201,7 +201,17 @@ struct TrackMixer::Strip final : juce::Component
         const auto layout = track ? trackOutputLayout(mix, *track) : designLayout(s.document);
         if (roles != layout.roles)
             roles = layout.roles;
-        context.setText(folder ? "Folder" : layoutName(track ? track->layout : layout), juce::dontSendNotification);
+        auto contextText = folder ? juce::String("Folder") : layoutName(track ? track->layout : layout);
+        if (track && track->kind == TrackKind::fxReturn)
+        {
+            int inputs = 0;
+            for (const auto &source : mix.tracks)
+                inputs += (int)std::count_if(source.sends.begin(), source.sends.end(),
+                                            [&](const auto &send) { return send.destination == id; });
+            contextText += juce::String::fromUTF8(" · ") + juce::String(inputs) +
+                           (inputs == 1 ? " send" : " sends");
+        }
+        context.setText(contextText, juce::dontSendNotification);
         const bool editable = !s.transitionPending() && s.document.activeTake.isEmpty();
         const bool isMidi = track && track->kind == TrackKind::midiInstrument;
         const bool isAudio = track && track->kind == TrackKind::audio;
@@ -454,10 +464,10 @@ void TrackMixer::sendMenu(const juce::String &owner, juce::Component &anchor)
         item(detail, "Pre-fader", Action::pre, send.id, {}, true, !send.postFader);
         item(detail, "Post-fader", Action::post, send.id, {}, true, send.postFader);
         item(detail, "Follow pan", Action::follow, send.id, {}, !send.postFader, send.followPan);
-        item(detail, "Level…", Action::level, send.id);
+        item(detail, "Level", Action::level, send.id);
         candidates(destinations, Action::destination, send.id);
         detail.addSubMenu("Destination", destinations);
-        item(detail, "Channel map…", Action::roles, send.id);
+        item(detail, "Channel map", Action::roles, send.id);
         detail.addSeparator();
         item(detail, "Move up", Action::up, send.id, {}, i > 0);
         item(detail, "Move down", Action::down, send.id, {}, i + 1 < sender->sends.size());

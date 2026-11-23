@@ -122,7 +122,11 @@ void runMixerGraphTests(const juce::File &root)
         auto cyclic = wet;
         findTrack(cyclic.original, aux)->sends.emplace_back().destination = group;
         findTrack(cyclic.original, group)->sends.emplace_back().destination = aux;
-        reject([&] { validateDesign(cyclic); }, "Cross-edge cycle rejected");
+        reject([&] { validateDesign(cyclic); }, "Reciprocal sends rejected");
+        auto mixedCycle = wet;
+        routeTrack(mixedCycle.original, aux, group);
+        findTrack(mixedCycle.original, group)->sends.emplace_back().destination = aux;
+        reject([&] { validateDesign(mixedCycle); }, "Combined main and send cycle rejected");
         auto dangling = wet;
         findTrack(dangling.original, track)->sends.front().destination = "missing";
         reject([&] { validateDesign(dangling); }, "Dangling send rejected");
@@ -131,8 +135,24 @@ void runMixerGraphTests(const juce::File &root)
         reject([&] { validateDesign(duplicates); }, "Duplicate destination rejected");
         DesignTrack side;
         side.layout = channelLayout("5.1-side-v1");
-        reject([&] { (void)sendMatrix(side, send, channelLayout("5.1-rear-v1"), 0, 0, 0, {}); },
+        DesignTrack rear;
+        rear.layout = channelLayout("5.1-rear-v1");
+        reject([&] { (void)sendMatrix(side, send, rear.layout, 0, 0, 0, {}); },
                "Side to Rear requires explicit named map");
+        reject([&] { (void)sendMatrix(rear, send, side.layout, 0, 0, 0, {}); },
+               "Rear to Side requires explicit named map");
+        auto mapped = send;
+        mapped.roles = {{"Lb", "Ls", 0}, {"Rb", "Rs", -6}};
+        const auto matrix = sendMatrix(rear, mapped, side.layout, 0, 0, 0, {});
+        for (int output = 0; output < side.layout.size(); ++output)
+            for (int input = 0; input < rear.layout.size(); ++input)
+            {
+                const float expected = output == 4 && input == 4 ? 1.f
+                                     : output == 5 && input == 5 ? (float)dryGain
+                                                                 : 0.f;
+                require(std::abs(matrix[output][input] - expected) < 1e-7f,
+                        "Explicit Rear-to-Side conversion isolates the requested named channels");
+            }
 
         const auto sendId = send.id;
         addAutomationPoint(wet.original, track, {sendId, "send-enable"}, 0, 0, rate);
@@ -179,7 +199,7 @@ void runMixerStemTests(const juce::File &root)
     source.sends.emplace_back().destination = aux;
     source.sends.front().levelDb = -6;
     source.sends.front().enabled = true;
-    findTrack(doc.original, group)->name = findTrack(doc.original, aux)->name = "Repeated name";
+    findTrack(doc.original, group)->name = findTrack(doc.original, aux)->name = "Repeated name.WAV";
     auto file = work.getChildFile("stereo.wav");
     {
         juce::WavAudioFormat wav;
@@ -209,6 +229,8 @@ void runMixerStemTests(const juce::File &root)
     for (int i = 0; i < 2; ++i)
     {
         auto path = juce::File(outputs[(size_t)i].path);
+        require(path.getFileName() == juce::String(i + 1).paddedLeft('0', 2) + " Repeated name.wav",
+                "Stem names use one WAV suffix even when the track label is a filename");
         std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(path));
         require(reader && reader->lengthInSamples == 8192 + 6000 && reader->sampleRate == 48000 &&
                     reader->numChannels == 2 && reader->bitsPerSample == 24,

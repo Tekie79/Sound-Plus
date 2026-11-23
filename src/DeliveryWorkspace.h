@@ -148,7 +148,8 @@ class DeliveryWorkspace final : public juce::Component, private juce::Timer
         selection.setEnabled(ready && d.activeTake.isEmpty() && session.selectedLayer() != nullptr);
         stems.setEnabled(ready && d.activeTake.isEmpty() && mix.trackSchema);
         cancel.setVisible(session.rendering);
-        status.setText(session.rendering ? "Rendering…" : session.message, juce::dontSendNotification);
+        status.setText(session.rendering ? juce::String("Rendering") : session.message,
+                       juce::dontSendNotification);
         repaint(outputCard);
     }
 };

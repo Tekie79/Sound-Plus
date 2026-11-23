@@ -2261,6 +2261,9 @@ std::unique_ptr<juce::Component> DesignerView::makeRenderPanel()
         label->setBounds(8, y, 144, 28);
         editor->setBounds(156, y, 190, 28);
         editor->setTitle(name);
+        editor->setColour(juce::TextEditor::backgroundColourId, ui::surface);
+        editor->setColour(juce::TextEditor::textColourId, ui::text);
+        editor->setColour(juce::TextEditor::outlineColourId, ui::line);
         editor->setText(juce::String(value, 6));
         editor->setInputRestrictions(20, "0123456789.");
         editor->onReturnKey = [this, editor, set]

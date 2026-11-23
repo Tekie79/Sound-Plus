@@ -65,6 +65,13 @@ class LookAndFeel : public juce::LookAndFeel_V4
         icons::draw(g, ActionIcon::chevronDown, {arrowX, (height - 13.f) * .5f, 13, 13},
                     box.isEnabled() ? icons::Tone::normal : icons::Tone::disabled);
     }
+    juce::Label *createSliderTextBox(juce::Slider &slider) override
+    {
+        auto *label = juce::LookAndFeel_V4::createSliderTextBox(slider);
+        label->setColour(juce::Label::textColourId, text);
+        label->setColour(juce::Label::textWhenEditingColourId, text);
+        return label;
+    }
     void drawLinearSlider(juce::Graphics &g, int x, int y, int width, int height, float pos, float minPos,
                           float maxPos, const juce::Slider::SliderStyle style, juce::Slider &s) override
     {

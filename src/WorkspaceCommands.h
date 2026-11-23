@@ -19,7 +19,7 @@ class WorkspaceCommands final : public juce::Component, private juce::ListBoxMod
         addAndMakeVisible(query);
         addAndMakeVisible(list);
         query.setTitle("Search commands");
-        query.setTextToShowWhenEmpty("Search commands…", muted);
+        query.setTextToShowWhenEmpty("Search commands", muted);
         query.onTextChange = [this] { filter(); };
         query.onReturnKey = [this] { run(list.getSelectedRow()); };
         list.setRowHeight(31);
