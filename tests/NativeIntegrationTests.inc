@@ -489,6 +489,40 @@ struct NativeEffectTestAccess
         drain();
         check(session.document.original.tracks.empty(),
               "Pending IR completion cannot mutate replacement document");
+        auto advancedTrack = addTrack(session.document.original, TrackKind::audio);
+        rack.bind(advancedTrack);
+        for (auto type : {"advanced-delay", "algorithmic-reverb", "convolution-reverb"})
+        {
+            rack.append(rack.owner, type);
+            rack.setParametersExpanded(true);
+            rack.refresh();
+            rack.setSize(306, rack.preferredHeight());
+            check(rack.nativePanel.tempo.isVisible() && rack.nativePanel.tail.isVisible(),
+                  "Advanced panel exposes shared tempo and bounded tail advisory");
+            auto *slider = rack.nativePanel.measurementSlider("mix");
+            check(slider && slider->isVisible(), "All new definitions use actual compact numeric controls");
+            slider->onDragStart();
+            slider->setValue(.63, juce::sendNotificationSync);
+            slider->onDragEnd();
+            drain();
+            auto &fx = findTrack(session.document.original, advancedTrack)->inserts.stock;
+            check(nativeValue(fx.back(), "mix") == .63,
+                  "Advanced actual inspector gesture edits keyed model parameter");
+            session.undo();
+            drain();
+            check(nativeValue(findTrack(session.document.original, advancedTrack)->inserts.stock.back(),
+                              "mix") != .63,
+                  "Advanced gesture Undo");
+            session.redo();
+            drain();
+            check(nativeValue(findTrack(session.document.original, advancedTrack)->inserts.stock.back(),
+                              "mix") == .63,
+                  "Advanced gesture Redo");
+            auto targets = automationTargets(session.document.original, advancedTrack);
+            check(targets.front().target.parameter == "volume" &&
+                      !findTrack(session.document.original, advancedTrack)->automation.expanded,
+                  "New inserts retain ONE collapsed Volume-first lane");
+        }
     }
 };
 } // namespace sp

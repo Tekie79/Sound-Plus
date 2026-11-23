@@ -1,0 +1,90 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: midi_responsiveness
+ 1/42 Test  #1: midi_responsiveness ..............   Passed   46.30 sec
+      Start  2: advanced_effects
+ 2/42 Test  #2: advanced_effects .................   Passed    2.11 sec
+      Start  3: native_effects
+ 3/42 Test  #3: native_effects ...................   Passed    0.64 sec
+      Start  4: library_collections
+ 4/42 Test  #4: library_collections ..............   Passed    1.50 sec
+      Start  5: midi_sequencing
+ 5/42 Test  #5: midi_sequencing ..................   Passed    0.11 sec
+      Start  6: audio_input_recording
+ 6/42 Test  #6: audio_input_recording ............   Passed    0.50 sec
+      Start  7: multitrack_automation
+ 7/42 Test  #7: multitrack_automation ............   Passed    0.82 sec
+      Start  8: pool_corrections
+ 8/42 Test  #8: pool_corrections .................   Passed    5.48 sec
+      Start  9: source_pools
+ 9/42 Test  #9: source_pools .....................   Passed    0.36 sec
+      Start 10: library_playback_search
+10/42 Test #10: library_playback_search ..........   Passed    2.70 sec
+      Start 11: multichannel_corrections
+11/42 Test #11: multichannel_corrections .........   Passed   12.78 sec
+      Start 12: multichannel
+12/42 Test #12: multichannel .....................   Passed    7.82 sec
+      Start 13: take_integrity
+13/42 Test #13: take_integrity ...................   Passed    3.76 sec
+      Start 14: capture_device_lifecycle
+14/42 Test #14: capture_device_lifecycle .........   Passed    4.68 sec
+      Start 15: recorded_takes
+15/42 Test #15: recorded_takes ...................   Passed    8.86 sec
+      Start 16: library_stability
+16/42 Test #16: library_stability ................   Passed    1.37 sec
+      Start 17: waveform_scheduling
+17/42 Test #17: waveform_scheduling ..............   Passed    1.98 sec
+      Start 18: audio_health
+18/42 Test #18: audio_health .....................   Passed    8.29 sec
+      Start 19: waveform_previews
+19/42 Test #19: waveform_previews ................   Passed    0.51 sec
+      Start 20: performance_state
+20/42 Test #20: performance_state ................   Passed    3.24 sec
+      Start 21: designer_view_commands
+21/42 Test #21: designer_view_commands ...........   Passed    0.37 sec
+      Start 22: icon_system
+22/42 Test #22: icon_system ......................   Passed    0.12 sec
+      Start 23: library_and_audio
+23/42 Test #23: library_and_audio ................   Passed    9.86 sec
+      Start 24: library_selection_audition
+24/42 Test #24: library_selection_audition .......   Passed    3.83 sec
+      Start 25: library_performance_regression
+25/42 Test #25: library_performance_regression ...   Passed    6.75 sec
+      Start 26: library_semantic_integrity
+26/42 Test #26: library_semantic_integrity .......   Passed    0.42 sec
+      Start 27: library_similar_integrity
+27/42 Test #27: library_similar_integrity ........   Passed    1.46 sec
+      Start 28: designer_transport
+28/42 Test #28: designer_transport ...............   Passed   15.83 sec
+      Start 29: designer_canvas
+29/42 Test #29: designer_canvas ..................   Passed    0.20 sec
+      Start 30: designer_session
+30/42 Test #30: designer_session .................   Passed    0.11 sec
+      Start 31: designer_workflow
+31/42 Test #31: designer_workflow ................   Passed    9.86 sec
+      Start 32: designer_fades
+32/42 Test #32: designer_fades ...................   Passed    2.46 sec
+      Start 33: midi_instruments
+33/42 Test #33: midi_instruments .................   Passed   26.19 sec
+      Start 34: plugin_processing
+34/42 Test #34: plugin_processing ................   Passed   71.40 sec
+      Start 35: plugin_correctness
+35/42 Test #35: plugin_correctness ...............   Passed   10.47 sec
+      Start 36: plugin_gate_a
+36/42 Test #36: plugin_gate_a ....................   Passed   17.32 sec
+      Start 37: ordered_corrections
+37/42 Test #37: ordered_corrections ..............   Passed    0.13 sec
+      Start 38: plugin_takes
+38/42 Test #38: plugin_takes .....................   Passed   30.59 sec
+      Start 39: ordered_inserts
+39/42 Test #39: ordered_inserts ..................   Passed   35.70 sec
+      Start 40: native_view_scale
+40/42 Test #40: native_view_scale ................   Passed    0.01 sec
+      Start 41: plugin_live
+41/42 Test #41: plugin_live ......................   Passed   44.37 sec
+      Start 42: advanced_effects_asan
+42/42 Test #42: advanced_effects_asan ............   Passed    5.23 sec
+
+100% tests passed, 0 tests failed out of 42
+
+Total Test time (real) = 406.50 sec

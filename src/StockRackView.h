@@ -30,6 +30,31 @@ class StockRackView final : public juce::Component
             addAndMakeVisible(c);
         addAndMakeVisible(orderedList);
         addAndMakeVisible(nativePanel);
+        nativePanel.onTempo = [this]
+        {
+            auto target = owner;
+            auto token = session.beginDialog();
+            auto *dialog =
+                new juce::AlertWindow("Project tempo", "Constant tempo shared by MIDI and synced effects",
+                                      juce::MessageBoxIconType::NoIcon);
+            dialog->addTextEditor("bpm", juce::String(session.document.activeMix().midiTiming.bpm, 2),
+                                  "BPM (20–300)");
+            dialog->addButton("Apply", 1);
+            dialog->addButton("Cancel", 0);
+            juce::Component::SafePointer<StockRackView> safe(this);
+            dialog->enterModalState(
+                true,
+                juce::ModalCallbackFunction::create(
+                    [safe, target, token, dialog](int result)
+                    {
+                        if (!result || !safe || !safe->rack(target) || !safe->session.accepts(token))
+                            return;
+                        auto value = dialog->getTextEditorContents("bpm").getDoubleValue();
+                        safe->session.edit("Project tempo",
+                                           [&](auto &d) { d.activeMix().midiTiming.bpm = value; });
+                    }),
+                true);
+        };
         nativePanel.onImpulse = [this](bool relink) { chooseImpulse(relink); };
         nativePanel.onBegin = [this]
         {
@@ -528,7 +553,8 @@ class StockRackView final : public juce::Component
         }
         if (effect && effect->nativeVersion)
             names.clear();
-        nativePanel.bind(effect, editable);
+        nativePanel.bind(effect, editable, session.document.activeMix().midiTiming,
+                         session.document.renderSettings.tailSeconds);
         nativePanel.setVisible(effect && effect->nativeVersion && !externalSelected && expanded);
         parameterCount = names.size();
         for (int i = 0; i < 4; ++i)
@@ -813,8 +839,8 @@ class StockRackView final : public juce::Component
                     return;
                 }
                 juce::PopupMenu map;
-                map.addSectionHeader("IR routing — match the file and bus");
-                map.addItem(1, "Mono → each role");
+                map.addSectionHeader("IR routing: match the file and bus");
+                map.addItem(1, "Mono to each role");
                 map.addItem(2, "Stereo L/R diagonal");
                 map.addItem(3, "True stereo: LL, LR, RL, RR");
                 map.addItem(4, "Bus roles in WAV physical order");

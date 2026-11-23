@@ -154,6 +154,56 @@ void delayHistoryTests()
         check(changing(block) == canonical,
               "Sudden parameter changes preserve global processing/partition clock");
 }
+void advancedEndpointTests()
+{
+    using namespace sp;
+    auto e = fixedDelay(1);
+    nativeValue(e, "feedback", .9);
+    nativeValue(e, "high-cut", 12000);
+    NativeEffectProcessor p(e, channelLayout("mono-v1"), 48000);
+    juce::AudioBuffer<float> b(1, 1);
+    for (int n = 0; n < 48000; ++n)
+    {
+        if (n == 1000)
+        {
+            nativeValue(e, "high-cut", 40000);
+            p.update(e);
+        }
+        b.setSample(0, 0, n % 2 ? .01f : -.01f);
+        p.process(b, 1);
+        if (n > 47000)
+            check(std::abs(b.getSample(0, 0) - (n % 2 ? -.01 : .01) / 1.9) < 1e-7,
+                  "Live high-cut reaches exact Off endpoint and independent unfiltered feedback transfer");
+    }
+    auto r = makeStockEffect("algorithmic-reverb");
+    nativeValue(r, "mix", 1);
+    nativeValue(r, "decay", .1);
+    nativeValue(r, "diffusion", 0);
+    nativeValue(r, "early-late", 1);
+    nativeValue(r, "damping", 2000);
+    auto off = r;
+    nativeValue(off, "damping", 40000);
+    NativeEffectProcessor moving(r, channelLayout("mono-v1"), 48000),
+        reference(off, channelLayout("mono-v1"), 48000);
+    juce::AudioBuffer<float> a(1, 1), target(1, 1);
+    double error = 0;
+    for (int n = 0; n < 144000; ++n)
+    {
+        if (n == 1000)
+        {
+            nativeValue(r, "damping", 40000);
+            moving.update(r);
+        }
+        auto value = (float)(.01 * std::sin(n * .9));
+        a.setSample(0, 0, value);
+        target.setSample(0, 0, value);
+        moving.process(a, 1);
+        reference.process(target, 1);
+        if (n > 140000)
+            error = std::max(error, std::abs((double)a.getSample(0, 0) - target.getSample(0, 0)));
+    }
+    check(error < 1e-7, "Live Reverb damping Off settles to the undamped reference with retained history");
+}
 void delayGraphTests(const juce::File &base)
 {
     using namespace sp;

@@ -1,0 +1,93 @@
+{
+  "scope": "Existing unchanged vendor regression; not external writable automation or every native/hosted combination",
+  "cases": [
+    {
+      "plugin": "OldSkoolVerb",
+      "version": "2.14",
+      "format": "VST3",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "layout": "mono-v1",
+      "owner": "Track",
+      "sha256": "3825f9e5bb65c0e919e0923130213bf4de4a132c69e31df55ed337ed8e294db4",
+      "maxDifference": 0.031249999999832,
+      "tailPeak": 0.001277093193494
+    },
+    {
+      "plugin": "OldSkoolVerb",
+      "version": "2.14",
+      "format": "VST3",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "layout": "mono-v1",
+      "owner": "Master",
+      "sha256": "2a9aa82545b345cfc7f57231b8e5ddbdcb4aecc9a8448615d7fe2259955378af",
+      "maxDifference": 0.03125000000016,
+      "tailPeak": 0.001277093193494
+    },
+    {
+      "plugin": "OldSkoolVerb",
+      "version": "2.14",
+      "format": "VST3",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "layout": "stereo-v1",
+      "owner": "Track",
+      "sha256": "caf90125b04981f55d217870c384006d3dd9dbe8e4f061a66d193880b9a45485",
+      "maxDifference": 0.062499999999936,
+      "tailPeak": 0.001901993062347
+    },
+    {
+      "plugin": "OldSkoolVerb",
+      "version": "2.14",
+      "format": "VST3",
+      "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+      "layout": "stereo-v1",
+      "owner": "Master",
+      "sha256": "7eb24fa3b06e8078c1f3c4a59129edec471bee5eb41707dc9487414102d1af67",
+      "maxDifference": 0.062500000000225,
+      "tailPeak": 0.001901993062347
+    },
+    {
+      "plugin": "LV50A",
+      "version": "1.0.0",
+      "format": "VST3",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "layout": "mono-v1",
+      "owner": "Track",
+      "sha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+      "maxDifference": 0.020701952278614,
+      "tailPeak": 0.0
+    },
+    {
+      "plugin": "LV50A",
+      "version": "1.0.0",
+      "format": "VST3",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "layout": "mono-v1",
+      "owner": "Master",
+      "sha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+      "maxDifference": 0.020701952278614,
+      "tailPeak": 0.0
+    },
+    {
+      "plugin": "LV50A",
+      "version": "1.0.0",
+      "format": "VST3",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "layout": "stereo-v1",
+      "owner": "Track",
+      "sha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+      "maxDifference": 0.041429787874222,
+      "tailPeak": 0.0
+    },
+    {
+      "plugin": "LV50A",
+      "version": "1.0.0",
+      "format": "VST3",
+      "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+      "layout": "stereo-v1",
+      "owner": "Master",
+      "sha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+      "maxDifference": 0.041429787874222,
+      "tailPeak": 0.0
+    }
+  ]
+}

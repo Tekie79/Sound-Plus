@@ -64,7 +64,9 @@ class SoundPlusApplication final : public juce::JUCEApplication
         if (planAt >= 0 && outputAt >= 0)
         {
             auto plan = juce::JSON::parse(juce::File(args[planAt + 1]));
-            if (plan["mode"].toString().startsWith("semantic-designer") || plan["mode"].toString()=="native-effects")
+            if (plan["mode"].toString().startsWith("semantic-designer") ||
+                (plan["mode"].toString() == "native-effects" ||
+                 plan["mode"].toString() == "advanced-effects"))
             {
                 window->workstation->showDesigner(true);
                 window->workstation->designer.session.open(juce::File(plan["designFile"].toString()));

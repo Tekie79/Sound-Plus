@@ -2393,13 +2393,19 @@ void DesignerView::benchmarkEndGesture()
     benchmarkNativeSlider = nullptr;
     benchmarkNativePhase = -1;
 }
-void DesignerView::benchmarkNativeControls(int phase, double value)
+void DesignerView::benchmarkNativeControls(int phase, double value, bool advanced)
 {
     static const juce::StringArray types{"parametric-eq", "compressor", "expander",
                                          "peak-limiter",  "transient",  "saturation"};
     static const juce::StringArray parameters{"b1-gain", "threshold",     "threshold",
                                               "ceiling", "attack-amount", "drive"};
-    if (!juce::isPositiveAndBelow(phase, types.size()))
+    const juce::StringArray advancedTypes{"advanced-delay", "algorithmic-reverb", "convolution-reverb",
+                                          "advanced-delay", "algorithmic-reverb", "convolution-reverb"};
+    const juce::StringArray advancedParameters{"feedback",  "decay",   "mix",
+                                               "mod-depth", "damping", "predelay"};
+    auto &selectedTypes = advanced ? advancedTypes : types;
+    auto &selectedParameters = advanced ? advancedParameters : parameters;
+    if (!juce::isPositiveAndBelow(phase, selectedTypes.size()))
         return;
     if (phase != benchmarkNativePhase)
     {
@@ -2409,10 +2415,10 @@ void DesignerView::benchmarkNativeControls(int phase, double value)
         if (!fx)
             return;
         for (size_t i = 0; i < fx->size(); ++i)
-            if ((*fx)[i].type == types[phase])
+            if ((*fx)[i].type == selectedTypes[phase])
                 trackRack->slots.setSelectedId((int)i + 1, juce::sendNotificationSync);
         trackRack->setParametersExpanded(true);
-        benchmarkNativeSlider = trackRack->nativePanel.measurementSlider(parameters[phase]);
+        benchmarkNativeSlider = trackRack->nativePanel.measurementSlider(selectedParameters[phase]);
         if (!benchmarkNativeSlider)
             return;
         benchmarkNativePhase = phase;
@@ -2421,12 +2427,12 @@ void DesignerView::benchmarkNativeControls(int phase, double value)
     if (benchmarkNativeSlider)
     {
         auto lo = benchmarkNativeSlider->getMinimum(), hi = benchmarkNativeSlider->getMaximum();
-        if (phase == 1 || phase == 2)
+        if (!advanced && (phase == 1 || phase == 2))
         {
             lo = -40;
             hi = -8;
         }
-        if (phase == 3)
+        if (!advanced && phase == 3)
         {
             lo = -12;
             hi = -1;

@@ -1,0 +1,15 @@
+{
+  "name": "AUDelay",
+  "vendor": "Apple",
+  "version": "1.6.0",
+  "format": "AudioUnit",
+  "fingerprint": "3eda5d20dcd540eeaa4015267ca67e5bc8838197043125d955f70a95fb83aaa1",
+  "passed": true,
+  "testedLayouts": [
+    "mono-v1",
+    "stereo-v1",
+    "5.1-side-v1",
+    "5.1-rear-v1"
+  ],
+  "scope": "Apple AUv2 registration, exact buses, state/parameters, persistent dry PCM, finite render; not AUv3 or human listening"
+}

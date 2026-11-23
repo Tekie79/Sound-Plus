@@ -1,0 +1,5 @@
+Delay reopen max error 7.02187e-16
+IR capture rate 44100 event 560 max error 0 produced 9476
+IR capture rate 48000 event 512 max error 0 produced 8704
+IR capture rate 96000 event 259 max error 0 produced 4355
+FAIL after 0 checks: Discrete/unknown conversion needs an explicit channel matrix

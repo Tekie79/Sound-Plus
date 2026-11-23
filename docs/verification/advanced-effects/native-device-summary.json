@@ -1,0 +1,27 @@
+{
+  "success": true,
+  "device": "MacBook Pro Speakers",
+  "rate": 48000.0,
+  "buffer": 512,
+  "inputs": 450,
+  "observedEdits": 363,
+  "measuredChanges": 346,
+  "latencyPolicy": "input-to-prepared-callback; not physical DAC/acoustic",
+  "p50Ms": 64.21335420012474,
+  "p95Ms": 80.67900002002716,
+  "maxMs": 85.97758328914642,
+  "underruns": 0,
+  "graphEpochs": [
+    1,
+    1
+  ],
+  "helperPids": [
+    63739,
+    63739
+  ],
+  "producerMaxMs": 9.113291680812836,
+  "helperCPUSeconds": 4.4340850000000005,
+  "helperPeakRSSBytes": 98910208,
+  "appCPUSeconds": 4.832747,
+  "appPeakRSSBytes": 157483008
+}

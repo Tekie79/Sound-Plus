@@ -1,5 +1,8 @@
 #include "AdvancedIR.h"
 #include <complex>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
 namespace
 {
 void writeImpulse(const juce::File &file, const Planar &pcm, double rate, const sp::ChannelLayout &bus = {})
@@ -299,6 +302,35 @@ void convolutionTests(const juce::File &base)
     writeImpulse(f, {{.6f, 0, -.1f}}, 48000);
     rejects([&] { verifyImpulseFile(*e.impulse); }, "Changed IR blocks");
     rejects([&] { relinkImpulse(*e.impulse, f, mono); }, "Different IR cannot relink silently");
+    {
+        int fd = ::open(copied.getFullPathName().toRawUTF8(), O_RDWR);
+        struct stat stamp
+        {
+        };
+        check(fd >= 0 && ::fstat(fd, &stamp) == 0, "IR same-stamp mutation fixture opens");
+        unsigned char byte = 0;
+        check(::pread(fd, &byte, 1, stamp.st_size - 1) == 1, "Read IR mutation byte");
+        byte ^= 1;
+        check(::pwrite(fd, &byte, 1, stamp.st_size - 1) == 1, "Mutate equal-size IR content");
+        timespec times[2] = {stamp.st_atimespec, stamp.st_mtimespec};
+        check(::futimens(fd, times) == 0, "Retain exact IR timestamp");
+        ::close(fd);
+        rejects([&] { verifyImpulseFile(relinked); },
+                "Same-size/inode/timestamp IR mutation still rejects by SHA-256");
+        auto large = makeStockEffect("convolution-reverb");
+        auto r = relinked;
+        r.source.channels = 16;
+        r.source.samples = 480000;
+        r.source.sampleRate = 48000;
+        r.mapping = "role-diagonal";
+        r.routes.clear();
+        auto bus = discreteLayout(16);
+        for (int c = 0; c < 16; ++c)
+            r.routes.push_back({bus.roles[c], bus.roles[c], c});
+        large.impulse = r;
+        rejects([&] { NativeEffectProcessor oversized(large, bus, 192000); },
+                "Wide maximum IR rejects aggregate memory before file decode; no truncation");
+    }
     auto bad = *e.impulse;
     bad.source.samples = 480001;
     rejects([&] { validateImpulse(bad); }, "Duration bound rejects before decode");
@@ -325,6 +357,31 @@ void convolutionGraphTests(const juce::File &base)
     enableTrackSchema(dry.original);
     auto track = dry.original.tracks[0].id, group = addTrack(dry.original, TrackKind::groupBus);
     routeTrack(dry.original, track, group);
+    // A frozen mid-file stop must not leak future source merely because P grows.
+    auto causalIR = dir.getChildFile("same-rate causal IR.wav");
+    writeImpulse(causalIR, {{.5f, 0, -.1f}}, 48000);
+    auto boundedInput = advancedGraph(dry, 18000);
+    for (size_t n = 6000; n < boundedInput[0].size(); ++n)
+        boundedInput[0][n] = 0;
+    for (int partition = 0; partition < 3; ++partition)
+    {
+        auto frozen = dry;
+        auto e = convolution(causalIR, dry.original.layout, "mono-diagonal", partition);
+        frozen.original.layers[0].inserts.stock = {e};
+        auto t = freezeTake(frozen, "Mid-source exact stop");
+        t.generation = 1;
+        t.complete = true;
+        t.bodyEnd = t.outputFrames = 6000;
+        t.captureRate = 48000;
+        hashTake(t);
+        frozen.takes = {t};
+        frozen.activeTake = t.id;
+        auto actual = advancedGraph(frozen, 18000);
+        auto expected =
+            directConvolution(boundedInput, decodedIR(causalIR), *e.impulse, dry.original.layout, 0);
+        check(advancedError(actual, expected) < 2e-6,
+              "Frozen body/tail input gate excludes pure FFT partition latency at all three sizes");
+    }
     auto input = advancedGraph(dry, 24000);
     auto effect = convolution(irFile, dry.original.layout);
     auto direct = advancedRun(effect, dry.original.layout, 48000, input, 61);

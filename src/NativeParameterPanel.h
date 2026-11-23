@@ -41,7 +41,9 @@ class NativeParameterPanel final : public juce::Component
             g.fillRoundedRectangle(r.withWidth(r.getWidth() * (float)std::clamp(value / 48., 0., 1.)), 2);
         }
     } meter;
-    bool hasMeter = false, hasImpulse = false;
+    bool hasMeter = false, hasImpulse = false, advanced = false;
+    juce::TextButton tempo;
+    juce::Label tail;
     juce::Label impulseName;
     juce::TextButton chooseIR{"Choose IR"}, relinkIR{"Relink"};
     bool refreshing = false, dragging = false;
@@ -67,6 +69,18 @@ class NativeParameterPanel final : public juce::Component
     }
     NativeParameterPanel()
     {
+        addAndMakeVisible(tempo);
+        addAndMakeVisible(tail);
+        tail.setFont(juce::FontOptions(11.f));
+        tail.setColour(juce::Label::textColourId, ui::muted);
+        tempo.setTitle("Constant project tempo");
+        tempo.setTooltip("Edit the shared project/MIDI tempo. Prepares fresh processing; frozen takes retain "
+                         "their own clock.");
+        tempo.onClick = [this]
+        {
+            if (onTempo)
+                onTempo();
+        };
         addAndMakeVisible(impulseName);
         addAndMakeVisible(chooseIR);
         addAndMakeVisible(relinkIR);
@@ -88,6 +102,7 @@ class NativeParameterPanel final : public juce::Component
                 onImpulse(true);
         };
     }
+    std::function<void()> onTempo;
     std::function<void(bool)> onImpulse;
     std::function<void(int, double)> onValue;
     std::function<void(int)> onLock;
@@ -103,7 +118,7 @@ class NativeParameterPanel final : public juce::Component
         meter.setTitle("Gain reduction " + juce::String(value, 1) + " dB");
         meter.repaint();
     }
-    void bind(const StockEffect *e, bool editable)
+    void bind(const StockEffect *e, bool editable, MidiTiming timing = {}, double tailSeconds = 0)
     {
         if (!e || !e->nativeVersion)
         {
@@ -113,6 +128,18 @@ class NativeParameterPanel final : public juce::Component
         setVisible(true);
         auto &d = nativeDefinition(*e);
         meterId = e->id;
+        advanced = isAdvancedEffect(e->type);
+        tempo.setVisible(advanced);
+        tail.setVisible(advanced);
+        tempo.setEnabled(editable);
+        tempo.setButtonText(juce::String(timing.bpm, 1) + " BPM");
+        auto estimate = advanced ? advancedTailSeconds(*e, timing) : 0;
+        tail.setText("Tail ~ " + juce::String(estimate, 1) + " s" +
+                         (estimate > tailSeconds ? " · exceeds export tail" : ""),
+                     juce::dontSendNotification);
+        tail.setTooltip("Advisory decay estimate; export uses only its requested tail (" +
+                        juce::String(tailSeconds, 1) +
+                        " s). No automatic extension. Accurate audition reconstructs history from zero.");
         hasImpulse = e->type == "convolution-reverb";
         impulseName.setVisible(hasImpulse);
         chooseIR.setVisible(hasImpulse);
@@ -122,7 +149,7 @@ class NativeParameterPanel final : public juce::Component
         impulseName.setText(e->impulse ? (e->impulse->source.error.isNotEmpty()
                                               ? "IR unresolved: " + e->impulse->source.error
                                               : e->impulse->source.name)
-                                       : "IR unresolved — choose a file",
+                                       : "IR unresolved: choose a file",
                             juce::dontSendNotification);
         impulseName.setTooltip(e->impulse ? e->impulse->source.path + "\n" + e->impulse->mapping +
                                                 "; SHA-256 " + e->impulse->sha256 +
@@ -251,7 +278,7 @@ class NativeParameterPanel final : public juce::Component
     }
     int preferredHeight() const
     {
-        int h = (hasMeter ? 20 : 0) + (hasImpulse ? 58 : 0);
+        int h = (hasMeter ? 20 : 0) + (hasImpulse ? 58 : 0) + (advanced ? 30 : 0);
         for (auto &g : groups)
             h += 30 + (g->expanded ? (int)g->rows.size() * 46 : 0);
         return h;
@@ -259,6 +286,13 @@ class NativeParameterPanel final : public juce::Component
     void resized() override
     {
         auto area = getLocalBounds();
+        if (advanced)
+        {
+            auto row = area.removeFromTop(30);
+            tempo.setBounds(row.removeFromLeft(92).reduced(0, 2));
+            row.removeFromLeft(6);
+            tail.setBounds(row);
+        }
         if (hasImpulse)
         {
             impulseName.setBounds(area.removeFromTop(22));

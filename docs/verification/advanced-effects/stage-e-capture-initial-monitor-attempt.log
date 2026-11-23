@@ -1,0 +1,4 @@
+Delay reopen max error 7.02187e-16
+IR capture rate 44100 event 560 max error 0.00411321 produced 9476
+first mismatch 0 actual 0.00135404 replay 0.0019149
+FAIL after 0 checks: Audible Perform macro capture/replay including IR/PDC/rate conversion

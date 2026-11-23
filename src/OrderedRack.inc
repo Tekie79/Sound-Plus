@@ -15,7 +15,7 @@ class OrderedRack
     std::vector<Step> steps;
     juce::AudioBuffer<float> dry, ring;
     juce::SmoothedValue<float> wet;
-    int delay = 0, position = 0, channels = 2;
+    int delay = 0, inputDependencies = 0, position = 0, channels = 2;
     bool fixed = false, initialBypass = false;
     const CompiledAutomation *automation = nullptr;
     int64_t automationInput = 0;
@@ -70,6 +70,12 @@ class OrderedRack
                     step.native =
                         std::make_unique<NativeEffectProcessor>(step.base, bus, rate, timing, cancelled);
                     delay += step.native->latency();
+                    // Uniform FFT buffering is purely causal and adds no source
+                    // lookahead. Only compensated IR conversion support does.
+                    inputDependencies +=
+                        step.native->latency() - (step.base.type == "convolution-reverb"
+                                                      ? (128 << (int)nativeValue(step.base, "partition"))
+                                                      : 0);
                 }
                 else
                     step.stock =
@@ -81,6 +87,7 @@ class OrderedRack
                 recipe.runtimeFixedState = fixed;
                 step.hosted = std::make_unique<HostedRackClient>(recipe, bus, rate, cancelled);
                 delay += step.hosted->latency();
+                inputDependencies += step.hosted->latency();
             }
             steps.push_back(std::move(step));
         }
@@ -102,6 +109,10 @@ class OrderedRack
                 row.getDynamicObject()->setProperty("reductionDb", step.native->gainReductionDb());
                 rows.add(row);
             }
+    }
+    int dependencies() const
+    {
+        return inputDependencies;
     }
     int latency() const
     {

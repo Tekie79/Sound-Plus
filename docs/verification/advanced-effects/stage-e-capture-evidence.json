@@ -1,0 +1,56 @@
+[
+  {
+    "outputRate": 44100.0,
+    "partition": 128,
+    "captureReplayMaxError": 1.862645149230957e-09,
+    "audibleMacroDifference": 0.012876435765065
+  },
+  {
+    "outputRate": 44100.0,
+    "partition": 256,
+    "captureReplayMaxError": 2.793967723846436e-09,
+    "audibleMacroDifference": 0.012870993814431
+  },
+  {
+    "outputRate": 44100.0,
+    "partition": 512,
+    "captureReplayMaxError": 2.793967723846436e-09,
+    "audibleMacroDifference": 0.012870993465185
+  },
+  {
+    "outputRate": 48000.0,
+    "partition": 128,
+    "captureReplayMaxError": 2.793967723846436e-09,
+    "audibleMacroDifference": 0.012872816761956
+  },
+  {
+    "outputRate": 48000.0,
+    "partition": 256,
+    "captureReplayMaxError": 1.862645149230957e-09,
+    "audibleMacroDifference": 0.012872814084403
+  },
+  {
+    "outputRate": 48000.0,
+    "partition": 512,
+    "captureReplayMaxError": 2.095475792884827e-09,
+    "audibleMacroDifference": 0.012872815132141
+  },
+  {
+    "outputRate": 96000.0,
+    "partition": 128,
+    "captureReplayMaxError": 1.862645149230957e-09,
+    "audibleMacroDifference": 0.012868894031271
+  },
+  {
+    "outputRate": 96000.0,
+    "partition": 256,
+    "captureReplayMaxError": 1.862645149230957e-09,
+    "audibleMacroDifference": 0.012868892401457
+  },
+  {
+    "outputRate": 96000.0,
+    "partition": 512,
+    "captureReplayMaxError": 2.793967723846436e-09,
+    "audibleMacroDifference": 0.012868892983533
+  }
+]

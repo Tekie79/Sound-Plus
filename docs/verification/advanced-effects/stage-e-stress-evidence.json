@@ -1,0 +1,13 @@
+{
+  "scenario": "16ch; Clip delay; Track delay/reverb/IR; sampler MIDI + Group reverb; Master IR/delay/limiter; six hidden curves",
+  "projectRate": 48000,
+  "block": 512,
+  "blocks": 192,
+  "prepareMs": 4.131541669368744,
+  "p50Ms": 2.533291637897491,
+  "p95Ms": 2.772958338260651,
+  "maxMs": 5.391666650772095,
+  "peakRSSBytes": 90030080,
+  "cpuSeconds": 0.504777,
+  "peak": 0.000232103324379
+}

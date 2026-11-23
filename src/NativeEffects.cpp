@@ -313,7 +313,10 @@ juce::var nativeFactoryPresets(const juce::String &type)
                         throw std::runtime_error("Unknown factory preset target");
                     effect.nativeValues[(size_t)(at - definition.parameters.begin())] = (double)value.value;
                 }
-                out.add(nativePresetJson(effect, row["name"].toString()));
+                auto preset = nativePresetJson(effect, row["name"].toString());
+                if (type == "convolution-reverb")
+                    put(preset, "retainImpulse", true);
+                out.add(preset);
             }
     return out;
 }
@@ -334,6 +337,9 @@ void applyNativePreset(StockEffect &e, const juce::var &v)
         throw std::runtime_error("Preset type/version mismatch");
     auto copy = e;
     nativeEffectFromJson(copy, v["state"]);
+    if (e.type == "convolution-reverb" && v["retainImpulse"].isBool() && (bool)v["retainImpulse"])
+        copy.impulse = e.impulse;
+    validateNativeEffect(copy);
     e = std::move(copy);
 }
 } // namespace sp

@@ -254,7 +254,7 @@ void Benchmark::save(bool success, const juce::String &error)
 void Benchmark::timerCallback()
 {
     const auto now = monotonicMs();
-    if(plan["mode"].toString()=="native-effects"){nativeEffectsTick(now);return;}
+    if(plan["mode"].toString()=="native-effects" || plan["mode"].toString()=="advanced-effects"){nativeEffectsTick(now);return;}
     if(plan["mode"].toString()=="semantic-designer-reliability")
     {reliabilityTick(now);return;}
     int total = 0, done = 0;
@@ -1699,7 +1699,7 @@ void Benchmark::nativeEffectsTick(double now)
     if(!designer)return;
     if(phase==0)
     {
-        if(designer->session.working||designer->session.document.name!="Native Effects QA")return;
+        if(designer->session.working||designer->session.document.name!=(plan["mode"].toString()=="advanced-effects"?"Advanced Effects Stress QA":"Native Effects QA"))return;
         view.audio.gain(.04f);designer->session.play();phase=1;return;
     }
     auto state=view.audio.status();
@@ -1713,7 +1713,7 @@ void Benchmark::nativeEffectsTick(double now)
     double elapsed=now-audioDispatch;
     if(elapsed<12000&&now-lastDesignerInput>=25)
     {
-        designer->benchmarkNativeControls(std::min(5,(int)(elapsed/2000)),.5+.45*std::sin(elapsed*.006));
+        designer->benchmarkNativeControls(std::min(5,(int)(elapsed/2000)),.5+.45*std::sin(elapsed*.006),plan["mode"].toString()=="advanced-effects");
         lastDesignerInput=now;++index;
         auto row=juce::var(new juce::DynamicObject());row.getDynamicObject()->setProperty("elapsedMs",elapsed);row.getDynamicObject()->setProperty("heardEdit",state["heardEdit"]);row.getDynamicObject()->setProperty("editLatencyMs",state["editLatencyMs"]);row.getDynamicObject()->setProperty("producerMaxMs",state["producerMaxMs"]);samples.add(row);
         if(index%20==0)view.benchmarkSearch(index%40==0?"source":"texture");

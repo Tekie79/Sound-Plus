@@ -1,0 +1,5 @@
+{
+  "shortNaiveMaxError": 7.450580596923828e-09,
+  "longWholeSignalFFTMaxError": 3.259629011154175e-09,
+  "independentSincMaxError": 2.147769497410261e-17
+}

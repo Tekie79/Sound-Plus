@@ -541,6 +541,10 @@ class Voice
     {
         rack->appendMeters(rows);
     }
+    int dependencies() const
+    {
+        return rack->dependencies();
+    }
     int latency() const
     {
         return rack->latency();
@@ -643,7 +647,7 @@ struct DesignGraph::Impl
     juce::SmoothedValue<float> masterGain;
     std::vector<std::unique_ptr<Voice>> voices;
     std::unique_ptr<OrderedRack> masterRack;
-    int pipelineLatency = 0;
+    int pipelineLatency = 0, pipelineDependencies = 0;
     bool primed = false;
     juce::AudioBuffer<float> block{2, 512};
     struct TrackNode
@@ -664,7 +668,8 @@ struct DesignGraph::Impl
         ChannelMatrix legacyConversion{};
         bool legacyInput = false;
         bool audible = true, volumeAutomated = false;
-        int destination = -1, inputLatency = 0, outputLatency = -1, alignFrames = 0, alignPosition = 0;
+        int destination = -1, inputLatency = 0, outputLatency = -1, inputDependencies = 0,
+            outputDependencies = 0, alignFrames = 0, alignPosition = 0;
         juce::SmoothedValue<float> gain;
     };
     std::vector<std::unique_ptr<TrackNode>> tracks;
@@ -695,6 +700,7 @@ struct DesignGraph::Impl
                         node->instrument =
                             std::make_unique<HostedRackClient>(rack, t.layout, sampleRate, cancelled);
                         node->inputLatency = node->instrument->latency();
+                        node->inputDependencies = node->inputLatency;
                     }
                 }
                 else if (!node->midi.empty())
@@ -724,6 +730,7 @@ struct DesignGraph::Impl
                         {
                             node->clips.push_back(v.get());
                             node->inputLatency = std::max(node->inputLatency, v->latency());
+                            node->inputDependencies = std::max(node->inputDependencies, v->dependencies());
                         }
             for (auto *v : node->clips)
                 v->compensate(node->inputLatency - v->latency());
@@ -766,7 +773,11 @@ struct DesignGraph::Impl
                 return node.outputLatency;
             for (size_t i = 0; i < tracks.size(); ++i)
                 if (tracks[i]->destination == index)
+                {
                     node.inputLatency = std::max(node.inputLatency, latency((int)i));
+                    node.inputDependencies = std::max(node.inputDependencies, tracks[i]->outputDependencies);
+                }
+            node.outputDependencies = node.inputDependencies + node.rack->dependencies();
             node.outputLatency = node.inputLatency + node.rack->latency();
             trackOrder.push_back(index);
             return node.outputLatency;
@@ -794,6 +805,11 @@ struct DesignGraph::Impl
             }
         }
         pipelineLatency = masterInputLatency + masterRack->latency();
+        pipelineDependencies = 0;
+        for (auto &node : tracks)
+            if (node->destination < 0)
+                pipelineDependencies = std::max(pipelineDependencies, node->outputDependencies);
+        pipelineDependencies += masterRack->dependencies();
     }
     void refreshTracks()
     {
@@ -954,12 +970,20 @@ struct DesignGraph::Impl
         for (auto &voice : voices)
             voice->compensate(longest - voice->latency());
         pipelineLatency = longest + masterRack->latency();
+        for (auto &voice : voices)
+            pipelineDependencies = std::max(pipelineDependencies, voice->dependencies());
+        pipelineDependencies += masterRack->dependencies();
         if (document.activeMix().trackSchema)
             prepareTracks(invariant, cancelled);
         // v3 records the producer's audible/source clock after PDC priming.
         // Reapply controls at the same internal graph position, including the
         // frozen pipeline's lookahead. Historical zero-latency stock recipes
         // retain their exact event interpretation.
+        // Recipe7 retains the bounded source dependencies used by compensated
+        // lookahead/causalized IR conversion during the consumed body. Output
+        // duration stays bodyEnd; historical recipes keep their original gate.
+        if (auto *t = selectedTake(d); t && t->processing == "advanced-effects-takes-v1")
+            inputEnd += pipelineDependencies;
         if (auto *t = selectedTake(d);
             t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
             for (auto &event : events)

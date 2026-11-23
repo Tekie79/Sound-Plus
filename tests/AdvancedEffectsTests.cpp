@@ -139,6 +139,7 @@ void contracts(const juce::File &base)
 #include "AdvancedIntegrationTests.inc"
 #include "AdvancedReverbTests.inc"
 #include "AdvancedConvolutionTests.inc"
+#include "AdvancedWorkflowTests.inc"
 void runAdvancedEffectsTests(const juce::File &base)
 {
     base.createDirectory();
@@ -156,5 +157,9 @@ void runAdvancedEffectsTests(const juce::File &base)
     }
     convolutionTests(base);
     convolutionGraphTests(base);
+    advancedEndpointTests();
+    advancedCaptureTests(base);
+    advancedWorkflowTests(base);
+    advancedExportTests(base);
     std::cout << "Advanced effects: " << checks << " assertions passed\n";
 }

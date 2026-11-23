@@ -89,6 +89,10 @@ struct Parameters
             values[i] = (p.discrete && !crossfade) || p.structural
                             ? targets[i]
                             : values[i] + (targets[i] - values[i]) * slew;
+            // Reach exact semantic endpoints (zero, filter Off) after settling.
+            // One-pole asymptotes otherwise leave endpoint-only modes unreachable.
+            if (std::abs(values[i] - targets[i]) <= 1.e-9 * std::max(1., std::abs(targets[i])))
+                values[i] = targets[i];
         }
     }
 };
