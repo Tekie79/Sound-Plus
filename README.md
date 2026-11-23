@@ -18,7 +18,7 @@ Current insert ordering, retained native editors and plugin-aware take behavior 
 
 ## Build and launch
 
-Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for initial dependency downloads. Local AI requires macOS 13.3+. The Library/audition application retains its macOS 12.0 compilation minimum. Only macOS 26.3.2 was hardware tested. CMake, Ninja, JUCE and the native ONNX Runtime are installed inside this checkout. No Homebrew packages or administrator install are required.
+Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for initial dependency downloads. Local AI requires macOS 13.3+. The Library/audition application retains its macOS 12.0 compilation minimum. Only macOS 26.3.2 was hardware tested. CMake, Ninja, JUCE and the native ONNX Runtime are installed inside this checkout. No Homebrew packages or administrator install are required. The [macOS release procedure](docs/MACOS_RELEASE.md) covers versioned artifacts, license and notice evidence, signing, notarization, and installation qualification.
 
 ```sh
 cd /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus

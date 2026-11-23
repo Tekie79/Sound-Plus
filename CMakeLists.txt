@@ -2,12 +2,17 @@ cmake_minimum_required(VERSION 3.24)
 set(CMAKE_OSX_DEPLOYMENT_TARGET "12.0" CACHE STRING "Minimum macOS")
 set(CMAKE_OSX_ARCHITECTURES "arm64" CACHE STRING "Target architecture")
 project(SoundPlus VERSION 0.1.0 LANGUAGES C CXX OBJCXX)
+set(SOUNDPLUS_BUILD_NUMBER "1" CACHE STRING "Monotonically increasing macOS release build number")
+if(NOT SOUNDPLUS_BUILD_NUMBER MATCHES "^[1-9][0-9]*$" OR SOUNDPLUS_BUILD_NUMBER GREATER 9999)
+  message(FATAL_ERROR "SOUNDPLUS_BUILD_NUMBER must be an integer from 1 to 9999")
+endif()
 if(NOT APPLE)
   message(FATAL_ERROR "This milestone targets macOS Apple Silicon")
 endif()
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(JUCE_DIR "${CMAKE_SOURCE_DIR}/vendor/JUCE-8.0.6" CACHE PATH "JUCE 8.0.6 source")
+set(SOUNDPLUS_VST3_SDK "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
 include(cmake/JuceNativeScale.cmake)
 add_subdirectory("${JUCE_DIR}" juce EXCLUDE_FROM_ALL)
 find_package(SQLite3 REQUIRED)
@@ -30,12 +35,13 @@ add_library(soundplus_core STATIC
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
-  JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="0.1.0")
+  JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="${PROJECT_VERSION}")
 target_link_libraries(soundplus_core PUBLIC SQLite::SQLite3
   juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons NativePresets
   "-framework CoreServices" "-framework Foundation" "-framework AVFoundation")
 target_compile_options(soundplus_core PRIVATE -Wall -Wextra -Wpedantic)
 juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
+  VERSION "${PROJECT_VERSION}" BUILD_VERSION "${SOUNDPLUS_BUILD_NUMBER}"
   BUNDLE_ID "org.soundplus.workstation" MICROPHONE_PERMISSION_ENABLED TRUE
   MICROPHONE_PERMISSION_TEXT "SoundPlus uses your microphone or audio interface only when you arm an Audio Track or enable input monitoring.")
 juce_add_console_app(SoundPlusPlugin PRODUCT_NAME "SoundPlusPlugin")
@@ -44,6 +50,7 @@ target_compile_definitions(SoundPlusPlugin PRIVATE JUCE_PLUGINHOST_VST3=1 JUCE_P
 target_link_libraries(SoundPlusPlugin PRIVATE soundplus_core)
 # Native editor windows belong to an identified GUI helper, never the main app.
 juce_add_gui_app(SoundPlusPluginEditor PRODUCT_NAME "SoundPlusPluginEditor" COMPANY_NAME "SoundPlus"
+  VERSION "${PROJECT_VERSION}" BUILD_VERSION "${SOUNDPLUS_BUILD_NUMBER}"
   BUNDLE_ID "org.soundplus.plugin-editor" MICROPHONE_PERMISSION_ENABLED FALSE)
 target_sources(SoundPlusPluginEditor PRIVATE src/PluginWorkerMain.cpp)
 target_compile_definitions(SoundPlusPluginEditor PRIVATE SOUNDPLUS_PLUGIN_EDITOR_APP=1)
@@ -81,6 +88,16 @@ add_custom_command(TARGET SoundPlus POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy "${ORT_DIR}/runtimes/osx-arm64/native/libonnxruntime.dylib"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Frameworks/libonnxruntime.1.22.1.dylib"
   COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses"
+  COMMAND ${CMAKE_COMMAND} -E copy "${JUCE_DIR}/LICENSE.md"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/JUCE-8.0.6.txt"
+  COMMAND ${CMAKE_COMMAND} -E copy "${SOUNDPLUS_VST3_SDK}/LICENSE.txt"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/VST3-SDK.txt"
+  COMMAND ${CMAKE_COMMAND} -E copy "${SOUNDPLUS_VST3_SDK}/base/LICENSE.txt"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/VST3-base.txt"
+  COMMAND ${CMAKE_COMMAND} -E copy "${SOUNDPLUS_VST3_SDK}/pluginterfaces/LICENSE.txt"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/VST3-interfaces.txt"
+  COMMAND ${CMAKE_COMMAND} -E copy "${SOUNDPLUS_VST3_SDK}/public.sdk/LICENSE.txt"
+    "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/VST3-public-sdk.txt"
   COMMAND ${CMAKE_COMMAND} -E copy "${ORT_DIR}/LICENSE"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/ONNXRuntime-MIT.txt"
   COMMAND ${CMAKE_COMMAND} -E copy "${ORT_DIR}/ThirdPartyNotices.txt"

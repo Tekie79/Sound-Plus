@@ -2,8 +2,9 @@
 
 | Dependency | Version used | Source and terms |
 | --- | --- | --- |
-| JUCE | 8.0.6 | Official [tagged source](https://github.com/juce-framework/JUCE/tree/8.0.6). Modules are dual licensed AGPLv3 / commercial JUCE. No commercial license is selected or purchased by this build. Preserve `vendor/JUCE-8.0.6/LICENSE.md` and module notices; choose the appropriate distribution license before shipping. |
+| JUCE | 8.0.6 | Official [tagged source](https://github.com/juce-framework/JUCE/tree/8.0.6). Modules are dual licensed AGPLv3 / commercial JUCE. The owner approved the AGPLv3 route on 2026-11-23. Retain the bundled JUCE and GNU notices and complete corresponding-source approval for the exact candidate before redistribution. |
 | Lucide SVG action icons | Pinned commit `de8d11aac831d519d2377ff516868244475fac06` | [Official source](https://github.com/lucide-icons/lucide/tree/de8d11aac831d519d2377ff516868244475fac06). 53 unmodified SVGs embedded locally, ISC plus applicable Feather MIT notices. Full upstream license and attribution ship in `Contents/Resources/Licenses`. Seven additional audio-specific SVGs are original SoundPlus symbols. Mapping, hashes and provenance are in `resources/icons/manifest.json`. |
+| Steinberg VST 3 SDK | 3.7.12 as vendored by JUCE 8.0.6 | The pinned root and interface license texts offer GPLv3 or proprietary licensing. The pinned base and public SDK texts use BSD-3-Clause terms. All four notices and GPLv3 ship in the bundle. The app hosts AU and VST3 through helpers. |
 | SQLite | macOS system library; SDK headers 3.51.0 on the tested Mac | System `libsqlite3`, FTS5 checked by the test suite. SQLite is [public domain](https://sqlite.org/copyright.html). Linked dynamically to the OS. |
 | CMake | 3.31.6 | Official Python wheel from PyPI; BSD 3-Clause. Build tool only. |
 | Ninja | 1.11.1.3 Python distribution | PyPI wheel; Apache 2.0. Build tool only. |
@@ -23,4 +24,4 @@ JUCE source archive SHA-256:
 
 The ONNX Runtime archive SHA-256 is `7b091e012dcfef2f9cc965f2252041101b1840c748ffbc1c18ba047bd6508b1c`; the bundled native library is `36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be` (33,548,864 bytes). Its MIT license, third-party notices and model-source notices are copied into `SoundPlus.app/Contents/Resources/Licenses`.
 
-JUCE's bundled codec and graphics dependencies retain their own notices, including FLAC, Ogg Vorbis, libpng, JPEG, HarfBuzz and SheenBidi. The upstream license inventory is in the downloaded source's `LICENSE.md`. A full redistribution audit, distribution license choice, signing and notarization remain OPS-05/OPS-06 qualification work. Plugin hosting is absent.
+JUCE's bundled codec and graphics dependencies retain their own notices, including FLAC, Ogg Vorbis, libpng, JPEG, HarfBuzz and SheenBidi. The upstream license inventory is in the downloaded source's `LICENSE.md`. Owner review of the exact redistributed source and notice set, signing and notarization remain OPS-05/OPS-06 qualification work. See [release build and acceptance](MACOS_RELEASE.md).

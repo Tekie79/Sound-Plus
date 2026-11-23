@@ -12,7 +12,7 @@ class SoundPlusApplication final : public juce::JUCEApplication
     }
     const juce::String getApplicationVersion() override
     {
-        return "0.1.0";
+        return JUCE_APPLICATION_VERSION_STRING;
     }
     bool moreThanOneInstanceAllowed() override
     {
