@@ -1,0 +1,82 @@
+[
+  {
+    "name": "OldSkoolVerb",
+    "version": "2.14",
+    "format": "VST3",
+    "layout": "mono-v1",
+    "owner": "Track",
+    "renderSha256": "628588e6a9b03bc79bd035f02bedf3d8ba39b21a1d24862345702db7f9c4a878",
+    "maxDifference": 0.031249999999804,
+    "tailPeak": 0.001277093193494
+  },
+  {
+    "name": "OldSkoolVerb",
+    "version": "2.14",
+    "format": "VST3",
+    "layout": "mono-v1",
+    "owner": "Master",
+    "renderSha256": "b617335936422e732405dd621104d78a397f6ea3fb2b5c2c85998e95d6a831b3",
+    "maxDifference": 0.031249999999801,
+    "tailPeak": 0.001277093193494
+  },
+  {
+    "name": "OldSkoolVerb",
+    "version": "2.14",
+    "format": "VST3",
+    "layout": "stereo-v1",
+    "owner": "Track",
+    "renderSha256": "91e33bab94ecdcb037096d84b1c9cc8cbad7c4cf0f811342dce5a7fa8657eaca",
+    "maxDifference": 0.062500000000064,
+    "tailPeak": 0.001901993062347
+  },
+  {
+    "name": "OldSkoolVerb",
+    "version": "2.14",
+    "format": "VST3",
+    "layout": "stereo-v1",
+    "owner": "Master",
+    "renderSha256": "b77d090ff756f5fe1122d0e521ad3156f004207dc7e6d416ee474c09004f2d2e",
+    "maxDifference": 0.062500000000108,
+    "tailPeak": 0.001901993062347
+  },
+  {
+    "name": "LV50A",
+    "version": "1.0.0",
+    "format": "VST3",
+    "layout": "mono-v1",
+    "owner": "Track",
+    "renderSha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+    "maxDifference": 0.020701952278614,
+    "tailPeak": 0.0
+  },
+  {
+    "name": "LV50A",
+    "version": "1.0.0",
+    "format": "VST3",
+    "layout": "mono-v1",
+    "owner": "Master",
+    "renderSha256": "e0cff4c0fb92d770883b435b1bf0b78829359ca634f6912d1b7941c6b0c24676",
+    "maxDifference": 0.020701952278614,
+    "tailPeak": 0.0
+  },
+  {
+    "name": "LV50A",
+    "version": "1.0.0",
+    "format": "VST3",
+    "layout": "stereo-v1",
+    "owner": "Track",
+    "renderSha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+    "maxDifference": 0.041429787874222,
+    "tailPeak": 0.0
+  },
+  {
+    "name": "LV50A",
+    "version": "1.0.0",
+    "format": "VST3",
+    "layout": "stereo-v1",
+    "owner": "Master",
+    "renderSha256": "eeaeeaa003d6dca13fcebbfb95104400f67d86556e0739bca6d0f8ec35246ffb",
+    "maxDifference": 0.041429787874222,
+    "tailPeak": 0.0
+  }
+]

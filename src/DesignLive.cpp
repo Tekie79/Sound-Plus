@@ -177,11 +177,21 @@ juce::var rackParameters(const std::vector<StockEffect> &rack)
         value->setProperty("id", effect.id);
         value->setProperty("bypass", effect.bypass);
         if (effect.nativeVersion)
-            value->setProperty("native", nativeEffectJson(effect));
-        juce::Array<juce::var> parameters;
-        for (auto parameter : effect.parameters)
-            parameters.add(parameter);
-        value->setProperty("parameters", parameters);
+        {
+            value->setProperty("nativeVersion", effect.nativeVersion);
+            juce::Array<juce::var> parameters;
+            auto &def = nativeDefinition(effect);
+            for (size_t i = 0; i < def.parameters.size(); ++i)
+                parameters.add(juce::Array<juce::var>{def.parameters[i].id, effect.nativeValues[i]});
+            value->setProperty("nativeParameters", parameters);
+        }
+        else
+        {
+            juce::Array<juce::var> parameters;
+            for (auto parameter : effect.parameters)
+                parameters.add(parameter);
+            value->setProperty("parameters", parameters);
+        }
         values.add(value);
     }
     return values;
@@ -194,16 +204,37 @@ void applyRack(std::vector<StockEffect> &rack, const juce::var &value)
     for (size_t i = 0; i < rack.size(); ++i)
     {
         auto item = (*values)[(int)i];
-        auto *parameters = item["parameters"].getArray();
         auto at =
             std::find_if(rack.begin(), rack.end(), [&](auto &s) { return s.id == item["id"].toString(); });
-        if (at == rack.end() || !parameters || parameters->size() != 4)
+        if (at == rack.end())
             throw std::runtime_error("Live insert identity mismatch");
         if (at->nativeVersion)
-            nativeEffectFromJson(*at, item["native"]);
+        {
+            auto &def = nativeDefinition(*at);
+            auto *parameters = item["nativeParameters"].getArray();
+            if ((int)item["nativeVersion"] != def.version || !parameters ||
+                parameters->size() != (int)def.parameters.size())
+                throw std::runtime_error("Live native schema mismatch");
+            for (int p = 0; p < parameters->size(); ++p)
+            {
+                auto pair = (*parameters)[p];
+                auto &info = def.parameters[(size_t)p];
+                if (!pair.isArray() || pair.size() != 2 || pair[0].toString() != info.id ||
+                    !(pair[1].isDouble() || pair[1].isInt() || pair[1].isInt64()))
+                    throw std::runtime_error("Live native target mismatch");
+                at->nativeValues[(size_t)p] = (double)pair[1];
+            }
+            validateNativeEffect(*at);
+        }
+        else
+        {
+            auto *parameters = item["parameters"].getArray();
+            if (!parameters || parameters->size() != 4 || item.hasProperty("nativeVersion"))
+                throw std::runtime_error("Live legacy parameter mismatch");
+            for (int p = 0; p < 4; ++p)
+                at->parameters[(size_t)p] = (double)(*parameters)[p];
+        }
         at->bypass = (bool)item["bypass"];
-        for (int p = 0; p < 4; ++p)
-            at->parameters[(size_t)p] = (double)(*parameters)[p];
     }
 }
 } // namespace
@@ -282,6 +313,8 @@ juce::var designParameters(const DesignDocument &base)
     DesignDocument document;
     document.original = resolvePerformance(base.activeMix());
     auto *object = new juce::DynamicObject();
+    if (hasNativeEffects(document.activeMix()))
+        object->setProperty("nativeControlsVersion", 1);
     object->setProperty("masterDb", document.activeMix().masterDb);
     object->setProperty("chainBypass", document.activeMix().inserts.bypass);
     if (hasHostedInserts(document.activeMix()))
@@ -361,6 +394,8 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
 {
     auto changed = document;
     changed.activeMix().performance = {};
+    if (hasNativeEffects(changed.activeMix()) && (int)parameters["nativeControlsVersion"] != 1)
+        throw std::runtime_error("Unsupported native control protocol");
     changed.activeMix().masterDb = (double)parameters["masterDb"];
     changed.activeMix().inserts.bypass = (bool)parameters["chainBypass"];
     applyRack(changed.activeMix().inserts.stock, parameters["masterEffects"]);

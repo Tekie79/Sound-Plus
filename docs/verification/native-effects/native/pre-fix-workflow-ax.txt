@@ -1,0 +1,124 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button New Collection
+	2 button Collection and selection actions
+	3 button Add existing sound folders, Help: Add Folder
+	4 text entry area (settable) Search library, Secondary Actions: Delete
+	5 button All Sounds, Help: Browse All Sounds · All sources. Collections and source filters intersect.
+	6 outline
+		7 row Native source.wav, 40.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/native-effects/native-001/Native source.wav
+			8 row Native source.wav, 40.00 seconds, 1 channels, MONO, 48000 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/native-effects/native-001/Native source.wav
+	9 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	10 button Per-channel source waveforms
+	11 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	12 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	13 container Library sidebar divider
+	14 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 11, Value: Native Effects QA
+	15 button Render Design, Help: Render Design (Command-R)
+	16 button Render settings
+	17 button Render selected layer
+	18 button Choose permanent output folder
+	19 button Library
+	20 button (settable) Browser, Help: Hide sound browser, Value: On
+	21 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	22 text (settable)
+	23 button New design, Help: New design (Command-N)
+	24 button Open design, Help: Open design (Command-O)
+	25 button Save design, Help: Save design (Command-S)
+	26 button Recover autosave
+	27 button Undo, Help: Undo (Command-Z)
+	28 button Add source
+	29 button Duplicate layer, Help: Duplicate layer (Command-D)
+	30 button Remove layer, Help: Remove layer (Delete / Backspace)
+	31 button Add track
+	32 button (settable) Edit, Value: On
+	33 button (settable) Perform, Value: Off
+	34 button (settable) Hide layer inspector, Value: On
+	35 button Zoom out
+	36 button Zoom in (Command-wheel)
+	37 button Decrease track height
+	38 button Increase track height (Command-Option-wheel)
+	39 button Fit design
+	40 button Fit selected layers
+	41 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	42 button Snap targets and grid
+	43 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	44 text (settable) 41.0000 s
+	45 button (settable) Layer, Value: Off
+	46 button (settable) Source, Value: Off
+	47 button (settable) Mix, Value: Off
+	48 button (settable) Fades, Value: Off
+	49 button (settable) Clip source inserts, Value: Off
+	50 button (settable) Track inserts, Value: On
+	51 button (settable) Track chain enabled, Help: Bypass insert chain, Value: On
+	52 text (settable) Impact texture
+	53 button Add effect
+	54 container Parametric EQ insert
+	55 button (settable) Parametric EQ enabled, Help: Bypass effect, Value: On
+	56 container Compressor insert
+	57 button (settable) Compressor enabled, Help: Bypass effect, Value: On
+	58 container Expander / Gate insert
+	59 button (settable) Expander / Gate enabled, Help: Bypass effect, Value: On
+	60 container Peak Limiter insert
+	61 button (settable) Peak Limiter enabled, Help: Bypass effect, Value: On
+	62 container Transient Shaper insert
+	63 button (settable) Transient Shaper enabled, Help: Bypass effect, Value: On
+	64 container Saturation insert
+	65 button (settable) Saturation enabled, Help: Bypass effect, Value: On
+	66 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	67 button (settable) Hide stock insert parameters, Value: On
+	68 button Effect actions
+	69 progress indicator Gain reduction 0.0 dB, Description: Gain reduction in prepared audio, ahead of the device cursor
+	70 button â  Dynamics, Help: Expand / collapse Dynamics
+	71 text (settable) Threshold (dB)
+	72 slider (settable) Compressor / Dynamics / Threshold, Help: dB, Value: -24.000, Secondary Actions: Delete
+	73 button (settable) Lock Dynamics Threshold, Help: Lock parameter, Value: Off
+	74 text (settable) Ratio (:1)
+	75 slider (settable) Compressor / Dynamics / Ratio, Help: :1, Value: 4.000, Secondary Actions: Delete
+	76 button (settable) Lock Dynamics Ratio, Help: Lock parameter, Value: Off
+	77 text (settable) Knee (dB)
+	78 slider (settable) Compressor / Dynamics / Knee, Help: dB, Value: 6.000, Secondary Actions: Delete
+	79 button (settable) Lock Dynamics Knee, Help: Lock parameter, Value: Off
+	80 button +  Envelope, Help: Expand / collapse Envelope
+	81 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	82 container Multitrack Edit timeline
+	83 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Impact texture
+	84 button Track colour
+	85 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: On
+	86 button (settable) Mute track, Value: Off
+	87 button (settable) Solo track, Value: Off
+	88 button (settable) Arm audio input: Impact texture, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
+	89 button Track options
+	90 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	91 container Automation lane
+	92 button (settable) Read, Value: On
+	93 button (settable) Touch, Value: Off
+	94 button 2 · Compressor · Dynamics / Threshold · dB, Help: Show curve: 2 · Compressor · Dynamics / Threshold / dB. Stable instance 9cb64099cdd44742b618e475872a6744
+	95 text (settable) -24.00 dB
+	96 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
+	97 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	98 button Generate 5
+	99 button Variation bounds and enabled parameters
+	100 pop up button (settable) Original and variation candidates, Value: Original
+	101 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	102 button Copy Original to Project
+	103 text (settable) /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/native-effects/native-001/Renders
+	104 button Play design, Help: Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use Accurate audition to judge long tails.
+	105 button Audio recording options
+	106 button Go to start (Home)
+	107 button Previous marker
+	108 button Next marker
+	109 button Go to end (End)
+	110 button Add marker (M)
+	111 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	112 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	113 slider (settable) Monitor volume, excluded from render, Value: 0.04, Secondary Actions: Delete
+	114 text (settable) Saved Native Effects QA.soundplus
+	115 close button
+	116 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	117 minimize button
+	118 text SoundPlus
+119 menu bar
+	120 SoundPlus
+
+The focused UI element is 91 container Automation lane

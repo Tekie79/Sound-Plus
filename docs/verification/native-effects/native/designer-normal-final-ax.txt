@@ -1,0 +1,6 @@
+The following is a diff from the previous accessibility tree for Window: "SoundPlus" with ~ and + representing changed and added elements, respectively. Removed elements are summarized by ID range.
+~	43 text (settable) 10.0587 s
+~	110 progress indicator Gain reduction 3.1 dB, Description: Gain reduction in prepared audio, ahead of the device cursor
+~	84 text (settable) -23.50 dB
+~	101 button Monitor · Stereo downmix, Help: Pre-monitor master channels: L -15.3 dBFS; R -15.3 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+The focused UI element is 56 button (settable) Compressor enabled, Help: Bypass effect, Value: On

@@ -19,7 +19,7 @@ class NativeParameterPanel final : public juce::Component
     struct Group
     {
         juce::String name;
-        juce::TextButton header;
+        IconButton header{"Parameter group", ActionIcon::chevron, true};
         bool expanded = false;
         std::vector<std::unique_ptr<Row>> rows;
     };
@@ -112,6 +112,8 @@ class NativeParameterPanel final : public juce::Component
                     group->name = p.group;
                     group->expanded = groups.empty();
                     auto *g = group.get();
+                    g->header.setLabelAlignedLeft();
+                    g->header.setToggleable(true);
                     g->header.setButtonText(p.group);
                     g->header.setTooltip("Expand / collapse " + p.group);
                     g->header.onClick = [this, g]
@@ -128,7 +130,8 @@ class NativeParameterPanel final : public juce::Component
                 auto row = std::make_unique<Row>();
                 auto *r = row.get();
                 r->index = (int)i;
-                r->label.setText(p.name + (p.units.isEmpty() ? "" : " (" + p.units + ")"),
+                r->label.setText(p.name +
+                                     (p.units.isEmpty() || p.units == p.name ? "" : " (" + p.units + ")"),
                                  juce::dontSendNotification);
                 r->label.setFont(juce::FontOptions(12.f));
                 r->label.setColour(juce::Label::textColourId, ui::muted);
@@ -146,6 +149,13 @@ class NativeParameterPanel final : public juce::Component
                 r->slider.setSliderStyle(juce::Slider::LinearHorizontal);
                 r->slider.setTextBoxStyle(juce::Slider::TextBoxRight, false, 72, 22);
                 r->slider.setRange(p.minimum, p.maximum, .001);
+                if (p.units == "%")
+                {
+                    r->slider.textFromValueFunction = [](double value)
+                    { return juce::String(value * 100., 1) + "%"; };
+                    r->slider.valueFromTextFunction = [](const juce::String &text)
+                    { return text.getDoubleValue() / 100.; };
+                }
                 r->slider.setScrollWheelEnabled(false);
                 if (p.logarithmic)
                     r->slider.setSkewFactorFromMidPoint(std::sqrt(p.minimum * p.maximum));
@@ -215,7 +225,9 @@ class NativeParameterPanel final : public juce::Component
         {
             g->header.setBounds(area.removeFromTop(28));
             area.removeFromTop(2);
-            g->header.setButtonText((g->expanded ? "−  " : "+  ") + g->name);
+            g->header.setButtonText(g->name);
+            g->header.setToggleState(g->expanded, juce::dontSendNotification);
+            g->header.setTooltip((g->expanded ? "Collapse " : "Expand ") + g->name);
             for (auto &r : g->rows)
             {
                 bool choice = r->choice.getNumItems() > 0;

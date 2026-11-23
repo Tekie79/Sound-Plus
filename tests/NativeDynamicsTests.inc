@@ -38,6 +38,29 @@ void dynamicsTests(const juce::File &base)
                 check(std::abs(y.back() - (float)input * std::pow(10., db / 20)) < 2e-6,
                       "Compressor soft-knee static transfer oracle");
             }
+        {
+            auto rms = compressor;
+            setNative(rms, "detector", 1);
+            auto actual = nativeRun(rms, rate, step, 257);
+            double envelope = 0;
+            for (size_t n = 0; n < step.size(); ++n)
+            {
+                double amplitude = .5 * std::sqrt(1 - std::exp(-(double)(n + 1) / (.02 * rate)));
+                double wanted = -.75 * std::max(0., 20 * std::log10(std::max(1.e-15, amplitude)) + 18);
+                double a = std::exp(-1 / ((wanted < envelope ? .01 : .12) * rate));
+                envelope = a * envelope + (1 - a) * wanted;
+                check(std::abs(actual[n] - .5 * std::pow(10., envelope / 20)) < 2e-7,
+                      "Compressor RMS detector matches independent closed-form power-step oracle");
+            }
+            std::vector<float> releaseInput((size_t)rate, .5f);
+            int change = (int)rate / 4;
+            std::fill(releaseInput.begin() + change, releaseInput.end(), .01f);
+            auto released = nativeRun(compressor, rate, releaseInput, 61);
+            int at = change + (int)std::llround(.12 * rate) - 1;
+            double wanted = .01 * std::pow(10., target * std::exp(-(at - change + 1) / (.12 * rate)) / 20.);
+            check(std::abs(released[(size_t)at] - wanted) < 2e-7,
+                  "Compressor release follows declared time constant");
+        }
         // Hysteresis/hold keeps gain open until the hold window expires, then the
         // release follows its independent closed-form dB envelope.
         auto gate = makeStockEffect("expander");
@@ -57,6 +80,17 @@ void dynamicsTests(const juce::File &base)
             .001 * std::pow(10., (-60 * (1 - std::exp(-(sample - change - hold) / (.005 * rate)))) / 20.);
         check(std::abs(gated[(size_t)sample] - expected) < 2e-7,
               "Gate release duration follows independent envelope");
+        {
+            auto hysteretic = gate;
+            setNative(hysteretic, "threshold", -24);
+            setNative(hysteretic, "hysteresis", 12);
+            setNative(hysteretic, "hold", 0);
+            std::vector<float> opened((size_t)rate, .5f), closed((size_t)rate, .02f);
+            std::fill(opened.begin() + (int)rate / 4, opened.end(), .02f);
+            auto a = nativeRun(hysteretic, rate, opened), b = nativeRun(hysteretic, rate, closed);
+            check(std::abs(a.back() - .02) < 2e-7 && b.back() < .001,
+                  "Gate hysteresis distinguishes retained-open from initially-closed state");
+        }
         auto transient = makeStockEffect("transient");
         setNative(transient, "attack-amount", 6);
         setNative(transient, "sustain-amount", -6);
@@ -170,6 +204,45 @@ void dynamicsTests(const juce::File &base)
             row.getDynamicObject()->setProperty("maxMs", ms.back());
             row.getDynamicObject()->setProperty("latencyFrames", p.latency());
             benchmarks.add(row);
+        }
+    }
+    {
+        auto e = sp::makeStockEffect("saturation");
+        setNative(e, "drive", 12);
+        setNative(e, "output", 0);
+        sp::NativeEffectProcessor processor(e, sp::channelLayout("mono-v1"), 48000);
+        juce::AudioBuffer<float> b(1, 512);
+        for (int n = 0; n < 512; ++n)
+            b.setSample(0, n, .3f);
+        processor.process(b, 512);
+        double previous = b.getSample(0, 511), jump = 0;
+        setNative(e, "mode", 1);
+        processor.update(e);
+        for (int part = 0; part < 8; ++part)
+        {
+            for (int n = 0; n < 512; ++n)
+                b.setSample(0, n, .3f);
+            processor.process(b, 512);
+            for (int n = 0; n < 512; ++n)
+            {
+                jump = std::max(jump, std::abs(b.getSample(0, n) - previous));
+                previous = b.getSample(0, n);
+            }
+        }
+        check(jump < .002, "Saturation mode crossfades without a hard waveform discontinuity");
+        for (auto &def : sp::nativeEffectDefinitions())
+        {
+            auto effect = sp::makeStockEffect(def.type);
+            std::vector<float> silent(4096, 1.e-35f);
+            auto y = nativeRun(effect, 48000, silent);
+            for (auto sample : y)
+                check(sample == 0, "Native denormal silence is safe");
+            silent[0] = std::numeric_limits<float>::quiet_NaN();
+            rejects([&] { nativeRun(effect, 48000, silent); }, "NaN input fails explicitly");
+            std::fill(silent.begin(), silent.end(), 100000.f);
+            y = nativeRun(effect, 48000, silent);
+            for (auto sample : y)
+                check(std::isfinite(sample), "Overload remains finite");
         }
     }
     // Quantify the deliberately 1x saturation algorithm's high-frequency aliases.

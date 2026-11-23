@@ -34,7 +34,10 @@ void nativeIntegration(const juce::File &root)
     using namespace sp;
     auto dir = root.getChildFile(juce::Uuid().toString());
     dir.createDirectory();
-    for (auto bus : namedLayouts())
+    auto layouts = namedLayouts();
+    layouts.push_back(discreteLayout(4));
+    layouts.push_back(discreteLayout(16));
+    for (auto bus : layouts)
     {
         auto e = makeStockEffect("compressor");
         setNative(e, "threshold", -20);
@@ -70,6 +73,147 @@ void nativeIntegration(const juce::File &root)
             for (int c = 0; c < bus.size(); ++c)
                 if (c != lfe)
                     check(b.getSample(c, 511) < .002, "Explicit LFE linking affects detector group only");
+        }
+    }
+    for (auto bus : layouts)
+    {
+        auto file = dir.getChildFile("roles-" + bus.id + ".wav");
+        juce::WavAudioFormat wav;
+        auto stream = file.createOutputStream();
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            wav.createWriterFor(stream.release(), 48000, (unsigned)bus.size(), 24, {}, 0));
+        juce::AudioBuffer<float> roles(bus.size(), 4096);
+        for (int c = 0; c < bus.size(); ++c)
+            for (int n = 0; n < 4096; ++n)
+                roles.setSample(c, n, (float)((c + 1) * .01 * std::sin((c + 1) * .017 * n)));
+        check(writer && writer->writeFromAudioSampleBuffer(roles, 0, 4096),
+              "Native named-role source finalized");
+        writer.reset();
+        auto source = inspectDesignSource(file);
+        source.layoutOverride = bus;
+        DesignDocument d;
+        d.original.layout = bus;
+        d.original.masterDb = 0;
+        auto layer = makeDesignLayer(source, 0, -1, true);
+        initialiseRouting(layer, bus);
+        layer.inserts.stock = {makeStockEffect("parametric-eq")};
+        d.original.layers = {layer};
+        enableTrackSchema(d.original);
+        auto &track = d.original.tracks[0];
+        auto trackId = track.id;
+        auto compressor = makeStockEffect("compressor");
+        setNative(compressor, "ratio", 1);
+        track.inserts.stock = {compressor};
+        auto group = addTrack(d.original, TrackKind::groupBus);
+        findTrack(d.original, group)->inserts.stock = {makeStockEffect("transient")};
+        routeTrack(d.original, trackId, group);
+        auto limiter = makeStockEffect("peak-limiter");
+        setNative(limiter, "ceiling", 0);
+        d.original.inserts.stock = {limiter};
+        auto pcm = nativeGraphPcm(d, 4096, 61);
+        check(nativeDifference(pcm, roles, 4096) < 2e-6,
+              "Native Clip/Track/Group/Master preserve each named/discrete role including LFE");
+        auto settings = d.renderSettings;
+        settings.layout = "same";
+        settings.bits = 32;
+        settings.tailSeconds = 0;
+        settings.normalize = settings.dither = false;
+        auto rendered =
+            renderDesign(d, dir.getChildFile("Role Renders"), settings, [] { return false; }, [](double) {});
+        juce::AudioFormatManager formats;
+        formats.registerBasicFormats();
+        std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(juce::File(rendered.path)));
+        check(reader && reader->numChannels == (unsigned)bus.size(),
+              "Native export never folds down to stereo monitor");
+        check(detectedLayout(*reader) == bus, "Native export named masks/Side/Rear/discrete provenance");
+        juce::AudioBuffer<float> physical(bus.size(), 4096);
+        reader->read(&physical, 0, 4096, 0, true, true);
+        auto order = wavOrder(bus);
+        for (int c = 0; c < bus.size(); ++c)
+            for (int n = 0; n < 4096; ++n)
+                check(std::abs(physical.getSample(c, n) - roles.getSample(order[(size_t)c], n)) < 2e-6,
+                      "Final WAV physical channels match named export order");
+    }
+    {
+        auto sourceFile = dir.getChildFile("protocol-source.wav");
+        nativeFixture(sourceFile, 48000);
+        auto source = inspectDesignSource(sourceFile);
+        DesignDocument dense;
+        dense.original.layout = channelLayout("stereo-v1");
+        for (int n = 0; n < 32; ++n)
+        {
+            auto layer = makeDesignLayer(source, 0, -1, true);
+            initialiseRouting(layer, dense.original.layout);
+            for (int f = 0; f < 4; ++f)
+                layer.inserts.stock.push_back(makeStockEffect("parametric-eq"));
+            dense.original.layers.push_back(layer);
+        }
+        validateDesign(dense);
+        auto request = message("design_parameters");
+        request.getDynamicObject()->setProperty("parameters", designParameters(dense));
+        auto bytes = juce::JSON::toString(request, true).getNumBytesAsUTF8();
+        check(bytes > 65536 && bytes < maxHostedControlBytes,
+              "Dense native control fixture crosses ordinary IPC boundary");
+        int sockets[2];
+        check(socketpair(AF_UNIX, SOCK_STREAM, 0, sockets) == 0, "Owned native control socketpair");
+        fcntl(sockets[0], F_SETFL, O_NONBLOCK);
+        size_t received = 0;
+        std::thread reader(
+            [&]
+            {
+                char data[4096];
+                for (;;)
+                {
+                    auto n = ::read(sockets[1], data, sizeof(data));
+                    if (n <= 0)
+                        break;
+                    received += (size_t)n;
+                    if (data[n - 1] == '\n')
+                        break;
+                }
+            });
+        bool sent = sendMessage(sockets[0], request);
+        shutdown(sockets[0], SHUT_WR);
+        reader.join();
+        close(sockets[0]);
+        close(sockets[1]);
+        check(sent && received > 65536, "Actual bounded IPC accepts compact native controls above64KiB");
+    }
+    {
+        auto file = dir.getChildFile("ceiling-boundary.wav");
+        juce::WavAudioFormat wav;
+        auto stream = file.createOutputStream();
+        std::unique_ptr<juce::AudioFormatWriter> writer(
+            wav.createWriterFor(stream.release(), 48000, 1, 24, {}, 0));
+        juce::AudioBuffer<float> input(1, 48000);
+        for (int n = 0; n < 48000; ++n)
+            input.setSample(0, n, .8f);
+        check(writer && writer->writeFromAudioSampleBuffer(input, 0, 48000),
+              "Limiter automation oracle fixture");
+        writer.reset();
+        DesignDocument d;
+        d.original.layout = channelLayout("mono-v1");
+        d.original.masterDb = 0;
+        d.original.layers = {makeDesignLayer(inspectDesignSource(file), 0, -1, true)};
+        initialiseRouting(d.original.layers[0], d.original.layout);
+        enableTrackSchema(d.original);
+        auto &track = d.original.tracks[0];
+        auto limiter = makeStockEffect("peak-limiter");
+        setNative(limiter, "ceiling", -3);
+        track.inserts.stock = {limiter};
+        for (auto frame : {0, 1024, 3000})
+            addAutomationPoint(d.original, track.id, {limiter.id, "ceiling"}, frame, frame < 1024 ? -3 : -12,
+                               48000);
+        auto *curve = automationCurve(track.automation, {limiter.id, "ceiling"});
+        for (auto &point : curve->points)
+            point.hold = true;
+        for (int block : {1, 32, 61, 257, 512})
+        {
+            auto pcm = nativeGraphPcm(d, 2048, block);
+            for (int n = 0; n < 2048; ++n)
+                check(
+                    std::abs(pcm.getSample(0, n) - std::pow(10., (n < 1024 ? -3. : -12.) / 20.)) < 3e-7,
+                    "Limiter ceiling keyframe aligns to delayed project sample exactly, not input lookahead");
         }
     }
     for (double rate : {44100., 48000., 96000.})
@@ -239,6 +383,11 @@ struct NativeEffectTestAccess
         auto &panel = rack.nativePanel;
         check(panel.groups.size() >= 3 && panel.isVisible(),
               "Actual native inspector uses dynamic collapsible parameter groups");
+        check(panel.groups[0]->header.getToggleState(), "Disclosure semantics retain real expanded state");
+        auto *mix = panel.measurementSlider("mix");
+        check(mix && mix->getTextFromValue(.25) == "25.0%" &&
+                  std::abs(mix->getValueFromText("25%") - .25) < 1e-12,
+              "Native Mix displays and accepts percent while retaining normalized model values");
         auto *row = panel.groups[0]->rows[0].get();
         row->slider.onDragStart();
         row->slider.setValue(-24, juce::sendNotificationSync);

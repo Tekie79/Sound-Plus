@@ -1,0 +1,7 @@
+{
+  "artifact": "native-continuous-edit.json",
+  "rawLocalArtifact": "build/native-effects/native-frozen/continuous-edit.json",
+  "rawSha256": "72a4547453c884b044dd32e20ba6dbbb755feaf589926071b7a9b49c8f1f9cd3",
+  "archivedSha256": "bcceee2511385c4ad7a0db1b383fe1d7750f8161d00a841a5542915304019731",
+  "change": "CRLF to LF only; parsed JSON values identical"
+}

@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: native_effects
+1/4 Test  #2: native_effects ...................   Passed    0.97 sec
+    Start  3: library_collections
+2/4 Test  #3: library_collections ..............***Failed    1.41 sec
+FAIL after 0 checks: Unavailable source cannot dispatch internal or original file drag
+
+    Start 26: library_similar_integrity
+3/4 Test #26: library_similar_integrity ........   Passed    1.26 sec
+    Start 38: ordered_inserts
+4/4 Test #38: ordered_inserts ..................   Passed   33.74 sec
+
+75% tests passed, 1 tests failed out of 4
+
+Total Test time (real) =  37.39 sec
+
+The following tests FAILED:
+	  3 - library_collections (Failed)
+Errors while running CTest

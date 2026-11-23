@@ -1,0 +1,60 @@
+{
+  "documentPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/native-effects/native-001/Native Effects QA.soundplus",
+  "fileSha256": "09d7b82ed9eaf87f0e6cbe2923280327d5d049ffeffc6bdcacecee82169f55e5",
+  "wrapperSha256": "61d2c5a7fede27aa1eaba4861b535fccf864dba3e06ba0865bc7ba74498466b0",
+  "revision": 11,
+  "manifest": 15,
+  "documentId": "39425faf06bb4b20ad0a335d77c4ace2",
+  "compressorId": "9cb64099cdd44742b618e475872a6744",
+  "threshold": -24.0,
+  "automation": {
+    "expanded": true,
+    "touch": false,
+    "shown": {
+      "instance": "9cb64099cdd44742b618e475872a6744",
+      "parameter": "threshold"
+    },
+    "armed": {
+      "instance": "",
+      "parameter": "volume"
+    },
+    "curves": [
+      {
+        "target": {
+          "instance": "9cb64099cdd44742b618e475872a6744",
+          "parameter": "threshold"
+        },
+        "read": true,
+        "points": [
+          {
+            "id": "91b76eb714f04ee6a24ad5ac6a4f6964",
+            "frame": 0,
+            "value": -24.0,
+            "hold": false
+          },
+          {
+            "id": "5eec461c56264accab9cfea026db4fc1",
+            "frame": 72000,
+            "value": -23.351351351351354,
+            "hold": false
+          },
+          {
+            "id": "c16c52786b8043cc9a25fc980c7cbafe",
+            "frame": 1920000,
+            "value": -24.0,
+            "hold": false
+          }
+        ]
+      }
+    ]
+  },
+  "actualNativeSteps": [
+    "Preset Save/Load file dialogs",
+    "Threshold numeric editing during playback",
+    "Undo/Redo",
+    "Single-lane chooser and double-click point insertion",
+    "Save/Quit/Reopen r11",
+    "1040x680 and1360x860 Browser+Inspector",
+    "Final100% Mix accessibility and screenshot"
+  ]
+}

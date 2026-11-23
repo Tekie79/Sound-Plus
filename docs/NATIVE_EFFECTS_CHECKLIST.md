@@ -10,6 +10,10 @@ Start/reviewed HEAD:54ed393caa5fdaa47a399333f20e3833b3181606. Clean tree and no 
 
 ✓ C Compressor, expander/gate, lookahead peak limiter, transient shaper, saturation; editable presets, all insert owners and automation; independent DSP/PDC/partition tests;9/9 targeted suites55.95s and native continuous-edit pass (48k/512, zero underruns); verified commit/push.
 
-◉ D Native normal/minimum Edit/Browser/Inspector, presets/keyboard/automation/Undo/Save/Quit/Reopen; full unchanged Release Mac vendor/AUv2/device gate, performance and preservation audit; report/roadmap and final commit/push.
+✓ D Native normal/minimum Edit/Browser/Inspector, presets/keyboard/automation/Undo/Save/Quit/Reopen; final Mix percentage display/entry and Lucide group disclosures verified. Final native continuous edit:453 inputs,298 observed edits, same graph/helper, zero underruns at48k/512.
+
+✓ D Full unchanged Release Mac gate40/40 in389.31s with vendor/AUv2/device flags;313 source/resource and eight binary identities match. Original Workflow demonstration r4478 reopened in place with its unsaved state, all18 tables and63 protected hashes unchanged. Report, closure1–18, screenshots and roadmap complete. Retained initial gate interruption and fixture/oracle attempts are explicitly explained.
+
+◉ Commit and push the verified final implementation/evidence, then record its receipt.
 
 Human listening, physical surround/controller loopback and Resolve receiver persistence remain separate qualifications; future delay/reverb/creative algorithms/pads/providers are excluded.

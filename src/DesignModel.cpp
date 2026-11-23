@@ -1097,6 +1097,7 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
     if (d.id.isEmpty() || d.revision < 1 ||
         (d.sampleRate != 44100 && d.sampleRate != 48000 && d.sampleRate != 96000))
         throw std::runtime_error("Invalid design identity or sample rate");
+    size_t nativeParameters = 0, nativeCount = 0;
     auto rack = [&](const std::vector<StockEffect> &fx)
     {
         if (fx.size() > 8)
@@ -1111,6 +1112,11 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
             if (e.nativeVersion)
             {
                 validateNativeEffect(e);
+                if (++nativeCount > 128)
+                    throw std::runtime_error("Native insert budget exceeds 128 per mix");
+                nativeParameters += e.nativeValues.size();
+                if (nativeParameters > 4096)
+                    throw std::runtime_error("Native parameter budget exceeds 4096 per mix");
                 continue;
             }
             if (nativeDefinition(e.type))
@@ -1139,6 +1145,7 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
     };
     auto mix = [&](const DesignMix &m)
     {
+        nativeParameters = nativeCount = 0;
         validateTracks(m, d.sampleRate);
         validateLayoutMix(m, d.sampleRate);
         validatePerformance(m);

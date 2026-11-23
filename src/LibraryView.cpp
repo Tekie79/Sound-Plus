@@ -1611,9 +1611,10 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
         a = &*selectedAsset;
     if (!a)
         return;
-    if (!a->deliverable())
+    if (!sourceAvailable(*a))
     {
-        playbackError = a->error;
+        playbackError =
+            a->error.isNotEmpty() ? a->error : "Offline recording — reconnect its source folder to audition.";
         return;
     }
     library.editCollections(
@@ -1858,14 +1859,14 @@ void LibraryView::timerCallback()
                                ? "Source unavailable — reconnect or review before adding to Designer"
                                : "Add marked source range to Designer");
     dragOriginal.file = selectedAsset ? juce::File(selectedAsset->path) : juce::File();
-    dragOriginal.setEnabled(selectedAsset && selectedAsset->online && selectedAsset->samples > 0 &&
-                            regionStart == 0 && regionEnd == selectedAsset->samples);
+    dragOriginal.setEnabled(selectedAsset && sourceAvailable(*selectedAsset) && regionStart == 0 &&
+                            regionEnd == selectedAsset->samples);
     referenceDesigner.setEnabled(pinnedReference.source.samples > 0);
     bool canPlay = selectedAsset && sourceAvailable(*selectedAsset);
     previous.setEnabled(snapshot.total > 0);
     this->next.setEnabled(snapshot.total > 0);
-    findSimilar.setEnabled(canPlay && ai.ready && selectedAsset->samples > 0 &&
-                           selectedAsset->state == "ready");
+    findSimilar.setEnabled(selectedAsset && selectedAsset->deliverable() && ai.ready &&
+                           selectedAsset->samples > 0 && selectedAsset->state == "ready");
     if (selectedAsset)
         for (auto &root : snapshot.roots)
             if (root.id == selectedAsset->rootId)

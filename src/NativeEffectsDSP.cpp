@@ -128,6 +128,7 @@ struct NativeEffectProcessor::Impl
     juce::AudioBuffer<float> delay;
     int delayFrames = 0, delayPosition = 0, lfe = -1;
     int64_t frame = 0;
+    double saturationMode = 0;
     Impl(const StockEffect &e, const ChannelLayout &bus, double sr)
         : type(e.type), id(e.id), definition(nativeDefinition(e)), rate(sr),
           parameterSlew(1 - std::exp(-1 / (sr * .01))), coefficientSlew(1 - std::exp(-1 / (sr * .02))),
@@ -144,6 +145,8 @@ struct NativeEffectProcessor::Impl
         wet = wetTarget = e.bypass ? 0 : 1;
         lfe = bus.roles.indexOf("LFE");
         limiterGain.fill(1);
+        if (type == "saturation")
+            saturationMode = values[1];
         if (type == "expander")
             envelope.fill(-values[2]);
         if (type == "peak-limiter")
@@ -251,12 +254,13 @@ struct NativeEffectProcessor::Impl
             else if (type == "saturation")
             {
                 double drive = std::pow(10., values[0] / 20.), output = std::pow(10., values[3] / 20.);
+                saturationMode += (values[1] - saturationMode) * parameterSlew;
                 for (int c = 0; c < channels; ++c)
                 {
                     auto x = dry[(size_t)c] * drive;
-                    double y = values[1] < .5       ? std::tanh(x)
-                               : std::abs(x) >= 1.5 ? std::copysign(1., x)
-                                                    : x - (4. / 27.) * x * x * x;
+                    double a = std::tanh(x),
+                           b = std::abs(x) >= 1.5 ? std::copysign(1., x) : x - (4. / 27.) * x * x * x;
+                    double y = a + (b - a) * saturationMode;
                     processed[(size_t)c] = dry[(size_t)c] * (1 - values[2]) + y * output * values[2];
                 }
             }

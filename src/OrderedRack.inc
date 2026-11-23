@@ -158,7 +158,10 @@ class OrderedRack
             {
                 for (int offset = 0; offset < count;)
                 {
-                    auto frame = std::max<int64_t>(0, automationInput + offset - prefix);
+                    // Native lookahead controls address the sample leaving the
+                    // processor, not the future detector/input sample.
+                    auto nativeLatency = s.native ? s.native->latency() : 0;
+                    auto frame = std::max<int64_t>(0, automationInput + offset - prefix - nativeLatency);
                     int n = automation->untilBoundary(frame, count - offset);
                     auto phase = automation->segmentFrame(frame);
                     auto effect = s.base;

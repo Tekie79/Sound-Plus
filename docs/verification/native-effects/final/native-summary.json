@@ -1,0 +1,25 @@
+{
+  "qualification": "Native real-device prepared-PCM scheduling/control test; not physical DAC/acoustic/human listening latency",
+  "success": true,
+  "device": [
+    "MacBook Pro Speakers"
+  ],
+  "rate": 48000.0,
+  "buffer": 512,
+  "gestureInputs": 453,
+  "observedEditCount": 298,
+  "heardEditSequence": 364,
+  "framesAdvanced": 623616,
+  "underruns": 0,
+  "sameGraphAndHelper": true,
+  "inputToCallbackMs": {
+    "p50": 56.360395818948746,
+    "p95": 70.08020830154419,
+    "max": 76.8198749423027
+  },
+  "audioHelperPeakResidentBytes": 52510720,
+  "audioHelperCpuSeconds": 0.960852,
+  "producerMaxMs": 1.041875004768372,
+  "displayScale": 2.0,
+  "source": "native-continuous-edit.json"
+}

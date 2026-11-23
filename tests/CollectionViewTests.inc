@@ -81,18 +81,29 @@ struct CollectionViewTestAccess
             v.processPlugin.onClick();
             check(calls == 0, "Disabled Process callback also rejects stale invocation");
             v.onProcess = {};
+            v.onAddToDesigner = [&](auto &, auto, auto, auto, auto) { ++calls; };
+            v.addDesigner.onClick();
+            check(calls == 0, "Disabled Add callback also rejects stale invocation");
+            v.onAddToDesigner = {};
+            check(v.getDragSourceDescription(v.table.getSelectedRows()).isVoid() &&
+                      !v.dragOriginal.isEnabled(),
+                  "Unavailable source cannot dispatch internal or original file drag");
             check(v.snapshot.total == 1 && v.favoriteButton.isEnabled(),
                   "Offline collection retains row and metadata actions");
         };
         v.selectedAsset->online = false;
+        v.snapshot.results[0].online = false;
         assertUnavailable();
         v.selectedAsset->online = true;
+        v.snapshot.results[0].online = true;
         v.snapshot.roots[0].online = false;
         assertUnavailable();
         v.snapshot.roots[0].online = true;
         v.selectedAsset->needsReview = true;
+        v.snapshot.results[0].needsReview = true;
         assertUnavailable();
         v.selectedAsset->needsReview = false;
+        v.snapshot.results[0].needsReview = false;
         v.timerCallback();
         check(v.processPlugin.isEnabled() && v.addDesigner.isEnabled(),
               "Reconnect/current region restores processing availability");

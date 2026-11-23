@@ -153,6 +153,16 @@ void runOrderedInsertTests(const juce::File &base, const juce::File &app, const 
         require(maxDiff(beforeNative, render(61)) < 2e-6,
                 "Native Clip/unequal Track/Group/Master lookahead aligns with hosted7/19/11/13 and automated "
                 "filter");
+        multitrack.original.inserts.bypass = true;
+        require(maxDiff(beforeNative, render(257)) < 2e-6,
+                "Whole-chain bypass keeps combined native/hosted Master latency aligned");
+        multitrack.original.inserts.bypass = false;
+        for (auto *chain : nativeOwners)
+            for (auto &effect : chain->stock)
+                if (effect.nativeVersion)
+                    effect.bypass = true;
+        require(maxDiff(beforeNative, render(61)) < 2e-6,
+                "Individual native bypass keeps all parallel/routed latency paths aligned");
         auto nativeTake = freezeTake(multitrack, "Native plus hosted");
         require((int)takeToJson(nativeTake)["recipe"]["recipeVersion"] == 6 &&
                     takeFromJson(takeToJson(nativeTake)).recipeHash == nativeTake.recipeHash,

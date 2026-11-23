@@ -368,7 +368,8 @@ void AudioEngine::timerCallback()
         auto message = juce::JSON::parse(line);
         bool hosted = message["command"].toString() == "design_parameters" &&
                       ((int)message["parameters"]["hostedControlsVersion"] == 1 ||
-                       (int)message["parameters"]["automationControlsVersion"] == 1);
+                       (int)message["parameters"]["automationControlsVersion"] == 1 ||
+                       (int)message["parameters"]["nativeControlsVersion"] == 1);
         if (line.length() > (int)(hosted ? maxHostedControlBytes : 65536))
         {
             juce::JUCEApplicationBase::quit();

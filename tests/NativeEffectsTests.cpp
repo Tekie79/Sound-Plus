@@ -8,11 +8,17 @@
 #include "StockRackView.h"
 #include "AudioStream.h"
 #include <deque>
+#include <sys/socket.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/resource.h>
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace
 {
+int nativeChecks = 0;
 void check(bool ok, const char *why)
 {
+    ++nativeChecks;
     if (!ok)
         throw std::runtime_error(why);
 }
@@ -99,7 +105,44 @@ void runNativeEffectsTests(const juce::File &base)
         auto ix = (int)(p - def.parameters.begin());
         insert.nativeValues[(size_t)ix] = p->minimum;
         check(designStructure(d) == key, "Ordinary native edit does not starve graph adoption");
+        auto controls = designParameters(d);
+        check((int)controls["nativeControlsVersion"] == 1, "Native control version is explicit");
+        auto changedControl = d;
+        applyDesignParameters(changedControl, controls);
+        check(findTrack(changedControl.original, track)->inserts.stock[0].nativeValues == insert.nativeValues,
+              "Compact native controls apply exact keyed values");
+        auto beforeLock = juce::JSON::toString(controls, true);
+        toggleEffectParameterLock(insert, 0);
+        check(juce::JSON::toString(designParameters(d), true) == beforeLock,
+              "Variation locks never schedule an audio parameter request");
+        auto malformed = controls.clone();
+        auto pair = malformed["tracks"][0]["effects"][0]["nativeParameters"][0];
+        pair.getArray()->set(0, juce::String("wrong-id"));
+        auto retained = juce::JSON::toString(designToJson(changedControl), true);
+        rejects([&] { applyDesignParameters(changedControl, malformed); },
+                "Invalid native controls rejected atomically");
+        check(juce::JSON::toString(designToJson(changedControl), true) == retained,
+              "Failed live native controls retain current document");
         (void)live;
+    }
+    {
+        DesignDocument d;
+        d.original.inserts.stock = {makeStockEffect("peak-limiter")};
+        auto signature = designStructure(d);
+        NativeEffectProcessor processor(d.original.inserts.stock[0], channelLayout("stereo-v1"), 48000);
+        setNative(d.original.inserts.stock[0], "lookahead", 10);
+        check(signature != designStructure(d), "Lookahead edit prepares a new latency graph");
+        rejects([&] { processor.update(d.original.inserts.stock[0]); },
+                "In-place lookahead change fails explicitly");
+        DesignDocument oversized;
+        oversized.original.layout = channelLayout("stereo-v1");
+        for (int t = 0; t < 19; ++t)
+        {
+            auto id = addTrack(oversized.original, TrackKind::audio);
+            for (int n = 0; n < 8; ++n)
+                findTrack(oversized.original, id)->inserts.stock.push_back(makeStockEffect("parametric-eq"));
+        }
+        rejects([&] { validateDesign(oversized); }, "Native aggregate parameter budget is bounded");
     }
     for (auto type : {"gain", "filter", "delay", "reverb"})
     {
@@ -119,7 +162,17 @@ void runNativeEffectsTests(const juce::File &base)
         nativeIntegration(base);
         sp::NativeEffectTestAccess::view(base);
     }
-    std::cout << "Native effect foundation checks passed\n";
+    struct rusage usage
+    {
+    };
+    getrusage(RUSAGE_SELF, &usage);
+    auto memory = juce::var(new juce::DynamicObject());
+    memory.getDynamicObject()->setProperty("peakProcessResidentBytes", (juce::int64)usage.ru_maxrss);
+    memory.getDynamicObject()->setProperty("scope",
+                                           "Whole native-effect suite process, including GUI, generated "
+                                           "graphs, source reads and tests; not isolated DSP heap.");
+    base.getChildFile("memory-evidence.json").replaceWithText(juce::JSON::toString(memory, true));
+    std::cout << "Native effects: " << nativeChecks << " assertions passed\n";
 }
 void prepareNativeEffectsUI(const juce::File &dir)
 {
