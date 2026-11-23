@@ -210,9 +210,29 @@ void runMidiInstrumentTests(const juce::File &base, const juce::File &app, const
     auto targets = sp::automationTargets(loaded.original, owner);
     check(!loaded.original.tracks[0].automation.expanded && targets.front().name == "Volume",
           "MIDI Instrument retains exactly one collapsed Volume-first track lane");
+    int writableInstrumentTargets = 0;
     for (auto &t : targets)
         if (t.group == "Instrument")
-            check(!t.writable, "External Instrument parameter automation remains read-only");
+        {
+            check(t.hostedBinding && t.hostedBinding->owner == owner &&
+                      t.hostedBinding->instrument == slot.id && t.hostedBinding->slot == r.slots.front().id &&
+                      t.hostedBinding->format == plugin["format"].toString() &&
+                      t.hostedBinding->plugin == plugin["id"].toString() &&
+                      t.hostedBinding->fingerprint == plugin["fingerprint"].toString() &&
+                      t.hostedBinding->parameter == t.target.parameter && t.nativeIndex >= 0 &&
+                      t.hostedToken != 0,
+                  "Hosted Instrument target preserves complete owner/slot/native identity after reopen");
+            bool eligible = false;
+            for (auto &parameter : *settings["parameters"].getArray())
+                if (parameter["stableId"].toString() == t.target.parameter)
+                    eligible =
+                        (bool)parameter["automatable"] && parameter["stableId"].toString().isNotEmpty();
+            check(t.writable == eligible,
+                  "Instrument registry exposes only declared stable automatable parameters as writable");
+            writableInstrumentTargets += t.writable;
+        }
+    check(writableInstrumentTargets > 0,
+          "Qualified hosted Instrument scheduling exposes real writable targets in the existing lane");
     auto take = sp::freezeTake(loaded, "Instrument snapshot");
     check((int)sp::takeToJson(take)["recipe"]["recipeVersion"] == 5,
           "New MIDI take uses explicit recipe5 without re-encoding historical takes");
