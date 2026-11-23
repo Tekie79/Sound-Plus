@@ -96,13 +96,13 @@ void waveform()
     juce::Image whole(juce::Image::ARGB, 500, 200, true);
     juce::Graphics wholePainter(whole);
     view.paint(wholePainter);
-    check(!view.isRangeSelected() && whole.getPixelAt(250, 60) == juce::Colour(0xff151b22),
+    check(!view.isRangeSelected() && whole.getPixelAt(250, 60) == sp::ui::surface,
           "Whole-recording bounds do not imply an end-to-end visual selection");
     view.setRange(12000, 36000);
     juce::Image image(juce::Image::ARGB, 500, 200, true);
     juce::Graphics g(image);
     view.paint(g);
-    auto background = juce::Colour(0xff151b22);
+    auto background = sp::ui::surface;
     auto highlight = image.getPixelAt(250, 60);
     check(highlight != background, "Marked waveform range retains its visible highlight");
     check(image.getPixelAt(50, 60) == background, "Unselected waveform remains unshaded");
