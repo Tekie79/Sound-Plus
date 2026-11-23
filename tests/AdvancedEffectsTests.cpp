@@ -124,9 +124,18 @@ void contracts(const juce::File &base)
     rejects([&] { validateDesign(heavy); }, "Advanced aggregate memory bounded before DSP preparation");
 }
 } // namespace
+
+#include "AdvancedDelayTests.inc"
+#include "AdvancedIntegrationTests.inc"
 void runAdvancedEffectsTests(const juce::File &base)
 {
     base.createDirectory();
     contracts(base);
+    if (sp::nativeDSPAvailable("advanced-delay"))
+    {
+        delayTests(base);
+        delayHistoryTests();
+        delayGraphTests(base);
+    }
     std::cout << "Advanced effects: " << checks << " assertions passed\n";
 }

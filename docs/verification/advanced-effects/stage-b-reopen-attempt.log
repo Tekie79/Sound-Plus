@@ -1,0 +1,15 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 2: advanced_effects
+1/1 Test #2: advanced_effects .................***Failed    0.61 sec
+Delay reopen max error 0.0341789
+FAIL after 0 checks: Delay graph Save/Reopen retains exact processing
+
+
+0% tests passed, 1 tests failed out of 1
+
+Total Test time (real) =   0.61 sec
+
+The following tests FAILED:
+	  2 - advanced_effects (Failed)
+Errors while running CTest

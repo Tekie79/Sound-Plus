@@ -2,6 +2,7 @@
 #include "NativeEffects.h"
 namespace sp
 {
+class AdvancedEffectProcessor;
 // Prepared/used on the graph producer, never the device callback. Exact bus
 // roles are retained. Latency is invariant for this prepared instance.
 class NativeEffectProcessor
@@ -17,6 +18,7 @@ class NativeEffectProcessor
   private:
     struct Impl;
     std::unique_ptr<Impl> impl;
+    std::unique_ptr<AdvancedEffectProcessor> advanced;
 };
 bool nativeDSPAvailable(const juce::String &type);
 } // namespace sp

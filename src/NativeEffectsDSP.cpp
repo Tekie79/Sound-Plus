@@ -1,4 +1,5 @@
 #include "NativeEffectsDSP.h"
+#include "AdvancedEffectsDSP.h"
 #include <cmath>
 namespace sp
 {
@@ -381,30 +382,39 @@ struct NativeEffectProcessor::Impl
     }
 };
 NativeEffectProcessor::NativeEffectProcessor(const StockEffect &e, const ChannelLayout &b, double rate,
-                                             MidiTiming)
-    : impl(std::make_unique<Impl>(e, b, rate))
+                                             MidiTiming timing)
 {
+    if (isAdvancedEffect(e.type))
+        advanced = std::make_unique<AdvancedEffectProcessor>(e, b, rate, timing);
+    else
+        impl = std::make_unique<Impl>(e, b, rate);
 }
 NativeEffectProcessor::~NativeEffectProcessor() = default;
 void NativeEffectProcessor::update(const StockEffect &e)
 {
-    impl->update(e);
+    if (advanced)
+        advanced->update(e);
+    else
+        impl->update(e);
 }
 void NativeEffectProcessor::process(juce::AudioBuffer<float> &b, int count)
 {
-    impl->process(b, count);
+    if (advanced)
+        advanced->process(b, count);
+    else
+        impl->process(b, count);
 }
 int NativeEffectProcessor::latency() const
 {
-    return impl->delayFrames;
+    return advanced ? advanced->latency() : impl->delayFrames;
 }
 double NativeEffectProcessor::gainReductionDb() const
 {
-    return impl->reduction;
+    return advanced ? 0 : impl->reduction;
 }
 bool nativeDSPAvailable(const juce::String &type)
 {
     return type == "parametric-eq" || type == "compressor" || type == "expander" || type == "peak-limiter" ||
-           type == "transient" || type == "saturation";
+           type == "transient" || type == "saturation" || advancedDSPAvailable(type);
 }
 } // namespace sp

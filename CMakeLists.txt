@@ -20,7 +20,7 @@ juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resou
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
 add_library(soundplus_core STATIC
-  src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
+  src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/InputRecording.cpp
   src/DesignInputSession.cpp src/DesignMidiSession.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
@@ -248,6 +248,13 @@ if(SOUNDPLUS_BUILD_PLUGIN_ASAN_QA)
   target_compile_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address -g -fno-omit-frame-pointer -O1)
   target_link_options(SoundPlusPublicationDebug PRIVATE -fsanitize=address)
   target_link_libraries(SoundPlusPublicationDebug PRIVATE soundplus_plugin_asan_core)
+  juce_add_console_app(SoundPlusAdvancedSanity PRODUCT_NAME "SoundPlusAdvancedSanity")
+  target_sources(SoundPlusAdvancedSanity PRIVATE tests/AdvancedSanityMain.cpp tests/AdvancedEffectsTests.cpp)
+  target_compile_options(SoundPlusAdvancedSanity PRIVATE -fsanitize=address -g -fno-omit-frame-pointer -O1)
+  target_link_options(SoundPlusAdvancedSanity PRIVATE -fsanitize=address)
+  target_link_libraries(SoundPlusAdvancedSanity PRIVATE soundplus_plugin_asan_core)
+  add_test(NAME advanced_effects_asan COMMAND SoundPlusAdvancedSanity "${CMAKE_BINARY_DIR}/advanced-asan-tests")
+  set_tests_properties(advanced_effects_asan PROPERTIES TIMEOUT 240 RUN_SERIAL TRUE)
 endif()
 
 if(BUILD_TESTING)

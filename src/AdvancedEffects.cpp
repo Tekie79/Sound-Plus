@@ -326,6 +326,11 @@ double advancedTailSeconds(const StockEffect &e, const MidiTiming &t)
 }
 uint64_t advancedMemoryBytes(const StockEffect &e, const ChannelLayout &bus, double rate)
 {
+    if (!isAdvancedEffect(e.type))
+        return 0;
+    validateNativeEffect(e);
+    if (!std::isfinite(rate) || rate < 8000 || rate > 192000)
+        throw std::runtime_error("Invalid advanced preparation rate");
     auto c = (uint64_t)bus.size();
     if (e.type == "advanced-delay")
         return (uint64_t)std::ceil((nativeValue(e, "max-ms") + 20) * rate / 1000.) * c * sizeof(float) +
