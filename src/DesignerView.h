@@ -8,6 +8,7 @@
 #include "PerformView.h"
 #include "SourcePoolView.h"
 #include "StockRackView.h"
+#include "TrackMixer.h"
 #include <map>
 namespace sp
 {
@@ -89,6 +90,10 @@ class DesignerView final : public juce::Component,
     struct Canvas;
     std::unique_ptr<Canvas> canvas;
     std::unique_ptr<MultitrackEditor> tracks;
+    std::unique_ptr<TrackMixer> mixer;
+    ui::TextActionButton mixerButton{"Mixer", true};
+    int mixerHeight = 240;
+    bool mixerOpen = false;
     std::unique_ptr<MidiEditor> midiEditor;
     bool midiEditorOpen = false;
     IconButton addTrackButton{"Add track", ActionIcon::addLayer};

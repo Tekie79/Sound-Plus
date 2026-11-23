@@ -5,6 +5,7 @@
 #include "AdvancedEffects.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
+#include "MixerMeters.h"
 #include "SourcePools.h"
 #include "ProcessorBusContract.h"
 #include "DesignLive.h"
@@ -695,6 +696,7 @@ struct DesignGraph::Impl
         std::unique_ptr<CompiledAutomation> automation;
         std::vector<Voice *> clips;
         juce::AudioBuffer<float> pcm, alignment, legacyClips;
+        MixerMeter meter;
         ChannelMatrix legacyConversion{};
         bool legacyInput = false;
         bool audible = true, volumeAutomated = false;
@@ -706,6 +708,7 @@ struct DesignGraph::Impl
     std::vector<int> trackOrder;
     std::unique_ptr<CompiledAutomation> masterAutomation;
     int masterInputLatency = 0;
+    MixerMeter masterMeter;
     void prepareTracks(bool fixed, const std::function<bool()> &cancelled)
     {
         auto &mix = document.activeMix();
@@ -716,6 +719,7 @@ struct DesignGraph::Impl
                 continue;
             auto node = std::make_unique<TrackNode>();
             node->track = t;
+            node->meter.prepare(sampleRate);
             if (t.kind == TrackKind::midiInstrument)
             {
                 node->midi = compileMidi(mix, t.id, sampleRate);
@@ -992,11 +996,13 @@ struct DesignGraph::Impl
                         node.alignment.setSample(c, node.alignPosition, value);
                         value = delayed;
                     }
+                    node.meter.measure(c, value);
                     auto &destination = node.destination < 0 ? block : tracks[(size_t)node.destination]->pcm;
                     destination.addSample(c, n, value);
                 }
                 if (node.alignFrames)
                     node.alignPosition = (node.alignPosition + 1) % node.alignFrames;
+                node.meter.advance(node.destinationBus.size());
             }
         }
     }
@@ -1024,6 +1030,7 @@ struct DesignGraph::Impl
         auto &mix = document.activeMix();
         int channels = mix.layout.id.isEmpty() ? 2 : mix.layout.size();
         block.setSize(channels, 512);
+        masterMeter.prepare(sampleRate);
         masterRack = std::make_unique<OrderedRack>(
             mix.inserts, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
             invariant || mix.trackSchema || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), invariant,
@@ -1159,7 +1166,12 @@ struct DesignGraph::Impl
                             std::max<int64_t>(0, cursor + i - pipelineLatency)));
                 }
                 for (int c = 0; c < block.getNumChannels(); ++c)
-                    block.setSample(c, i, block.getSample(c, i) * gain);
+                {
+                    auto sample = block.getSample(c, i) * gain;
+                    block.setSample(c, i, sample);
+                    masterMeter.measure(c, sample);
+                }
+                masterMeter.advance(block.getNumChannels());
             }
             for (int c = 0; c < block.getNumChannels(); ++c)
             {
@@ -1181,6 +1193,14 @@ juce::var DesignGraph::nativeMeters() const
         voice->appendMeters(rows);
     for (auto &track : impl->tracks)
         track->rack->appendMeters(rows);
+    return rows;
+}
+juce::var DesignGraph::mixerMeters() const
+{
+    juce::Array<juce::var> rows;
+    rows.add(impl->masterMeter.snapshot("master", designLayout(impl->document)));
+    for (const auto &track : impl->tracks)
+        rows.add(track->meter.snapshot(track->track.id, track->destinationBus));
     return rows;
 }
 DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &cancelled)
@@ -1379,6 +1399,10 @@ struct DesignReader::Impl : juce::AudioSource
 juce::var DesignReader::nativeMeters() const
 {
     return impl->graph.nativeMeters();
+}
+juce::var DesignReader::mixerMeters() const
+{
+    return impl->graph.mixerMeters();
 }
 DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
                            double tail, const std::function<bool()> &cancelled, int64_t warmup)

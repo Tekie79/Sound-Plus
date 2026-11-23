@@ -355,7 +355,13 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     };
     previous.onClick = [this] { navigate(-1); };
     next.onClick = [this] { navigate(1); };
-    findSimilar.onClick = [this] { useSelectionAsReference(); };
+    findSimilar.onClick = [this]
+    {
+        if (snapshot.semantic.ready)
+            useSelectionAsReference();
+        else if (snapshot.semantic.enabled && !snapshot.semantic.installing)
+            installModelMenu(&findSimilar);
+    };
     externalReference.onClick = [this] { chooseReference(); };
     externalReference.setTooltip(
         "Use a local audio file as a temporary search reference. You can also drop one file here.");
@@ -1571,13 +1577,13 @@ void LibraryView::showRangeEditor(bool forReference)
     first.grabKeyboardFocus();
     first.selectAll();
 }
-void LibraryView::installModelMenu()
+void LibraryView::installModelMenu(juce::Component *anchor)
 {
     juce::PopupMenu menu;
     menu.addItem(1, "Download verified CLAP model (163 MB)");
     menu.addItem(2, "Import an offline model pack...");
     juce::Component::SafePointer<LibraryView> safe(this);
-    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(installAI),
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor ? *anchor : installAI),
                        [safe](int choice)
                        {
                            if (!safe)
@@ -1865,12 +1871,14 @@ void LibraryView::timerCallback()
     bool canPlay = selectedAsset && sourceAvailable(*selectedAsset);
     previous.setEnabled(snapshot.total > 0);
     this->next.setEnabled(snapshot.total > 0);
-    findSimilar.setEnabled(selectedAsset && selectedAsset->deliverable() && ai.ready &&
-                           selectedAsset->samples > 0 && selectedAsset->state == "ready");
     if (selectedAsset)
         for (auto &root : snapshot.roots)
             if (root.id == selectedAsset->rootId)
                 canPlay &= root.online && selectedAsset->online;
+    findSimilar.setEnabled(canPlay && ai.enabled && !ai.installing);
+    findSimilar.setTooltip(!ai.enabled ? "Local analysis disabled"
+                           : ai.ready ? "Find similar sounds"
+                                      : "Set up local analysis");
     bool captureOwned = audio.captureBusy();
     output.setEnabled(!captureOwned);
     restart.setEnabled(!captureOwned);
@@ -2024,6 +2032,11 @@ void LibraryView::useSelectionAsReference()
 }
 void LibraryView::submitReference(const AudioReference &ref)
 {
+    if (!snapshot.semantic.enabled)
+    {
+        status.setText("Local analysis disabled", juce::dontSendNotification);
+        return;
+    }
     if (ref.source.id != pinnedReference.source.id ||
         ref.source.revision != pinnedReference.source.revision ||
         ref.source.path != pinnedReference.source.path || ref.startSample != pinnedReference.startSample ||
@@ -2167,10 +2180,7 @@ void LibraryView::updateReference(const ReferenceState &state)
         if (referenceStatus.isVisible())
             referenceStatus.toFront(false);
     }
-    referenceStatus.setTooltip(state.error +
-                               "\nLong selections use up to twelve short windows spread across the chosen "
-                               "range. Silent windows are skipped. Narrow the range to isolate one event; "
-                               "use Analysis Mix to hear the encoder's channel mix.");
+    referenceStatus.setTooltip({});
     referencePlay.setEnabled(a.samples > 0 && ref.startSample >= 0 && ref.endSample > ref.startSample &&
                              ref.endSample <= a.samples);
     referenceSearch.setEnabled(snapshot.semantic.ready && a.samples > 0);

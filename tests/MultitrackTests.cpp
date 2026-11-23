@@ -65,6 +65,42 @@ void runMultitrackTests(const juce::File &root)
     dir.createDirectory();
     auto f = dir.getChildFile("source.wav");
     fixture(f);
+    {
+        sp::DesignDocument mix;
+        mix.original.masterDb = 0;
+        auto owner = sp::addTrack(mix.original, sp::TrackKind::audio);
+        mix.original.layers.push_back(sp::makeDesignLayer(sp::inspectDesignSource(f), 0, 48000, true));
+        sp::attachClip(mix, mix.original.layers.back(), owner);
+        auto &track = *sp::findTrack(mix.original, owner);
+        track.volumeDb = -6;
+        auto baseline = mix;
+        sp::findTrack(baseline.original, owner)->volumeDb = 0;
+        auto unity = pcm(baseline, 1600);
+        juce::AudioBuffer<float> audio(2, 1600);
+        sp::DesignGraph graph(mix);
+        graph.render(audio, 0, 1600);
+        auto meters = graph.mixerMeters();
+        check(meters.isArray() && meters.size() == 2, "Producer meters identify Master and the Audio Track");
+        for (const auto &row : *meters.getArray())
+        {
+            const auto channels = row["channels"];
+            for (int channel = 0; channel < 2; ++channel)
+            {
+                double square = 0, peak = 0;
+                for (int frame = 0; frame < 1600; ++frame)
+                {
+                    const double expected = unity.getSample(channel, frame) * std::pow(10., -6. / 20.);
+                    check(std::abs(audio.getSample(channel, frame) - expected) < 2e-7,
+                          "Mixer fader gain matches independent -6 dB ratio");
+                    square += expected * expected;
+                    peak = std::max(peak, std::abs(expected));
+                }
+                check(std::abs((double)channels[channel]["peak"] - peak) < 2e-7 &&
+                          std::abs((double)channels[channel]["rms"] - std::sqrt(square / 1600)) < 2e-7,
+                      "Post-fader sample peak and 1600-frame RMS match PCM oracle");
+            }
+        }
+    }
     sp::DesignDocument legacy;
     legacy.original.layers.push_back(sp::makeDesignLayer(sp::inspectDesignSource(f), 0, 48000, true));
     auto &clip = legacy.original.layers.front();

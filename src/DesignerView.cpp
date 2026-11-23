@@ -47,6 +47,41 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     canvas = std::make_unique<Canvas>(*this);
     tracks = std::make_unique<MultitrackEditor>(
         session, [this](const Asset &a) { return peakPool->get(a); }, preferences);
+    mixer = std::make_unique<TrackMixer>(session, *tracks, preferences);
+    addChildComponent(*mixer);
+    addAndMakeVisible(mixerButton);
+    mixerHeight = preferences.getIntValue("mixer.height", 240);
+    mixerOpen = preferences.getBoolValue("mixer.open", false);
+    mixerButton.onClick = [this]
+    {
+        mixerOpen = !mixerOpen;
+        preferences.setValue("mixer.open", mixerOpen);
+        resized();
+        if (mixerOpen)
+            mixer->refresh();
+    };
+    mixer->resizeDock = [this](int height)
+    {
+        mixerHeight = juce::jlimit(195, 480, height);
+        preferences.setValue("mixer.height", mixerHeight);
+        resized();
+    };
+    mixer->showInserts = [this](const auto &id)
+    {
+        tracks->selectTrack(id);
+        inspectorOpen = true;
+        preferences.setValue("inspectorOpen", true);
+        const auto group = id == "master" ? "MASTER INSERTS" : "TRACK INSERTS";
+        for (auto &item : groups)
+            if (item.name == group)
+            {
+                item.open = true;
+                refresh();
+                resized();
+                inspectorViewport.setViewPosition(0, item.header->getY());
+                break;
+            }
+    };
     midiEditor = std::make_unique<MidiEditor>(
         session, catalog.getParentDirectory().getChildFile("plugin-processing/plugins-v1.json"));
     addChildComponent(*midiEditor);
@@ -1118,6 +1153,8 @@ juce::String DesignerView::waveformKey(const Asset &a) const
 }
 void DesignerView::refresh()
 {
+    if (mixer && mixerOpen)
+        mixer->refresh();
     if (midiEditor)
         midiEditor->refresh();
     updating = true;
@@ -1350,6 +1387,8 @@ void DesignerView::timerCallback()
     if (session.readyOutput() != previousOutput)
         refresh();
     auto state = audio.status();
+    if (mixer->isShowing())
+        mixer->updateMeters(state);
     for (auto *rack : {trackRack.get(), sourceRack.get(), masterRack.get()})
         if (rack)
             rack->updateMeters(state["nativeMeters"]);
@@ -1545,6 +1584,9 @@ void DesignerView::resized()
     canvasViewport.setVisible(!performMode);
     addTrackButton.setVisible(!performMode);
     addTrackButton.setBounds(456, 55, 30, 32);
+    mixerButton.setVisible(!performMode);
+    mixerButton.setToggleState(mixerOpen, juce::dontSendNotification);
+    mixerButton.setBounds(std::max(166, creative - 76), 98, 66, 28);
     inspect.setVisible(!performMode);
     for (auto *button :
          {&zoomOut, &zoomIn, &verticalOut, &verticalIn, &fitAll, &fitSelected, &snap, &snapOptions, &scrub})
@@ -1571,11 +1613,15 @@ void DesignerView::resized()
         x += 32;
     }
     int pianoHeight = midiEditorOpen && !performMode ? std::clamp((getHeight() - 340) / 2, 170, 250) : 0;
+    const int dockHeight = mixerOpen && !performMode ? std::min(mixerHeight, getHeight() - 430) : 0;
+    mixer->setVisible(dockHeight > 0);
+    mixer->setBounds(12, getHeight() - 204 - dockHeight, std::max(280, creative - 24), dockHeight);
     midiEditor->setVisible(pianoHeight > 0);
-    midiEditor->setBounds(12, getHeight() - 204 - pianoHeight, std::max(280, creative - 24), pianoHeight);
+    midiEditor->setBounds(12, getHeight() - 204 - dockHeight - pianoHeight,
+                          std::max(280, creative - 24), pianoHeight);
     midiEditor->refresh();
     canvasViewport.setBounds(12, 136, std::max(280, creative - 24),
-                             std::max(30, getHeight() - 340 - pianoHeight));
+                             std::max(30, getHeight() - 340 - pianoHeight - dockHeight));
     if (session.document.activeMix().trackSchema)
         tracks->setSize(std::max(280, canvasViewport.getWidth() - 14),
                         std::max(canvasViewport.getHeight() - 2, tracks->contentHeight()));

@@ -37,6 +37,7 @@ class MultitrackEditor final : public juce::Component,
     void splitSelected();
     void midiInputMenu(const juce::String &, juce::Component &);
     void inputMenu(const juce::String &, juce::Component &);
+    void openTrackOptions(const juce::String &id, juce::Component &anchor) { trackMenu(id, anchor); }
     void mouseDown(const juce::MouseEvent &) override;
     void mouseDrag(const juce::MouseEvent &) override;
     void mouseUp(const juce::MouseEvent &) override;

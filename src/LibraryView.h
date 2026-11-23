@@ -97,7 +97,7 @@ class LibraryView final : public juce::Component,
     void playSelected(bool useMatch, int64_t seekSample = -1);
     void setRegion(int64_t start, int64_t end, bool zoom = false, bool selected = true);
     void showRangeEditor(bool forReference = false);
-    void installModelMenu();
+    void installModelMenu(juce::Component *anchor = nullptr);
     void requestSearch();
     void useSelectionAsReference();
     void chooseReference();

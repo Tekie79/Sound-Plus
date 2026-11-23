@@ -195,6 +195,33 @@ struct DesignerViewTestAccess
         check(view.render.isEnabled() && view.recordTake.isEnabled(),
               "Final view reconciliation allows MIDI-only Render and frozen Perform recording");
         view.midiEditorOpen = false;
+        view.session.document = midiDocument;
+        view.setPerformMode(false);
+        view.setSize(688, 680);
+        view.mixerButton.onClick();
+        check(view.mixer->isVisible() && view.mixer->getBottom() <= view.getHeight() - 204,
+              "Docked mixer fits the native Edit layout");
+        std::function<juce::Slider *(juce::Component &)> findFader = [&](juce::Component &part) -> juce::Slider *
+        {
+            if (auto *slider = dynamic_cast<juce::Slider *>(&part);
+                slider && slider->getTitle() == "Volume for Master")
+                return slider;
+            for (auto *child : part.getChildren())
+                if (auto *found = findFader(*child))
+                    return found;
+            return nullptr;
+        };
+        auto *mixFader = findFader(*view.mixer);
+        const auto oldGain = view.session.document.activeMix().masterDb;
+        check(mixFader != nullptr && std::abs(mixFader->getValue() - oldGain) < 1e-8, "Mixer reads canonical Master fader");
+        mixFader->setValue(-14, juce::sendNotificationSync);
+        check(std::abs(view.session.document.activeMix().masterDb + 14.) < 1e-8, "Mixer edits canonical Master fader");
+        view.session.undo();
+        check(view.session.document.activeMix().masterDb == oldGain && std::abs(mixFader->getValue() - oldGain) < 1e-8,
+              "Undo updates mixer from canonical model");
+        view.session.redo();
+        check(std::abs(mixFader->getValue() + 14.) < 1e-8, "Redo updates mixer fader");
+        view.mixerButton.onClick();
         view.session.document = legacyDocument;
         view.refresh();
         select(2);

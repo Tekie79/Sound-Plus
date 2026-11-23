@@ -564,7 +564,10 @@ void AudioPlaybackService::produce()
         object->setProperty("design", core.designPlaying());
         object->setProperty("designLayers", core.designLayers());
         if (auto *stream = core.producerStream())
+        {
             object->setProperty("nativeMeters", stream->nativeMeters());
+            object->setProperty("mixerMeters", stream->mixerMeters());
+        }
         object->setProperty("producerMaxMs", core.producerMaxMs());
         object->setProperty("producerP95UpperMs", core.producerP95UpperMs());
         object->setProperty("producerFills", (juce::int64)core.producerFills());

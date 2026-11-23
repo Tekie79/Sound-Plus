@@ -69,6 +69,10 @@ class PcmStream
     {
         return designReader ? designReader->nativeMeters() : juce::var();
     }
+    juce::var mixerMeters() const
+    {
+        return designReader ? designReader->mixerMeters() : juce::var();
+    }
     void discardTo(int64_t sourceFrame);
     std::atomic<uint64_t> heardEdit{0};
     std::atomic<double> editLatencyMs{0};
