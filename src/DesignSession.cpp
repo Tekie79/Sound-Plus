@@ -1,3 +1,4 @@
+#include "AdvancedIR.h"
 #include "DesignSession.h"
 #include "TrackModel.h"
 #include "PerformanceState.h"
@@ -1243,6 +1244,59 @@ void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool e
              d.selectedLayer = layer.id;
              d.activeMix().layers.push_back(std::move(layer));
          });
+}
+void DesignSession::chooseImpulse(const juce::String &owner, const juce::String &id, const juce::File &file,
+                                  const juce::String &mapping, bool relink)
+{
+    if (replacing || takeBusy() || document.activeTake.isNotEmpty())
+        return;
+    auto *chain = owner.isEmpty() ? &document.activeMix().inserts : ownerInserts(document.activeMix(), owner);
+    if (!chain)
+        return;
+    auto at = std::find_if(chain->stock.begin(), chain->stock.end(),
+                           [&](auto &e) { return e.id == id && e.type == "convolution-reverb"; });
+    if (at == chain->stock.end())
+        return;
+    auto bus = designLayout(document);
+    if (auto *track = findTrack(document.activeMix(), owner))
+        bus = track->layout;
+    else
+        for (auto &layer : document.activeMix().layers)
+            if (layer.id == owner && !document.activeMix().layout.id.isEmpty())
+                bus = layer.routing.interpretation;
+    const auto original = at->impulse;
+    if (relink && !original)
+        return;
+    protectStartupEdits();
+    auto token = stamp(Operation::import);
+    auto variation = document.activeVariation, key = variation + ":" + owner + ":" + id;
+    auto request = ++impulseRequests[key];
+    working = true;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    enqueue(token,
+            [safe, original, file, bus, mapping, relink, owner, id, variation, key, request]
+            {
+                auto ir = relink ? relinkImpulse(*original, file, bus) : inspectImpulse(file, bus, mapping);
+                return [safe, ir = std::move(ir), owner, id, variation, key, request]
+                {
+                    if (!safe)
+                        return;
+                    safe->working = !safe->acceptedImports.empty();
+                    if (safe->document.activeVariation != variation ||
+                        safe->impulseRequests[key] != request || safe->document.activeTake.isNotEmpty())
+                        return;
+                    safe->edit("Choose impulse response",
+                               [&](auto &d)
+                               {
+                                   auto *c = owner.isEmpty() ? &d.activeMix().inserts
+                                                             : ownerInserts(d.activeMix(), owner);
+                                   if (c)
+                                       for (auto &e : c->stock)
+                                           if (e.id == id && e.type == "convolution-reverb")
+                                               e.impulse = ir;
+                               });
+                };
+            });
 }
 void DesignSession::addExternal(const juce::File &file, int64_t placement)
 {

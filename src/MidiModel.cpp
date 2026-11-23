@@ -250,7 +250,12 @@ void validateMidi(const DesignMix &m, double rate)
 {
     if (!hasMidi(m))
         return;
-    require(mixAssets(m).size() <= 64, "At most64 audio and sampler source references per design");
+    size_t impulseCount = 0;
+    for (auto *e : advancedInserts(m))
+        if (e->impulse)
+            ++impulseCount;
+    require(mixAssets(m).size() - impulseCount <= 64,
+            "At most64 audio and sampler source references per design");
     require(m.trackSchema && m.midiClips.size() <= 64, "MIDI requires typed tracks; at most64 MIDI clips");
     (void)midiFrame(0, m.midiTiming, rate);
     require(m.midiTiming.numerator >= 1 && m.midiTiming.numerator <= 16 &&

@@ -1,3 +1,4 @@
+#include "AdvancedIR.h"
 #include "NativeSampler.h"
 #include "NativeEffectsDSP.h"
 #include "AdvancedEffects.h"
@@ -1293,6 +1294,7 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     // Freeze the actual verified relocation once for metering, PCM and final
     // publication guards. Unrelated Live Design paths never enter this snapshot.
     const auto effectiveInput = selectedTake(d) ? takeDocument(d) : d;
+    verifyMixImpulses(effectiveInput.activeMix(), cancelled);
     const bool layoutAware = !effectiveInput.activeMix().layout.id.isEmpty() || settings.layout.isNotEmpty();
     const auto bus = designLayout(d),
                delivery = layoutAware ? exportLayout(d, settings)
@@ -1744,12 +1746,14 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
                 sourceUnchanged(l.source);
         if (cancelled())
             throw QueryCancelled();
+        verifyMixImpulses(effectiveInput.activeMix(), cancelled);
         if (!setStage.path.moveFileTo(setTarget))
             throw std::runtime_error("Cannot publish split set atomically");
         setStage.published = true;
         progress(1);
         return result;
     }
+    verifyMixImpulses(effectiveInput.activeMix(), cancelled);
     if (!staging.overwriteTargetFileWithTemporary())
         throw std::runtime_error("Cannot publish durable WAV");
     progress(1);

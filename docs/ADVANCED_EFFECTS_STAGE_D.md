@@ -1,0 +1,9 @@
+# Stage D — Convolution
+
+Implemented referenced/content-hashed local IR preparation, explicit routing, uniform128/256/512 partition DSP, deterministic resampling, declared/PDC-compensated delay, aligned bypass and final-publication integrity checks. Detailed policy and resource bounds are in [contract](ADVANCED_EFFECTS_CONTRACT.md#convolution-v1).
+
+Independent tests cover short naive convolution (max error7.450580596923828e-9), long whole-signal double FFT (3.259629011154175e-9), absolute-time sinc resampling (2.147769497410261e-17),44.1/48/96k, blocks1/32/61/257/512, all partition choices, mono/stereo/true-stereo/named/discrete16 maps and dry/mapped LFE. Actual Clip/Track/Group/Master graph PDC, resampled IR, hidden Mix/Output automation, split continuation/tail ownership, accurate seek, saved project, recipe7 body/tail and identical-content take relocation are compared in PCM. Missing/changed/different relink/structural update/cancellation/metadata-memory failures reject deliberately.
+
+The session worker and actual Inspector controls expose Choose IR, explicit map and identical-content Relink. Controlled session command tests cover two independent choices, latest same-slot request, Undo/Redo, Save/Reopen and replacement-document stale completion rejection. This is automated command evidence; native dialogs/device/end-to-end UI verification remains Stage E.
+
+Release targeted gate:7/7 suites, including ASan, native v1 compatibility, automation, recorded takes, view commands and ordered corrections. See [log](verification/advanced-effects/stage-d-tests.log) and [numerical evidence](verification/advanced-effects/stage-d-convolution-evidence.json). Human listening and physical surround/receiver delivery are not qualified by these numerical tests. Long/wide IR configurations can exceed96MiB aggregate preparation memory and reject without truncation; no general surround cross-role matrix, zero-latency or non-uniform convolution claim.

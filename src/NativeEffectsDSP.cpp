@@ -382,10 +382,10 @@ struct NativeEffectProcessor::Impl
     }
 };
 NativeEffectProcessor::NativeEffectProcessor(const StockEffect &e, const ChannelLayout &b, double rate,
-                                             MidiTiming timing)
+                                             MidiTiming timing, const std::function<bool()> &cancelled)
 {
     if (isAdvancedEffect(e.type))
-        advanced = std::make_unique<AdvancedEffectProcessor>(e, b, rate, timing);
+        advanced = std::make_unique<AdvancedEffectProcessor>(e, b, rate, timing, cancelled);
     else
         impl = std::make_unique<Impl>(e, b, rate);
 }

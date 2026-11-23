@@ -67,7 +67,8 @@ class OrderedRack
                 step.bypassTarget = {ref.id, "bypass"};
                 if (step.base.nativeVersion)
                 {
-                    step.native = std::make_unique<NativeEffectProcessor>(step.base, bus, rate, timing);
+                    step.native =
+                        std::make_unique<NativeEffectProcessor>(step.base, bus, rate, timing, cancelled);
                     delay += step.native->latency();
                 }
                 else

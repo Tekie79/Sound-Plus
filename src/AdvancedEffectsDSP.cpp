@@ -1,4 +1,6 @@
 #include "AdvancedEffectsDSP.h"
+#include "AdvancedIR.h"
+#include <juce_dsp/juce_dsp.h>
 #include <cmath>
 namespace sp
 {
@@ -205,6 +207,7 @@ struct Delay final : Engine
     }
 };
 #include "AdvancedReverb.inc"
+#include "AdvancedConvolution.inc"
 } // namespace
 struct AdvancedEffectProcessor::Impl
 {
@@ -212,7 +215,11 @@ struct AdvancedEffectProcessor::Impl
     std::unique_ptr<Engine> engine;
     int channels, lfe, mix, output, lfeControl;
     uint64_t bytes;
-    Impl(const StockEffect &e, const ChannelLayout &bus, double rate, MidiTiming timing)
+    std::optional<ImpulseReference> impulse;
+    std::array<Ring, 16> dryLines;
+    int dryLatency = 0;
+    Impl(const StockEffect &e, const ChannelLayout &bus, double rate, MidiTiming timing,
+         const IRCancel &cancelled)
         : parameters(e, rate), channels(bus.size()), lfe(bus.roles.indexOf("LFE")),
           mix(parameters.index("mix")), output(parameters.index("output")),
           lfeControl(parameters.index("lfe")), bytes(advancedMemoryBytes(e, bus, rate))
@@ -224,8 +231,15 @@ struct AdvancedEffectProcessor::Impl
             engine = std::make_unique<Delay>(e, bus, rate, timing);
         else if (e.type == "algorithmic-reverb")
             engine = std::make_unique<Reverb>(e, bus, rate);
+        else if (e.type == "convolution-reverb")
+            engine = std::make_unique<Convolver>(e, bus, rate, cancelled);
         else
             throw std::runtime_error("Advanced processor is not available yet");
+        impulse = e.impulse;
+        dryLatency = engine->latency();
+        if (dryLatency)
+            for (int c = 0; c < channels; ++c)
+                dryLines[(size_t)c].prepare(dryLatency + 2);
     }
     void process(juce::AudioBuffer<float> &buffer, int count)
     {
@@ -243,6 +257,13 @@ struct AdvancedEffectProcessor::Impl
                 dry[(size_t)c] = v;
             }
             engine->tick(dry, wet, parameters);
+            if (dryLatency)
+                for (int c = 0; c < channels; ++c)
+                {
+                    auto original = dry[(size_t)c];
+                    dry[(size_t)c] = dryLines[(size_t)c].read(dryLatency);
+                    dryLines[(size_t)c].push(original);
+                }
             auto &p = parameters.values;
             auto gain = std::pow(10., p[(size_t)output] / 20.);
             for (int c = 0; c < channels; ++c)
@@ -262,13 +283,26 @@ struct AdvancedEffectProcessor::Impl
     }
 };
 AdvancedEffectProcessor::AdvancedEffectProcessor(const StockEffect &e, const ChannelLayout &b, double r,
-                                                 MidiTiming t)
-    : impl(std::make_unique<Impl>(e, b, r, t))
+                                                 MidiTiming t, const IRCancel &cancelled)
+    : impl(std::make_unique<Impl>(e, b, r, t, cancelled))
 {
 }
 AdvancedEffectProcessor::~AdvancedEffectProcessor() = default;
 void AdvancedEffectProcessor::update(const StockEffect &e)
 {
+    if ((bool)e.impulse != (bool)impl->impulse)
+        throw std::runtime_error("IR change requires graph preparation");
+    if (e.impulse)
+    {
+        auto &a = *e.impulse;
+        auto &b = *impl->impulse;
+        if (a.sha256 != b.sha256 || a.source.path != b.source.path || a.source.id != b.source.id ||
+            a.source.samples != b.source.samples || a.source.sampleRate != b.source.sampleRate ||
+            a.source.channels != b.source.channels || a.source.size != b.source.size ||
+            a.source.modified != b.source.modified || a.source.inode != b.source.inode ||
+            a.mapping != b.mapping || a.routes != b.routes)
+            throw std::runtime_error("IR reference/map change requires graph preparation");
+    }
     impl->parameters.update(e);
 }
 void AdvancedEffectProcessor::process(juce::AudioBuffer<float> &b, int n)
@@ -285,6 +319,6 @@ uint64_t AdvancedEffectProcessor::memoryBytes() const
 }
 bool advancedDSPAvailable(const juce::String &t)
 {
-    return t == "advanced-delay" || t == "algorithmic-reverb";
+    return isAdvancedEffect(t);
 }
 } // namespace sp

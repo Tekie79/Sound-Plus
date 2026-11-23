@@ -1,5 +1,5 @@
 #pragma once
-#include "NativeEffects.h"
+#include "AdvancedEffects.h"
 #include "IconButton.h"
 namespace sp
 {
@@ -41,7 +41,9 @@ class NativeParameterPanel final : public juce::Component
             g.fillRoundedRectangle(r.withWidth(r.getWidth() * (float)std::clamp(value / 48., 0., 1.)), 2);
         }
     } meter;
-    bool hasMeter = false;
+    bool hasMeter = false, hasImpulse = false;
+    juce::Label impulseName;
+    juce::TextButton chooseIR{"Choose IR"}, relinkIR{"Relink"};
     bool refreshing = false, dragging = false;
 
   public:
@@ -63,6 +65,30 @@ class NativeParameterPanel final : public juce::Component
                 }
         return nullptr;
     }
+    NativeParameterPanel()
+    {
+        addAndMakeVisible(impulseName);
+        addAndMakeVisible(chooseIR);
+        addAndMakeVisible(relinkIR);
+        impulseName.setFont(juce::FontOptions(12.f));
+        impulseName.setColour(juce::Label::textColourId, ui::muted);
+        chooseIR.setTitle("Choose impulse response");
+        chooseIR.setTooltip("Reference a local IR without copying; explicit routing is required. Verified "
+                            "during preparation.");
+        relinkIR.setTitle("Relink identical impulse response");
+        relinkIR.setTooltip("Locate an identical-content IR; never substitutes different audio.");
+        chooseIR.onClick = [this]
+        {
+            if (onImpulse)
+                onImpulse(false);
+        };
+        relinkIR.onClick = [this]
+        {
+            if (onImpulse)
+                onImpulse(true);
+        };
+    }
+    std::function<void(bool)> onImpulse;
     std::function<void(int, double)> onValue;
     std::function<void(int)> onLock;
     std::function<void()> onBegin, onEnd, onHeightChange;
@@ -87,6 +113,21 @@ class NativeParameterPanel final : public juce::Component
         setVisible(true);
         auto &d = nativeDefinition(*e);
         meterId = e->id;
+        hasImpulse = e->type == "convolution-reverb";
+        impulseName.setVisible(hasImpulse);
+        chooseIR.setVisible(hasImpulse);
+        relinkIR.setVisible(hasImpulse);
+        chooseIR.setEnabled(editable);
+        relinkIR.setEnabled(editable && e->impulse.has_value());
+        impulseName.setText(e->impulse ? (e->impulse->source.error.isNotEmpty()
+                                              ? "IR unresolved: " + e->impulse->source.error
+                                              : e->impulse->source.name)
+                                       : "IR unresolved — choose a file",
+                            juce::dontSendNotification);
+        impulseName.setTooltip(e->impulse ? e->impulse->source.path + "\n" + e->impulse->mapping +
+                                                "; SHA-256 " + e->impulse->sha256 +
+                                                "\nContent is checked before preparation and publication."
+                                          : "Choose a local impulse response before playback or rendering.");
         hasMeter = e->type == "compressor" || e->type == "expander" || e->type == "peak-limiter";
         if (meter.getParentComponent() != this)
             addAndMakeVisible(meter);
@@ -160,10 +201,9 @@ class NativeParameterPanel final : public juce::Component
                 if (p.logarithmic)
                     r->slider.setSkewFactorFromMidPoint(std::sqrt(p.minimum * p.maximum));
                 r->slider.setTitle(d.name + " / " + p.group + " / " + p.name);
-                r->slider.setTooltip(
-                    p.structural
-                        ? "Changes latency; Stop and reprepare playback. Not an automatable live target."
-                        : p.units);
+                r->slider.setTooltip(p.structural ? "Changes prepared processing; playback safely rebuilds. "
+                                                    "Not a live automation target."
+                                                  : p.units);
                 r->slider.onDragStart = [this]
                 {
                     dragging = true;
@@ -211,7 +251,7 @@ class NativeParameterPanel final : public juce::Component
     }
     int preferredHeight() const
     {
-        int h = hasMeter ? 20 : 0;
+        int h = (hasMeter ? 20 : 0) + (hasImpulse ? 58 : 0);
         for (auto &g : groups)
             h += 30 + (g->expanded ? (int)g->rows.size() * 46 : 0);
         return h;
@@ -219,6 +259,15 @@ class NativeParameterPanel final : public juce::Component
     void resized() override
     {
         auto area = getLocalBounds();
+        if (hasImpulse)
+        {
+            impulseName.setBounds(area.removeFromTop(22));
+            auto row = area.removeFromTop(30);
+            chooseIR.setBounds(row.removeFromLeft(std::min(120, row.getWidth() / 2)).reduced(0, 2));
+            row.removeFromLeft(8);
+            relinkIR.setBounds(row.removeFromLeft(84).reduced(0, 2));
+            area.removeFromTop(6);
+        }
         if (hasMeter)
             meter.setBounds(area.removeFromTop(20));
         for (auto &g : groups)

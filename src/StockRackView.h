@@ -30,6 +30,7 @@ class StockRackView final : public juce::Component
             addAndMakeVisible(c);
         addAndMakeVisible(orderedList);
         addAndMakeVisible(nativePanel);
+        nativePanel.onImpulse = [this](bool relink) { chooseImpulse(relink); };
         nativePanel.onBegin = [this]
         {
             gestureOwner = owner;
@@ -147,6 +148,7 @@ class StockRackView final : public juce::Component
                          fresh.locked = fx[i].locked;
                          fresh.parameterLocks = fx[i].parameterLocks;
                          fresh.nativeLocks = fx[i].nativeLocks;
+                         fresh.impulse = fx[i].impulse;
                          fx[i] = fresh;
                      });
         };
@@ -789,6 +791,43 @@ class StockRackView final : public juce::Component
                                    break;
                                }
                            });
+    }
+    void chooseImpulse(bool relink)
+    {
+        auto target = owner;
+        auto id = selectedSlot;
+        presetChooser = std::make_unique<juce::FileChooser>(relink ? "Relink identical impulse response"
+                                                                   : "Choose local impulse response",
+                                                            juce::File(), "*.wav;*.aif;*.aiff;*.flac");
+        juce::Component::SafePointer<StockRackView> safe(this);
+        presetChooser->launchAsync(
+            juce::FileBrowserComponent::openMode | juce::FileBrowserComponent::canSelectFiles,
+            [safe, target, id, relink](const juce::FileChooser &chooser)
+            {
+                if (!safe || !safe->rack(target) || chooser.getResult() == juce::File())
+                    return;
+                auto file = chooser.getResult();
+                if (relink)
+                {
+                    safe->session.chooseImpulse(target.layer, id, file, {}, true);
+                    return;
+                }
+                juce::PopupMenu map;
+                map.addSectionHeader("IR routing — match the file and bus");
+                map.addItem(1, "Mono → each role");
+                map.addItem(2, "Stereo L/R diagonal");
+                map.addItem(3, "True stereo: LL, LR, RL, RR");
+                map.addItem(4, "Bus roles in WAV physical order");
+                map.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(safe->nativePanel),
+                                  [safe, target, id, file](int choice)
+                                  {
+                                      if (!safe || !safe->rack(target) || choice < 1 || choice > 4)
+                                          return;
+                                      static const char *maps[] = {"mono-diagonal", "stereo-diagonal",
+                                                                   "true-stereo", "role-diagonal"};
+                                      safe->session.chooseImpulse(target.layer, id, file, maps[choice - 1]);
+                                  });
+            });
     }
     void preset(bool save)
     {

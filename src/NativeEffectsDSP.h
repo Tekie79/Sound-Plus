@@ -8,7 +8,9 @@ class AdvancedEffectProcessor;
 class NativeEffectProcessor
 {
   public:
-    NativeEffectProcessor(const StockEffect &, const ChannelLayout &, double rate, MidiTiming timing = {});
+    NativeEffectProcessor(
+        const StockEffect &, const ChannelLayout &, double rate, MidiTiming timing = {},
+        const std::function<bool()> &cancelled = [] { return false; });
     ~NativeEffectProcessor();
     void update(const StockEffect &);
     void process(juce::AudioBuffer<float> &, int count);

@@ -1,6 +1,7 @@
 #include "DesignModel.h"
 #include "NativeEffects.h"
 #include "AdvancedEffects.h"
+#include "AdvancedIR.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
 #include "TrackModel.h"
@@ -1167,6 +1168,8 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
         if (hasAdvancedEffects(m))
         {
             validateAdvancedClock(m.midiTiming);
+            if (mixAssets(m).size() > 128)
+                throw std::runtime_error("Advanced audio/sampler/IR source-reference budget exceeds128");
             uint64_t bytes = 0;
             auto resource = [&](const InsertChain &chain, const ChannelLayout &bus)
             {
@@ -1174,6 +1177,8 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
                     if (isAdvancedEffect(e.type))
                     {
                         validateNativeEffect(e);
+                        if (e.impulse)
+                            validateImpulseBus(*e.impulse, bus);
                         bytes += advancedMemoryBytes(e, bus, d.sampleRate);
                     }
             };
@@ -1607,6 +1612,23 @@ void resolveDesignSources(DesignDocument &d, const juce::File &catalog)
     Catalog db(catalog, true);
     auto resolve = [&](DesignMix &m)
     {
+        for (auto *effect : advancedInserts(m))
+            if (effect->impulse)
+            {
+                auto &reference = *effect->impulse;
+                try
+                {
+                    verifyImpulseFile(reference);
+                    reference.source.error.clear();
+                    reference.source.online = true;
+                }
+                catch (const std::exception &error)
+                {
+                    reference.source.error = error.what();
+                    reference.source.online = false;
+                }
+            }
+
         for (auto &track : m.tracks)
             if (track.instrument)
                 for (auto &entry : track.instrument->samples)

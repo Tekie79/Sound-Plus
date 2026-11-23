@@ -27,9 +27,17 @@ bool number(const juce::var &v)
 int64_t integer(const juce::var &o, const char *key)
 {
     auto v = o[key];
-    if (!number(v) || !std::isfinite((double)v) || (double)v != std::floor((double)v))
+    if (!number(v) || !std::isfinite((double)v) || (double)v != std::floor((double)v) ||
+        (v.isDouble() && ((double)v < -9223372036854775808.0 || (double)v >= 9223372036854775808.0)))
         throw std::runtime_error("Invalid integral IR field");
     return (int64_t)v;
+}
+int intField(const juce::var &o, const char *key)
+{
+    auto value = integer(o, key);
+    if (value < std::numeric_limits<int>::min() || value > std::numeric_limits<int>::max())
+        throw std::runtime_error("IR/clock integer out of range");
+    return (int)value;
 }
 template <class M> auto inserts(M &m)
 {
@@ -187,7 +195,7 @@ MidiTiming advancedClockFromJson(const juce::var &v)
 {
     if (!v.isObject() || integer(v, "version") != 1 || !number(v["bpm"]))
         throw std::runtime_error("Unsupported effects clock");
-    MidiTiming t{(double)v["bpm"], (int)integer(v, "numerator"), (int)integer(v, "denominator")};
+    MidiTiming t{(double)v["bpm"], intField(v, "numerator"), intField(v, "denominator")};
     validateAdvancedClock(t);
     return t;
 }
@@ -201,9 +209,10 @@ double delayBeats(int division)
 void validateImpulse(const ImpulseReference &r)
 {
     auto &s = r.source;
-    if (s.id.isEmpty() || s.path.isEmpty() || s.path.length() > 4096 || r.sha256.length() != 64 ||
-        !r.sha256.containsOnly("0123456789abcdef") || !std::isfinite(s.sampleRate) || s.sampleRate < 8000 ||
-        s.sampleRate > 192000 || s.channels < 1 || s.channels > 16 || s.samples < 1 ||
+    if (s.id.isEmpty() || s.path.isEmpty() || s.path.length() > 4096 || !juce::File::isAbsolutePath(s.path) ||
+        r.sha256.length() != 64 || !r.sha256.containsOnly("0123456789abcdef") ||
+        !std::isfinite(s.sampleRate) || s.sampleRate < 8000 || s.sampleRate > 192000 ||
+        s.sampleRate != std::round(s.sampleRate) || s.channels < 1 || s.channels > 16 || s.samples < 1 ||
         s.samples > s.sampleRate * maxImpulseSeconds || s.size < 1 || s.size > 128 * 1024 * 1024 ||
         r.routes.empty() || r.routes.size() > 32 ||
         (r.mapping != "mono-diagonal" && r.mapping != "stereo-diagonal" && r.mapping != "true-stereo" &&
@@ -280,7 +289,7 @@ ImpulseReference impulseFromJson(const juce::var &o)
     s.name = juce::File(s.path).getFileName();
     r.sha256 = o["sha256"].toString();
     s.sampleRate = (double)o["rate"];
-    s.channels = (int)integer(o, "channels");
+    s.channels = intField(o, "channels");
     s.samples = integer(o, "frames");
     s.size = integer(o, "size");
     s.modified = integer(o, "modified");
@@ -292,7 +301,7 @@ ImpulseReference impulseFromJson(const juce::var &o)
     if (!a || a->size() > 32)
         throw std::runtime_error("Invalid IR map");
     for (auto &v : *a)
-        r.routes.push_back({v["input"].toString(), v["output"].toString(), (int)integer(v, "channel")});
+        r.routes.push_back({v["input"].toString(), v["output"].toString(), intField(v, "channel")});
     validateImpulse(r);
     return r;
 }
@@ -321,7 +330,8 @@ double advancedTailSeconds(const StockEffect &e, const MidiTiming &t)
     if (e.type == "algorithmic-reverb")
         return nativeValue(e, "predelay") / 1000. + nativeValue(e, "decay") * 4. / 3.;
     if (e.type == "convolution-reverb")
-        return nativeValue(e, "predelay") / 1000. + (e.impulse ? e.impulse->source.duration : 0);
+        return nativeValue(e, "predelay") / 1000. +
+               (e.impulse ? (e.impulse->source.samples + 32) / e.impulse->source.sampleRate : 0);
     return 0;
 }
 uint64_t advancedMemoryBytes(const StockEffect &e, const ChannelLayout &bus, double rate)
@@ -339,15 +349,17 @@ uint64_t advancedMemoryBytes(const StockEffect &e, const ChannelLayout &bus, dou
         return (uint64_t)std::ceil(rate * 3) * c * sizeof(float) + 65536;
     if (e.type == "convolution-reverb" && e.impulse)
     {
-        uint64_t n = (uint64_t)std::ceil(e.impulse->source.samples * rate / e.impulse->source.sampleRate),
+        uint64_t n = (uint64_t)std::ceil((e.impulse->source.samples + 64) * rate /
+                                         e.impulse->source.sampleRate) +
+                     2,
                  p = 128ull << (int)nativeValue(e, "partition");
         std::set<juce::String> inputs;
         for (auto &r : e.impulse->routes)
             inputs.insert(r.input);
         return ((n + p - 1) / p) * (2 * p) * sizeof(std::complex<float>) *
                    (inputs.size() + e.impulse->source.channels) +
-               n * e.impulse->source.channels * sizeof(float) +
-               c * (p * 4 + (uint64_t)(rate * .51)) * sizeof(float) + 65536;
+               (n + (uint64_t)e.impulse->source.samples) * e.impulse->source.channels * sizeof(float) +
+               c * (p * 4 + (uint64_t)(rate * .51)) * sizeof(float) + 3 * 1024 * 1024;
     }
     return 0;
 }

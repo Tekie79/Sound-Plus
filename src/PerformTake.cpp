@@ -1,6 +1,7 @@
 #include "DesignModel.h"
 #include "NativeEffects.h"
 #include "AdvancedEffects.h"
+#include "AdvancedIR.h"
 #include "SourcePools.h"
 #include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
@@ -283,7 +284,7 @@ PerformTake takeFromJson(const juce::var &o)
         t.events.push_back({(int64_t)v["frame"], (uint64_t)(int64_t)v["sequence"],
                             (uint64_t)(int64_t)v["generation"], controlsFromJson(v["controls"])});
     auto *sources = o["sources"].getArray();
-    if (!sources || sources->size() > 64)
+    if (!sources || sources->size() > (hasAdvancedEffects((const DesignMix &)t.recipe) ? 128 : 64))
         throw std::runtime_error("Invalid take source provenance");
     for (auto &v : *sources)
         t.sources.push_back({v["id"].toString(), v["sha256"].toString(), v["overridePath"].toString(),
@@ -385,6 +386,22 @@ void validateTake(const PerformTake &t)
     for (auto *a : mixAssets((const DesignMix &)t.recipe))
         if (!ids.contains(a->id))
             throw std::runtime_error("Instrument source fingerprint missing");
+    if (t.processing == "advanced-effects-takes-v1")
+    {
+        if (t.sources.size() > 128)
+            throw std::runtime_error("Advanced take source capacity exceeded");
+        for (auto *effect : advancedInserts((const DesignMix &)t.recipe))
+            if (effect->type == "convolution-reverb")
+            {
+                if (!effect->impulse)
+                    throw std::runtime_error("Frozen convolution requires an IR reference");
+                auto &ir = *effect->impulse;
+                auto source = std::find_if(t.sources.begin(), t.sources.end(),
+                                           [&](auto &s) { return s.id == ir.source.id; });
+                if (source == t.sources.end() || source->sha256 != ir.sha256)
+                    throw std::runtime_error("Frozen IR fingerprint disagrees with recipe");
+            }
+    }
     validatePoolOrigins(t);
 }
 juce::var takePluginProvenance(const PerformTake &t)
@@ -436,6 +453,8 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     if (t.pluginAware)
         t.processing = "plugin-ordered-takes-v1";
     auto mix = d.activeMix();
+    if (hasAdvancedEffects(mix))
+        verifyMixImpulses(mix);
     if (!mix.layout.id.isEmpty())
         mix.routingVersion = 2;
     if (!t.pluginAware && !d.activeMix().layout.id.isEmpty())
@@ -628,6 +647,15 @@ DesignDocument takeDocument(const DesignDocument &d)
                         entry.region.modified = a.modified;
                         entry.region.inode = a.inode;
                     }
+    for (auto *effect : advancedInserts(result.original))
+        if (effect->impulse)
+            for (auto &source : t->sources)
+                if (source.id == effect->impulse->source.id && source.overridePath.isNotEmpty())
+                {
+                    auto asset = inspectDesignSource(juce::File(source.overridePath));
+                    asset.id = effect->impulse->source.id;
+                    effect->impulse->source = asset;
+                }
     result.takeProcessing = true;
     return result;
 }
@@ -659,6 +687,15 @@ DesignMix takeDisplayMix(const PerformTake &t)
                         entry.region.modified = a.modified;
                         entry.region.inode = a.inode;
                     }
+    for (auto *effect : advancedInserts(mix))
+        if (effect->impulse)
+            for (auto &source : t.sources)
+                if (source.id == effect->impulse->source.id && source.overridePath.isNotEmpty())
+                {
+                    auto asset = inspectDesignSource(juce::File(source.overridePath));
+                    asset.id = effect->impulse->source.id;
+                    effect->impulse->source = asset;
+                }
     return mix;
 }
 } // namespace sp

@@ -74,10 +74,16 @@ void contracts(const juce::File &base)
               "Advanced live controls preserve values");
         d.original.midiTiming.bpm = 90;
         check(designStructure(d) != key, "Constant tempo change safely reprepares graph");
-        auto take = freezeTake(d, "Advanced frozen");
-        auto t = takeToJson(take);
-        check((int)t["recipe"]["recipeVersion"] == 7, "Advanced recipe7 boundary");
-        check(takeFromJson(t).recipeHash == take.recipeHash, "Recipe7 hash survives reopen");
+        if (juce::String(type) == "convolution-reverb")
+            rejects([&] { freezeTake(d, "Unresolved IR"); },
+                    "Unresolved IR cannot be frozen as playable content");
+        else
+        {
+            auto take = freezeTake(d, "Advanced frozen");
+            auto t = takeToJson(take);
+            check((int)t["recipe"]["recipeVersion"] == 7, "Advanced recipe7 boundary");
+            check(takeFromJson(t).recipeHash == take.recipeHash, "Recipe7 hash survives reopen");
+        }
         auto file = base.getChildFile(juce::String(type) + ".soundplus");
         saveDesignAtomic(file, d);
         check(loadDesign(file).original.midiTiming.bpm == 90, "Advanced session save/reopen");
@@ -110,6 +116,10 @@ void contracts(const juce::File &base)
     nativeEffectFromJson(copy, json);
     check(copy.impulse->sha256 == ref.sha256 && copy.impulse->routes == ref.routes,
           "IR metadata and explicit map persist without file substitution");
+    auto oversized = json.clone();
+    oversized["impulse"].getDynamicObject()->setProperty("channels", (juce::int64)4294967297LL);
+    rejects([&] { nativeEffectFromJson(copy, oversized); },
+            "Huge IR channel count cannot wrap to a valid integer");
     copy.impulse->routes.push_back({"L", "L", 0});
     rejects([&] { validateNativeEffect(copy); }, "Ambiguous IR map rejected");
     DesignDocument heavy;
@@ -128,6 +138,7 @@ void contracts(const juce::File &base)
 #include "AdvancedDelayTests.inc"
 #include "AdvancedIntegrationTests.inc"
 #include "AdvancedReverbTests.inc"
+#include "AdvancedConvolutionTests.inc"
 void runAdvancedEffectsTests(const juce::File &base)
 {
     base.createDirectory();
@@ -143,5 +154,7 @@ void runAdvancedEffectsTests(const juce::File &base)
         reverbTests(base);
         reverbGraphTests(base);
     }
+    convolutionTests(base);
+    convolutionGraphTests(base);
     std::cout << "Advanced effects: " << checks << " assertions passed\n";
 }

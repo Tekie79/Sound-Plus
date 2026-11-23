@@ -430,6 +430,65 @@ struct NativeEffectTestAccess
         drain();
         check(findTrack(session.document.original, track)->inserts.stock[0].nativeValues[0] == -24,
               "Actual session reopen retains edited preset");
+        // Controlled worker: separate accepted IR choices complete independently;
+        // a newer choice for the same slot supersedes only that slot.
+        auto ir = dir.getChildFile("Impulse.wav"), ir2 = dir.getChildFile("Impulse2.wav");
+        auto writeIR = [&](const juce::File &f, float level)
+        {
+            juce::WavAudioFormat wav;
+            std::unique_ptr<juce::AudioFormatWriter> w(
+                wav.createWriterFor(f.createOutputStream().release(), 48000, 1, 32, {}, 0));
+            juce::AudioBuffer<float> b(1, 128);
+            b.clear();
+            b.setSample(0, 0, level);
+            check(w && w->writeFromAudioSampleBuffer(b, 0, 128), "UI IR fixture finalized");
+        };
+        writeIR(ir, .5f);
+        writeIR(ir2, .25f);
+        rack.bind(track);
+        rack.append(rack.owner, "convolution-reverb");
+        auto first = rack.selectedSlot;
+        rack.append(rack.owner, "convolution-reverb");
+        auto second = rack.selectedSlot;
+        rack.setParametersExpanded(true);
+        rack.refresh();
+        check(rack.nativePanel.chooseIR.isVisible() && !rack.nativePanel.relinkIR.isEnabled(),
+              "Unresolved IR offers Choose, not meaningless Relink");
+        session.chooseImpulse(track, first, ir, "mono-diagonal");
+        session.chooseImpulse(track, second, ir, "mono-diagonal");
+        drain();
+        auto getIR = [&](const juce::String &slot) -> StockEffect &
+        {
+            for (auto &e : findTrack(session.document.activeMix(), track)->inserts.stock)
+                if (e.id == slot)
+                    return e;
+            throw std::runtime_error("IR effect missing");
+        };
+        check(getIR(first).impulse && getIR(second).impulse,
+              "Distinct accepted IR imports both complete once");
+        session.chooseImpulse(track, first, ir, "mono-diagonal");
+        session.chooseImpulse(track, first, ir2, "mono-diagonal");
+        drain();
+        check(getIR(first).impulse->source.path == ir2.getFullPathName(), "Latest same-slot IR choice wins");
+        session.undo();
+        drain();
+        check(getIR(first).impulse->source.path == ir.getFullPathName(), "IR choice actual Undo");
+        session.redo();
+        drain();
+        check(getIR(first).impulse->source.path == ir2.getFullPathName(), "IR choice actual Redo");
+        rack.refresh();
+        check(rack.nativePanel.relinkIR.isEnabled(), "Resolved IR exposes recovery action");
+        auto irSaved = dir.getChildFile("IR UI.soundplus");
+        session.save(irSaved);
+        drain();
+        session.open(irSaved);
+        drain();
+        check(getIR(first).impulse->source.path == ir2.getFullPathName(), "Actual IR session Save/Reopen");
+        session.chooseImpulse(track, first, ir, "mono-diagonal");
+        session.newDesign();
+        drain();
+        check(session.document.original.tracks.empty(),
+              "Pending IR completion cannot mutate replacement document");
     }
 };
 } // namespace sp

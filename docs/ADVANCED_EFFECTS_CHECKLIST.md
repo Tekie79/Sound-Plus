@@ -6,10 +6,10 @@ Reviewed/start HEAD `c2c3f6b84fc2ec1d56e0aa03889bc756fe2ba941`; no later commits
 
 ✓ B Advanced Delay (`97cd411`, pushed;6/6 targeted suites12.65s including ASan): four independent taps/free+synced subdivisions, stable role-based feedback, ping-pong, modulation/damping/ducking, preallocation; independent PCM/partition/stability/automation tests; commit/push.
 
-◉ C Algorithmic Room/Plate/Hall: independent early/late network, pre-delay/size/RT60/damping/diffusion/width/ducking and explicit LFE; independent response/decay/partition/history/take tests; commit/push.
+✓ C Algorithmic Room/Plate/Hall (`84b52cc`, pushed;6/6 targeted suites15.97s): independent early/late network, pre-delay/size/RT60/damping/diffusion/width/ducking and explicit LFE; independent response/decay/partition/history/take tests; commit/push.
 
-○ D Convolution: local content-hashed referenced IRs, explicit mono/stereo/true-stereo/role maps, partitioned bounded FFT DSP and latency, missing/changed/relink workflow; independent direct/FFT/resampling/partition/take tests; commit/push.
+✓ D Convolution (7/7 Release/ASan suites17.00s; commit/push immediately follows): local content-hashed referenced IRs, explicit mono/stereo/true-stereo/role maps, partitioned bounded FFT DSP and latency, missing/changed/relink workflow; independent direct/FFT/resampling/partition/take tests; commit/push.
 
-○ E Existing one-lane automation, presets/locks/Undo, native UI at normal/minimum, realistic multi-owner/16-channel/MIDI/device stress, final unchanged Release vendor/AUv2/device gate and source/binary identities, latest-workspace audit/reopen, closure1–31/report/roadmap and commit/push.
+◉ E Existing one-lane automation, presets/locks/Undo, native UI at normal/minimum, realistic multi-owner/16-channel/MIDI/device stress, final unchanged Release vendor/AUv2/device gate and source/binary identities, latest-workspace audit/reopen, closure1–31/report/roadmap and commit/push.
 
 Human listening, physical surround/controller/DAC loopback, Resolve receiver persistence, oversampling/true-peak, third-party writable automation, extra Perform pads and provider work are separate qualifications or future work. Never mark tool attempts as verified passes.

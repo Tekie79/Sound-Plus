@@ -1,4 +1,5 @@
 #include "NativeEffects.h"
+#include "AdvancedIR.h"
 #include "NativeEffectsDSP.h"
 #include "TrackModel.h"
 #include "DesignLive.h"

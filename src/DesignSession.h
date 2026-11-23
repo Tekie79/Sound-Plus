@@ -163,6 +163,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void findInputRecoveries(std::function<void(juce::Array<juce::var>)>);
     void add(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0,
              int64_t placement = -1);
+    void chooseImpulse(const juce::String &owner, const juce::String &effect, const juce::File &,
+                       const juce::String &mapping, bool relink = false);
     void addExternal(const juce::File &, int64_t placement = -1);
     void addExternals(const juce::StringArray &, int64_t placement);
     void replaceSource(const juce::String &layer, const juce::File &);
@@ -347,6 +349,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     AudioClient *liveAudio = nullptr;
     double lastLiveSync = -1000;
     bool liveReady = false, liveApplying = false, liveFlushing = false;
+    std::map<juce::String, uint64_t> impulseRequests;
     struct LiveCommand
     {
         uint64_t incarnation;

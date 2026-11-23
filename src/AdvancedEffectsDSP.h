@@ -5,7 +5,9 @@ namespace sp
 class AdvancedEffectProcessor
 {
   public:
-    AdvancedEffectProcessor(const StockEffect &, const ChannelLayout &, double rate, MidiTiming);
+    AdvancedEffectProcessor(
+        const StockEffect &, const ChannelLayout &, double rate, MidiTiming,
+        const std::function<bool()> &cancelled = [] { return false; });
     ~AdvancedEffectProcessor();
     void update(const StockEffect &);
     void process(juce::AudioBuffer<float> &, int count);
