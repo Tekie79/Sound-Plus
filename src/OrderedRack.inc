@@ -49,7 +49,7 @@ class OrderedRack
 
   public:
     OrderedRack(const InsertChain &c, const ChannelLayout &bus, double rate, bool invariant, bool aware,
-                bool immutable, const std::function<bool()> &cancelled)
+                bool immutable, const std::function<bool()> &cancelled, MidiTiming timing = {})
         : channels(bus.size()), fixed(immutable), initialBypass(c.bypass)
     {
         negotiateStockBus({bus, bus, false});
@@ -67,7 +67,7 @@ class OrderedRack
                 step.bypassTarget = {ref.id, "bypass"};
                 if (step.base.nativeVersion)
                 {
-                    step.native = std::make_unique<NativeEffectProcessor>(step.base, bus, rate);
+                    step.native = std::make_unique<NativeEffectProcessor>(step.base, bus, rate, timing);
                     delay += step.native->latency();
                 }
                 else

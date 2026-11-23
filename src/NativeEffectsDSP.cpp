@@ -380,7 +380,8 @@ struct NativeEffectProcessor::Impl
         }
     }
 };
-NativeEffectProcessor::NativeEffectProcessor(const StockEffect &e, const ChannelLayout &b, double rate)
+NativeEffectProcessor::NativeEffectProcessor(const StockEffect &e, const ChannelLayout &b, double rate,
+                                             MidiTiming)
     : impl(std::make_unique<Impl>(e, b, rate))
 {
 }
@@ -403,6 +404,7 @@ double NativeEffectProcessor::gainReductionDb() const
 }
 bool nativeDSPAvailable(const juce::String &type)
 {
-    return nativeDefinition(type) != nullptr;
+    return type == "parametric-eq" || type == "compressor" || type == "expander" || type == "peak-limiter" ||
+           type == "transient" || type == "saturation";
 }
 } // namespace sp

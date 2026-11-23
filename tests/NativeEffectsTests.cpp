@@ -46,6 +46,8 @@ void runNativeEffectsTests(const juce::File &base)
     base.createDirectory();
     for (auto &def : nativeEffectDefinitions())
     {
+        if (def.policy != "native-effects-v1")
+            continue;
         auto e = makeStockEffect(def.type);
         check(e.nativeVersion == 1, "Native epoch");
         validateNativeEffect(e);
@@ -201,7 +203,8 @@ void prepareNativeEffectsUI(const juce::File &dir)
     auto &t = d.original.tracks[0];
     t.name = "Impact texture";
     for (auto &def : nativeEffectDefinitions())
-        t.inserts.stock.push_back(makeStockEffect(def.type));
+        if (def.policy == "native-effects-v1")
+            t.inserts.stock.push_back(makeStockEffect(def.type));
     normaliseInsertChain(t.inserts);
     d.selectedLayer = d.original.layers[0].id;
     d.selectedTrack = t.id;

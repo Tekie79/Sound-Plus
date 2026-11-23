@@ -180,6 +180,8 @@ void dynamicsTests(const juce::File &base)
         // Wide-channel CPU observations: direct prepared DSP, no device/physical claim.
         for (auto &definition : nativeEffectDefinitions())
         {
+            if (definition.policy != "native-effects-v1")
+                continue;
             auto e = makeStockEffect(definition.type);
             NativeEffectProcessor p(e, discreteLayout(16), rate);
             juce::AudioBuffer<float> b(16, 512);
@@ -232,6 +234,8 @@ void dynamicsTests(const juce::File &base)
         check(jump < .002, "Saturation mode crossfades without a hard waveform discontinuity");
         for (auto &def : sp::nativeEffectDefinitions())
         {
+            if (def.policy != "native-effects-v1")
+                continue;
             auto effect = sp::makeStockEffect(def.type);
             std::vector<float> silent(4096, 1.e-35f);
             auto y = nativeRun(effect, 48000, silent);

@@ -1,0 +1,39 @@
+# Advanced Delay and Reverb v1
+
+## Version and clock boundary
+
+Three new identities (`advanced-delay`, `algorithmic-reverb`, `convolution-reverb`) have independent v1 policies and explicit stable parameter IDs. They never replace `delay`/`reverb` or the six `native-effects-v1` processors. New-effect documents require manifest16 / `advanced-effects-v1`; new-effect frozen performances require recipe7 / `advanced-effects-takes-v1` and `advanced-effects-v1-tail-pdc`. Manifests1–15 and recipes1–6 retain their exact encodings, hashes and DSP policies. Source IDs, ordered Clip/Track/Group/Master chains and the single reusable automation lane remain authoritative.
+
+The existing `DesignMix.midiTiming` is the sole constant project musical clock:20–300 BPM, numerator1–16, denominator2/4/8/16. Audio-only advanced mixes serialize it as version1 `effectsClock`; MIDI mixes must agree with their existing MIDI clock. No tempo map is implied. A tempo/rate change prepares a fresh graph. A frozen recipe retains its own clock; future Live edits cannot alter it. Straight/dotted/triplet delay divisions are quarter-note beat factors; dotted multiplies by1.5 and triplet by2/3. Project time is integral samples at the prepared project rate; output conversion remains the existing reader.
+
+Ordinary numeric/choice parameters are live and use the existing anchored32-frame automation scheduler plus effect-specific smoothing. Structural parameters are visible read-only targets: Delay memory, Reverb mode/size and Convolution partition. IR file/map changes and tempo/rate changes are structural. They require safe preparation/adoption, not in-place buffer resizing. Choosing a displayed curve does not stop hidden read-enabled curves; new effects do not introduce additional automation lanes. Perform's existing resolver/immutable event contract and project-automation precedence remain unchanged.
+
+## Tails, bypass and latency
+
+Creative delay/pre-delay is sound, not compensatable device latency. Delay and algorithmic Reverb declare zero processing latency. Uniform Convolution declares one selected partition (128/256/512 frames), including its dry/bypass path. Ordered native/hosted and parallel graph PDC account for that latency once. Per-effect and whole-chain bypass keep wet history running and ramp toward aligned dry; initial bypass is exact dry after alignment.
+
+Project source input ends at the existing timeline/body boundary. Processors may emit state only inside the explicitly requested output tail; no automatic infinite extension or hidden normalization. Estimated tails are advisory: Delay feedback's decay-to−80dB estimate (within prepared memory), algorithmic4/3 RT60 plus pre-delay, and IR duration plus pre-delay. High-feedback delay and long RT60 can outlast the selected output tail. The UI must expose that risk rather than silently enlarge files. Frozen body/interpolation dependencies and split-continuation tail-once ownership remain unchanged. Accurate audition rebuilds full history from zero; ordinary live seek retains its documented bounded-history approximation and can differ for long tails/modulation phase.
+
+## Roles and resource bounds
+
+Maximum16 channels with explicit named roles, including separate5.1 Side/Rear, or declared discrete roles. Delay ping-pong exchanges only existing L/R, Ls/Rs and Lb/Rb pairs; C and discrete channels remain independent. No side/rear interchange or LFE cross-feed. Tap L/R balance and Reverb width affect the named L/R pair only. LFE defaults to unprocessed dry; the explicit independent/mapped option enables only its own path and detector, never other roles' ducking. Incompatible matrix/layout combinations fail with diagnostics, not conversion.
+
+Delay has four independent taps. Each has free milliseconds, a sync subdivision, level and L/R balance. Feedback reads the first tap before output gain and taps do not multiply the loop gain. The feedback matrix is a role permutation (norm/spectral radius1), multiplied by feedback≤0.95 and contractive damping. Minimum causal delay is one sample. Time resolves/clamps inside deliberately prepared250–16000ms memory. Modulation depth≤10ms/rate≤8Hz and documented interpolation/slew bound automation; arbitrary jumps are not certified click-free.
+
+Algorithmic mode specifies an original8-line orthogonal feedback network, separate early taps and input diffusion; Room/Plate/Hall use different fixed delay/diffusion geometries rather than renaming one preset. Per-line decay is derived from its length and RT60; damping is contractive. Size/mode rebuild geometry. Decay is bounded0.1–30s. Detailed executed response/RT60 bounds follow its DSP stage.
+
+New advanced state has an aggregate **96MiB preparation budget per mix**, estimated before allocating DSP, in addition to existing native128-instance/4096-parameter, rack/source and graph alignment limits. Delay rings, Reverb state and IR/FFT histories participate. IR duration≤10s, original channels≤16, original rate8–192k and file≤128MiB; the aggregate DSP budget can reject a long/wide combination below those individual maxima. No truncation/downmix on rejection. These are bounds, not a maximum-design performance guarantee. Parsing, decoding, hashing, resampling, partition preparation and file/database work remain outside device callbacks and hosted deadlines.
+
+## Referenced IR provenance
+
+Convolution state stores an explicit original path, stable source ID, SHA-256, original rate/channels/frame count/stamps, mapping identity and ordered `(inputRole,outputRole,physicalIRChannel)` routes. Originals are not copied or modified. Empty reference is an explicit unresolved effect, never an implicit unit impulse or dry success. Changed/missing content blocks preparation/rendering until deliberate selection or identical-content relink. Frozen source provenance also includes IRs.
+
+Supported maps: mono diagonal per declared bus role; stereo diagonal L→L/ch0 and R→R/ch1; true stereo LL/ch0, LR/ch1, RL/ch2, RR/ch3 on an exact Stereo bus; explicit per-role diagonal physical-channel maps on a matching named/discrete bus. Multichannel or four-channel IRs are never automatically interpreted as true stereo. IR selection/relink, local metadata presets and Undo are explicit edits. Presets reference IR provenance, never embedded media; factory settings retain a deliberately selected IR.
+
+Partitioned processing is uniform overlap-add,2P-point complex FFT and preallocated frequency-delay histories. Preparation will perform deterministic rate conversion and verify source content/stamps. Direct time-domain and independently implemented whole-signal FFT oracles qualify short/long IRs respectively. No non-uniform/hybrid, zero-latency, IR morph or convolution modulation claim is made.
+
+## Staged qualification
+
+Stage A commits definitions/schema/clock/bounds/automation identity first. New effects remain absent from Add Effect until their actual DSP stage is enabled. Stages B/C/D add independent numerical oracles, block/rate/history/PDC/resource cases and their own commits. Stage E adds actual UI/device/stress evidence and an unchanged full Release gate, original-state audit, closure1–31 and roadmap. Human listening, physical surround and receiving-app persistence remain separate qualifications.
+
+Algorithm references: [Wefers partitioned convolution thesis](https://publications.rwth-aachen.de/record/466561), [JUCE FFT API](https://docs.juce.com/master/classjuce_1_1dsp_1_1FFT.html). The implementation and independent tests define the actual supported behavior; external references do not certify this product.

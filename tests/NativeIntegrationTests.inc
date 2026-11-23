@@ -229,7 +229,8 @@ void nativeIntegration(const juce::File &root)
         enableTrackSchema(d.original);
         auto owner = d.original.tracks[0].id;
         for (auto &def : nativeEffectDefinitions())
-            d.original.tracks[0].inserts.stock.push_back(makeStockEffect(def.type));
+            if (def.policy == "native-effects-v1")
+                d.original.tracks[0].inserts.stock.push_back(makeStockEffect(def.type));
         normaliseInsertChain(d.original.tracks[0].inserts);
         auto &eq = d.original.tracks[0].inserts.stock[0];
         setNative(eq, "b1-gain", 6);

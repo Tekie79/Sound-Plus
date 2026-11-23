@@ -1,4 +1,5 @@
 #include "MidiModel.h"
+#include "AdvancedEffects.h"
 #include "DesignModel.h"
 #include "TrackModel.h"
 #include "SourcePools.h"
@@ -206,6 +207,9 @@ std::vector<const Asset *> mixAssets(const DesignMix &m)
         if (t.instrument && t.instrument->version == 1)
             for (auto &s : t.instrument->samples)
                 out.push_back(&s.source);
+    for (auto *e : advancedInserts(m))
+        if (e->impulse)
+            out.push_back(&e->impulse->source);
     return out;
 }
 std::vector<Asset *> mixAssets(DesignMix &m)
@@ -217,6 +221,9 @@ std::vector<Asset *> mixAssets(DesignMix &m)
         if (t.instrument && t.instrument->version == 1)
             for (auto &s : t.instrument->samples)
                 out.push_back(&s.source);
+    for (auto *e : advancedInserts(m))
+        if (e->impulse)
+            out.push_back(&e->impulse->source);
     return out;
 }
 bool hasMidi(const DesignMix &m)

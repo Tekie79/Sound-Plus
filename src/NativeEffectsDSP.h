@@ -7,7 +7,7 @@ namespace sp
 class NativeEffectProcessor
 {
   public:
-    NativeEffectProcessor(const StockEffect &, const ChannelLayout &, double rate);
+    NativeEffectProcessor(const StockEffect &, const ChannelLayout &, double rate, MidiTiming timing = {});
     ~NativeEffectProcessor();
     void update(const StockEffect &);
     void process(juce::AudioBuffer<float> &, int count);

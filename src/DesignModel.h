@@ -61,6 +61,18 @@ enum VariationParameter : uint32_t
     lockTrimOut = 2048,
     varySource = 4096
 };
+struct ImpulseRoute
+{
+    juce::String input, output;
+    int channel = 0;
+    bool operator==(const ImpulseRoute &) const = default;
+};
+struct ImpulseReference
+{
+    Asset source;
+    juce::String sha256, mapping;
+    std::vector<ImpulseRoute> routes;
+};
 struct StockEffect
 {
     juce::String id = juce::Uuid().toString(), type = "gain";
@@ -70,6 +82,7 @@ struct StockEffect
     int nativeVersion = 0; // 0 retains legacy encoding/DSP verbatim.
     std::vector<double> nativeValues;
     juce::StringArray nativeLocks;
+    std::optional<ImpulseReference> impulse; // Referenced original; new convolution identity only.
 };
 // A single owner chain: order is authoritative; typed payload tables have no
 // signal-order meaning. Stable IDs join each typed slot to exactly one payload.

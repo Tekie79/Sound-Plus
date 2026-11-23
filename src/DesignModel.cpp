@@ -1,5 +1,6 @@
 #include "DesignModel.h"
 #include "NativeEffects.h"
+#include "AdvancedEffects.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
 #include "TrackModel.h"
@@ -123,6 +124,8 @@ juce::var mixJson(const DesignMix &mix, bool legacyInserts = false)
         put(o, "trackEdit", tracksToJson(mix));
     if (hasMidi(mix))
         put(o, "midi", midiMixJson(mix));
+    if (hasAdvancedEffects(mix))
+        put(o, "effectsClock", advancedClockJson(mix.midiTiming));
     if (!mix.layout.id.isEmpty())
     {
         put(o, "busLayout", layoutJson(mix.layout));
@@ -347,6 +350,16 @@ DesignMix mixFrom(const juce::var &o)
         tracksFromJson(mix, o["trackEdit"]);
     if (o.hasProperty("midi"))
         midiMixFromJson(mix, o["midi"]);
+    if (hasAdvancedEffects(mix))
+    {
+        auto clock = advancedClockFromJson(o["effectsClock"]);
+        if (hasMidi(mix) && (clock.bpm != mix.midiTiming.bpm || clock.numerator != mix.midiTiming.numerator ||
+                             clock.denominator != mix.midiTiming.denominator))
+            throw std::runtime_error("Conflicting project musical/effects clocks");
+        mix.midiTiming = clock;
+    }
+    else if (o.hasProperty("effectsClock"))
+        throw std::runtime_error("Unexpected advanced effects clock");
     return mix;
 }
 juce::var renderJson(const DesignRenderSettings &s)
@@ -772,7 +785,8 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        hasNativeEffects(d)   ? 15
+        hasAdvancedEffects(d) ? 16
+        : hasNativeEffects(d) ? 15
         : hasMidi(d)          ? 14
         : inputs              ? 13
         : continuations       ? 12
@@ -785,7 +799,8 @@ juce::var designToJson(const DesignDocument &d)
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasNativeEffects(d)         ? "native-effects-v1"
+        hasAdvancedEffects(d)       ? "advanced-effects-v1"
+        : hasNativeEffects(d)       ? "native-effects-v1"
         : hasMidi(d)                ? "midi-instruments-v1"
         : tracks                    ? "multitrack-automation-v1"
         : plugins                   ? "plugin-takes-v1"
@@ -907,8 +922,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 15) ||
-        (version == 15   ? dsp != "native-effects-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 16) ||
+        (version == 16   ? dsp != "advanced-effects-v1"
+         : version == 15 ? dsp != "native-effects-v1"
          : version == 14 ? dsp != "midi-instruments-v1"
          : version >= 11 ? dsp != "multitrack-automation-v1"
          : version == 10 ? dsp != "plugin-takes-v1"
@@ -1030,6 +1046,8 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
+    if (version < 16 && hasAdvancedEffects(d))
+        throw std::runtime_error("Advanced effects require manifest16");
     if (version < 15 && hasNativeEffects(d))
         throw std::runtime_error("Native effects require manifest15");
     if (version < 14 && hasMidi(d))
@@ -1121,7 +1139,7 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
             }
             if (nativeDefinition(e.type))
                 throw std::runtime_error("Missing native effect version");
-            if (!e.nativeValues.empty() || !e.nativeLocks.isEmpty())
+            if (!e.nativeValues.empty() || !e.nativeLocks.isEmpty() || e.impulse)
                 throw std::runtime_error("Conflicting legacy native data");
             for (double p : e.parameters)
                 bounded(p, -100000, 100000, "Nonfinite effect parameter");
@@ -1146,6 +1164,28 @@ void validateDesign(const DesignDocument &d, bool verifyTakeContent)
     auto mix = [&](const DesignMix &m)
     {
         nativeParameters = nativeCount = 0;
+        if (hasAdvancedEffects(m))
+        {
+            validateAdvancedClock(m.midiTiming);
+            uint64_t bytes = 0;
+            auto resource = [&](const InsertChain &chain, const ChannelLayout &bus)
+            {
+                for (auto &e : chain.stock)
+                    if (isAdvancedEffect(e.type))
+                    {
+                        validateNativeEffect(e);
+                        bytes += advancedMemoryBytes(e, bus, d.sampleRate);
+                    }
+            };
+            resource(m.inserts, m.layout.id.isEmpty() ? channelLayout("stereo-v1") : m.layout);
+            for (auto &t : m.tracks)
+                resource(t.inserts, t.layout);
+            for (auto &l : m.layers)
+                resource(l.inserts,
+                         m.layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation);
+            if (bytes > maxAdvancedBytes)
+                throw std::runtime_error("Advanced DSP/IR state exceeds96MiB preparation budget");
+        }
         validateTracks(m, d.sampleRate);
         validateLayoutMix(m, d.sampleRate);
         validatePerformance(m);

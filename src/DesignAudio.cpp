@@ -1,5 +1,6 @@
 #include "NativeSampler.h"
 #include "NativeEffectsDSP.h"
+#include "AdvancedEffects.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
 #include "SourcePools.h"
@@ -376,14 +377,15 @@ class Voice
   public:
     Voice(
         const DesignLayer &l, double rate, bool invariant = false, ChannelLayout layout = {}, int version = 2,
-        bool fixed = false, const std::function<bool()> &cancelled = [] { return false; })
+        bool fixed = false, const std::function<bool()> &cancelled = [] { return false; },
+        MidiTiming timing = {})
         : layer(splitPlaybackLayer(l)), continuation(usesSplitHistory(l)),
           ownsTail(!continuation || l.splitHistory->ownsTail), gateFirst(l.placement),
           gateLast(l.placement + layerDuration(l, rate)), ratio(l.source.sampleRate * l.rate / rate),
           duration(layerDuration(layer, rate)),
           rack(std::make_unique<OrderedRack>(
               l.inserts, layout.id.isEmpty() ? channelLayout("stereo-v1") : l.routing.interpretation, rate,
-              invariant, !layout.id.isEmpty(), fixed, cancelled)),
+              invariant, !layout.id.isEmpty(), fixed, cancelled, timing)),
           layoutAware(!layout.id.isEmpty()), inputChannels(layoutAware ? l.routing.interpretation.size() : 2),
           routingVersion(version), bus(layout), designRate(rate),
           previousIn(layer.fadeInShape, layer.fadeInPoints),
@@ -701,8 +703,8 @@ struct DesignGraph::Impl
             auto *volume = automationCurve(t.automation, {{}, "volume"});
             node->volumeAutomated = volume && volume->read;
             node->bus = t.layout;
-            node->rack =
-                std::make_unique<OrderedRack>(t.inserts, t.layout, sampleRate, true, true, fixed, cancelled);
+            node->rack = std::make_unique<OrderedRack>(t.inserts, t.layout, sampleRate, true, true, fixed,
+                                                       cancelled, mix.midiTiming);
             node->automation = std::make_unique<CompiledAutomation>(mix, t.id);
             node->pcm.setSize(t.layout.size(), 512);
             node->pcm.clear();
@@ -927,7 +929,7 @@ struct DesignGraph::Impl
         masterRack = std::make_unique<OrderedRack>(
             mix.inserts, mix.layout.id.isEmpty() ? channelLayout("stereo-v1") : mix.layout, sampleRate,
             invariant || mix.trackSchema || !mix.layout.id.isEmpty(), !mix.layout.id.isEmpty(), invariant,
-            cancelled);
+            cancelled, mix.midiTiming);
         bool solo = std::any_of(document.activeMix().layers.begin(), document.activeMix().layers.end(),
                                 [](auto &l) { return l.solo; });
         for (auto &l : document.activeMix().layers)
@@ -943,7 +945,7 @@ struct DesignGraph::Impl
                     layout = findTrack(document.activeMix(), l.trackId)->layout;
                 voices.push_back(std::make_unique<Voice>(
                     l, sampleRate, invariant || mix.trackSchema || !layout.id.isEmpty(), layout,
-                    document.activeMix().routingVersion, invariant, cancelled));
+                    document.activeMix().routingVersion, invariant, cancelled, mix.midiTiming));
             }
         int longest = 0;
         for (auto &voice : voices)
@@ -1478,7 +1480,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         result.sourceProvenance = p;
     }
     if (hasNativeEffects(effectiveInput.activeMix()))
-        result.processing = "native-effects-v1";
+        result.processing =
+            hasAdvancedEffects(effectiveInput.activeMix()) ? "advanced-effects-v1" : "native-effects-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

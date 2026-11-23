@@ -1,4 +1,5 @@
 #include "NativeEffects.h"
+#include "AdvancedEffects.h"
 #include <NativePresetsData.h>
 #include <cmath>
 #include <set>
@@ -118,6 +119,7 @@ const std::vector<NativeEffectDefinition> &nativeEffectDefinitions()
                                  p("mix", "Mix", "Output", "%", 0, 1, 1),
                                  p("output", "Output", "Output", "dB", -36, 12, -6)};
         d.push_back(saturation);
+        appendAdvancedDefinitions(d);
         return d;
     }();
     return definitions;
@@ -149,6 +151,10 @@ void initialiseNativeEffect(StockEffect &e)
 void validateNativeEffect(const StockEffect &e)
 {
     auto &d = nativeDefinition(e);
+    if (e.impulse && e.type != "convolution-reverb")
+        throw std::runtime_error("Impulse state belongs only to Convolution Reverb");
+    if (e.impulse)
+        validateImpulse(*e.impulse);
     if (e.nativeValues.size() != d.parameters.size())
         throw std::runtime_error("Native parameter schema mismatch");
     std::set<juce::String> ids;
@@ -182,6 +188,8 @@ juce::var nativeEffectJson(const StockEffect &e)
         params.add(row);
     }
     put(o, "parameters", params);
+    if (e.type == "convolution-reverb")
+        put(o, "impulse", e.impulse ? impulseJson(*e.impulse) : juce::var());
     return o;
 }
 void nativeEffectFromJson(StockEffect &target, const juce::var &v)
@@ -192,6 +200,16 @@ void nativeEffectFromJson(StockEffect &target, const juce::var &v)
         throw std::runtime_error("Unsupported native effect policy/version");
     initialiseNativeEffect(e);
     e.nativeLocks.clear();
+    e.impulse.reset();
+    if (e.type == "convolution-reverb")
+    {
+        if (!v.hasProperty("impulse"))
+            throw std::runtime_error("Missing explicit impulse reference state");
+        if (!v["impulse"].isVoid())
+            e.impulse = impulseFromJson(v["impulse"]);
+    }
+    else if (v.hasProperty("impulse"))
+        throw std::runtime_error("Unexpected impulse state");
     auto *rows = v["parameters"].getArray();
     if (!rows || rows->size() != (int)d->parameters.size())
         throw std::runtime_error("Native parameter count mismatch");
