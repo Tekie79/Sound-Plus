@@ -111,6 +111,40 @@ void runAudioHealthTests(const juce::File &parent, const juce::File &app)
     close(pair[1]);
     check(!sent && failure == ETIMEDOUT && blockedMs >= 240 && blockedMs < 500,
           "Unresponsive peer fails with a bounded explicit write timeout");
+    {
+        check(socketpair(AF_UNIX, SOCK_STREAM, 0, pair) == 0, "Duplex status socketpair");
+        for (auto fd : pair)
+            check(fcntl(fd, F_SETFL, fcntl(fd, F_GETFL) | O_NONBLOCK) == 0, "Nonblocking duplex socket");
+        setsockopt(pair[0], SOL_SOCKET, SO_SNDBUF, &small, sizeof(small));
+        auto snapshot = sp::message("status");
+        snapshot.getDynamicObject()->setProperty("mixerTelemetry", juce::String::repeatedString("m", 120000));
+        sp::AudioStatusFrame queued;
+        check(queued.offer(snapshot) && queued.flush(pair[0]) && !queued.empty(),
+              "A large mixer snapshot stays queued on a full socket");
+        check(queued.flush(pair[0]) && !queued.empty(), "Status backpressure yields without abandoning the frame");
+        check(sp::sendMessage(pair[1], sp::message("stop")), "Client command travels on the busy duplex link");
+        char bytes[8192];
+        auto n = recv(pair[0], bytes, sizeof(bytes), MSG_DONTWAIT);
+        check(n > 0 && juce::JSON::parse(juce::String::fromUTF8(bytes, (int)n))["command"] == juce::var("stop"),
+              "The helper can receive commands while its telemetry is backpressured");
+        check(queued.offer(sp::message("newer snapshot")), "A newer snapshot cannot replace a partial frame");
+        std::string assembled;
+        for (int attempt = 0; attempt < 512; ++attempt)
+        {
+            n = recv(pair[1], bytes, sizeof(bytes), MSG_DONTWAIT);
+            if (n > 0)
+                assembled.append(bytes, (size_t)n);
+            else if (queued.empty())
+                break;
+            check(queued.flush(pair[0]), "Status resumes once the client drains the socket");
+        }
+        close(pair[0]);
+        close(pair[1]);
+        auto decoded = juce::JSON::parse(juce::String::fromUTF8(assembled.c_str()));
+        check(queued.empty() && std::count(assembled.begin(), assembled.end(), '\n') == 1 &&
+                  decoded["mixerTelemetry"].toString().length() == 120000,
+              "One intact status snapshot survives simultaneous command and telemetry traffic");
+    }
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
     auto file = root.getChildFile("tone.wav");

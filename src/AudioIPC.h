@@ -10,9 +10,24 @@ namespace sp
 {
 constexpr int protocolVersion = 11;
 constexpr size_t maxHostedControlBytes = 2 * 1024 * 1024;
+constexpr size_t maxAudioStatusBytes = 256 * 1024;
 juce::var message(const juce::String &command);
 // Single-writer, nonblocking socket; bounded250ms completion, never called by audio callbacks.
 bool sendMessage(int fd, const juce::var &);
+
+// One complete snapshot at a time. A busy reader may miss intermediate snapshots.
+// Partial frames stay intact and the helper remains available to read commands.
+class AudioStatusFrame
+{
+  public:
+    bool empty() const { return frame.isEmpty(); }
+    bool offer(const juce::var &);
+    bool flush(int socket);
+
+  private:
+    juce::String frame;
+    size_t sent = 0;
+};
 // Private inherited socketpair: no listening port or discoverable endpoint.
 class AudioClient
 {

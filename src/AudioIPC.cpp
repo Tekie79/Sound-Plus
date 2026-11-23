@@ -18,13 +18,54 @@ juce::var message(const juce::String &command)
     o->setProperty("command", command);
     return juce::var(o);
 }
+namespace
+{
+juce::String audioFrame(const juce::var &message)
+{
+    // ASCII JSON preserves Unicode when socket reads split a UTF-8 codepoint.
+    return juce::JSON::toString(message, juce::JSON::FormatOptions()
+                                            .withSpacing(juce::JSON::Spacing::singleLine)
+                                            .withEncoding(juce::JSON::Encoding::ascii)) +
+           "\n";
+}
+} // namespace
+
+bool AudioStatusFrame::offer(const juce::var &message)
+{
+    if (!empty())
+        return true;
+    auto next = audioFrame(message);
+    if (next.getNumBytesAsUTF8() > maxAudioStatusBytes)
+    {
+        errno = EMSGSIZE;
+        return false;
+    }
+    frame = std::move(next);
+    return true;
+}
+
+bool AudioStatusFrame::flush(int fd)
+{
+    if (empty())
+        return true;
+    const auto bytes = frame.getNumBytesAsUTF8();
+    const auto count = send(fd, frame.toRawUTF8() + sent, bytes - sent, MSG_DONTWAIT);
+    if (count > 0)
+    {
+        sent += (size_t)count;
+        if (sent == bytes)
+        {
+            frame.clear();
+            sent = 0;
+        }
+        return true;
+    }
+    return count < 0 && (errno == EAGAIN || errno == EWOULDBLOCK || errno == EINTR);
+}
+
 bool sendMessage(int fd, const juce::var &msg)
 {
-    // ASCII JSON preserves Unicode via escapes even when socket reads split a UTF-8 codepoint.
-    auto line = juce::JSON::toString(msg, juce::JSON::FormatOptions()
-                                              .withSpacing(juce::JSON::Spacing::singleLine)
-                                              .withEncoding(juce::JSON::Encoding::ascii)) +
-                "\n";
+    auto line = audioFrame(msg);
     auto bytes = line.getNumBytesAsUTF8();
     // Non-real-time workers only. A bounded frame is not guaranteed to fit a
     // nonblocking stream socket in one write, even when the peer is healthy.
@@ -475,7 +516,7 @@ void AudioClient::run()
                 else
                 {
                     pending += juce::String::fromUTF8(b, (int)n);
-                    if (pending.length() > 131072)
+                    if ((size_t)pending.length() > maxAudioStatusBytes + sizeof(b))
                     {
                         reason = "oversized response";
                         healthy = false;

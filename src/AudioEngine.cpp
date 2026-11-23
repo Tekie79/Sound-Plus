@@ -397,9 +397,13 @@ void AudioEngine::timerCallback()
     }
     if (++ticks % 4 == 0 && hello)
         sendStatus();
+    if (!statusFrame.flush(STDIN_FILENO))
+        juce::JUCEApplicationBase::quit();
 }
 void AudioEngine::sendStatus()
 {
+    if (!statusFrame.empty())
+        return;
     auto state = playback.status();
     if (!state.isObject())
         state = message("status");
@@ -454,7 +458,7 @@ void AudioEngine::sendStatus()
             buffers.add(size);
         object->setProperty("availableBufferFrames", buffers);
     }
-    if (!sendMessage(STDIN_FILENO, state))
-        juce::JUCEApplicationBase::quit(); // Never continue after a partial status frame.
+    if (!statusFrame.offer(state))
+        juce::JUCEApplicationBase::quit();
 }
 } // namespace sp

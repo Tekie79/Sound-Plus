@@ -32,6 +32,7 @@ class AudioEngine final : private juce::Timer, private juce::AudioIODeviceCallba
     juce::AudioDeviceManager devices;
     juce::String input, deviceError, monitorDevice;
     juce::var lastPlay;
+    AudioStatusFrame statusFrame;
     uint64_t requestedGeneration = 0;
     juce::Array<juce::var> outputs;
     juce::Array<juce::var> availableInputs;
