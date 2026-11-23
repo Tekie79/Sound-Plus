@@ -19,7 +19,7 @@ New documents use manifest15 / `native-effects-v1`; new native-containing frozen
 | A availability and versioned foundation | `f2b9fcd` |9/9 targeted suites,50.37s; [log](verification/native-effects/stage-a-tests.log) |
 | B EQ | `9f64915` |4/4 targeted suites,6.37s; [log](verification/native-effects/stage-b-tests.log) |
 | C dynamics, presets, metering | `f992c9c` |9/9 targeted suites,55.95s; [log](verification/native-effects/stage-c-tests.log), native real-device continuous edit |
-| D output-clock correction, bounded controls, native UI and final gate | final commit containing this report | Final evidence below; commit/push recorded in the delivery response |
+| D output-clock correction, bounded controls, native UI and final gate | `4d7d165` |40/40 Release suites389.31s, unchanged313 source/resource files and eight binaries, native UI/device and preservation checks; committed/pushed to origin/main |
 
 ## Review closure
 
@@ -44,7 +44,7 @@ Numbers correspond to the 18 implementation/acceptance items in the supplied rev
 |15|Verified|Legacy-v7 fixtures, historical hashes/PCM, source pools, MIDI/microphone, collections and semantic/similarity suites are included in the full Release gate below.|
 |16|Native checks passed|Actual Inspector groups/keyboard numeric edit, preset Save/Load, parameter chooser/curve insertion, Undo/Redo, Save/Quit/Reopen r11; Browser+Inspector at1040×680 and1360×860 on Retina2×. Human listening is separate.|
 |17|Verified|40/40 Release suites passed in389.31s with vendor/AUv2/device branches.313 source/resource and eight binary hashes match before/after.|
-|18|Preserved; ready for final commit/push|Original in-place r4478 state, catalog, recording journals and durable media audited against this task's protection copy; roadmap updated. Final reopen is recorded below; remote delivery is recorded in the final response.|
+|18|Complete|Original in-place r4478 state, catalog, recording journals and durable media audited against this task's protection copy; roadmap updated. Verified implementation/evidence `4d7d165` pushed to origin/main; this final documentation receipt changes no tested implementation.|
 
 ## Native workflow evidence
 
