@@ -1,6 +1,8 @@
 #include "DesignSessionTests.h"
 #include "DesignSession.h"
 #include "DesignLive.h"
+#include "SurroundPanner.h"
+#include "SurroundTouch.h"
 #include <deque>
 #include <iostream>
 #include <future>
@@ -111,12 +113,170 @@ struct Harness
         }
     }
 };
+
+juce::MouseEvent squarePointer(sp::SurroundPanner &pad, juce::Point<float> where, juce::Point<float> down,
+                              int flags = juce::ModifierKeys::leftButtonModifier)
+{
+    const auto now = juce::Time::getCurrentTime();
+    return {juce::Desktop::getInstance().getMainMouseSource(), where, juce::ModifierKeys(flags),
+            1, 0, 0, 0, 0, &pad, &pad, now, down, now, 1, where != down};
+}
+
+void checkSquareSelection(const juce::File &root)
+{
+    using namespace sp;
+    using namespace juce;
+    Harness h(root.getChildFile("square-selection"));
+    DesignSession session(h.directory.getChildFile("library.sqlite"), h.services());
+    session.document = recipe();
+    auto &mix = session.document.original;
+    mix.layout = channelLayout("5.1-side-v1");
+    auto owner = addTrack(mix, TrackKind::audio);
+    auto *track = findTrack(mix, owner);
+    track->layout = channelLayout("mono-v1");
+    track->surroundXY = SurroundPosition{};
+    mix.layers.front().trackId = owner;
+    initialiseRouting(mix.layers.front(), track->layout);
+    setSurroundNode(*track, {100, -.8, .8});
+    setSurroundNode(*track, {200, .6, .6});
+    setSurroundNode(*track, {300, .6, -.8});
+    SurroundPanner pad(session, owner, {}, {});
+    pad.setSize(400, 500);
+    const Point<float> first{70, 102}, second{297, 135}, third{297, 362}, start{58, 84}, end{318, 160};
+    constexpr auto shift = ModifierKeys::leftButtonModifier | ModifierKeys::shiftModifier;
+    auto click = [&](Point<float> where, int flags)
+    {
+        pad.mouseDown(squarePointer(pad, where, where, flags));
+        pad.mouseUp(squarePointer(pad, where, where, 0));
+    };
+    auto path = [&] { return surroundNodes(*findTrack(mix, owner)); };
+    auto undo = [&] { pad.keyPressed(KeyPress('z', ModifierKeys::commandModifier, 0)); };
+    click(first, ModifierKeys::leftButtonModifier);
+    click(second, shift);
+    pad.keyPressed(KeyPress(KeyPress::deleteKey));
+    check(path().size() == 1 && path().front().frame == 300, "Shift-click keeps both prior and new nodes");
+    undo();
+    check(path().size() == 3, "Multi-node delete is one Undo");
+    click({190, 240}, ModifierKeys::leftButtonModifier);
+    pad.mouseDown(squarePointer(pad, start, start, shift));
+    pad.mouseDrag(squarePointer(pad, end, start, shift));
+    pad.mouseUp(squarePointer(pad, end, start, 0));
+    pad.keyPressed(KeyPress(KeyPress::deleteKey));
+    check(path().size() == 1 && path().front().frame == 300, "Rectangle selects only enclosed points");
+    undo();
+    click(third, ModifierKeys::leftButtonModifier);
+    pad.mouseDown(squarePointer(pad, start, start, shift));
+    pad.mouseDrag(squarePointer(pad, end, start, shift));
+    pad.keyPressed(KeyPress(KeyPress::escapeKey));
+    pad.mouseUp(squarePointer(pad, end, start, 0));
+    pad.keyPressed(KeyPress(KeyPress::deleteKey));
+    check(path().size() == 2 && path().back().frame == 200, "Escape restores the pre-rectangle selection");
+    undo();
+    pad.mouseDown(squarePointer(pad, first, first));
+    pad.mouseDrag(squarePointer(pad, {110, 145}, first));
+    check(path().front().x != -.8, "Native component receives the node drag");
+    pad.focusLost(Component::focusChangedDirectly);
+    pad.mouseUp(squarePointer(pad, {110, 145}, first, 0));
+    check(path().front().x == -.8 && path().size() == 3, "Focus loss cancels a non-Touch node drag");
+}
+
+void checkInterruptedSquareTouch(const juce::File &root)
+{
+    using namespace sp;
+    using namespace juce;
+    for (const String action :
+         {"stop", "seek", "reprepare", "helper loss", "missing receipt", "focus loss", "escape", "close"})
+    {
+        Harness h(root.getChildFile("square-" + action));
+        std::vector<var> commands;
+        auto services = h.services();
+        services.squareTouchCommand = [&](var command) { commands.push_back(std::move(command)); };
+        DesignSession session(h.directory.getChildFile("library.sqlite"), services);
+        session.document = recipe();
+        auto &mix = session.document.original;
+        mix.layout = channelLayout("5.1-side-v1");
+        auto owner = addTrack(mix, TrackKind::audio);
+        auto *ownerTrack = findTrack(mix, owner);
+        ownerTrack->layout = channelLayout("mono-v1");
+        ownerTrack->surroundXY = SurroundPosition{};
+        mix.layers.front().trackId = owner;
+        initialiseRouting(mix.layers.front(), ownerTrack->layout);
+        setSurroundNode(*ownerTrack, {0, 0, 1});
+        setSurroundNode(*ownerTrack, {4800, -.5, -.5, MotionShape::smooth});
+        auto path = [&] { return JSON::toString(automationLaneJson(findTrack(mix, owner)->automation), true); };
+        const auto before = path();
+        auto *transport = h.state.getDynamicObject();
+        transport->setProperty("graphEpoch", 1);
+        transport->setProperty("helperPid", 101);
+        session.play();
+        h.drain();
+        const bool viewGesture = action == "focus loss" || action == "escape" || action == "close";
+        std::optional<SurroundPanner> pad;
+        if (viewGesture)
+        {
+            pad.emplace(session, owner, nullptr, nullptr);
+            for (auto *child : pad->getChildren())
+                if (auto *button = dynamic_cast<Button *>(child); button && button->getButtonText() == "Touch")
+                    button->onClick();
+            const Point<float> start{150, 200};
+            pad->mouseDown(squarePointer(*pad, start, start));
+            pad->mouseDrag(squarePointer(*pad, {200, 250}, start));
+            pad->mouseDrag(squarePointer(*pad, {250, 250}, start));
+            check(commands.size() == 2 && session.squareTouchBusy(), "Panner starts a controlled live pass");
+        }
+        else
+        {
+            check(session.beginSquareTouch(owner, {.9, .1}), "Begin controlled Square Touch");
+            check(session.moveSquareTouch({-.8, -.9}), "Queue controlled motion");
+        }
+        const auto begin = commands.front();
+        if (action == "stop")
+            session.stop();
+        else if (action == "seek")
+            session.seek(500);
+        else if (action == "reprepare")
+            transport->setProperty("graphEpoch", 2);
+        else if (action == "helper loss")
+            transport->setProperty("helperPid", 102);
+        else if (action == "focus loss")
+            pad->focusLost(Component::focusChangedDirectly);
+        else if (action == "escape")
+            pad->keyPressed(KeyPress(KeyPress::escapeKey));
+        else if (action == "close")
+            pad.reset();
+        else
+            session.endSquareTouch();
+        session.poll();
+        check(commands.back()["phase"].toString() == "end" && !session.moveSquareTouch({0, 0}),
+              "Interruption closes the identified gesture to further moves");
+        h.now += 2000;
+        session.poll();
+        check(!session.squareTouchBusy() && path() == before &&
+                  session.message.contains("without a matching playback receipt"),
+              "Absent receipt preserves prior curves and reports uncertified pass");
+
+        SquareTouchPass late;
+        late.id = begin["pass"].toString();
+        late.owner = owner;
+        late.generation = begin["playGeneration"];
+        late.graphEpoch = begin["graphEpoch"];
+        late.underlying = *findTrack(mix, owner);
+        late.points.push_back({128, {.3, .4}});
+        late.finish(256, 48000, true);
+        transport->setProperty("squareTouch", late.result());
+        session.poll();
+        check(path() == before, "A late receipt cannot mutate an uncertified pass");
+        h.drain();
+    }
+}
 } // namespace
 void runDesignSessionTests(const juce::File &parent)
 {
     juce::ScopedJuceInitialiser_GUI initialise;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
+    checkSquareSelection(root);
+    checkInterruptedSquareTouch(root);
     {
         Harness h(root.getChildFile("startup-edit"));
         auto retained = recipe();

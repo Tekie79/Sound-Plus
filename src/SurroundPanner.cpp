@@ -40,7 +40,7 @@ SurroundPanner::SurroundPanner(DesignSession &s, juce::String id, std::function<
     setMouseCursor(juce::MouseCursor::CrosshairCursor);
     for (auto *c : std::initializer_list<juce::Component *>{&title, &busLabel, &timeLabel, &xLabel, &yLabel,
                                                             &xValue, &yValue, &spreadLabel, &spread, &enable,
-                                                            &add, &remove, &options, &touch})
+                                                            &add, &remove, &options, &touch, &feedback})
         addAndMakeVisible(c);
     title.setFont(juce::FontOptions(16.f, juce::Font::bold));
     for (auto *label : {&busLabel, &timeLabel, &xLabel, &yLabel, &spreadLabel})
@@ -51,6 +51,10 @@ SurroundPanner::SurroundPanner(DesignSession &s, juce::String id, std::function<
     xLabel.setText("X", sendNothing);
     yLabel.setText("Y", sendNothing);
     spreadLabel.setText("Spread", sendNothing);
+    feedback.setTitle("Motion feedback");
+    feedback.setFont(juce::FontOptions(11.f));
+    feedback.setColour(juce::Label::textColourId, ui::text);
+    feedback.setMinimumHorizontalScale(.82f);
     auto coordinateChanged = [this]
     {
         auto x = number(xValue.getText()), y = number(yValue.getText());
@@ -114,6 +118,7 @@ SurroundPanner::SurroundPanner(DesignSession &s, juce::String id, std::function<
     touch.setTooltip("Record Position X and Y while playing. Release returns to Read over 100 ms.");
     touch.onClick = [this]
     {
+        finish();
         touchArmed = !touchArmed;
         touch.setToggleState(touchArmed, sendNothing);
     };
@@ -148,7 +153,14 @@ const DesignTrack *SurroundPanner::track() const
 }
 void SurroundPanner::timerCallback()
 {
+    if (dragSource && (!dragSource->isDragging() || !valid() || (writing && !session.squareTouchBusy())))
+        finishDrag(true);
     refresh();
+}
+void SurroundPanner::motionFeedback(const juce::String &text)
+{
+    feedback.setText(text, sendNothing);
+    feedback.setTooltip(text);
 }
 void SurroundPanner::refresh()
 {
@@ -179,16 +191,17 @@ void SurroundPanner::refresh()
         std::erase_if(
             selected, [&](auto frame)
             { return std::none_of(nodes.begin(), nodes.end(), [&](auto &n) { return n.frame == frame; }); });
+    const bool editable = writable && !session.squareTouchBusy();
     touch.setEnabled(writable);
-    add.setEnabled(writable && !session.squareTouchBusy());
-    remove.setEnabled(writable && !selected.empty());
+    add.setEnabled(editable);
+    remove.setEnabled(editable && !selected.empty());
     options.setEnabled(active);
     const bool stereo = supported && t->layout.size() == 2;
     spread.setVisible(stereo);
     spreadLabel.setVisible(stereo);
-    spread.setEnabled(writable);
-    xValue.setEnabled(writable);
-    yValue.setEnabled(writable);
+    spread.setEnabled(editable);
+    xValue.setEnabled(editable);
+    yValue.setEnabled(editable);
     auto frame =
         selected.size() == 1 && !session.ownsPlayback() ? selectedFrame() : session.document.playhead;
     auto p = active ? surroundPositionAt(*t, frame, selected.empty() || session.ownsPlayback())
@@ -232,6 +245,7 @@ void SurroundPanner::resized()
     touch.setBounds(slider.removeFromRight(59));
     spreadLabel.setBounds(slider.removeFromLeft(54));
     spread.setBounds(slider);
+    feedback.setBounds(getLocalBounds().withTrimmedTop(getHeight() - 15).reduced(14, 0));
     auto available = bounds.reduced(22, 26).toFloat();
     const auto side = std::min(available.getWidth(), available.getHeight());
     field = available.withSizeKeepingCentre(side, side);
@@ -460,6 +474,8 @@ void SurroundPanner::mouseDown(const juce::MouseEvent &e)
         return;
     }
     grabKeyboardFocus();
+    motionFeedback({});
+    dragSource = e.source;
     anchor = pointer = e.position;
     const auto frame = nearest(e.position);
     if (frame >= 0 && e.getNumberOfClicks() == 1 && !(touchArmed && session.automationFrame()))
@@ -514,7 +530,8 @@ void SurroundPanner::mouseDrag(const juce::MouseEvent &e)
     }
     if (writing)
     {
-        session.moveSquareTouch(p);
+        if (!session.moveSquareTouch(p))
+            finishDrag();
         return;
     }
     if (dragStartNodes.empty())
@@ -547,7 +564,10 @@ void SurroundPanner::mouseDoubleClick(const juce::MouseEvent &e)
 }
 void SurroundPanner::finishDrag(bool cancel)
 {
+    if (cancel && selecting)
+        selected = selectionAtDown;
     dragging = selecting = moved = false;
+    dragSource.reset();
     if (writing)
     {
         writing = false;
@@ -565,13 +585,13 @@ void SurroundPanner::finishDrag(bool cancel)
         }
     }
 }
-void SurroundPanner::finish()
+void SurroundPanner::finish(bool cancel)
 {
-    finishDrag();
+    finishDrag(cancel);
 }
 void SurroundPanner::focusLost(FocusChangeType)
 {
-    finish();
+    finishDrag(true);
 }
 void SurroundPanner::numericPoint()
 {
@@ -582,8 +602,9 @@ void SurroundPanner::numericPoint()
     if (found == nodes.end())
         return;
     auto node = *found;
-    auto *box = new juce::AlertWindow("Motion point", "Enter absolute project time and square position",
-                                      juce::MessageBoxIconType::NoIcon);
+    auto *box =
+        new juce::AlertWindow("Motion point", "Enter time within the current design and X/Y from -1 to +1.",
+                              juce::MessageBoxIconType::NoIcon);
     box->addTextEditor("time", juce::String(node.frame / session.document.sampleRate, 7), "Seconds");
     box->addTextEditor("x", juce::String(node.x, 6), "Position X");
     box->addTextEditor("y", juce::String(node.y, 6), "Position Y");
@@ -599,28 +620,43 @@ void SurroundPanner::numericPoint()
                     return;
                 auto time = number(box->getTextEditorContents("time"));
                 auto x = number(box->getTextEditorContents("x")), y = number(box->getTextEditorContents("y"));
-                if (!time || *time < 0 || *time > 7 * 86400 || !x || !y || std::abs(*x) > 1 ||
-                    std::abs(*y) > 1)
+                if (!time || !x || !y || std::abs(*x) > 1 || std::abs(*y) > 1)
+                {
+                    safe->motionFeedback("Enter seconds and X/Y from -1 to +1.");
                     return;
-                auto frame = (int64_t)std::llround(*time * safe->session.document.sampleRate);
-                safe->editTrack(
-                    "Set motion point time and position",
-                    [&](auto &t)
-                    {
-                        if (frame != node.frame && std::any_of(safe->nodes.begin(), safe->nodes.end(),
-                                                               [&](auto &n) { return n.frame == frame; }))
-                            throw std::runtime_error("A motion point already occupies that frame");
-                        setSurroundNode(t, {node.frame, *x, *y, node.shape});
-                        for (const auto &axis : {surroundX, surroundY})
-                            if (auto *curve = automationCurve(t.automation, axis))
-                            {
-                                for (auto &point : curve->points)
-                                    if (point.frame == node.frame)
-                                        point.frame = frame;
-                                std::sort(curve->points.begin(), curve->points.end(),
-                                          [](auto &a, auto &b) { return a.frame < b.frame; });
-                            }
-                    });
+                }
+                int64_t frame;
+                try
+                {
+                    frame = squareMotionFrame(*time, safe->session.document.activeMix(),
+                                              safe->session.document.sampleRate);
+                }
+                catch (const std::exception &e)
+                {
+                    safe->motionFeedback(juce::String(e.what()));
+                    return;
+                }
+                if (frame != node.frame && std::any_of(safe->nodes.begin(), safe->nodes.end(),
+                                                       [frame](auto &n) { return n.frame == frame; }))
+                {
+                    safe->motionFeedback("Choose a frame without a motion point.");
+                    return;
+                }
+                safe->motionFeedback({});
+                safe->editTrack("Set motion point time and position",
+                                [&](auto &t)
+                                {
+                                    setSurroundNode(t, {node.frame, *x, *y, node.shape});
+                                    for (const auto &axis : {surroundX, surroundY})
+                                        if (auto *curve = automationCurve(t.automation, axis))
+                                        {
+                                            for (auto &point : curve->points)
+                                                if (point.frame == node.frame)
+                                                    point.frame = frame;
+                                            std::sort(curve->points.begin(), curve->points.end(),
+                                                      [](auto &a, auto &b) { return a.frame < b.frame; });
+                                        }
+                                });
                 if (std::any_of(safe->nodes.begin(), safe->nodes.end(),
                                 [&](auto &n) { return n.frame == frame; }))
                     safe->selected = {frame};
@@ -636,35 +672,30 @@ void SurroundPanner::copy()
             values.add(juce::Array<juce::var>{node.frame / session.document.sampleRate, node.x, node.y,
                                               (int)node.shape});
     if (!values.isEmpty())
-        juce::SystemClipboard::copyTextToClipboard("SoundPlus Square Motion\n" +
+        juce::SystemClipboard::copyTextToClipboard(juce::String(squareMotionClipboardHeader) +
                                                    juce::JSON::toString(values));
 }
 void SurroundPanner::paste()
 {
-    auto text = juce::SystemClipboard::getTextFromClipboard();
-    if (!text.startsWith("SoundPlus Square Motion\n") || text.getNumBytesAsUTF8() > 512 * 1024)
+    const auto *target = track();
+    if (!target || !add.isEnabled())
         return;
-    auto decoded = juce::JSON::parse(text.fromFirstOccurrenceOf("\n", false, false));
-    auto *rows = decoded.getArray();
-    if (!rows || rows->isEmpty() || rows->size() > 2048)
-        return;
-    auto anchorSeconds = (double)(*rows)[0][0];
     auto frame = session.document.playhead;
     if (snapTime)
         frame = snapTime(frame);
     std::vector<SurroundNode> incoming;
-    for (auto &row : *rows)
+    try
     {
-        const auto seconds = (double)row[0] - anchorSeconds;
-        const auto x = (double)row[1], y = (double)row[2];
-        const auto shape = (int)row[3];
-        if (!row.isArray() || row.size() != 4 || !std::isfinite(seconds) || seconds < 0 ||
-            seconds > 7 * 86400 || !std::isfinite(x) || !std::isfinite(y) || std::abs(x) > 1 ||
-            std::abs(y) > 1 || shape < 0 || shape > 2)
-            return;
-        incoming.push_back(
-            {frame + (int64_t)std::llround(seconds * session.document.sampleRate), x, y, (MotionShape)shape});
+        incoming =
+            squareMotionPaste(juce::SystemClipboard::getTextFromClipboard(), session.document.activeMix(),
+                              *target, session.document.sampleRate, frame);
     }
+    catch (const std::exception &e)
+    {
+        motionFeedback(juce::String(e.what()));
+        return;
+    }
+    motionFeedback({});
     editTrack("Paste surround motion points",
               [&](auto &t)
               {

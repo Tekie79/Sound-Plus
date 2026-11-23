@@ -21,7 +21,7 @@ class SurroundPanner final : public juce::Component, public juce::SettableToolti
     void mouseDoubleClick(const juce::MouseEvent &) override;
     void focusLost(FocusChangeType) override;
     bool keyPressed(const juce::KeyPress &) override;
-    void finish();
+    void finish(bool cancel = false);
     bool valid() const;
 
   private:
@@ -31,7 +31,7 @@ class SurroundPanner final : public juce::Component, public juce::SettableToolti
     std::function<int64_t(int64_t)> snapTime;
     std::function<bool(const juce::KeyPress &)> command;
     ui::LookAndFeel look;
-    juce::Label title, busLabel, timeLabel, xLabel, yLabel, spreadLabel;
+    juce::Label title, busLabel, timeLabel, xLabel, yLabel, spreadLabel, feedback;
     juce::TextEditor xValue, yValue;
     juce::Slider spread;
     ui::TextActionButton enable{"Enable XY", true}, touch{"Touch", true};
@@ -43,11 +43,13 @@ class SurroundPanner final : public juce::Component, public juce::SettableToolti
     std::set<int64_t> selected, selectionAtDown;
     juce::Rectangle<float> field;
     juce::Point<float> anchor, pointer;
+    std::optional<juce::MouseInputSource> dragSource;
     bool dragging = false, selecting = false, edited = false, updating = false;
     bool moved = false, writing = false, touchArmed = false;
     const DesignTrack *track() const;
     void timerCallback() override;
     void refresh();
+    void motionFeedback(const juce::String &);
     void editTrack(const juce::String &, const std::function<void(DesignTrack &)> &);
     void editPosition(juce::Point<double>);
     void addPoint(juce::Point<double>, bool snap);

@@ -227,6 +227,96 @@ void setSurroundNode(DesignTrack &track, SurroundNode node)
         at->smooth = smooth;
     }
 }
+
+int64_t squareMotionFrame(double seconds, const DesignMix &mix, double rate)
+{
+    const auto end = mixDuration(mix, rate);
+    if (!std::isfinite(seconds) || seconds < 0 || seconds >= end / rate)
+        throw std::runtime_error("Choose a time within the design.");
+    const auto frame = (int64_t)std::llround(seconds * rate);
+    if (frame >= end)
+        throw std::runtime_error("Choose a time within the design.");
+    return frame;
+}
+
+std::vector<SurroundNode> squareMotionPaste(const juce::String &text, const DesignMix &mix,
+                                            const DesignTrack &track, double rate, int64_t anchor)
+{
+    if (!text.startsWith(squareMotionClipboardHeader))
+        throw std::runtime_error("Copy motion points from a Square Surround panner.");
+    if (text.getNumBytesAsUTF8() > 512 * 1024)
+        throw std::runtime_error("Copy a smaller selection of motion points.");
+    const auto decoded = juce::JSON::parse(text.fromFirstOccurrenceOf("\n", false, false));
+    const auto *rows = decoded.getArray();
+    if (!rows || rows->isEmpty() || rows->size() > maxAutomationCurvePoints)
+        throw std::runtime_error("Copy up to 2,048 motion points from the panner.");
+
+    const auto end = mixDuration(mix, rate);
+    if (anchor < 0 || anchor >= end)
+        throw std::runtime_error("Move the playhead inside the design before pasting.");
+    std::vector<SurroundNode> nodes;
+    nodes.reserve((size_t)rows->size());
+    std::set<int64_t> frames;
+    double firstSeconds = 0;
+    for (const auto &value : *rows)
+    {
+        const auto *row = value.getArray();
+        if (!row || row->size() != 4)
+            throw std::runtime_error("Invalid motion point. Copy the points again.");
+        const auto numeric = [](const juce::var &v) { return v.isInt() || v.isInt64() || v.isDouble(); };
+        if (!numeric((*row)[0]) || !numeric((*row)[1]) || !numeric((*row)[2]) ||
+            !((*row)[3].isInt() || (*row)[3].isInt64()))
+            throw std::runtime_error("Invalid motion point. Copy the points again.");
+        const auto seconds = (double)(*row)[0], x = (double)(*row)[1], y = (double)(*row)[2];
+        const auto shape = (int64_t)(*row)[3];
+        if (!std::isfinite(seconds) || seconds < 0 || seconds > 3600 || !std::isfinite(x) ||
+            !std::isfinite(y) || std::abs(x) > 1 || std::abs(y) > 1 || shape < (int)MotionShape::linear ||
+            shape > (int)MotionShape::smooth)
+            throw std::runtime_error("Motion time, position, or shape is outside its range.");
+        if (nodes.empty())
+            firstSeconds = seconds;
+        const auto offset = seconds - firstSeconds;
+        if (offset < 0 || offset >= (end - anchor) / rate)
+            throw std::runtime_error("Motion extends past the design. Paste earlier.");
+        const auto frame = anchor + (int64_t)std::llround(offset * rate);
+        if (frame >= end)
+            throw std::runtime_error("Motion extends past the design. Paste earlier.");
+        if (!frames.insert(frame).second)
+            throw std::runtime_error("Two motion points land on the same frame.");
+        nodes.push_back({frame, x, y, (MotionShape)shape});
+    }
+
+    size_t added = 0, newCurves = 0;
+    for (const auto &axis : {surroundX, surroundY})
+    {
+        const auto *curve = automationCurve(track.automation, axis);
+        const auto replacements = curve
+                                      ? std::count_if(curve->points.begin(), curve->points.end(),
+                                                      [&](const auto &p) { return frames.contains(p.frame); })
+                                      : 0;
+        const auto growth = nodes.size() - (size_t)replacements;
+        if (growth + (curve ? curve->points.size() : 0) > maxAutomationCurvePoints)
+            throw std::runtime_error("Remove some X/Y points before pasting.");
+        newCurves += curve == nullptr;
+        added += growth;
+    }
+    if (track.automation.curves.size() + newCurves > 256)
+        throw std::runtime_error("Remove unused automation curves before pasting.");
+    const auto count = [](const AutomationLane &lane)
+    {
+        size_t total = 0;
+        for (const auto &curve : lane.curves)
+            total += curve.points.size();
+        return total;
+    };
+    size_t pointCount = count(mix.masterAutomation);
+    for (const auto &t : mix.tracks)
+        pointCount += count(t.automation);
+    if (pointCount + added > maxAutomationPoints)
+        throw std::runtime_error("Remove some design automation points before pasting.");
+    return nodes;
+}
+
 AutomationPoint &splitSquareSegment(AutomationCurve &curve, int64_t frame, double base)
 {
     auto next = std::lower_bound(curve.points.begin(), curve.points.end(), frame,

@@ -1,0 +1,13 @@
+# Production Beta Gate 1
+
+Reviewed and starting HEAD `2de9e19bd6b440b3d229ac1e879e962e2ff72292`. Feature freeze applies to this gate.
+
+✓ Review — read the handoff, Square Surround, hosted automation and four-pad contracts.
+✓ Protect — cleanly closed the latest revision 4499. Post-close snapshot and audit cover 392 protected files, 197 state files and 18 catalog tables under `build/beta-gate-1`.
+✓ Harden — clipboard and project-time validation, fail-closed interrupted Touch, native input and controlled gesture checks. Focused Release 7/7 in 29.01 s. See the [Stage A record](verification/beta-gate-1/stage-a/README.md) for native modifier and interruption gaps.
+◉ Workflow — isolated Library region, square motion, routed inserts, MIDI, Perform, offline/relink, exact WAV splits and Resolve persistence.
+○ Stress — concurrent soak, isolated failures, bundle dependencies, clean-data installation and safe distribution assessment.
+○ Physical — Blocked: only a two-channel CoreAudio output is available. Human listening and physical 5.1 need a separate session.
+○ Decide — unchanged Release gate, native minimum-size and Perform checks, original session reopen, evidence and beta decision.
+
+The host has DaVinci Resolve Studio 21.1.2 and zero valid code-signing identities. Signed installer and notarization require available authorized credentials.

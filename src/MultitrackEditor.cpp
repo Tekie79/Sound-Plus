@@ -879,6 +879,13 @@ void MultitrackEditor::openSurroundPanner(const juce::String &owner)
                 panel->finish();
             setVisible(false);
         }
+        void activeWindowStatusChanged() override
+        {
+            juce::DocumentWindow::activeWindowStatusChanged();
+            if (!isActiveWindow())
+                if (auto *panel = dynamic_cast<SurroundPanner *>(getContentComponent()))
+                    panel->finish(true);
+        }
     };
     auto window = std::make_unique<PannerWindow>();
     auto *panel = new SurroundPanner(

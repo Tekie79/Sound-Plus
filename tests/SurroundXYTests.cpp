@@ -84,6 +84,70 @@ void compare(const AudioBuffer<float> &a, const AudioBuffer<float> &b)
             check(std::abs(a.getSample(c, n) - b.getSample(c, n)) < 1e-7f,
                   "Partition-invariant surround PCM");
 }
+
+void checkMotionInput(const File &root)
+{
+    auto doc = fixture(root, channelLayout("5.1-side-v1"), 1, 48000);
+    auto &mix = doc.original;
+    auto &track = mix.tracks.front();
+    track.surroundXY = SurroundPosition{};
+    auto paste = [&](String json, int64_t at = 0)
+    { return squareMotionPaste(String(squareMotionClipboardHeader) + json, mix, track, 48000, at); };
+    auto saved = JSON::toString(designToJson(doc), true);
+    for (const auto *invalid : {"",
+                                "[]",
+                                "{}",
+                                "[false]",
+                                "[[]]",
+                                "[[0,0,0]]",
+                                "[[0,0,0,0,0]]",
+                                R"([["0",0,0,0]])",
+                                "[[false,0,0,0]]",
+                                "[[0,null,0,0]]",
+                                "[[0,0,{},0]]",
+                                "[[0,0,0,0.5]]",
+                                "[[0,0,0,3]]",
+                                "[[0,1.01,0,0]]",
+                                "[[0,0,-1.01,0]]",
+                                "[[-1,0,0,0]]",
+                                "[[1e308,0,0,0]]",
+                                "[[1e999,0,0,0]]",
+                                "[[1,0,0,0],[0,0,0,0]]",
+                                "[[0,0,0,0],[0,1,0,2]]",
+                                "[[0,0,0,0],[0.000001,1,0,2]]",
+                                "[[0,0,0,0],[1,1,0,2]]",
+                                "[[0,0,0,0],null]"})
+        rejects([&] { paste(invalid); }, "Invalid clipboard shape, coordinate, range, or rounded duplicate");
+    rejects([&] { paste("[[0,0,0,0]]", 4096); }, "Paste anchor outside active design");
+    rejects([&] { paste("[[0,0,0,0],[0.00001,0,0,1]]", 4095); }, "Rounded duplicate at final frame");
+    rejects([&] { paste("[[0,0,0,0],[0.00002,0,0,1]]", 4095); }, "Rounded target at exclusive end");
+    check(JSON::toString(designToJson(doc), true) == saved, "Invalid clipboard leaves the recipe unchanged");
+    auto copied = paste("[[1,-1,1,0],[1.02,1,-1,2]]", 200);
+    check(copied.size() == 2 && copied[0].frame == 200 && copied[1].frame == 1160 &&
+              copied[1].shape == MotionShape::smooth && copied[1].x == 1 && copied[1].y == -1,
+          "Project-time clipboard preserves relative frames and shape");
+    check(squareMotionFrame(4095. / 48000, mix, 48000) == 4095, "Last playable frame accepted");
+    for (double time :
+         {-1., 4095.75 / 48000, 4096. / 48000, 1800., 7. * 86400, std::numeric_limits<double>::infinity()})
+        rejects([&] { squareMotionFrame(time, mix, 48000); }, "Numeric time rejected before editing");
+
+    Array<var> oversized;
+    for (int n = 0; n <= maxAutomationCurvePoints; ++n)
+        oversized.add(Array<var>{n / 48000., 0, 0, 0});
+    rejects([&] { paste(JSON::toString(oversized)); }, "Clipboard row budget rejected");
+    for (int n = 0; n < maxAutomationCurvePoints; ++n)
+        setSurroundNode(track, {n, 0, 0});
+    rejects([&] { paste("[[0,0,0,0]]", maxAutomationCurvePoints); }, "Either X/Y curve limit blocks paste");
+    check(paste("[[0,1,1,0]]").size() == 1, "Replacement at capacity uses no new point");
+    track.automation.curves.clear();
+    for (int i = 0; i < 4; ++i)
+    {
+        auto *curve = automationCurve(mix.masterAutomation, {"", "budget-" + String(i)}, true);
+        for (int n = 0; n < maxAutomationCurvePoints; ++n)
+            curve->points.push_back({Uuid().toString(), n});
+    }
+    rejects([&] { paste("[[0,0,0,0]]"); }, "Both axes counted against total mix budget");
+}
 #include "SurroundMotionTests.inc"
 } // namespace
 
@@ -93,6 +157,7 @@ void runSurroundXYTests(const juce::File &base, const juce::File &app)
     using namespace juce;
     auto root = base.getChildFile(Uuid().toString());
     root.createDirectory();
+    checkMotionInput(root);
     const auto equal = std::sqrt(.2);
     const auto pair = std::sqrt(.5);
     for (bool side : {true, false})

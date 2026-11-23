@@ -116,7 +116,8 @@ AutomationLane laneFrom(const juce::var &v)
         c.read = row["read"];
         if (row.hasProperty("hostedBinding"))
             c.hostedBinding = hostedBindingFromJson(row["hostedBinding"]);
-        require(row["points"].isArray() && row["points"].size() <= 2048, "Automation curve point bound");
+        require(row["points"].isArray() && row["points"].size() <= maxAutomationCurvePoints,
+                "Automation curve point bound");
         for (auto &p : *row["points"].getArray())
             c.points.push_back({p["id"].toString(), (int64_t)p["frame"], (double)p["value"], (bool)p["hold"],
                                 (bool)p["smooth"],
@@ -921,7 +922,7 @@ void validateTracks(const DesignMix &m, double rate)
             require(c.target.parameter.isNotEmpty() &&
                         targets.emplace(c.target.instance, c.target.parameter).second,
                     "Duplicate/invalid curve target");
-            require(c.points.size() <= 2048, "Curve point bound");
+            require(c.points.size() <= maxAutomationCurvePoints, "Curve point bound");
             if (c.hostedBinding)
             {
                 auto validated = hostedBindingFromJson(hostedBindingJson(*c.hostedBinding));

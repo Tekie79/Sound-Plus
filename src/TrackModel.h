@@ -3,7 +3,7 @@
 #include <set>
 namespace sp
 {
-inline constexpr int maxDesignTracks = 64, maxAutomationPoints = 8192;
+inline constexpr int maxDesignTracks = 64, maxAutomationCurvePoints = 2048, maxAutomationPoints = 8192;
 struct AutomationParameter
 {
     AutomationTarget target;
@@ -50,6 +50,10 @@ SurroundPosition surroundPositionAt(const DesignTrack &, int64_t, bool readOnly 
 std::vector<SurroundNode> surroundNodes(const DesignTrack &);
 void setSurroundNode(DesignTrack &, SurroundNode);
 void eraseSurroundNodes(DesignTrack &, const std::set<int64_t> &);
+inline constexpr auto squareMotionClipboardHeader = "SoundPlus Square Motion\n";
+int64_t squareMotionFrame(double seconds, const DesignMix &, double rate);
+std::vector<SurroundNode> squareMotionPaste(const juce::String &, const DesignMix &, const DesignTrack &,
+                                           double rate, int64_t anchor);
 AutomationPoint &splitSquareSegment(AutomationCurve &, int64_t frame, double base);
 
 bool trackSquareSurroundSupported(const DesignMix &, const DesignTrack &);

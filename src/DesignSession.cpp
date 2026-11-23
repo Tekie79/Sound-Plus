@@ -1638,7 +1638,8 @@ void DesignSession::pollSquareTouch(const juce::var &state)
     if (!matched && sameContext)
     {
         const bool lost = (uint64_t)(int64_t)state["playGeneration"] > pass.generation ||
-                          (int64_t)state["helperPid"] != pass.helper || !(bool)state["playing"];
+                          (int64_t)state["helperPid"] != pass.helper ||
+                          (int64_t)state["graphEpoch"] != pass.epoch || !(bool)state["playing"];
         if (lost && !pass.ending)
             endSquareTouch();
         if (!squarePass->ending || services.now() < squarePass->deadline)
@@ -1656,8 +1657,10 @@ void DesignSession::pollSquareTouch(const juce::var &state)
             message = (bool)receipt["interrupted"] ? "Applied surround motion retained after interruption"
                                                    : "Surround motion recorded";
     }
-    else
+    else if (matched && sameContext && !replacing)
         message = "No applied surround motion to retain";
+    else
+        message = "Surround Touch was interrupted without a matching playback receipt. Existing motion kept.";
     notify();
     if (auto next = std::exchange(afterSquareTouch, {}))
         services.post(std::move(next));
@@ -1832,6 +1835,7 @@ void DesignSession::seek(int64_t frame)
         message = "Take playback starts at frame zero with full history";
         return;
     }
+    endSquareTouch();
     document.playhead =
         std::clamp<int64_t>(frame, 0, mixDuration(document.activeMix(), document.sampleRate) - 1);
     if (active)
@@ -1842,6 +1846,7 @@ void DesignSession::beginSeekGesture(bool audible)
 {
     if (takeBusy() || inputBusy() || midiBusy() || document.activeTake.isNotEmpty())
         return;
+    endSquareTouch();
     seekWasPlaying = active;
     seekGesture = true;
     audibleSeek = audible;
