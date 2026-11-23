@@ -789,7 +789,8 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        hasSquareSurround(d)     ? 19
+        hasMixerRouting(d)        ? 20
+        : hasSquareSurround(d)     ? 19
         : hasMultiPad(d)         ? 18
         : hasHostedAutomation(d) ? 17
         : hasAdvancedEffects(d)  ? 16
@@ -806,7 +807,8 @@ juce::var designToJson(const DesignDocument &d)
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasSquareSurround(d)        ? "square-surround-v1"
+        hasMixerRouting(d)          ? "track-mixer-v1"
+        : hasSquareSurround(d)        ? "square-surround-v1"
         : hasMultiPad(d)            ? "multi-pad-perform-v1"
         : hasHostedAutomation(d)    ? "hosted-automation-v1"
         : hasAdvancedEffects(d)     ? "advanced-effects-v1"
@@ -934,8 +936,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 19) ||
-        (version == 19   ? dsp != "square-surround-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 20) ||
+        (version == 20   ? dsp != "track-mixer-v1"
+         : version == 19 ? dsp != "square-surround-v1"
          : version == 18 ? dsp != "multi-pad-perform-v1"
          : version == 17 ? dsp != "hosted-automation-v1"
          : version == 16 ? dsp != "advanced-effects-v1"
@@ -1064,7 +1067,9 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
-    if ((version == 19) != hasSquareSurround(d))
+    if ((version == 20) != hasMixerRouting(d))
+        throw std::runtime_error("Mixer routing requires its explicit design version");
+    if (version < 20 && (version == 19) != hasSquareSurround(d))
         throw std::runtime_error("Square Surround requires its explicit design version");
     if (version < 18 && hasMultiPad(d))
         throw std::runtime_error("Multi-pad Perform requires document manifest18");

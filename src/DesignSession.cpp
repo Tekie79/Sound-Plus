@@ -1973,7 +1973,7 @@ void DesignSession::cancelRender()
     renderCancelled = true;
 }
 void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::File &folder,
-                                juce::String kind)
+                                juce::String kind, juce::StringArray stems)
 {
     if (rendering || replacing)
     {
@@ -1992,39 +1992,42 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
     auto resolve = services.resolve;
     auto post = services.post;
     renderWorker = std::thread(
-        [this, safe, token, snapshot = std::move(snapshot), copy, folder, kind, resolve, post]() mutable
+        [this, safe, token, snapshot = std::move(snapshot), copy, folder, kind, stems, resolve, post]() mutable
         {
             try
             {
                 resolve(snapshot);
-                DesignOutput output;
+                std::vector<DesignOutput> outputs;
+                auto cancelled = [&] { return quitting || renderCancelled; };
+                auto progress = [&](double value) { renderProgress = value; };
                 if (copy)
                 {
                     auto *layer = layerById(snapshot, snapshot.selectedLayer);
                     if (!layer)
                         throw std::runtime_error("Select a layer");
-                    output = copyDesignOriginal(*layer, folder, snapshot.revision,
-                                                [&] { return quitting || renderCancelled; });
+                    outputs.push_back(copyDesignOriginal(*layer, folder, snapshot.revision, cancelled));
                 }
+                else if (!stems.isEmpty())
+                    outputs = renderMixerStems(snapshot, folder, stems, cancelled, progress);
                 else
                 {
-                    output = renderDesign(
-                        snapshot, folder, snapshot.renderSettings,
-                        [&] { return quitting || renderCancelled; },
-                        [&](double progress) { renderProgress = progress; });
+                    auto output = renderDesign(snapshot, folder, snapshot.renderSettings, cancelled, progress);
                     output.kind = kind;
+                    outputs.push_back(std::move(output));
                 }
                 post(
-                    [safe, token, output]
+                    [safe, token, outputs = std::move(outputs)]
                     {
                         if (!safe || !safe->accepts(token))
                             return;
                         safe->rendering = false;
                         safe->edit(
-                            "Record completed output", [&](auto &d) { d.outputs.push_back(output); },
+                            "Record completed output",
+                            [&](auto &d) { d.outputs.insert(d.outputs.end(), outputs.begin(), outputs.end()); },
                             ChangeImpact::metadata);
                         safe->selectContextOutput();
-                        safe->message = "Rendered: " + juce::File(output.path).getFileName();
+                        safe->message = outputs.size() == 1 ? "Rendered: " + juce::File(outputs.front().path).getFileName()
+                            : "Rendered " + juce::String((int)outputs.size()) + " aligned stems";
                         safe->notify();
                     });
             }
@@ -2043,6 +2046,22 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
                     });
             }
         });
+}
+void DesignSession::renderStems(juce::StringArray owners)
+{
+    if (owners.isEmpty() || document.activeTake.isNotEmpty() || takeBusy() || rendering || replacing)
+        return;
+    const auto incarnation = lifetime;
+    const auto id = document.id, variation = document.activeVariation;
+    juce::Component::SafePointer<DesignSession> safe(this);
+    auto start = [safe, incarnation, id, variation, owners = std::move(owners)]
+    {
+        if (safe && safe->lifetime == incarnation && safe->document.id == id &&
+            safe->document.activeVariation == variation && safe->document.activeTake.isEmpty())
+            safe->startOutput(safe->document, false, safe->outputFolder(), "track-stem-pre-master", owners);
+    };
+    if (!flushLive(start))
+        start();
 }
 void DesignSession::render(bool selection, int pad)
 {

@@ -27,6 +27,8 @@ class DesignGraph
 
   private:
     friend class DesignReader;
+    friend std::vector<DesignOutput> renderMixerStems(const DesignDocument &, const juce::File &,
+        const juce::StringArray &, const std::function<bool()> &, const std::function<void(double)> &);
     DesignGraph(const DesignDocument &, const std::function<bool()> &, const DesignDocument *effectiveInput);
     struct Impl;
     std::unique_ptr<Impl> impl;
@@ -68,6 +70,9 @@ class DesignReader
 DesignOutput renderDesign(const DesignDocument &, const juce::File &folder, const DesignRenderSettings &,
                           const std::function<bool()> &cancelled,
                           const std::function<void(double)> &progress);
+std::vector<DesignOutput> renderMixerStems(const DesignDocument &, const juce::File &outputFolder,
+    const juce::StringArray &owners, const std::function<bool()> &cancelled,
+    const std::function<void(double)> &progress);
 DesignOutput copyDesignOriginal(const DesignLayer &, const juce::File &folder, int64_t revision,
                                 const std::function<bool()> &cancelled);
 } // namespace sp

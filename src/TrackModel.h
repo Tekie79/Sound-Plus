@@ -27,6 +27,11 @@ void splitClip(DesignDocument &, const juce::String &, int64_t);
 void copyClip(DesignDocument &, const juce::String &, const juce::String &, int64_t);
 void enableTrackSchema(DesignMix &);
 juce::String addTrack(DesignMix &, TrackKind, const juce::String &parent = {});
+bool hasMixerRouting(const DesignMix &);
+bool hasMixerRouting(const DesignDocument &);
+void validateMixerRoutes(const DesignMix &);
+ChannelMatrix sendMatrix(const DesignTrack &, const MixerSend &, const ChannelLayout &, double pan,
+                         double azimuth, double width, std::optional<SurroundPosition>);
 void reparentTrack(DesignMix &, const juce::String &, const juce::String &, int position = -1);
 void routeTrack(DesignMix &, const juce::String &, const juce::String &);
 void deleteTrack(DesignMix &, const juce::String &); // Folders unwrap; nonempty routed buses reject.

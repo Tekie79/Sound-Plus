@@ -9,7 +9,7 @@ struct TrackMixer::Strip final : juce::Component
     TrackMixer &mixer;
     const juce::String id;
     ui::TextActionButton name{""}, mute{"M", true}, solo{"S", true}, arm{"R", true}, monitor{"I", true},
-        route{"Output"}, inserts{"FX"}, spatial{"XY"};
+        route{"Output"}, inserts{"FX"}, sends{"Send"}, spatial{"XY"};
     juce::Label context;
     juce::Slider fader{juce::Slider::LinearVertical, juce::Slider::TextBoxBelow},
         pan{juce::Slider::LinearHorizontal, juce::Slider::NoTextBox};
@@ -27,7 +27,7 @@ struct TrackMixer::Strip final : juce::Component
     Strip(TrackMixer &parent, juce::String owner) : mixer(parent), id(std::move(owner))
     {
         for (auto *child : std::initializer_list<juce::Component *>{&name, &context, &mute, &solo, &arm,
-             &monitor, &route, &inserts, &spatial, &fader, &pan, &reset})
+             &monitor, &route, &inserts, &sends, &spatial, &fader, &pan, &reset})
             addAndMakeVisible(*child);
         context.setFont(juce::FontOptions(10.f));
         context.setColour(juce::Label::textColourId, ui::muted);
@@ -44,6 +44,7 @@ struct TrackMixer::Strip final : juce::Component
             if (mixer.showInserts)
                 mixer.showInserts(id);
         };
+        sends.onClick = [this] { mixer.sendMenu(id, sends); };
         spatial.setTitle("Open Square Surround");
         spatial.onClick = [this] { mixer.timeline.openSurroundPanner(id); };
         mute.setTitle("Mute");
@@ -191,6 +192,8 @@ struct TrackMixer::Strip final : juce::Component
         const auto *destination = track ? findTrack(mix, track->output) : nullptr;
         route.setButtonText(destination ? destination->name : "Master");
         route.setTitle("Output route for " + title);
+        sends.setTitle("Sends for " + title);
+        sends.setButtonText(track && !track->sends.empty() ? juce::String((int)track->sends.size()) : "+");
         const auto layout = track ? trackOutputLayout(mix, *track) : designLayout(s.document);
         if (roles != layout.roles)
             roles = layout.roles;
@@ -215,6 +218,8 @@ struct TrackMixer::Strip final : juce::Component
         if (track && !pan.isMouseButtonDown())
             pan.setValue(track->pan, juce::dontSendNotification);
         route.setVisible(!folder && track);
+        sends.setVisible(!folder && track);
+        sends.setEnabled(editable);
         mute.setVisible(!folder && track);
         solo.setVisible(!folder && track);
         arm.setVisible(isMidi || isAudio);
@@ -268,7 +273,9 @@ struct TrackMixer::Strip final : juce::Component
         if (folder)
             return;
         auto bus = r.removeFromTop(23);
-        inserts.setBounds(bus.removeFromRight(26));
+        inserts.setBounds(bus.removeFromRight(25));
+        if (sends.isVisible())
+            sends.setBounds(bus.removeFromRight(21));
         route.setBounds(bus);
         auto buttons = r.removeFromBottom(24);
         auto w = buttons.getWidth() / (arm.isVisible() ? 4 : 2);
@@ -343,11 +350,16 @@ TrackMixer::TrackMixer(DesignSession &s, MultitrackEditor &t, juce::PropertiesFi
     addAndMakeVisible(viewport);
     addAndMakeVisible(*master);
     addAndMakeVisible(density);
+    stems.setTitle("Batch stems");
+    stems.onClick = [this] { stemMenu(stems); };
+    addAndMakeVisible(stems);
 }
 TrackMixer::~TrackMixer() = default;
 
 void TrackMixer::refresh()
 {
+    stems.setEnabled(session.document.activeTake.isEmpty() && !session.transitionPending() &&
+                     session.document.activeMix().trackSchema);
     juce::StringArray next;
     for (const auto &id : visibleTracks(session.document.activeMix()))
         if (id != "master")
@@ -389,18 +401,219 @@ void TrackMixer::updateMeters(const juce::var &status)
     for (auto *strip : strips)
         update(*strip);
 }
+void TrackMixer::sendMenu(const juce::String &owner, juce::Component &anchor)
+{
+    const auto &doc = session.document;
+    const auto &mix = doc.activeMix();
+    auto *sender = findTrack(mix, owner);
+    if (!sender || sender->kind == TrackKind::folder || doc.activeTake.isNotEmpty())
+        return;
+
+    enum class Action { add, create, enable, pre, post, follow, level, destination, roles, up, down, remove };
+    struct Choice
+    {
+        Action action;
+        juce::String send, destination;
+    };
+    juce::PopupMenu menu, add;
+    std::vector<Choice> choices;
+    auto item = [&](juce::PopupMenu &popup, juce::String label, Action action, juce::String id = {},
+                    juce::String destination = {}, bool enabled = true, bool ticked = false)
+    {
+        choices.push_back({action, std::move(id), std::move(destination)});
+        popup.addItem((int)choices.size(), label, enabled, ticked);
+    };
+    auto candidates = [&](juce::PopupMenu &popup, Action action, const juce::String &id)
+    {
+        for (const auto &target : mix.tracks)
+            if ((target.kind == TrackKind::groupBus || target.kind == TrackKind::fxReturn) &&
+                target.id != owner && target.id != sender->output)
+                item(popup, target.name, action, id, target.id,
+                     std::none_of(sender->sends.begin(), sender->sends.end(), [&](const auto &send)
+                     { return send.destination == target.id && send.id != id; }));
+    };
+    candidates(add, Action::add, {});
+    item(add, "New FX Return", Action::create);
+    menu.addSubMenu("Add send", add, sender->sends.size() < 8);
+    for (size_t i = 0; i < sender->sends.size(); ++i)
+    {
+        const auto &send = sender->sends[i];
+        juce::PopupMenu detail, destinations;
+        auto *bus = findTrack(mix, send.destination);
+        if (!bus)
+            continue;
+        item(detail, "Enabled", Action::enable, send.id, {}, true, send.enabled);
+        item(detail, "Pre-fader", Action::pre, send.id, {}, true, !send.postFader);
+        item(detail, "Post-fader", Action::post, send.id, {}, true, send.postFader);
+        item(detail, "Follow pan", Action::follow, send.id, {}, !send.postFader, send.followPan);
+        item(detail, "Level…", Action::level, send.id);
+        candidates(destinations, Action::destination, send.id);
+        detail.addSubMenu("Destination", destinations);
+        item(detail, "Channel map…", Action::roles, send.id);
+        detail.addSeparator();
+        item(detail, "Move up", Action::up, send.id, {}, i > 0);
+        item(detail, "Move down", Action::down, send.id, {}, i + 1 < sender->sends.size());
+        item(detail, "Remove send", Action::remove, send.id);
+        menu.addSubMenu(bus->name + "  " + juce::String(send.levelDb, 1) + " dB", detail);
+    }
+    const auto sessionToken = session.documentGeneration();
+    const auto documentId = doc.id, mixId = doc.activeVariation;
+    juce::Component::SafePointer<TrackMixer> safe(this);
+    auto valid = [safe, sessionToken, documentId, mixId]
+    {
+        return safe && safe->session.documentGeneration() == sessionToken &&
+               safe->session.document.id == documentId && safe->session.document.activeVariation == mixId &&
+               safe->session.document.activeTake.isEmpty();
+    };
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
+        [safe, valid, owner, choices = std::move(choices)](int n)
+        {
+            if (!valid() || n <= 0 || n > (int)choices.size())
+                return;
+            const auto choice = choices[(size_t)n - 1];
+            auto apply = [safe, valid, owner, choice](juce::String entered)
+            {
+                if (!valid())
+                    return;
+                safe->session.edit("Edit mixer send", [&](auto &doc)
+                {
+                    auto &mix = doc.activeMix();
+                    auto *track = findTrack(mix, owner);
+                    if (!track)
+                        return;
+                    auto destination = choice.destination;
+                    if (choice.action == Action::create)
+                    {
+                        destination = addTrack(mix, TrackKind::fxReturn);
+                        track = findTrack(mix, owner);
+                    }
+                    if (choice.action == Action::add || choice.action == Action::create)
+                    {
+                        track->sends.emplace_back().destination = destination;
+                        return;
+                    }
+                    auto &sends = track->sends;
+                    const auto at = std::find_if(sends.begin(), sends.end(), [&](const auto &send)
+                    { return send.id == choice.send; });
+                    if (at == sends.end())
+                        return;
+                    switch (choice.action)
+                    {
+                        case Action::enable: at->enabled = !at->enabled; break;
+                        case Action::pre: at->postFader = false; break;
+                        case Action::post: at->postFader = true; break;
+                        case Action::follow: at->followPan = !at->followPan; break;
+                        case Action::destination: at->destination = destination; break;
+                        case Action::up: if (at != sends.begin()) std::iter_swap(at, at - 1); break;
+                        case Action::down: if (at + 1 != sends.end()) std::iter_swap(at, at + 1); break;
+                        case Action::remove: sends.erase(at); break;
+                        case Action::level:
+                        {
+                            const auto text = entered.trim().toStdString();
+                            size_t read = 0;
+                            const double value = std::stod(text, &read);
+                            if (read != text.size() || !std::isfinite(value) || value < -90 || value > 12)
+                                throw std::runtime_error("Enter a send level from -90 to +12 dB");
+                            at->levelDb = value;
+                            break;
+                        }
+                        case Action::roles:
+                        {
+                            std::vector<SendRole> roles;
+                            for (const auto &part : juce::StringArray::fromTokens(entered, ",", {}))
+                            {
+                                if (part.trim().isEmpty())
+                                    continue;
+                                auto pair = juce::StringArray::fromTokens(part, "=", {});
+                                if (pair.size() != 2)
+                                    throw std::runtime_error("Use source=destination pairs");
+                                roles.push_back({pair[0].trim(), pair[1].trim(), 0});
+                            }
+                            at->roles = std::move(roles);
+                            break;
+                        }
+                        default: break;
+                    }
+                });
+            };
+            if (choice.action != Action::level && choice.action != Action::roles)
+            {
+                apply({});
+                return;
+            }
+            const auto *track = findTrack(safe->session.document.activeMix(), owner);
+            if (!track)
+                return;
+            const auto at = std::find_if(track->sends.begin(), track->sends.end(), [&](const auto &send)
+            { return send.id == choice.send; });
+            if (at == track->sends.end())
+                return;
+            const bool level = choice.action == Action::level;
+            auto *dialog = new juce::AlertWindow(level ? "Send level" : "Send channel map",
+                level ? "-90 to +12 dB" : "Source=destination pairs, separated by commas",
+                juce::MessageBoxIconType::NoIcon);
+            juce::StringArray pairs;
+            for (const auto &pair : at->roles)
+                pairs.add(pair.source + "=" + pair.destination);
+            dialog->addTextEditor("value", level ? juce::String(at->levelDb, 1) : pairs.joinIntoString(", "));
+            dialog->addButton("Apply", 1, juce::KeyPress(juce::KeyPress::returnKey));
+            dialog->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+            dialog->enterModalState(true, juce::ModalCallbackFunction::create([dialog, apply](int outcome)
+            {
+                if (outcome == 1)
+                    apply(dialog->getTextEditorContents("value"));
+            }), true);
+        });
+}
 void TrackMixer::resized()
 {
     const auto width = compact ? 84 : 116;
     auto bounds = getLocalBounds().reduced(3);
     auto header = bounds.removeFromTop(27);
     density.setBounds(header.removeFromRight(73));
+    stems.setBounds(header.removeFromRight(62));
     master->setBounds(bounds.removeFromRight(width));
     viewport.setBounds(bounds);
     const auto stripHeight = std::max(0, bounds.getHeight() - (strips.size() * width > bounds.getWidth() ? 12 : 0));
     stripRow.setSize(std::max(bounds.getWidth(), strips.size() * width), stripHeight);
     for (int i = 0; i < strips.size(); ++i)
         strips[i]->setBounds(i * width, 0, width - 2, stripHeight);
+}
+void TrackMixer::stemMenu(juce::Component &anchor)
+{
+    const auto &doc = session.document;
+    if (doc.activeTake.isNotEmpty() || !doc.activeMix().trackSchema)
+        return;
+    struct Set { const char *name; juce::StringArray owners; };
+    std::array<Set, 6> sets{{{"Master inputs", {}}, {"Selected track", {}}, {"Audio tracks", {}},
+                            {"MIDI instruments", {}}, {"Groups", {}}, {"FX returns", {}}}};
+    for (const auto &track : doc.activeMix().tracks)
+    {
+        if (track.kind == TrackKind::folder)
+            continue;
+        if (track.output.isEmpty())
+            sets[0].owners.add(track.id);
+        if (track.id == doc.selectedTrack)
+            sets[1].owners.add(track.id);
+        const auto category = track.kind == TrackKind::audio ? 2 : track.kind == TrackKind::midiInstrument ? 3
+                            : track.kind == TrackKind::groupBus ? 4 : 5;
+        sets[(size_t)category].owners.add(track.id);
+    }
+    juce::PopupMenu menu;
+    menu.addSectionHeader("Aligned pre-Master stems");
+    for (size_t i = 0; i < sets.size(); ++i)
+        menu.addItem((int)i + 1, sets[i].name, !sets[i].owners.isEmpty());
+    const auto generation = session.documentGeneration();
+    const auto id = doc.id, variation = doc.activeVariation;
+    juce::Component::SafePointer<TrackMixer> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
+        [safe, generation, id, variation, sets](int result)
+        {
+            if (safe && result > 0 && result <= (int)sets.size() &&
+                safe->session.documentGeneration() == generation && safe->session.document.id == id &&
+                safe->session.document.activeVariation == variation)
+                safe->session.renderStems(sets[(size_t)result - 1].owners);
+        });
 }
 void TrackMixer::paint(juce::Graphics &g)
 {

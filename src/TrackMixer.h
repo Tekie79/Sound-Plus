@@ -11,6 +11,7 @@ class TrackMixer final : public juce::Component
     ~TrackMixer() override;
     void refresh();
     void updateMeters(const juce::var &status);
+    void stemMenu(juce::Component &anchor);
     void paint(juce::Graphics &) override;
     void resized() override;
     void mouseDown(const juce::MouseEvent &) override;
@@ -29,11 +30,12 @@ class TrackMixer final : public juce::Component
     juce::Component stripRow;
     juce::OwnedArray<Strip> strips;
     std::unique_ptr<Strip> master;
-    ui::TextActionButton density{"Compact", true};
+    ui::TextActionButton density{"Compact", true}, stems{"Stems"};
     juce::StringArray ids;
     uint64_t incarnation = 0;
     juce::String variation;
     int dragHeight = 0;
     bool compact = false;
+    void sendMenu(const juce::String &owner, juce::Component &anchor);
 };
 } // namespace sp

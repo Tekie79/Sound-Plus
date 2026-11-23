@@ -34,6 +34,8 @@ juce::String kindId(TrackKind k)
         return "folder";
     case TrackKind::groupBus:
         return "group";
+    case TrackKind::fxReturn:
+        return "fx-return";
     case TrackKind::midiInstrument:
         return "midi-instrument";
     case TrackKind::master:
@@ -43,7 +45,7 @@ juce::String kindId(TrackKind k)
 }
 TrackKind kindFrom(const juce::String &s)
 {
-    for (auto k : {TrackKind::audio, TrackKind::folder, TrackKind::groupBus, TrackKind::midiInstrument,
+    for (auto k : {TrackKind::audio, TrackKind::folder, TrackKind::groupBus, TrackKind::fxReturn, TrackKind::midiInstrument,
                    TrackKind::master})
         if (kindId(k) == s)
             return k;
@@ -337,6 +339,7 @@ juce::String addTrack(DesignMix &m, TrackKind kind, const juce::String &parent)
     t.layout = m.layout.id.isEmpty() ? channelLayout("stereo-v1") : m.layout;
     t.name = kind == TrackKind::folder           ? "Folder"
              : kind == TrackKind::groupBus       ? "Group"
+             : kind == TrackKind::fxReturn       ? "FX Return"
              : kind == TrackKind::midiInstrument ? "MIDI"
                                                  : "Audio";
     auto id = t.id;
@@ -360,6 +363,7 @@ void reparentTrack(DesignMix &m, const juce::String &id, const juce::String &par
 void routeTrack(DesignMix &m, const juce::String &id, const juce::String &output)
 {
     auto &t = needed(m, id);
+    const auto previous = t.output;
     require(t.kind != TrackKind::folder, "Folder membership is not audio routing");
     if (output.isNotEmpty())
     {
@@ -367,12 +371,23 @@ void routeTrack(DesignMix &m, const juce::String &id, const juce::String &output
         require(!ancestry(m, output, id, true), "Audio routing would form a cycle");
     }
     findTrack(m, id)->output = output;
+    try
+    {
+        validateMixerRoutes(m);
+    }
+    catch (...)
+    {
+        findTrack(m, id)->output = previous;
+        throw;
+    }
 }
 void deleteTrack(DesignMix &m, const juce::String &id)
 {
     const auto t = needed(m, id);
     for (auto &other : m.tracks)
         require(other.output != id, "Reroute incoming tracks before deleting a Group Bus");
+    for (auto &other : m.tracks)
+        std::erase_if(other.sends, [&](const MixerSend &send) { return send.destination == id; });
     for (auto &other : m.tracks)
         if (other.parent == id)
             other.parent = t.parent;
@@ -409,26 +424,130 @@ bool trackPanSupported(const DesignMix &m, const DesignTrack &t)
              (dest.id == "stereo-v1" || (horizontalLayout(dest) && !dest.roles.contains("C")))) ||
             (t.layout.id == "stereo-v1" && dest.id == "stereo-v1"));
 }
-ChannelMatrix trackMatrix(const DesignTrack &t, const ChannelLayout &dest, double pan, double azimuth,
-                          double width)
+static ChannelMatrix directTrackMatrix(const ChannelLayout &source, const ChannelLayout &dest, bool spatial,
+                                       double pan, double azimuth, double width)
 {
-    if (t.surroundXY)
-        return squareSurroundMatrix(t.layout, dest, *t.surroundXY);
     LayerRouting route;
-    route.interpretation = t.layout;
-    if (!t.spatial)
+    route.interpretation = source;
+    if (!spatial)
         return routingMatrix(route, dest, pan);
-    if (t.layout.size() > 2 || !horizontalLayout(dest))
+    if (source.size() > 2 || !horizontalLayout(dest))
         throw std::runtime_error("Track spatial panning requires Mono/Stereo into a horizontal named bus");
     ChannelMatrix result{};
-    for (int k = 0; k < t.layout.size(); ++k)
+    for (int k = 0; k < source.size(); ++k)
     {
         auto gains =
-            spatialGains(dest, azimuth + (t.layout.size() == 2 ? (k == 0 ? -width : width) * .5 : 0), 0, 2);
+            spatialGains(dest, azimuth + (source.size() == 2 ? (k == 0 ? -width : width) * .5 : 0), 0, 2);
         for (int c = 0; c < dest.size(); ++c)
-            result[c][k] = gains[(size_t)c] * (t.layout.size() == 2 ? .70710678f : 1.f);
+            result[c][k] = gains[(size_t)c] * (source.size() == 2 ? .70710678f : 1.f);
     }
     return result;
+}
+ChannelMatrix trackMatrix(const DesignTrack &track, const ChannelLayout &dest, double pan, double azimuth,
+                          double width)
+{
+    return track.surroundXY ? squareSurroundMatrix(track.layout, dest, *track.surroundXY)
+                            : directTrackMatrix(track.layout, dest, track.spatial, pan, azimuth, width);
+}
+bool hasMixerRouting(const DesignMix &mix)
+{
+    return std::any_of(mix.tracks.begin(), mix.tracks.end(), [](const auto &track)
+    {
+        return track.kind == TrackKind::fxReturn || !track.sends.empty();
+    });
+}
+bool hasMixerRouting(const DesignDocument &doc)
+{
+    return hasMixerRouting(doc.original) ||
+           std::any_of(doc.variations.begin(), doc.variations.end(), [](const auto &variation)
+           { return hasMixerRouting(variation.mix); }) ||
+           std::any_of(doc.takes.begin(), doc.takes.end(), [](const auto &take)
+           { return hasMixerRouting(take.recipe); });
+}
+ChannelMatrix sendMatrix(const DesignTrack &track, const MixerSend &send, const ChannelLayout &bus,
+                         double pan, double azimuth, double width, std::optional<SurroundPosition> square)
+{
+    const bool follows = send.postFader || send.followPan;
+    if (!send.roles.empty())
+    {
+        ChannelMatrix result{};
+        std::set<std::pair<int, int>> mapped;
+        for (const auto &role : send.roles)
+        {
+            const int input = track.layout.roles.indexOf(role.source);
+            const int output = bus.roles.indexOf(role.destination);
+            require(input >= 0 && output >= 0 && std::isfinite(role.gainDb) && role.gainDb >= -90 &&
+                        role.gainDb <= 12 && mapped.emplace(output, input).second,
+                    "Invalid or duplicate send role");
+            result[output][input] = juce::Decibels::decibelsToGain((float)role.gainDb);
+        }
+        return result;
+    }
+    if (track.layout == bus && (bus.size() > 2 || !follows))
+        return conversionMatrix(track.layout, bus);
+    if (follows && square && squareSurroundLayout(bus))
+        return squareSurroundMatrix(track.layout, bus, *square);
+    require(track.layout.id == "mono-v1" || track.layout.id == "stereo-v1" || track.layout == bus,
+            "Choose an explicit send channel map");
+    require(track.layout == bus || bus.id == "stereo-v1" ||
+                (horizontalLayout(bus) && (track.spatial || bus.roles.contains("L"))),
+            "Choose an explicit send channel map");
+    const bool spatial = follows && track.spatial && horizontalLayout(bus);
+    if (bus.size() > 2 && track.layout.id == "stereo-v1" && !spatial)
+    {
+        ChannelMatrix result{};
+        const int left = bus.roles.indexOf("L"), right = bus.roles.indexOf("R");
+        require(left >= 0 && right >= 0, "Choose an explicit send channel map");
+        result[left][0] = (float)(follows ? 1 - std::max(0., pan) : 1.);
+        result[right][1] = (float)(follows ? 1 + std::min(0., pan) : 1.);
+        return result;
+    }
+    return directTrackMatrix(track.layout, bus, spatial, follows ? pan : 0., azimuth, width);
+}
+void validateMixerRoutes(const DesignMix &mix)
+{
+    if (!hasMixerRouting(mix))
+        return;
+    std::map<juce::String, int> state;
+    std::set<juce::String> sendIds;
+    for (const auto &track : mix.tracks)
+    {
+        require(track.sends.size() <= 8 && (track.kind != TrackKind::folder || track.sends.empty()),
+                "Send limit or unsupported owner");
+        if (track.kind == TrackKind::folder)
+            continue;
+        const auto dest = trackOutputLayout(mix, track);
+        require(!(squareSurroundLayout(track.layout) && squareSurroundLayout(dest) && track.layout != dest),
+                "Side and Rear buses require an explicit role map");
+        std::set<juce::String> destinations;
+        for (const auto &send : track.sends)
+        {
+            require(send.id.isNotEmpty() && sendIds.insert(send.id).second && send.destination != track.id &&
+                        send.destination != track.output && destinations.insert(send.destination).second &&
+                        std::isfinite(send.levelDb) && send.levelDb >= -90 && send.levelDb <= 12 &&
+                        send.roles.size() <= 16,
+                    "Invalid or duplicate send route");
+            const auto &bus = needed(mix, send.destination);
+            require(bus.kind == TrackKind::fxReturn || bus.kind == TrackKind::groupBus,
+                    "Send destination must be a Group or FX Return");
+            (void)sendMatrix(track, send, bus.layout, track.pan, track.azimuth, track.width, track.surroundXY);
+        }
+    }
+    std::function<void(const DesignTrack &)> visit = [&](const DesignTrack &track)
+    {
+        auto &colour = state[track.id];
+        require(colour != 1, "Mixer routing would form a cycle");
+        if (colour == 2)
+            return;
+        colour = 1;
+        if (track.output.isNotEmpty())
+            visit(needed(mix, track.output));
+        for (const auto &send : track.sends)
+            visit(needed(mix, send.destination));
+        colour = 2;
+    };
+    for (const auto &track : mix.tracks)
+        visit(track);
 }
 bool trackAudible(const DesignMix &m, const juce::String &id)
 {
@@ -507,6 +626,14 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
             out.push_back(
                 {{{}, "azimuth"}, "Track Controls", "Azimuth", "degrees", -180, 180, track->azimuth});
             out.push_back({{{}, "width"}, "Track Controls", "Width", "degrees", 0, 360, track->width});
+        }
+        for (const auto &send : track->sends)
+        {
+            const auto *destination = findTrack(m, send.destination);
+            auto group = "Send to " + (destination ? destination->name : send.destination);
+            out.push_back({{send.id, "send-level"}, group, "Send Level", "dB", -90, 12, send.levelDb});
+            out.push_back({{send.id, "send-enable"}, group, "Send Enable", {}, 0, 1,
+                           send.enabled ? 1. : 0., false, true});
         }
     }
     if (track && track->instrument && track->instrument->version == 1 &&
@@ -912,6 +1039,7 @@ void validateTracks(const DesignMix &m, double rate)
     }
     for (auto &l : m.layers)
         require(needed(m, l.trackId).kind == TrackKind::audio, "Audio clips require an Audio Track");
+    validateMixerRoutes(m);
     auto lane = [&](const AutomationLane &a, const juce::String &owner)
     {
         require(a.curves.size() <= 256, "Too many automation targets");
@@ -966,7 +1094,7 @@ void validateTracks(const DesignMix &m, double rate)
 juce::var tracksToJson(const DesignMix &m)
 {
     auto v = obj();
-    put(v, "version", 1);
+    put(v, "version", hasMixerRouting(m) ? 2 : 1);
     put(v, "overlap", "sum-independent-clips-v1");
     put(v, "automationClock", "project-frames-v1");
     put(v, "masterAutomation", laneJson(m.masterAutomation));
@@ -991,6 +1119,32 @@ juce::var tracksToJson(const DesignMix &m)
         put(x, "width", t.width);
         if (t.surroundXY)
             put(x, "surroundXY", squareSurroundJson(*t.surroundXY));
+        if (!t.sends.empty())
+        {
+            juce::Array<juce::var> sends;
+            for (const auto &send : t.sends)
+            {
+                auto row = obj();
+                put(row, "id", send.id);
+                put(row, "destination", send.destination);
+                put(row, "levelDb", send.levelDb);
+                put(row, "enabled", send.enabled);
+                put(row, "postFader", send.postFader);
+                put(row, "followPan", send.followPan);
+                juce::Array<juce::var> roles;
+                for (const auto &role : send.roles)
+                {
+                    auto map = obj();
+                    put(map, "source", role.source);
+                    put(map, "destination", role.destination);
+                    put(map, "gainDb", role.gainDb);
+                    roles.add(map);
+                }
+                put(row, "roles", roles);
+                sends.add(row);
+            }
+            put(x, "sends", sends);
+        }
         put(x, "insertChain", insertChainToJson(t.inserts));
         if (t.midiInputUID.isNotEmpty())
         {
@@ -1024,7 +1178,8 @@ juce::var tracksToJson(const DesignMix &m)
 }
 void tracksFromJson(DesignMix &m, const juce::var &v)
 {
-    require((int)v["version"] == 1 && v["overlap"].toString() == "sum-independent-clips-v1" &&
+    const int version = (int)v["version"];
+    require((version == 1 || version == 2) && v["overlap"].toString() == "sum-independent-clips-v1" &&
                 v["automationClock"].toString() == "project-frames-v1",
             "Unsupported multitrack processing contract");
     require(v["tracks"].isArray() && v["tracks"].size() <= maxDesignTracks, "Invalid track list");
@@ -1050,6 +1205,27 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
         t.width = (double)x["width"];
         if (x.hasProperty("surroundXY"))
             t.surroundXY = squareSurroundFromJson(x["surroundXY"]);
+        if (x.hasProperty("sends"))
+        {
+            const auto sends = x["sends"];
+            require(version == 2 && sends.isArray() && sends.size() > 0 && sends.size() <= 8,
+                    "Invalid versioned send list");
+            for (const auto &row : *sends.getArray())
+            {
+                const auto roles = row["roles"];
+                require(row["id"].isString() && row["destination"].isString() &&
+                            (row["levelDb"].isDouble() || row["levelDb"].isInt()) && row["enabled"].isBool() &&
+                            row["postFader"].isBool() && row["followPan"].isBool() && roles.isArray() &&
+                            roles.size() <= 16,
+                        "Invalid send configuration");
+                MixerSend send{row["id"].toString(), row["destination"].toString(), (double)row["levelDb"],
+                               (bool)row["enabled"], (bool)row["postFader"], (bool)row["followPan"], {}};
+                for (const auto &map : *roles.getArray())
+                    send.roles.push_back({map["source"].toString(), map["destination"].toString(),
+                                          (double)map["gainDb"]});
+                t.sends.push_back(std::move(send));
+            }
+        }
         t.inserts = insertChainFromJson(x["insertChain"]);
         if (x.hasProperty("input"))
         {
@@ -1078,6 +1254,7 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
         t.automation = laneFrom(x["automation"]);
         m.tracks.push_back(std::move(t));
     }
+    require((version == 2) == hasMixerRouting(m), "Mixer routing version mismatch");
 }
 } // namespace sp
 

@@ -107,6 +107,8 @@ void runOrderedInsertTests(const juce::File &, const juce::File &, const juce::F
 void runRegistryWriter(const juce::File &, const juce::File &, const juce::File &);
 void runPluginTakeTests(const juce::File &, const juce::File &, const juce::File &);
 void runOrderedCorrectionTests(const juce::File &, const juce::File &);
+void runMixerGraphTests(const juce::File &);
+void runMixerStemTests(const juce::File &);
 int main(int argc, char **argv)
 {
     try
@@ -114,6 +116,16 @@ int main(int argc, char **argv)
         if (argc >= 4 && juce::String(argv[1]) == "--collection-scale")
         {
             runCollectionScale(juce::File(argv[2]), juce::File(argv[3]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--mixer-stems")
+        {
+            runMixerStemTests(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--mixer-graph")
+        {
+            runMixerGraphTests(juce::File(argv[2]));
             return 0;
         }
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-native-effects-ui")

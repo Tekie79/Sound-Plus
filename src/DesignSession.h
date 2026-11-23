@@ -228,6 +228,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void dragSeek(int64_t);
     void endSeekGesture();
     void render(bool selection = false, int pad = -1);
+    void renderStems(juce::StringArray owners);
     void copyOriginal(const juce::File &);
     void transferInsert(const juce::String &sourceOwner, InsertRef, const juce::String &targetOwner,
                         bool move);
@@ -429,6 +430,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void refreshRecoveries();
     void schedulePreview(const juce::String &mode = "play");
     void timerCallback() override;
-    void startOutput(DesignDocument, bool, const juce::File &, juce::String kind = "design-render");
+    void startOutput(DesignDocument, bool, const juce::File &, juce::String kind = "design-render",
+                     juce::StringArray stems = {});
 };
 } // namespace sp

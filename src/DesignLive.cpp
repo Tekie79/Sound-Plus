@@ -295,6 +295,11 @@ juce::String designStructure(const DesignDocument &document)
             if (auto *square = track["surroundXY"].getDynamicObject())
                 for (auto key : {"x", "y", "spread"})
                     square->removeProperty(key);
+            auto sends = track["sends"];
+            if (auto *rows = sends.getArray())
+                for (auto &send : *rows)
+                    for (auto key : {"enabled", "levelDb"})
+                        send.getDynamicObject()->removeProperty(key);
             stripChain(track["insertChain"], document.liveInserts);
             if (auto *instrument = track["instrument"].getDynamicObject())
             {
@@ -382,6 +387,19 @@ juce::var designParameters(const DesignDocument &base, bool resolve)
             o->setProperty("spatial", track.spatial);
             o->setProperty("azimuth", track.azimuth);
             o->setProperty("width", track.width);
+            if (!track.sends.empty())
+            {
+                juce::Array<juce::var> sends;
+                for (const auto &send : track.sends)
+                {
+                    auto *entry = new juce::DynamicObject();
+                    entry->setProperty("id", send.id);
+                    entry->setProperty("enabled", send.enabled);
+                    entry->setProperty("levelDb", send.levelDb);
+                    sends.add(juce::var(entry));
+                }
+                o->setProperty("sendControls", sends);
+            }
             if (track.surroundXY)
                 o->setProperty("surroundXY", squareSurroundJson(*track.surroundXY));
             o->setProperty("automation", automationLaneJson(track.automation));
@@ -484,6 +502,19 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
             track->spatial = (bool)v["spatial"];
             track->azimuth = (double)v["azimuth"];
             track->width = (double)v["width"];
+            auto values = v["sendControls"];
+            if ((size_t)values.size() != track->sends.size())
+                throw std::runtime_error("Send assignments require graph preparation");
+            for (size_t i = 0; i < track->sends.size(); ++i)
+            {
+                auto row = values[(int)i];
+                auto &send = track->sends[i];
+                if (row["id"].toString() != send.id || !row["enabled"].isBool() ||
+                    !(row["levelDb"].isDouble() || row["levelDb"].isInt()))
+                    throw std::runtime_error("Invalid live send control");
+                send.enabled = (bool)row["enabled"];
+                send.levelDb = (double)row["levelDb"];
+            }
             if (track->surroundXY.has_value() != v.hasProperty("surroundXY"))
                 throw std::runtime_error("Changing square panning policy requires graph preparation");
             if (track->surroundXY)

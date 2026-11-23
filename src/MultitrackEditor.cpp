@@ -662,15 +662,17 @@ void MultitrackEditor::addTrackMenu(juce::Component &anchor)
     m.addItem(2, "Folder");
     m.addItem(3, "Group Bus");
     m.addItem(4, "MIDI Track");
+    m.addItem(5, "FX Return");
     juce::Component::SafePointer<MultitrackEditor> safe(this);
     m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
                     [safe](int n)
                     {
-                        if (safe && n >= 1 && n <= 4)
+                        if (safe && n >= 1 && n <= 5)
                             safe->createTrack(n == 1   ? TrackKind::audio
                                               : n == 2 ? TrackKind::folder
                                               : n == 3 ? TrackKind::groupBus
-                                                       : TrackKind::midiInstrument);
+                                              : n == 4 ? TrackKind::midiInstrument
+                                                       : TrackKind::fxReturn);
                     });
 }
 void MultitrackEditor::selectTrack(const juce::String &id)
@@ -770,7 +772,7 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
     m.addSubMenu("Folder membership", parent);
     if (t->kind != TrackKind::folder)
         m.addSubMenu("Audio output", output);
-    if (t->kind == TrackKind::audio || t->kind == TrackKind::groupBus || t->kind == TrackKind::midiInstrument)
+    if (t->kind != TrackKind::folder)
     {
         juce::PopupMenu layout;
         int n = 300;

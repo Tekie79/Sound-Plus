@@ -1,0 +1,238 @@
+#include "DesignAudio.h"
+#include "DesignLive.h"
+#include "TrackModel.h"
+#include "NativeEffects.h"
+#include <iostream>
+
+namespace
+{
+using namespace sp;
+void require(bool okay, const char *message)
+{
+    if (!okay)
+        throw std::runtime_error(message);
+}
+void reject(const std::function<void()> &test, const char *message)
+{
+    try { test(); }
+    catch (const std::exception &) { return; }
+    throw std::runtime_error(message);
+}
+juce::AudioBuffer<float> render(const DesignDocument &doc, int block = 512)
+{
+    DesignGraph graph(doc);
+    juce::AudioBuffer<float> result(designLayout(doc).size(), 4096);
+    for (int offset = 0; offset < result.getNumSamples(); offset += block)
+        graph.render(result, offset, std::min(block, result.getNumSamples() - offset));
+    return result;
+}
+void compare(const juce::AudioBuffer<float> &base, const juce::AudioBuffer<float> &actual,
+             const std::function<double(int)> &scale, const char *message)
+{
+    double error = 0, peak = 0;
+    for (int c = 0; c < base.getNumChannels(); ++c)
+        for (int n = 0; n < base.getNumSamples(); ++n)
+        {
+            auto expected = base.getSample(c, n) * scale(n);
+            error = std::max(error, std::abs(actual.getSample(c, n) - expected));
+            peak = std::max(peak, std::abs((double)base.getSample(c, n)));
+        }
+    if (error >= 3e-6 || peak <= .025)
+    {
+        std::cerr << "error " << error << ", peak " << peak << "\n";
+        throw std::runtime_error(message);
+    }
+}
+} // namespace
+
+void runMixerGraphTests(const juce::File &root)
+{
+    juce::ScopedJuceInitialiser_GUI initialise;
+    auto work = root.getChildFile(juce::Uuid().toString());
+    work.createDirectory();
+    for (auto rate : {44100, 48000, 96000})
+    {
+        const auto source = work.getChildFile("impulse-" + juce::String(rate) + ".wav");
+        {
+            juce::WavAudioFormat format;
+            auto stream = source.createOutputStream();
+            std::unique_ptr<juce::AudioFormatWriter> writer(
+                format.createWriterFor(stream.release(), rate, 2, 24, {}, 0));
+            juce::AudioBuffer<float> pcm(2, 8192);
+            pcm.clear();
+            pcm.setSample(0, 900, .25f);
+            pcm.setSample(1, 907, -.125f);
+            pcm.setSample(0, 1400, .2f);
+            pcm.setSample(0, 3500, -.2f);
+            pcm.setSample(1, 3800, .18f);
+            require(writer && writer->writeFromAudioSampleBuffer(pcm, 0, pcm.getNumSamples()),
+                    "Independent PCM fixture creation");
+        }
+        DesignDocument dry;
+        dry.sampleRate = rate;
+        dry.original.layout = channelLayout("stereo-v1");
+        dry.original.masterDb = 0;
+        const auto track = addTrack(dry.original, TrackKind::audio);
+        auto clip = makeDesignLayer(inspectDesignSource(source), 0, 8192, true);
+        initialiseRouting(clip, dry.original.layout);
+        clip.fadeIn = clip.fadeOut = 0;
+        dry.original.layers.push_back(std::move(clip));
+        attachClip(dry, dry.original.layers.back(), track);
+        const auto oracle = render(dry);
+        require(oracle.getMagnitude(0, 900, 1) > .24f && oracle.getMagnitude(1, 907, 1) > .12f,
+                "Dry impulses maintain exact independent sample origin and channels");
+        const auto historical = juce::JSON::toString(designToJson(dry), true);
+
+        auto wet = dry;
+        const auto group = addTrack(wet.original, TrackKind::groupBus);
+        const auto aux = addTrack(wet.original, TrackKind::fxReturn);
+        auto *sender = findTrack(wet.original, track);
+        sender->volumeDb = -6;
+        sender->sends.emplace_back().destination = aux;
+        auto &send = sender->sends.front();
+        send.levelDb = -12;
+        const double dryGain = std::pow(10., -6. / 20.), sendGain = std::pow(10., -12. / 20.);
+        routeTrack(wet.original, track, group);
+        compare(oracle, render(wet), [&](int) { return dryGain; }, "Disabled send remains silent");
+        send.enabled = true;
+        auto &rack = findTrack(wet.original, aux)->inserts;
+        rack.stock.push_back(makeStockEffect("peak-limiter"));
+        normaliseInsertChain(rack);
+        for (const auto block : {1, 32, 61, 257, 512})
+            compare(oracle, render(wet, block), [&](int) { return dryGain * (1. + sendGain); },
+                    "Post-fader branch sums once and stays sample-aligned for every partition");
+        send.postFader = false;
+        compare(oracle, render(wet), [&](int) { return dryGain + sendGain; }, "Pre-fader ignores source volume");
+        sender->solo = true;
+        compare(oracle, render(wet), [&](int) { return dryGain + sendGain; }, "Solo source retains send return");
+        sender->solo = false;
+        findTrack(wet.original, aux)->solo = true;
+        compare(oracle, render(wet), [&](int) { return sendGain; }, "Solo return isolates wet with feeder");
+        findTrack(wet.original, aux)->solo = false;
+        findTrack(wet.original, aux)->mute = true;
+        compare(oracle, render(wet), [&](int) { return dryGain; }, "Muting return retains dry route");
+        findTrack(wet.original, aux)->mute = false;
+        sender->mute = true;
+        require(render(wet).getMagnitude(0, 4096) == 0.f, "Mute silences the pre tap and main edge");
+        sender->mute = false;
+
+        auto cyclic = wet;
+        findTrack(cyclic.original, aux)->sends.emplace_back().destination = group;
+        findTrack(cyclic.original, group)->sends.emplace_back().destination = aux;
+        reject([&] { validateDesign(cyclic); }, "Cross-edge cycle rejected");
+        auto dangling = wet;
+        findTrack(dangling.original, track)->sends.front().destination = "missing";
+        reject([&] { validateDesign(dangling); }, "Dangling send rejected");
+        auto duplicates = wet;
+        findTrack(duplicates.original, track)->sends.emplace_back().destination = aux;
+        reject([&] { validateDesign(duplicates); }, "Duplicate destination rejected");
+        DesignTrack side;
+        side.layout = channelLayout("5.1-side-v1");
+        reject([&] { (void)sendMatrix(side, send, channelLayout("5.1-rear-v1"), 0, 0, 0, {}); },
+               "Side to Rear requires explicit named map");
+
+        const auto sendId = send.id;
+        addAutomationPoint(wet.original, track, {sendId, "send-enable"}, 0, 0, rate);
+        addAutomationPoint(wet.original, track, {sendId, "send-enable"}, 1200, 1, rate);
+        addAutomationPoint(wet.original, track, {sendId, "send-level"}, 0, -12, rate);
+        compare(oracle, render(wet, 61), [&](int n) { return dryGain + (n >= 1200 ? sendGain : 0.); },
+                "Hidden send automation is applied at the exact frame");
+        require((int)designToJson(wet)["version"] == 20, "Explicit new mixer manifest");
+        auto file = work.getChildFile("mixer-" + juce::String(rate) + ".soundplus");
+        saveDesignAtomic(file, wet);
+        auto restored = loadDesign(file);
+        compare(render(wet), render(restored, 61), [](int) { return 1.; }, "Project reopen preserves mixer PCM");
+        require(findTrack(restored.original, track)->sends[0].id == sendId, "Stable send ID survives reload");
+        auto take = freezeTake(wet, "Mixer take");
+        require((int)takeToJson(take)["recipe"]["recipeVersion"] == 11, "Explicit mixer take version");
+        auto recalled = takeFromJson(takeToJson(take));
+        require(recalled.recipeHash == take.recipeHash && hasMixerRouting(recalled.recipe),
+                "Frozen mixer recipe authority survives decode");
+        deleteTrack(restored.original, aux);
+        require(findTrack(restored.original, track)->sends.empty() &&
+                    automationCurve(findTrack(restored.original, track)->automation, {sendId, "send-level"}),
+                "Return deletion detaches routes and preserves orphan curve identity");
+        require(juce::JSON::toString(designToJson(dry), true) == historical, "Legacy no-send JSON unchanged");
+        std::cout << rate << " Hz: five partitions, exact gain/tap/solo/role/automation, save/reopen and frozen recipe\n";
+    }
+}
+
+void runMixerStemTests(const juce::File &root)
+{
+    juce::ScopedJuceInitialiser_GUI initialise;
+    auto work = root.getChildFile(juce::Uuid().toString());
+    work.createDirectory();
+    DesignDocument doc;
+    doc.original.layout = channelLayout("stereo-v1");
+    doc.renderSettings.layout = "same";
+    doc.renderSettings.tailSeconds = .125;
+    doc.original.masterDb = -18;
+    doc.original.inserts.stock.push_back(makeStockEffect("peak-limiter"));
+    auto sourceTrack = addTrack(doc.original, TrackKind::audio);
+    auto group = addTrack(doc.original, TrackKind::groupBus);
+    auto aux = addTrack(doc.original, TrackKind::fxReturn);
+    auto &source = *findTrack(doc.original, sourceTrack);
+    source.output = group;
+    source.sends.emplace_back().destination = aux;
+    source.sends.front().levelDb = -6;
+    source.sends.front().enabled = true;
+    findTrack(doc.original, group)->name = findTrack(doc.original, aux)->name = "Repeated name";
+    auto file = work.getChildFile("stereo.wav");
+    {
+        juce::WavAudioFormat wav;
+        std::unique_ptr<juce::AudioFormatWriter> writer(wav.createWriterFor(
+            file.createOutputStream().release(), 48000, 2, 24, {}, 0));
+        juce::AudioBuffer<float> pcm(2, 8192);
+        pcm.clear();
+        pcm.setSample(0, 900, .25f);
+        pcm.setSample(1, 1500, -.125f);
+        require(writer && writer->writeFromAudioSampleBuffer(pcm, 0, 8192), "Publish input fixture");
+    }
+    auto clip = makeDesignLayer(inspectDesignSource(file), 0, 8192, true);
+    initialiseRouting(clip, doc.original.layout);
+    clip.fadeIn = clip.fadeOut = 0;
+    doc.original.layers.push_back(std::move(clip));
+    attachClip(doc, doc.original.layers.back(), sourceTrack);
+    const auto outputFolder = work.getChildFile("Outputs");
+    const auto quit = [] { return false; };
+    const auto progress = [](double) {};
+    reject([&] { renderMixerStems(doc, outputFolder, {group, sourceTrack}, quit, progress); },
+           "Group and child cannot claim an overlapping batch");
+    auto outputs = renderMixerStems(doc, outputFolder, {group, aux}, quit, progress);
+    require(outputs.size() == 2 && outputs[0].path != outputs[1].path, "Unique files for duplicate strip names");
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    constexpr double wet = .5011872336272722;
+    for (int i = 0; i < 2; ++i)
+    {
+        auto path = juce::File(outputs[(size_t)i].path);
+        std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(path));
+        require(reader && reader->lengthInSamples == 8192 + 6000 && reader->sampleRate == 48000 &&
+                    reader->numChannels == 2 && reader->bitsPerSample == 24,
+                "Common sample origin, duration, tail, layout and depth");
+        juce::AudioBuffer<float> pcm(2, 8192);
+        reader->read(&pcm, 0, 8192, 0, true, true);
+        const auto gain = i == 0 ? 1. : wet;
+        for (int n = 0; n < 8192; ++n)
+            require(std::abs(pcm.getSample(0, n) - (n == 900 ? .25 * gain : 0.)) < 2e-7 &&
+                        std::abs(pcm.getSample(1, n) - (n == 1500 ? -.125 * gain : 0.)) < 2e-7,
+                    "Pre-Master PCM, exact impulse alignment and independent route gain");
+    }
+    auto receipt = juce::File(outputs.front().sourceProvenance["receipt"].toString());
+    auto json = juce::JSON::parse(receipt);
+    require(json["files"].size() == 2 && json["files"][0]["sha256"] == juce::var(outputs[0].sha256),
+            "Complete directory receipt commits both WAV fingerprints");
+    auto before = receipt.loadFileAsString();
+    bool cancel = false;
+    reject([&] { renderMixerStems(doc, outputFolder, {group, aux}, [&] { return cancel; },
+                                [&](double) { cancel = true; }); },
+           "Cancelled batch does not publish");
+    require(receipt.loadFileAsString() == before && outputFolder.getNumberOfChildFiles(
+                    juce::File::findDirectories, "*") == 1,
+            "Failed batch cleans staging and preserves the earlier output");
+    doc.outputs = outputs;
+    auto saved = work.getChildFile("stem-receipt.soundplus");
+    saveDesignAtomic(saved, doc);
+    require(loadDesign(saved).outputs.size() == 2, "Every stem persists in the project output receipt list");
+    std::cout << "Aligned pre-Master stems: exact impulse PCM, common tail, receipt, cancellation and reopen\n";
+}

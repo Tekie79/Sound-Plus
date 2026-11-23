@@ -681,6 +681,16 @@ struct DesignGraph::Impl
     int pipelineLatency = 0, pipelineDependencies = 0;
     bool primed = false;
     juce::AudioBuffer<float> block{2, 512};
+    struct SendEdge
+    {
+        int destination = -1, delay = 0, position = 0;
+        juce::AudioBuffer<float> alignment;
+        std::array<std::array<juce::SmoothedValue<float>, 16>, 16> pan;
+        juce::SmoothedValue<float> level;
+        AutomationTarget levelTarget, enableTarget;
+        bool levelAutomated = false;
+        bool audible = true;
+    };
     struct TrackNode
     {
         DesignTrack track;
@@ -699,9 +709,11 @@ struct DesignGraph::Impl
         MixerMeter meter;
         ChannelMatrix legacyConversion{};
         bool legacyInput = false;
-        bool audible = true, volumeAutomated = false;
+        bool audible = true, mainAudible = true, volumeAutomated = false;
+        std::vector<SendEdge> sends;
         int destination = -1, inputLatency = 0, outputLatency = -1, inputDependencies = 0,
             outputDependencies = 0, alignFrames = 0, alignPosition = 0;
+        int stem = -1;
         juce::SmoothedValue<float> gain;
     };
     std::vector<std::unique_ptr<TrackNode>> tracks;
@@ -709,6 +721,131 @@ struct DesignGraph::Impl
     std::unique_ptr<CompiledAutomation> masterAutomation;
     int masterInputLatency = 0;
     MixerMeter masterMeter;
+    struct StemTap
+    {
+        ChannelMatrix numbering{};
+        juce::AudioBuffer<float> history, pcm;
+        int delay = 0, index = 0;
+    };
+    std::vector<StemTap> stemTaps;
+    void prepareStemTaps(const juce::StringArray &owners, const ChannelLayout &delivery)
+    {
+        size_t samples = 0;
+        stemTaps.reserve((size_t)owners.size());
+        for (const auto &owner : owners)
+        {
+            auto found = std::find_if(tracks.begin(), tracks.end(), [&](const auto &node)
+            { return node->track.id == owner; });
+            if (found == tracks.end())
+                throw std::runtime_error("Choose an audio-processing stem owner");
+            auto &node = **found;
+            node.stem = (int)stemTaps.size();
+            auto &tap = stemTaps.emplace_back();
+            tap.numbering = conversionMatrix(node.destinationBus, delivery);
+            const auto receivingTime = node.destination < 0 ? masterInputLatency
+                : tracks[(size_t)node.destination]->inputLatency;
+            tap.delay = pipelineLatency - receivingTime;
+            samples += (size_t)delivery.size() * (tap.delay + 512);
+            if (samples > 48 * 1024 * 1024)
+                throw std::runtime_error("Aligned stems exceed the prepared PCM budget");
+            tap.history.setSize(delivery.size(), tap.delay);
+            tap.history.clear();
+            tap.pcm.setSize(delivery.size(), 512);
+        }
+    }
+    void updateMixerSolo()
+    {
+        const auto &mix = document.activeMix();
+        if (!hasMixerRouting(mix))
+            return;
+        const bool solo = std::any_of(mix.tracks.begin(), mix.tracks.end(), [](const auto &t) { return t.solo; });
+        for (auto &node : tracks)
+        {
+            node->mainAudible = !solo;
+            for (auto &edge : node->sends)
+                edge.audible = !solo;
+        }
+        std::vector<bool> outgoing(tracks.size()), incoming(tracks.size());
+        auto enabled = [](const TrackNode &node, size_t index)
+        {
+            const auto &send = node.track.sends[index];
+            auto *curve = automationCurve(node.track.automation, {send.id, "send-enable"});
+            return send.enabled || (curve && curve->read && !curve->points.empty());
+        };
+        std::function<void(int)> forward = [&](int index)
+        {
+            if (index < 0 || outgoing[(size_t)index])
+                return;
+            outgoing[(size_t)index] = true;
+            auto &node = *tracks[(size_t)index];
+            node.mainAudible = true;
+            forward(node.destination);
+            for (size_t i = 0; i < node.sends.size(); ++i)
+                if (enabled(node, i))
+                {
+                    node.sends[i].audible = true;
+                    forward(node.sends[i].destination);
+                }
+        };
+        std::function<void(int, bool)> backward = [&](int index, bool feedAux)
+        {
+            if (incoming[(size_t)index])
+                return;
+            incoming[(size_t)index] = true;
+            for (size_t i = 0; i < tracks.size(); ++i)
+            {
+                auto &source = *tracks[i];
+                if (source.destination == index)
+                {
+                    source.mainAudible = true;
+                    if (feedAux)
+                        forward((int)i);
+                    backward((int)i, feedAux);
+                }
+                for (size_t s = 0; s < source.sends.size(); ++s)
+                    if (source.sends[s].destination == index && enabled(source, s))
+                    {
+                        source.sends[s].audible = true;
+                        backward((int)i, false);
+                    }
+            }
+        };
+        if (solo)
+            for (size_t i = 0; i < tracks.size(); ++i)
+            {
+                auto &t = tracks[i]->track;
+                bool selected = t.solo;
+                for (auto parent = t.parent; parent.isNotEmpty();)
+                {
+                    auto *folder = findTrack(mix, parent);
+                    selected |= folder->solo;
+                    parent = folder->parent;
+                }
+                if (selected)
+                {
+                    forward((int)i);
+                    backward((int)i, t.kind == TrackKind::groupBus);
+                }
+            }
+        for (auto &node : tracks)
+        {
+            bool audible = !node->track.mute && (node->mainAudible || std::any_of(
+                node->sends.begin(), node->sends.end(), [](const auto &edge) { return edge.audible; }));
+            for (auto parent = node->track.parent; parent.isNotEmpty();)
+            {
+                auto *folder = findTrack(mix, parent);
+                audible &= !folder->mute;
+                parent = folder->parent;
+            }
+            if (node->audible && !audible)
+            {
+                node->panic = true;
+                if (node->sampler)
+                    node->sampler->allNotesOff(true);
+            }
+            node->audible = audible;
+        }
+    }
     void prepareTracks(bool fixed, const std::function<bool()> &cancelled)
     {
         auto &mix = document.activeMix();
@@ -807,6 +944,31 @@ struct DesignGraph::Impl
                                                                   node->track.surroundXY ? .01 : .005);
                     node->matrixGains[(size_t)c][(size_t)k].setCurrentAndTargetValue(matrix[c][k]);
                 }
+            node->sends.reserve(node->track.sends.size());
+            for (const auto &send : node->track.sends)
+            {
+                auto &edge = node->sends.emplace_back();
+                auto bus = std::find_if(tracks.begin(), tracks.end(), [&](const auto &candidate)
+                { return candidate->track.id == send.destination; });
+                if (bus == tracks.end())
+                    throw std::runtime_error("FX send destination is unavailable");
+                edge.destination = (int)std::distance(tracks.begin(), bus);
+                const auto &layout = (*bus)->bus;
+                auto sendPan = sendMatrix(node->track, send, layout, node->track.pan, node->track.azimuth,
+                                          node->track.width, node->track.surroundXY);
+                edge.level.reset(sampleRate, .005);
+                edge.level.setCurrentAndTargetValue(juce::Decibels::decibelsToGain((float)send.levelDb, -90.f));
+                edge.levelTarget = {send.id, "send-level"};
+                edge.enableTarget = {send.id, "send-enable"};
+                const auto *curve = automationCurve(node->track.automation, edge.levelTarget);
+                edge.levelAutomated = curve && curve->read;
+                for (int c = 0; c < layout.size(); ++c)
+                    for (int k = 0; k < node->bus.size(); ++k)
+                    {
+                        edge.pan[c][k].reset(sampleRate, node->track.surroundXY ? .01 : .005);
+                        edge.pan[c][k].setCurrentAndTargetValue(sendPan[c][k]);
+                    }
+            }
         }
         std::function<int(int)> latency = [&](int index)
         {
@@ -814,7 +976,8 @@ struct DesignGraph::Impl
             if (node.outputLatency >= 0)
                 return node.outputLatency;
             for (size_t i = 0; i < tracks.size(); ++i)
-                if (tracks[i]->destination == index)
+                if (tracks[i]->destination == index || std::any_of(tracks[i]->sends.begin(),
+                    tracks[i]->sends.end(), [&](const auto &edge) { return edge.destination == index; }))
                 {
                     node.inputLatency = std::max(node.inputLatency, latency((int)i));
                     node.inputDependencies = std::max(node.inputDependencies, tracks[i]->outputDependencies);
@@ -845,7 +1008,21 @@ struct DesignGraph::Impl
                 node->alignment.setSize(node->destinationBus.size(), node->alignFrames);
                 node->alignment.clear();
             }
+            for (auto &edge : node->sends)
+            {
+                const auto &destination = *tracks[(size_t)edge.destination];
+                edge.delay = destination.inputLatency - node->outputLatency;
+                allocated += (int64_t)edge.delay * destination.bus.size();
+                if (allocated > 48 * 1024 * 1024 || destination.inputLatency > sampleRate * 8)
+                    throw std::runtime_error("FX send compensation exceeds bounded processing budget");
+                if (edge.delay)
+                {
+                    edge.alignment.setSize(destination.bus.size(), edge.delay);
+                    edge.alignment.clear();
+                }
+            }
         }
+        updateMixerSolo();
         pipelineLatency = masterInputLatency + masterRack->latency();
         pipelineDependencies = 0;
         for (auto &node : tracks)
@@ -863,7 +1040,7 @@ struct DesignGraph::Impl
         {
             n->track = *findTrack(mix, n->track.id);
             n->automation = std::make_unique<CompiledAutomation>(mix, n->track.id);
-            auto audible = trackAudible(mix, n->track.id);
+            auto audible = hasMixerRouting(mix) ? n->audible : trackAudible(mix, n->track.id);
             if (n->audible && !audible)
             {
                 n->panic = true;
@@ -874,14 +1051,22 @@ struct DesignGraph::Impl
             auto *c = automationCurve(n->track.automation, {{}, "volume"});
             n->volumeAutomated = c && c->read;
             n->gain.setTargetValue(juce::Decibels::decibelsToGain((float)n->track.volumeDb));
+            for (size_t i = 0; i < n->sends.size(); ++i)
+            {
+                auto &edge = n->sends[i];
+                edge.level.setTargetValue(juce::Decibels::decibelsToGain((float)n->track.sends[i].levelDb, -90.f));
+                const auto *curve = automationCurve(n->track.automation, edge.levelTarget);
+                edge.levelAutomated = curve && curve->read;
+            }
             n->rack->update(n->track.inserts);
             if (n->sampler && n->track.instrument)
                 n->sampler->update(*n->track.instrument);
             if (n->instrument && n->track.instrument)
                 n->instrument->update(n->track.instrument->hostedInstrument.hosted);
         }
+        updateMixerSolo();
     }
-    void renderTracks(int frames)
+    void renderTracks(int frames, int offset)
     {
         for (auto &node : tracks)
             node->pcm.clear();
@@ -935,7 +1120,8 @@ struct DesignGraph::Impl
                     node.route.azimuth = node.automation->value({{}, "azimuth"}, node.track.azimuth, time);
                     node.route.width = node.automation->value({{}, "width"}, node.track.width, time);
                     auto pan = node.automation->value({{}, "pan"}, node.track.pan, time);
-                    if (auto position = node.track.surroundXY)
+                    auto position = node.track.surroundXY;
+                    if (position)
                     {
                         position->x = node.automation->value(surroundX, position->x, time);
                         position->y = node.automation->value(surroundY, position->y, time);
@@ -955,6 +1141,18 @@ struct DesignGraph::Impl
                     for (int c = 0; c < node.destinationBus.size(); ++c)
                         for (int k = 0; k < node.bus.size(); ++k)
                             node.matrixGains[(size_t)c][(size_t)k].setTargetValue(matrix[c][k]);
+                    for (size_t i = 0; i < node.sends.size(); ++i)
+                    {
+                        auto &edge = node.sends[i];
+                        const auto &send = node.track.sends[i];
+                        if (!send.roles.empty() || (!send.postFader && !send.followPan))
+                            continue;
+                        const auto &bus = tracks[(size_t)edge.destination]->bus;
+                        auto p = sendMatrix(node.track, send, bus, pan, node.route.azimuth, node.route.width, position);
+                        for (int c = 0; c < bus.size(); ++c)
+                            for (int k = 0; k < node.bus.size(); ++k)
+                                edge.pan[c][k].setTargetValue(p[c][k]);
+                    }
                     matrixEnd = n + node.automation->untilBoundary(frame, frames - n);
                     if (motion && motion->release >= 0 && frame < motion->returnEnd)
                         matrixEnd = std::min(matrixEnd, n + (int)(motion->returnEnd - frame));
@@ -963,10 +1161,12 @@ struct DesignGraph::Impl
                                  ? juce::Decibels::decibelsToGain((float)node.automation->value(
                                        {{}, "volume"}, node.track.volumeDb, frame))
                                  : node.gain.getNextValue();
-                if (!node.audible)
+                const float fader = gain;
+                if (!node.audible || !node.mainAudible)
                     gain = 0;
                 std::array<float, 2> inputGain{};
                 std::array<std::array<float, 2>, 6> smoothed;
+                std::array<float, 16> stemInputs{};
                 if (node.track.surroundXY)
                 {
                     for (int k = 0; k < node.bus.size(); ++k)
@@ -997,12 +1197,76 @@ struct DesignGraph::Impl
                         value = delayed;
                     }
                     node.meter.measure(c, value);
+                    if (node.stem >= 0)
+                        stemInputs[c] = value;
                     auto &destination = node.destination < 0 ? block : tracks[(size_t)node.destination]->pcm;
                     destination.addSample(c, n, value);
                 }
                 if (node.alignFrames)
                     node.alignPosition = (node.alignPosition + 1) % node.alignFrames;
                 node.meter.advance(node.destinationBus.size());
+                if (node.stem >= 0)
+                {
+                    auto &tap = stemTaps[(size_t)node.stem];
+                    for (int c = 0; c < tap.pcm.getNumChannels(); ++c)
+                    {
+                        float value = 0;
+                        for (int k = 0; k < node.destinationBus.size(); ++k)
+                            value += tap.numbering[c][k] * stemInputs[k];
+                        if (tap.delay)
+                        {
+                            const auto delayed = tap.history.getSample(c, tap.index);
+                            tap.history.setSample(c, tap.index, value);
+                            value = delayed;
+                        }
+                        tap.pcm.setSample(c, offset + n, value);
+                    }
+                    if (tap.delay)
+                        tap.index = (tap.index + 1) % tap.delay;
+                }
+                for (size_t i = 0; i < node.sends.size(); ++i)
+                {
+                    auto &edge = node.sends[i];
+                    const auto &send = node.track.sends[i];
+                    auto &target = *tracks[(size_t)edge.destination];
+                    const bool enabled = node.automation->value(edge.enableTarget, send.enabled ? 1. : 0., frame) >= .5;
+                    auto level = edge.level.getNextValue();
+                    if (edge.levelAutomated)
+                        level = juce::Decibels::decibelsToGain((float)node.automation->value(
+                                    edge.levelTarget, send.levelDb, frame), -90.f);
+                    level = enabled && node.audible && edge.audible ? level * (send.postFader ? fader : 1.f) : 0.f;
+                    const bool square = node.track.surroundXY && (send.postFader || send.followPan) &&
+                                        send.roles.empty() && squareSurroundLayout(target.bus);
+                    std::array<std::array<float, 2>, 16> pans{};
+                    std::array<float, 2> scales{};
+                    if (square)
+                        for (int k = 0; k < node.bus.size(); ++k)
+                        {
+                            float power = 0;
+                            for (int c = 0; c < target.bus.size(); ++c)
+                            {
+                                pans[c][k] = edge.pan[c][k].getNextValue();
+                                power += pans[c][k] * pans[c][k];
+                            }
+                            scales[k] = power > 0 ? level / std::sqrt(power * node.bus.size()) : 0.f;
+                        }
+                    for (int c = 0; c < target.bus.size(); ++c)
+                    {
+                        float value = 0;
+                        for (int k = 0; k < node.bus.size(); ++k)
+                            value += node.pcm.getSample(k, n) * (square ? pans[c][k] * scales[k]
+                                                                         : edge.pan[c][k].getNextValue() * level);
+                        if (edge.delay > 0)
+                        {
+                            auto delayed = edge.alignment.getSample(c, edge.position);
+                            edge.alignment.setSample(c, edge.position, value);
+                            value = delayed;
+                        }
+                        target.pcm.addSample(c, n, value);
+                    }
+                    if (edge.delay > 0)
+                        edge.position = (edge.position + 1) % edge.delay;
+                }
             }
         }
     }
@@ -1073,7 +1337,8 @@ struct DesignGraph::Impl
         if (auto *t = selectedTake(d);
             t &&
             (t->processing == "advanced-effects-takes-v1" || t->processing == "hosted-automation-takes-v1" ||
-             t->processing == "multi-pad-perform-takes-v1" || t->processing == "square-surround-takes-v1"))
+             t->processing == "multi-pad-perform-takes-v1" || t->processing == "square-surround-takes-v1" ||
+             t->processing == "track-mixer-takes-v1"))
             inputEnd += pipelineDependencies;
         if (auto *t = selectedTake(d);
             t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
@@ -1147,7 +1412,7 @@ struct DesignGraph::Impl
                 lastVerified = cursor;
             }
             if (masterAutomation)
-                renderTracks(n);
+                renderTracks(n, offset + done);
             else
                 for (auto &voice : voices)
                     voice->add(block, 0, n, cursor, inputEnd);
@@ -1970,6 +2235,233 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         throw std::runtime_error("Cannot publish durable WAV");
     progress(1);
     return result;
+}
+std::vector<DesignOutput> renderMixerStems(const DesignDocument &d, const juce::File &folder,
+    const juce::StringArray &owners, const std::function<bool()> &cancelled,
+    const std::function<void(double)> &progress)
+{
+    validateDesign(d);
+    auto input = d;
+    auto &mix = input.activeMix();
+    if (!mix.trackSchema || selectedTake(d) || owners.isEmpty() || owners.size() > maxDesignTracks)
+        throw std::runtime_error("Choose live Audio, MIDI, Group or FX Return stems");
+    std::set<juce::String> unique;
+    bool masterBoundary = true;
+    for (const auto &owner : owners)
+    {
+        auto *track = findTrack(mix, owner);
+        if (!track || track->kind == TrackKind::folder || !unique.insert(owner).second)
+            throw std::runtime_error("A stem needs a unique audio owner");
+        masterBoundary &= track->output.isEmpty();
+        for (auto parent = track->output; parent.isNotEmpty();)
+        {
+            if (owners.contains(parent))
+                throw std::runtime_error("Choose a Group or its children for one stem batch");
+            parent = findTrack(mix, parent)->output;
+        }
+    }
+    // Keep the complete upstream graph and Perform controls. Master-only inserts
+    // and gain are outside the tap and cannot change stems or delay their origin.
+    mix.inserts = {};
+    mix.masterDb = 0;
+    auto settings = input.renderSettings;
+    settings.normalize = settings.splitMono = false;
+    auto delivery = exportLayout(input, settings);
+    settings.channels = delivery.size();
+    settings.layout = delivery.id;
+    const auto first = settings.first;
+    const auto end = settings.last < 0 ? mixDuration(mix, d.sampleRate) : settings.last;
+    const auto projectFrames = end - first + (int64_t)std::llround(settings.tailSeconds * d.sampleRate);
+    const auto frames = (int64_t)std::ceil((long double)projectFrames * settings.sampleRate / d.sampleRate);
+    if (first < 0 || end <= first || frames < 1 || (long double)frames * settings.channels * (settings.bits / 8) >=
+            4293918720.L)
+        throw std::runtime_error("Invalid or oversized stem range");
+    verifyMixImpulses(mix, cancelled);
+    DesignGraph graph(input, cancelled);
+    graph.impl->prepareStemTaps(owners, delivery);
+    graph.impl->inputEnd = end + graph.impl->pipelineDependencies;
+    graph.seek(first, cancelled);
+
+    const auto batch = juce::Uuid().toString();
+    if (!folder.createDirectory())
+        throw std::runtime_error("Cannot create permanent stem folder");
+    auto target = folder.getChildFile("Stems-" + batch);
+    struct Stage
+    {
+        juce::File path;
+        bool published = false;
+        ~Stage() { if (!published) path.deleteRecursively(); }
+    } stage{folder.getChildFile(".stem-stage-" + batch)};
+    if (!stage.path.createDirectory())
+        throw std::runtime_error("Cannot create stem staging folder");
+    const auto order = wavOrder(delivery);
+    juce::WavAudioFormat format;
+    std::vector<std::unique_ptr<juce::AudioFormatWriter>> writers;
+    std::vector<DesignOutput> outputs;
+    std::vector<juce::File> files;
+    auto stemName = [&](int index)
+    {
+        const auto &track = *findTrack(mix, owners[index]);
+        return juce::String(index + 1).paddedLeft('0', 2) + " " +
+               juce::File::createLegalFileName(track.name).substring(0, 80) + ".wav";
+    };
+    for (int i = 0; i < owners.size(); ++i)
+    {
+        const auto filename = stemName(i);
+        auto file = stage.path.getChildFile(filename);
+        juce::StringPairArray description;
+        description.set(juce::WavAudioFormat::bwavDescription, "SoundPlus pre-Master | " + delivery.id);
+        auto *writer = format.createWriterFor(file.createOutputStream().release(), settings.sampleRate,
+                                              juceChannelSet(delivery), settings.bits, description, 0);
+        if (!writer)
+            throw std::runtime_error("Cannot open stem WAV writer");
+        writers.emplace_back(writer);
+        files.push_back(file);
+        auto &output = outputs.emplace_back();
+        output.kind = "track-stem-pre-master";
+        output.processing = "track-mixer-stems-v1";
+        output.path = target.getChildFile(filename).getFullPathName();
+        output.samples = frames;
+        output.revision = d.revision;
+        output.variation = d.activeVariation;
+        output.created = juce::Time::getCurrentTime().toISO8601(true);
+        output.settings = settings;
+        auto *channels = new juce::DynamicObject();
+        channels->setProperty("version", 1);
+        channels->setProperty("design", layoutJson(designLayout(d)));
+        channels->setProperty("export", layoutJson(delivery));
+        output.channelProvenance = juce::var(channels);
+        auto *receipt = new juce::DynamicObject();
+        receipt->setProperty("batch", batch);
+        receipt->setProperty("owner", owners[i]);
+        receipt->setProperty("receipt", target.getChildFile("stems.json").getFullPathName());
+        output.sourceProvenance = juce::var(receipt);
+    }
+
+    struct Source final : juce::AudioSource
+    {
+        std::function<void(const juce::AudioSourceChannelInfo &)> read;
+        void prepareToPlay(int, double) override {}
+        void releaseResources() override {}
+        void getNextAudioBlock(const juce::AudioSourceChannelInfo &info) override { read(info); }
+    } source;
+    juce::AudioBuffer<float> discard(designLayout(input).size(), 512);
+    int64_t consumed = 0;
+    source.read = [&](const juce::AudioSourceChannelInfo &info)
+    {
+        for (int offset = 0; offset < info.numSamples;)
+        {
+            if (cancelled())
+                throw QueryCancelled();
+            const int count = std::min(512, info.numSamples - offset);
+            const auto valid = (int)juce::jlimit<int64_t>(0, count, projectFrames - consumed);
+            if (valid)
+                graph.render(discard, 0, valid);
+            for (size_t i = 0; i < graph.impl->stemTaps.size(); ++i)
+                for (int channel = 0; channel < settings.channels; ++channel)
+                {
+                    const int output = (int)i * settings.channels + channel;
+                    const int at = info.startSample + offset;
+                    if (valid)
+                        info.buffer->copyFrom(output, at, graph.impl->stemTaps[i].pcm,
+                                              order[(size_t)channel], 0, valid);
+                    info.buffer->clear(output, at + valid, count - valid);
+                }
+            consumed += valid;
+            offset += count;
+        }
+    };
+    const int packedChannels = owners.size() * settings.channels;
+    std::unique_ptr<juce::ResamplingAudioSource> resampler;
+    if (settings.sampleRate != d.sampleRate)
+    {
+        resampler = std::make_unique<juce::ResamplingAudioSource>(&source, false, packedChannels);
+        resampler->setResamplingRatio(d.sampleRate / settings.sampleRate);
+        resampler->prepareToPlay(512, settings.sampleRate);
+    }
+    juce::AudioBuffer<float> packed(packedChannels, 512), stem(settings.channels, 512);
+    const auto lsb = std::ldexp(1., 1 - settings.bits);
+    std::mt19937 dither(170526);
+    for (int64_t written = 0; written < frames;)
+    {
+        const auto count = (int)std::min<int64_t>(512, frames - written);
+        juce::AudioSourceChannelInfo request(&packed, 0, count);
+        if (resampler)
+            resampler->getNextAudioBlock(request);
+        else
+            source.getNextAudioBlock(request);
+        for (size_t i = 0; i < writers.size(); ++i)
+        {
+            auto &output = outputs[i];
+            for (int c = 0; c < settings.channels; ++c)
+                for (int n = 0; n < count; ++n)
+                {
+                    double sample = packed.getSample((int)i * settings.channels + c, n);
+                    if (!std::isfinite(sample))
+                        throw std::runtime_error("Nonfinite stem audio");
+                    output.peak = std::max(output.peak, std::abs(sample));
+                    output.clipped += std::abs(sample) > 1;
+                    if (settings.bits < 32)
+                    {
+                        if (settings.dither)
+                            sample += ((double)dither() / dither.max() - (double)dither() / dither.max()) * lsb;
+                        sample = std::round(sample / lsb) * lsb;
+                    }
+                    stem.setSample(c, n, (float)juce::jlimit(-1., 1., sample));
+                }
+            if (!writers[i]->writeFromAudioSampleBuffer(stem, 0, count))
+                throw std::runtime_error("Stem write failed");
+        }
+        written += count;
+        progress(.95 * (double)written / (double)frames);
+    }
+    writers.clear();
+    juce::Array<juce::var> members;
+    juce::AudioFormatManager readers;
+    readers.registerBasicFormats();
+    for (size_t i = 0; i < files.size(); ++i)
+    {
+        if (cancelled())
+            throw QueryCancelled();
+        syncFile(files[i]);
+        std::unique_ptr<juce::AudioFormatReader> reader(readers.createReaderFor(files[i]));
+        if (!reader || reader->lengthInSamples != frames || reader->sampleRate != settings.sampleRate ||
+            reader->numChannels != (unsigned)settings.channels)
+            throw std::runtime_error("Incomplete or inconsistent stem file");
+        outputs[i].sha256 = processingHash(files[i]);
+        auto *item = new juce::DynamicObject();
+        item->setProperty("file", files[i].getFileName());
+        item->setProperty("owner", owners[(int)i]);
+        item->setProperty("sha256", outputs[i].sha256);
+        members.add(juce::var(item));
+    }
+    auto *receipt = new juce::DynamicObject();
+    receipt->setProperty("version", 1);
+    receipt->setProperty("tap", masterBoundary ? "pre-master-edges-v1" : "selected-pre-master-taps-v1");
+    receipt->setProperty("additivity", masterBoundary && !settings.dither
+        ? "Master input before encoding and clipping"
+        : "Individual outputs; overlapping sends, downstream processing or encoding can affect sums");
+    receipt->setProperty("origin", (juce::int64)first);
+    receipt->setProperty("frames", (juce::int64)frames);
+    receipt->setProperty("rate", settings.sampleRate);
+    receipt->setProperty("bits", settings.bits);
+    receipt->setProperty("layout", layoutJson(delivery));
+    receipt->setProperty("files", members);
+    auto receiptFile = stage.path.getChildFile("stems.json");
+    if (!receiptFile.replaceWithText(juce::JSON::toString(juce::var(receipt), true)))
+        throw std::runtime_error("Cannot write complete stem receipt");
+    syncFile(receiptFile);
+    verifyMixImpulses(mix, cancelled);
+    for (const auto &layer : mix.layers)
+        if (!layer.mute)
+            sourceUnchanged(layer.source);
+    if (cancelled())
+        throw QueryCancelled();
+    if (!stage.path.moveFileTo(target))
+        throw std::runtime_error("Cannot publish aligned stem batch");
+    stage.published = true;
+    progress(1);
+    return outputs;
 }
 DesignOutput copyDesignOriginal(const DesignLayer &l, const juce::File &folder, int64_t revision,
                                 const std::function<bool()> &cancelled)

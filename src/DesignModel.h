@@ -188,6 +188,7 @@ enum class TrackKind
     midiInstrument,
     folder,
     groupBus,
+    fxReturn,
     master
 };
 struct AutomationTarget
@@ -234,6 +235,18 @@ struct TrackInput
     std::vector<int> channels;
     ChannelLayout layout;
 };
+struct SendRole
+{
+    juce::String source, destination;
+    double gainDb = 0.;
+};
+struct MixerSend
+{
+    juce::String id = juce::Uuid().toString(), destination;
+    double levelDb = -12.;
+    bool enabled = false, postFader = true, followPan = true;
+    std::vector<SendRole> roles;
+};
 struct DesignTrack
 {
     juce::String id = juce::Uuid().toString(), name = "Audio", parent, output;
@@ -250,6 +263,7 @@ struct DesignTrack
     juce::String midiInputUID;
     int midiChannel = 0;             // All=0, otherwise 1–16. Arm/monitor remain transient.
     std::optional<TrackInput> input; // Configuration only. Arm and monitoring never reopen automatically.
+    std::vector<MixerSend> sends;
 };
 struct DesignMix
 {
