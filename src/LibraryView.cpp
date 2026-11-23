@@ -13,6 +13,155 @@ namespace
 const auto &bg = ui::background, &panel = ui::surface, &line = ui::line, &text = ui::text, &muted = ui::muted,
            &accent = ui::accent;
 const juce::Colour amber{0xffffc384};
+enum MetadataColumn { statusColumn = 5, categoryColumn = 7, descriptionColumn, formatColumn,
+                      depthColumn, sizeColumn, modifiedColumn };
+struct MetadataColumnInfo { int id; const char *name; int width; };
+constexpr MetadataColumnInfo metadataColumnInfo[]{{categoryColumn, "Category", 136},
+                                                  {descriptionColumn, "Description", 210},
+                                                  {formatColumn, "Format", 78},
+                                                  {depthColumn, "Bit Depth", 104},
+                                                  {sizeColumn, "File Size", 96},
+                                                  {modifiedColumn, "Modified", 154},
+                                                  {statusColumn, "Status", 100}};
+constexpr int embeddedColumnWidth = 150;
+juce::String firstTag(const juce::StringPairArray &tags, std::initializer_list<const char *> keys)
+{
+    for (auto *key : keys)
+        if (auto value = tags.getValue(key, {}).trim(); value.isNotEmpty())
+            return value;
+    return {};
+}
+juce::String recordingCategory(const juce::StringPairArray &tags)
+{
+    return firstTag(tags, {"category", "catid", "cat_id", "ucs category", "ICAT", "genre", "GENR", "IGNR"});
+}
+juce::String recordingDescription(const juce::StringPairArray &tags)
+{
+    return firstTag(tags, {"description", juce::WavAudioFormat::bwavDescription, "ICMT", "comment"});
+}
+juce::String fileFormat(const Asset &asset)
+{
+    return asset.name.fromLastOccurrenceOf(".", false, false).toUpperCase();
+}
+juce::String fileModified(const Asset &asset)
+{
+    return asset.modified > 0 ? juce::Time(asset.modified / 1000000).toString(true, true, false, true)
+                              : juce::String();
+}
+juce::String recordingStatus(const Asset &asset)
+{
+    if (asset.needsReview) return "Needs review";
+    if (asset.unresolved) return "Unresolved";
+    if (!asset.online) return "Offline";
+    if (asset.state == "failed") return "Unreadable";
+    return asset.state == "ready" ? "Ready" : "Reading header";
+}
+void addEmbeddedTag(juce::StringPairArray &tags, const juce::String &name,
+                    const juce::String &value, const juce::String &qualified)
+{
+    if (value.isEmpty())
+        return;
+    auto existing = tags.getValue(name, {});
+    if (existing.isEmpty())
+        tags.set(name, value);
+    else if (existing != value)
+    {
+        auto other = tags.getValue(qualified, {});
+        if (other != value)
+            tags.set(qualified, other.isEmpty() ? value : other + "\n" + value);
+    }
+}
+void addXmlTags(const juce::XmlElement &xml, const juce::String &path, juce::StringPairArray &tags, int depth)
+{
+    if (depth == 32)
+        return;
+    auto qualified = path + "." + xml.getTagName();
+    bool hasChildren = false;
+    for (auto *child : xml.getChildIterator())
+        if (!child->isTextElement())
+        {
+            hasChildren = true;
+            addXmlTags(*child, qualified, tags, depth + 1);
+        }
+    if (!hasChildren)
+        addEmbeddedTag(tags, xml.getTagName(), xml.getAllSubText().trim(), qualified);
+    for (int i = 0; i < xml.getNumAttributes(); ++i)
+    {
+        auto name = qualified + "@" + xml.getAttributeName(i);
+        addEmbeddedTag(tags, name, xml.getAttributeValue(i), name);
+    }
+}
+// The JUCE WAV reader recognizes standard tags and ASWG fields. Read other textual
+// RIFF INFO and iXML fields as well, skipping sample data and bounding text reads.
+void addWaveTags(const juce::File &file, juce::StringPairArray &tags)
+{
+    juce::FileInputStream in(file);
+    if (!in.openedOk() || in.getTotalLength() < 12)
+        return;
+    auto fourcc = [](const char *name) { return (uint32_t)juce::ByteOrder::littleEndianInt(name); };
+    auto container = (uint32_t)in.readInt();
+    in.skipNextBytes(4);
+    if ((container != fourcc("RIFF") && container != fourcc("RF64")) ||
+        (uint32_t)in.readInt() != fourcc("WAVE"))
+        return;
+    int64_t rf64DataSize = -1;
+    int textBudget = 1024 * 1024;
+    const auto readText = [&](int64_t size)
+    {
+        if (size <= 0 || size > textBudget)
+            return juce::String();
+        juce::MemoryBlock bytes;
+        const auto read = (int)in.readIntoMemoryBlock(bytes, (ssize_t)size);
+        textBudget -= read;
+        return read > 0 ? juce::String::fromUTF8(static_cast<const char *>(bytes.getData()), read).trim()
+                        : juce::String();
+    };
+    const auto fileEnd = in.getTotalLength();
+    while (in.getPosition() <= fileEnd - 8 && textBudget > 0)
+    {
+        auto type = (uint32_t)in.readInt();
+        int64_t size = (uint32_t)in.readInt();
+        const auto start = in.getPosition();
+        if (container == fourcc("RF64") && type == fourcc("data") && size == UINT32_MAX)
+            size = rf64DataSize;
+        if (size < 0 || size > fileEnd - start)
+            break;
+        const auto end = start + size;
+        if (type == fourcc("ds64") && size >= 16)
+        {
+            in.skipNextBytes(8);
+            rf64DataSize = in.readInt64();
+        }
+        else if (type == fourcc("iXML") || type == fourcc("axml") || type == fourcc("_PMX"))
+        {
+            auto xmlText = readText(size);
+            if (xmlText.isNotEmpty() && !xmlText.containsIgnoreCase("<!DOCTYPE"))
+                if (auto xml = juce::parseXML(xmlText))
+                    addXmlTags(*xml, "XML", tags, 0);
+        }
+        else if (type == fourcc("LIST") && size >= 4)
+        {
+            const auto kind = (uint32_t)in.readInt();
+            if (kind == fourcc("INFO") || kind == fourcc("info"))
+                while (in.getPosition() <= end - 8 && textBudget > 0)
+                {
+                    char name[5]{};
+                    if (in.read(name, 4) != 4)
+                        break;
+                    const int64_t length = (uint32_t)in.readInt();
+                    const auto next = in.getPosition() + length + (length & 1);
+                    if (next > end)
+                        break;
+                    auto key = juce::String::fromUTF8(name, 4).trim();
+                    addEmbeddedTag(tags, key, readText(length), "INFO." + key);
+                    if (!in.setPosition(next))
+                        break;
+                }
+        }
+        if (!in.setPosition(end + (size & 1)))
+            break;
+    }
+}
 juce::String duration(double seconds)
 {
     if (seconds < 0)
@@ -119,8 +268,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                             &output,
                                                             &gain,
                                                             &summary,
+                                                            &columnsButton,
                                                             &detail,
-                                                            &assetId,
+                                                            &recordingDetails,
                                                             &transport,
                                                             &status,
                                                             &volumeLabel,
@@ -160,13 +310,25 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
         addAndMakeVisible(c);
     addAndMakeVisible(waveform.markInButton());
     addAndMakeVisible(waveform.markOutButton());
-    for (auto *l : {&summary, &detail, &assetId, &transport, &status, &volumeLabel})
+    for (auto *l : {&summary, &detail, &transport, &status, &volumeLabel})
     {
         l->setColour(juce::Label::textColourId, muted);
         l->setFont(juce::FontOptions(13.0f));
     }
     detail.setColour(juce::Label::textColourId, text);
     detail.setFont(juce::FontOptions(16.0f));
+    recordingDetails.setTitle("Recording metadata");
+    recordingDetails.setMultiLine(true);
+    recordingDetails.setReadOnly(true);
+    recordingDetails.setColour(juce::TextEditor::backgroundColourId, panel);
+    recordingDetails.setColour(juce::TextEditor::outlineColourId, juce::Colours::transparentBlack);
+    recordingDetails.setColour(juce::TextEditor::textColourId, muted);
+    recordingDetails.setFont(juce::FontOptions(13.0f));
+    recordingDetails.setLineSpacing(1.28f);
+    recordingDetails.setIndents(2, 2);
+    columnsButton.setLabelVisible(true);
+    columnsButton.setTooltip("Choose recording columns");
+    columnsButton.onClick = [this] { showMetadataColumns(); };
     transport.setColour(juce::Label::textColourId, amber);
     transport.setVisible(false);
     search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
@@ -244,17 +406,18 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     h.addColumn("Length", 2, 90, 70, 140, juce::TableHeaderComponent::visible);
     h.addColumn("Channels", 3, 85, 70, 140, juce::TableHeaderComponent::visible);
     h.addColumn("Rate", 4, 90, 70, 140, juce::TableHeaderComponent::visible);
-    h.addColumn("Status", 5, 120, 90, 180, juce::TableHeaderComponent::visible);
     h.addColumn("Match", 6, 170, 120, 240, juce::TableHeaderComponent::visible);
+    for (const auto &column : metadataColumnInfo)
+        h.addColumn(column.name, column.id, column.width, column.width, column.width, 0);
     table.setRowHeight(58);
     table.setHeaderHeight(34);
     table.setMultipleSelectionEnabled(true);
     table.setOutlineThickness(0);
-    sources.setRowHeight(30);
+    sources.setRowHeight(36);
     sources.setOutlineThickness(0);
     sources.selectRow(0);
     status.setText(juce::String::fromUTF8("Opening local catalog…"), juce::dontSendNotification);
-    detail.setText("Choose a recording to listen", juce::dontSendNotification);
+    updateRecordingDetails();
     summary.setText("Your sounds, in place. No project needed.", juce::dontSendNotification);
     for (auto *label : {&aiStatusLabel, &semanticCoverage, &inLabel, &outLabel})
     {
@@ -323,6 +486,15 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
         setRegion(first, last);
         matchMode = true;
         rangeEdited = true;
+    };
+    waveform.onClearRange = [this]
+    {
+        if (!selectedAsset)
+            return;
+        matchMode = false;
+        rangeEdited = true;
+        waveformNeedsZoom = false;
+        setRegion(0, selectedAsset->samples, false, false);
     };
     waveform.onEditRange = [this] { showRangeEditor(); };
     waveform.onSeek = [this](int64_t position)
@@ -432,9 +604,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
             }
         };
     }
-    referenceWaveform.onRange = [this](int64_t first, int64_t last)
+    auto editReferenceRange = [this](int64_t first, int64_t last, bool selected)
     {
-        referenceSelected = true;
+        referenceSelected = selected;
         parkedReferenceSeek = -1;
         referenceDraft = true;
         pinnedReference.startSample = first;
@@ -446,6 +618,10 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                              juce::dontSendNotification);
         updatingReference = false;
     };
+    referenceWaveform.onRange = [editReferenceRange](int64_t first, int64_t last)
+    { editReferenceRange(first, last, true); };
+    referenceWaveform.onClearRange = [this, editReferenceRange]
+    { editReferenceRange(0, pinnedReference.source.samples, false); };
     referenceWaveform.onSeek = [this](int64_t position)
     {
         referenceWaveform.setCursor(position);
@@ -599,16 +775,18 @@ void LibraryView::paint(juce::Graphics &g)
     g.fillAll(bg);
     auto layout = libraryLayout(getWidth(), getHeight(), false, snapshot.reference.present);
     g.setColour(panel);
-    g.fillRect(0, 0, 212, getHeight());
+    g.fillRect(layout.collections);
     g.fillRoundedRectangle(layout.preview.toFloat(), 12);
+    g.fillRoundedRectangle(layout.details.toFloat(), 12);
     g.setColour(line);
-    g.drawVerticalLine(211, 0, (float)getHeight());
+    g.drawVerticalLine(layout.collections.getRight() - 1, 0, (float)getHeight());
     g.setColour(text);
     g.setFont(juce::FontOptions(17.f, juce::Font::bold));
-    g.drawText("Collections", 14, 12, 124, 28, juce::Justification::centredLeft);
+    g.drawText("Collections", 14, 12, layout.collections.getWidth() - 64, 28,
+               juce::Justification::centredLeft);
     g.drawText("Sounds", layout.results.getX(), 12, 110, 28, juce::Justification::centredLeft);
-    g.drawText("Preview", layout.preview.getX() + 12, 20, 115, 25, juce::Justification::centredLeft);
-
+    auto heading = layout.details.reduced(12, 0).withTrimmedTop(6).withHeight(28);
+    g.drawText("Details", heading, juce::Justification::centredLeft);
 }
 void LibraryView::paintOverChildren(juce::Graphics &g)
 {
@@ -701,26 +879,26 @@ void LibraryView::resized()
     const bool hasReference = snapshot.reference.present;
     auto layout = libraryLayout(getWidth(), getHeight(), false, hasReference);
     const auto listing = layout.results;
-    const auto preview = layout.preview.reduced(12, 0);
     const int left = listing.getX(), right = listing.getRight(), top = layout.referenceTop;
-    const int previewLeft = preview.getX(), previewRight = preview.getRight();
+    const int sidebar = layout.collections.getWidth();
     designer.setBounds({});
-    add.setBounds(170, 11, 30, 30);
+    add.setBounds(sidebar - 42, 11, 30, 30);
     externalReference.setBounds(right - 31, 49, 31, 34);
-    rescan.setBounds(168, 54, 32, 28);
+    rescan.setBounds(sidebar - 44, 54, 32, 28);
     summary.setBounds(left + 112, 15, std::max(0, listing.getWidth() - 114), 24);
-    search.setBounds(left, 49, std::max(88, listing.getWidth() - 72), 34);
+    search.setBounds(left, 49, std::max(88, listing.getWidth() - 172), 34);
+    columnsButton.setBounds(right - 164, 49, 94, 34);
     refresh.setBounds(right - 67, 49, 30, 34);
     semanticCoverage.setBounds(left, 84, listing.getWidth(), 18);
     pauseIndex.setBounds(14, 54, 32, 28);
     installAI.setBounds(50, 54, 32, 28);
     cancelInstall.setBounds(50, 54, 32, 28);
     retryAI.setBounds(86, 54, 32, 28);
-    aiStatusLabel.setBounds(14, 87, 184, 42);
+    aiStatusLabel.setBounds(14, 87, sidebar - 28, 42);
     favoriteButton.setBounds(14, 132, 30, 30);
-    collectionActions.setBounds(130, 132, 30, 30);
-    newCollection.setBounds(168, 132, 30, 30);
-    sources.setBounds(6, 169, 199, std::max(70, getHeight() - 187));
+    collectionActions.setBounds(sidebar - 82, 132, 30, 30);
+    newCollection.setBounds(sidebar - 44, 132, 30, 30);
+    sources.setBounds(6, 169, sidebar - 12, std::max(70, getHeight() - 187));
     collectionSelector.setVisible(false);
     scopeLabel.setVisible(false);
     clearScope.setVisible(false);
@@ -749,7 +927,7 @@ void LibraryView::resized()
     const int columns = listing.getWidth() >= 650 ? 4 : listing.getWidth() >= 514 ? 3 : 2;
     const bool scores = similarMode || hasReference;
     int fixed = 0;
-    for (int id = 2; id <= 6; ++id)
+    for (int id : {2, 3, 4, 6})
     {
         const bool visible = (id <= columns && (!scores || id <= 2)) || (id == 6 && scores);
         header.setColumnVisible(id, visible);
@@ -760,36 +938,55 @@ void LibraryView::resized()
             fixed += width;
         }
     }
+    for (const auto &column : metadataColumnInfo)
+    {
+        const bool visible = metadataColumns.contains(column.id);
+        header.setColumnVisible(column.id, visible);
+        if (visible)
+            fixed += column.width;
+    }
+    for (const auto &[id, tag] : embeddedColumns)
+    {
+        const bool visible = metadataColumns.contains(id);
+        header.setColumnVisible(id, visible);
+        if (visible)
+            fixed += embeddedColumnWidth;
+    }
     header.setColumnWidth(1, std::max(200, table.getWidth() - fixed - 16));
 
-    const int y = layout.selection.getY(), controls = layout.controlsY;
-    detail.setBounds(previewLeft, y, preview.getWidth(), 24);
-    channelDetails.setBounds(previewLeft, y + 26, 27, 27);
-    assetId.setBounds(previewLeft + 34, y + 26, preview.getWidth() - 34, 24);
-    findSimilar.setBounds(previewRight - 145, 19, 145, 31);
+    const auto selection = layout.selection;
+    const int previewLeft = selection.getX(), previewRight = selection.getRight();
+    const int y = selection.getY(), controls = layout.controlsY, centre = selection.getCentreX();
+    auto metadata = layout.details.reduced(12, 10).withTrimmedTop(28);
+    channelDetails.setBounds(layout.details.getRight() - 41, layout.details.getY() + 7, 30, 26);
+    detail.setBounds(metadata.removeFromTop(26));
+    recordingDetails.setBounds(metadata.withTrimmedTop(4));
+    findSimilar.setBounds(previewRight - 145, y, 145, 28);
     findSimilar.setLabelVisible(true);
-    addDesigner.setBounds(previewRight - 31, 106, 31, 29);
-    processPlugin.setBounds(previewRight - 64, 106, 30, 29);
-    moments.setBounds(previewLeft, 106, preview.getWidth() - 71, 29);
+    addDesigner.setBounds(previewRight - 181, y, 30, 28);
+    processPlugin.setBounds(previewRight - 217, y, 30, 28);
+    moments.setBounds(previewLeft, y, std::min(286, selection.getWidth() - 230), 27);
     waveform.setBounds(layout.waveform);
-    int x = preview.getCentreX() - 146;
-    for (auto *button : {&repeatOne, &repeatAll, &waveform.markInButton(), &playWhole, &previous, &play,
-                         &next, &playMatch, &waveform.markOutButton()})
-    {
-        const int size = button == &play ? 42 : 28;
-        button->setBounds(x, controls + (42 - size) / 2, size, size);
-        x += size + 3;
-    }
-    dragOriginal.setBounds(previewLeft, controls + 49, 30, 30);
-    context.setBounds(previewLeft + 36, controls + 50, 105, 28);
-    gain.setBounds(previewRight - 112, controls + 51, 112, 25);
-    volumeLabel.setBounds(previewRight - 156, controls + 51, 44, 25);
-    transport.setBounds(previewLeft, controls + 80, preview.getWidth(), 22);
-    output.setBounds(previewLeft, layout.monitorY, preview.getWidth() / 2 - 8, 28);
-    auditionChannels.setBounds(output.getRight() + 6, layout.monitorY, previewRight - output.getRight() - 43, 28);
-    restart.setBounds(previewRight - 30, layout.monitorY, 30, 28);
-    status.setBounds(left, layout.statusY, listing.getWidth(), 22);
-
+    repeatOne.setBounds(centre - 221, controls + 6, 28, 28);
+    repeatAll.setBounds(centre - 187, controls + 6, 28, 28);
+    waveform.markInButton().setBounds(centre - 150, controls + 6, 28, 28);
+    playWhole.setBounds(centre - 110, controls + 4, 32, 32);
+    previous.setBounds(centre - 66, controls + 4, 32, 32);
+    play.setBounds(centre - 20, controls, 40, 40);
+    next.setBounds(centre + 34, controls + 4, 32, 32);
+    playMatch.setBounds(centre + 78, controls + 4, 32, 32);
+    waveform.markOutButton().setBounds(centre + 122, controls + 6, 28, 28);
+    context.setBounds(previewRight - 109, controls + 7, 109, 26);
+    dragOriginal.setBounds(previewLeft, controls + 4, 30, 30);
+    volumeLabel.setBounds(previewLeft, layout.monitorY, 48, 25);
+    const int gainWidth = std::min(170, selection.getWidth() / 5);
+    gain.setBounds(volumeLabel.getRight(), layout.monitorY, gainWidth, 25);
+    output.setBounds(gain.getRight() + 14, layout.monitorY, 225, 26);
+    auditionChannels.setBounds(output.getRight() + 10, layout.monitorY,
+                               std::max(0, previewRight - output.getRight() - 50), 26);
+    restart.setBounds(previewRight - 30, layout.monitorY, 30, 26);
+    status.setBounds(left, layout.statusY, layout.preview.getWidth() / 2, 22);
+    transport.setBounds(status.getRight() + 8, layout.statusY, layout.preview.getWidth() / 2 - 8, 22);
 }
 void LibraryView::compactVisibility()
 {
@@ -837,8 +1034,12 @@ void LibraryView::setCompact(bool value)
     compact = value;
     for (auto *c : getChildren())
         c->setVisible(!value);
-    for (int id = 2; id <= 6; ++id)
-        table.getHeader().setColumnVisible(id, !value);
+    if (value)
+    {
+        auto &header = table.getHeader();
+        for (int column = header.getNumColumns(true) - 1; column > 0; --column)
+            header.setColumnVisible(header.getColumnIdOfIndex(column, true), false);
+    }
     table.setHeaderHeight(value ? 0 : 34);
     table.setRowHeight(58);
     search.setTextToShowWhenEmpty(
@@ -848,6 +1049,15 @@ void LibraryView::setCompact(bool value)
 void LibraryView::bindPreferences(juce::PropertiesFile &prefs)
 {
     preferences = &prefs;
+    for (const auto &id : juce::StringArray::fromTokens(prefs.getValue("library.metadataColumns"), ",", ""))
+        if (id.getIntValue() >= statusColumn && id.getIntValue() <= modifiedColumn && id.getIntValue() != 6)
+            metadataColumns.insert(id.getIntValue());
+    const auto storedTags = juce::JSON::parse(prefs.getValue("library.embeddedColumns"));
+    if (const auto *tags = storedTags.getArray())
+        for (const auto &tag : *tags)
+            if (tag.isString() && tag.toString().isNotEmpty())
+                metadataColumns.insert(addEmbeddedColumn(tag.toString()));
+    resized();
     collectionScope = prefs.getValue("library.collectionScope");
     for (auto id : juce::StringArray::fromTokens(prefs.getValue("library.collapsedCollections"), ",", ""))
         collapsedCollections.insert(id);
@@ -1170,12 +1380,9 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
     if (column == 4)
         value =
             a.sampleRate > 0 ? juce::String(a.sampleRate / 1000.0, 1) + " kHz" : juce::String::fromUTF8("—");
-    if (column == 5)
+    if (column == statusColumn)
     {
-        value = !a.online             ? "Offline"
-                : a.state == "ready"  ? "Ready"
-                : a.state == "failed" ? "Unreadable"
-                                      : "Reading header";
+        value = recordingStatus(a);
         g.setColour(a.online ? (a.state == "failed" ? amber : accent) : amber);
     }
     if (column == 6)
@@ -1194,6 +1401,20 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         }
         return;
     }
+    if (column == formatColumn)
+        value = fileFormat(a);
+    if (column == sizeColumn && a.size > 0)
+        value = juce::File::descriptionOfSizeInBytes(a.size);
+    if (column == modifiedColumn)
+        value = fileModified(a);
+    if (column == categoryColumn || column == descriptionColumn || column == depthColumn)
+        if (const auto *header = cachedRecordingHeader(a))
+            value = column == categoryColumn ? recordingCategory(header->tags)
+                    : column == descriptionColumn ? recordingDescription(header->tags)
+                                                  : header->depth;
+    if (auto tag = embeddedColumns.find(column); tag != embeddedColumns.end())
+        if (const auto *header = cachedRecordingHeader(a))
+            value = header->tags.getValue(tag->second, {});
     g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }
 void LibraryView::selectedRowsChanged(int)
@@ -1261,23 +1482,12 @@ void LibraryView::updateSelection(bool explicitUserSelection)
                                 juce::String::fromUTF8("  ·  similarity ") + juce::String(m.similarity, 3),
                             (int)i + 1);
         }
-        int moment = 0;
-        for (size_t i = 0; i < a->matches.size(); ++i)
-            if (a->matches[i].startSample == regionStart && a->matches[i].endSample == regionEnd)
-                moment = (int)i + 1;
-        moments.setTextWhenNothingSelected(
-            regionSelected
-                ? (a->bookmarkFirst >= 0 && regionStart == a->bookmarkFirst && regionEnd == a->bookmarkLast
-                       ? "Saved region"
-                       : "Marked range")
-            : a->matches.empty() ? "Whole recording"
-                                 : "Custom range");
-        moments.setSelectedId(moment, juce::dontSendNotification);
+        updateMomentsSelection();
         updatingRange = false;
-        detail.setText(a->name, juce::dontSendNotification);
-        assetId.setText(a->error, juce::dontSendNotification);
-        detail.setTooltip(a->name);
-        assetId.setTooltip(a->error.isEmpty() ? "Source details" : "Source unavailable");
+        selectionNotice.clear();
+        updateRecordingDetails();
+        if (newFile)
+            recordingDetails.moveCaretToTop(false);
         if (explicitUserSelection && continueAudition)
             playSelected(matchMode);
     }
@@ -1308,15 +1518,16 @@ int LibraryView::restoreSelection(bool sameQuery)
             auto state = audio.status();
             if (state["intentId"].toString() == selectedId)
                 audio.stop();
-            detail.setText("Selected recording was removed", juce::dontSendNotification);
         }
+        selectionNotice = removed ? "Selected recording was removed" : "";
         selectedId.clear();
         selectedAsset.reset();
         selectedAssetRow = -1;
         waveform.setData({});
     }
     else if (selectedAsset)
-        assetId.setText("Selected recording is outside the loaded results", juce::dontSendNotification);
+        selectionNotice = "Outside the loaded results";
+    updateRecordingDetails();
     return -1;
 }
 void LibraryView::cellDoubleClicked(int, int, const juce::MouseEvent &)
@@ -1349,18 +1560,18 @@ void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool)
     if (r.children)
     {
         icons::draw(g, collapsedCollections.contains(r.id) ? ActionIcon::chevron : ActionIcon::chevronDown,
-                    {(float)x, 6, 16, 16});
+                    {(float)x, (h - 16.f) * .5f, 16, 16});
         x += 20;
     }
     else
         x += 20;
     g.setColour(r.kind == "heading" ? muted : selected ? accent : text);
-    g.setFont(juce::FontOptions(r.kind == "heading" ? 10.5f : 12.f));
+    g.setFont(juce::FontOptions(r.kind == "heading" ? 13.f : 15.f));
     g.drawText(r.name, x, 0, w - x - 35, h, juce::Justification::centredLeft, true);
     if (r.count > 0)
     {
         g.setColour(muted);
-        g.setFont(juce::FontOptions(10.f));
+        g.setFont(juce::FontOptions(12.f));
         g.drawText(juce::String(r.count), w - 34, 0, 27, h, juce::Justification::centredRight);
     }
 }
@@ -1520,21 +1731,219 @@ void LibraryView::setRegion(int64_t start, int64_t end, bool zoom, bool selected
     updatingRange = true;
     rangeIn.setText(juce::String(regionStart / selectedAsset->sampleRate, 6), juce::dontSendNotification);
     rangeOut.setText(juce::String(regionEnd / selectedAsset->sampleRate, 6), juce::dontSendNotification);
+    updateMomentsSelection();
+    updatingRange = false;
+    favoriteInspectionKey.clear();
+}
+void LibraryView::updateMomentsSelection()
+{
+    const bool whole = !regionSelected && regionStart == 0 && regionEnd == selectedAsset->samples;
     int moment = 0;
-    for (size_t i = 0; i < selectedAsset->matches.size(); ++i)
-        if (selectedAsset->matches[i].startSample == regionStart &&
-            selectedAsset->matches[i].endSample == regionEnd)
-            moment = (int)i + 1;
+    if (!whole)
+        for (size_t i = 0; i < selectedAsset->matches.size(); ++i)
+            if (selectedAsset->matches[i].startSample == regionStart &&
+                selectedAsset->matches[i].endSample == regionEnd)
+                moment = (int)i + 1;
     moments.setTextWhenNothingSelected(
         regionSelected ? (selectedAsset->bookmarkFirst >= 0 && regionStart == selectedAsset->bookmarkFirst &&
                                   regionEnd == selectedAsset->bookmarkLast
                               ? "Saved region"
                               : "Marked range")
-        : selectedAsset->matches.empty() ? "Whole recording"
-                                         : "Custom range");
+        : whole || selectedAsset->matches.empty() ? "Whole recording"
+                                                 : "Custom range");
     moments.setSelectedId(moment, juce::dontSendNotification);
-    updatingRange = false;
-    favoriteInspectionKey.clear();
+}
+void LibraryView::showMetadataColumns()
+{
+    juce::PopupMenu menu;
+    const auto safe = juce::Component::SafePointer<LibraryView>(this);
+    for (const auto &column : metadataColumnInfo)
+        menu.addItem(column.name, true, metadataColumns.contains(column.id),
+                     [safe, id = column.id] { if (safe) safe->toggleMetadataColumn(id); });
+    juce::StringArray tags;
+    for (const auto &[id, tag] : embeddedColumns)
+        tags.add(tag);
+    if (const auto *header = selectedAsset ? cachedRecordingHeader(*selectedAsset) : nullptr)
+        for (int i = 0; i < header->tags.size(); ++i)
+            if (header->tags.getAllValues()[i].isNotEmpty())
+                tags.addIfNotAlreadyThere(header->tags.getAllKeys()[i], true);
+    tags.sort(true);
+    juce::PopupMenu embedded;
+    for (const auto &tag : tags)
+    {
+        auto found = std::find_if(embeddedColumns.begin(), embeddedColumns.end(),
+                                  [&](const auto &entry) { return entry.second.equalsIgnoreCase(tag); });
+        const bool enabled = found != embeddedColumns.end() && metadataColumns.contains(found->first);
+        embedded.addItem(tag, true, enabled, [safe, tag]
+        { if (safe) safe->toggleMetadataColumn(safe->addEmbeddedColumn(tag)); });
+    }
+    if (tags.isEmpty())
+        embedded.addItem("Select a recording with embedded tags", false, false, [] {});
+    menu.addSubMenu("Embedded tags", embedded);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&columnsButton).withParentComponent(this));
+}
+int LibraryView::addEmbeddedColumn(const juce::String &tag)
+{
+    for (const auto &[id, existing] : embeddedColumns)
+        if (existing.equalsIgnoreCase(tag))
+            return id;
+    int id = modifiedColumn + 1 + (int)embeddedColumns.size();
+    embeddedColumns.emplace(id, tag);
+    table.getHeader().addColumn(tag, id, embeddedColumnWidth, embeddedColumnWidth, embeddedColumnWidth, 0);
+    return id;
+}
+void LibraryView::toggleMetadataColumn(int id)
+{
+    if (!metadataColumns.erase(id))
+        metadataColumns.insert(id);
+    if (preferences)
+    {
+        juce::StringArray ids;
+        juce::Array<juce::var> tags;
+        for (int column : metadataColumns)
+            if (auto embedded = embeddedColumns.find(column); embedded != embeddedColumns.end())
+                tags.add(embedded->second);
+            else
+                ids.add(juce::String(column));
+        preferences->setValue("library.metadataColumns", ids.joinIntoString(","));
+        preferences->setValue("library.embeddedColumns", juce::JSON::toString(tags, true));
+    }
+    resized();
+}
+juce::String LibraryView::recordingHeaderKey(const Asset &a)
+{
+    return a.id + "\n" + juce::String(a.revision) + "\n" + a.path;
+}
+LibraryView::RecordingHeader LibraryView::readRecordingHeader(const Asset &a)
+{
+    const juce::File file(a.path);
+    const auto matchesSource = [&]
+    {
+        FileStamp stamp;
+        return fileStamp(file, stamp) && stamp.size == a.size && stamp.modified == a.modified &&
+               stamp.inode == a.inode;
+    };
+    if (!matchesSource())
+        return {{}, {}, "Source changed or is unavailable"};
+    juce::AudioFormatManager formats;
+    formats.registerBasicFormats();
+    std::unique_ptr<juce::AudioFormatReader> reader(formats.createReaderFor(file));
+    auto tags = reader ? reader->metadataValues : juce::StringPairArray{};
+    if (reader && file.hasFileExtension("wav;bwf"))
+        addWaveTags(file, tags);
+    if (!matchesSource())
+        return {{}, {}, "Source changed or is unavailable"};
+    if (!reader)
+        return {{}, {}, "Audio header unavailable"};
+    return {reader->getFormatName(),
+            reader->bitsPerSample > 0
+                ? juce::String(reader->bitsPerSample) + (reader->usesFloatingPointData ? "-bit float" : "-bit integer")
+                : juce::String(),
+            {}, std::move(tags)};
+}
+const LibraryView::RecordingHeader *LibraryView::cachedRecordingHeader(const Asset &a) const
+{
+    auto found = recordingHeaders.find(recordingHeaderKey(a));
+    return found == recordingHeaders.end() ? nullptr : &found->second;
+}
+void LibraryView::updateRecordingHeaders(const std::vector<Asset> &visibleRows)
+{
+    if (recordingHeaderJob.valid())
+    {
+        if (recordingHeaderJob.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
+            return;
+        auto [key, header] = recordingHeaderJob.get();
+        if (recordingHeaderOrder.size() == 160)
+        {
+            recordingHeaders.erase(recordingHeaderOrder.front());
+            recordingHeaderOrder.pop_front();
+        }
+        recordingHeaderOrder.push_back(key);
+        recordingHeaders.emplace(key, std::move(header));
+        if (selectedAsset && recordingHeaderKey(*selectedAsset) == key)
+            updateRecordingDetails();
+        table.repaint();
+    }
+    if (compact)
+        return;
+    const auto needsHeader = [this](const Asset &a)
+    {
+        return a.online && a.state == "ready" && a.deliverable() && a.path.isNotEmpty() &&
+               cachedRecordingHeader(a) == nullptr;
+    };
+    const Asset *source = selectedAsset && needsHeader(*selectedAsset) ? &*selectedAsset : nullptr;
+    const auto readsFile = [](int id)
+    { return id == categoryColumn || id == descriptionColumn || id == depthColumn || id > modifiedColumn; };
+    if (!source && std::any_of(metadataColumns.begin(), metadataColumns.end(), readsFile))
+    {
+        auto row = std::find_if(visibleRows.begin(), visibleRows.end(), needsHeader);
+        if (row != visibleRows.end())
+            source = &*row;
+    }
+    if (!source)
+        return;
+    using Job = std::packaged_task<std::pair<juce::String, RecordingHeader>()>;
+    auto job = std::make_shared<Job>([asset = *source]
+    { return std::make_pair(recordingHeaderKey(asset), readRecordingHeader(asset)); });
+    recordingHeaderJob = job->get_future();
+    recordingHeaderWorker.addJob([job] { (*job)(); });
+}
+void LibraryView::updateRecordingDetails()
+{
+    if (!selectedAsset)
+    {
+        detail.setText(selectionNotice.isEmpty() ? "Choose a recording" : selectionNotice,
+                       juce::dontSendNotification);
+        detail.setTooltip({});
+        recordingDetails.setText({}, false);
+        return;
+    }
+    const auto &a = *selectedAsset;
+    detail.setText(a.name, juce::dontSendNotification);
+    detail.setTooltip(a.name);
+    juce::StringArray fields;
+    const auto field = [&](const juce::String &label, const juce::String &value)
+    {
+        if (value.isNotEmpty())
+            fields.add(label + ": " + value);
+    };
+    const auto *header = cachedRecordingHeader(a);
+    field("Category", header ? recordingCategory(header->tags) : juce::String());
+    field("Description", header ? recordingDescription(header->tags) : juce::String());
+    field("Duration", a.duration > 0 ? juce::String(a.duration, 3) + " s" : juce::String());
+    field("Sample rate", a.sampleRate > 0 ? juce::String(a.sampleRate) + " Hz" : juce::String());
+    field("Channels", a.channels > 0 ? juce::String(a.channels) : juce::String());
+    field("Format", header && header->format.isNotEmpty() ? header->format : fileFormat(a));
+    field("Bit depth (reader)", header ? header->depth : juce::String());
+    field("Frames", a.samples > 0 ? juce::String(a.samples) : juce::String());
+    auto layout = a.layoutOverride.id.isNotEmpty() ? a.layoutOverride : a.detectedChannels;
+    field("Layout", layout.id.isEmpty() ? juce::String() : layoutName(layout));
+    field("Channel order", layout.roles.joinIntoString(", "));
+    if (a.layoutOverride.id.isNotEmpty())
+        field("Detected layout", layoutName(a.detectedChannels));
+    field("Layout confidence", a.layoutConfidence);
+    field("File size", a.size > 0 ? juce::File::descriptionOfSizeInBytes(a.size) : juce::String());
+    field("Modified", fileModified(a));
+    field("Status", recordingStatus(a));
+    field("Source", a.path);
+    if (a.bookmarkFirst >= 0 && a.sampleRate > 0)
+        field("Saved range", juce::String(a.bookmarkFirst / a.sampleRate, 3) + " - " +
+                                 juce::String(a.bookmarkLast / a.sampleRate, 3) + " s");
+    if (selectionNotice.isNotEmpty())
+        fields.add(selectionNotice);
+    if (a.error.isNotEmpty())
+        fields.add(a.error);
+    if (header && header->error.isNotEmpty())
+        fields.add(header->error);
+    if (header && header->tags.size() > 0)
+    {
+        fields.add("\nEmbedded tags");
+        for (int i = 0; i < header->tags.size(); ++i)
+            field(header->tags.getAllKeys()[i], header->tags.getAllValues()[i]);
+    }
+    auto value = fields.joinIntoString("\n");
+    if (recordingDetails.getText() != value)
+        recordingDetails.setText(value, false);
 }
 void LibraryView::showRangeEditor(bool forReference)
 {
@@ -1915,6 +2324,7 @@ void LibraryView::timerCallback()
             append(first + count + i - 1);
         }
     }
+    updateRecordingHeaders(rows);
     peakPool->demand(0, isShowing() && selectedAsset ? std::vector<Asset>{*selectedAsset}
                                                      : std::vector<Asset>{});
     peakPool->demand(2, rows);

@@ -55,6 +55,7 @@ class WaveformView final : public juce::Component
     void mouseDown(const juce::MouseEvent &) override;
     void mouseDrag(const juce::MouseEvent &) override;
     void mouseUp(const juce::MouseEvent &) override;
+    void mouseDoubleClick(const juce::MouseEvent &) override;
     int64_t startSample() const
     {
         return first;
@@ -80,6 +81,7 @@ class WaveformView final : public juce::Component
         return waveform;
     }
     std::function<void(int64_t, int64_t)> onRange;
+    std::function<void()> onClearRange;
     std::function<void(int64_t)> onSeek;
     std::function<void()> onEditRange;
 

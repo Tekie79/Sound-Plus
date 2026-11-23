@@ -5,6 +5,9 @@
 #include "WaveformPreview.h"
 #include "UIComponents.h"
 #include <juce_gui_extra/juce_gui_extra.h>
+#include <deque>
+#include <future>
+#include <map>
 #include <set>
 namespace sp
 {
@@ -96,6 +99,12 @@ class LibraryView final : public juce::Component,
     void playFromPlayhead();
     void playSelected(bool useMatch, int64_t seekSample = -1);
     void setRegion(int64_t start, int64_t end, bool zoom = false, bool selected = true);
+    void updateMomentsSelection();
+    void updateRecordingHeaders(const std::vector<Asset> &visibleRows);
+    void updateRecordingDetails();
+    void showMetadataColumns();
+    void toggleMetadataColumn(int id);
+    int addEmbeddedColumn(const juce::String &tag);
     void showRangeEditor(bool forReference = false);
     void installModelMenu(juce::Component *anchor = nullptr);
     void requestSearch();
@@ -263,7 +272,24 @@ class LibraryView final : public juce::Component,
     void chooseSource(int);
     juce::ComboBox output;
     juce::Slider gain;
-    juce::Label summary, detail, assetId, transport, status, volumeLabel;
+    struct RecordingHeader
+    {
+        juce::String format, depth, error;
+        juce::StringPairArray tags;
+    };
+    static juce::String recordingHeaderKey(const Asset &);
+    static RecordingHeader readRecordingHeader(const Asset &);
+    const RecordingHeader *cachedRecordingHeader(const Asset &) const;
+    std::map<juce::String, RecordingHeader> recordingHeaders;
+    std::deque<juce::String> recordingHeaderOrder;
+    juce::ThreadPool recordingHeaderWorker{1};
+    std::future<std::pair<juce::String, RecordingHeader>> recordingHeaderJob;
+    std::set<int> metadataColumns;
+    std::map<int, juce::String> embeddedColumns;
+    IconButton columnsButton{"Columns", ActionIcon::more};
+    juce::String selectionNotice;
+    juce::Label summary, detail, transport, status, volumeLabel;
+    juce::TextEditor recordingDetails;
     std::unique_ptr<juce::FileChooser> chooser;
     juce::String selectedId, rootFilter, playingId, playbackError;
     uint64_t requested = 1, appliedVersion = 0, appliedRequest = 0;

@@ -743,18 +743,30 @@ void runCanvasGestureTests(const juce::File &parent)
           "Multi-file drop retains incoming order at common pointer time");
     session.undo();
     check(session.document.activeMix().layers.size() == 4, "One undo removes entire multi-file drop");
-    for (int height : {651, 680, 861, 1100})
-        for (bool reference : {false, true})
-        {
-            auto layout = sp::libraryLayout(1040, height, false, reference);
-            check(layout.results.getRight() + 8 <= layout.preview.getX(),
-                  "Results and contextual preview cannot overlap at minimum size");
-            check(layout.results.getHeight() >= 90 && layout.waveform.getHeight() >= 60,
-                  "Minimum Library retains usable results and waveform");
-            if (reference)
-                check(layout.referenceWave.getBottom() < layout.results.getY(),
-                      "Reference waveform stays above result rows");
-        }
+    for (int width : {1040, 1440, 1664})
+        for (int height : {636, 680, 861, 1100})
+            for (bool reference : {false, true})
+            {
+                auto layout = sp::libraryLayout(width, height, false, reference);
+                check(layout.collections.getWidth() >= 272 &&
+                          layout.collections.getRight() < layout.results.getX(),
+                      "Wider Collections panel stays separate from results");
+                check(layout.results.getBottom() < layout.preview.getY() &&
+                          layout.results.getX() == layout.preview.getX() &&
+                          layout.details.getRight() == layout.preview.getRight(),
+                      "The audition panel spans the results and details columns");
+                check(layout.details.getX() > layout.results.getRight() &&
+                          layout.details.getBottom() == layout.results.getBottom() &&
+                          layout.details.getWidth() >= 218 && layout.results.getWidth() >= 450,
+                      "Metadata stays on the right and leaves usable result width");
+                check(layout.results.getHeight() >= 90 && layout.waveform.getHeight() >= 60 &&
+                          layout.waveform.getBottom() < layout.controlsY &&
+                          layout.controlsY + 40 < layout.monitorY,
+                      "Minimum Library retains usable results and a separate transport");
+                if (reference)
+                    check(layout.referenceWave.getBottom() < layout.results.getY(),
+                          "Reference waveform stays above result rows");
+            }
     for (int width : {260, 300, 440})
     {
         auto layout = sp::libraryLayout(width, 651, true, false);

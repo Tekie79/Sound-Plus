@@ -25,12 +25,26 @@ void fixture(const juce::File &file, int samples = 5760)
 {
     file.getParentDirectory().createDirectory();
     juce::WavAudioFormat format;
+    juce::StringPairArray tags;
+    tags.set(juce::WavAudioFormat::riffInfoGenre, "Field recordings");
     std::unique_ptr<juce::AudioFormatWriter> writer(
-        format.createWriterFor(file.createOutputStream().release(), 48000, 1, 24, {}, 0));
+        format.createWriterFor(file.createOutputStream().release(), 48000, 1, 24, tags, 0));
     juce::AudioBuffer<float> block(1, samples);
     for (int n = 0; n < samples; ++n)
         block.setSample(0, n, .1f * std::sin(n * .031));
     check(writer && writer->writeFromAudioSampleBuffer(block, 0, samples), "Finalized generated fixture");
+    writer.reset();
+    auto stream = file.createOutputStream();
+    const juce::String xml = "<BWFXML><USER><Microphone>Test microphone</Microphone></USER></BWFXML>";
+    const auto length = xml.getNumBytesAsUTF8();
+    stream->write("iXML", 4);
+    stream->writeInt((int)length);
+    stream->write(xml.toRawUTF8(), length);
+    if (length & 1)
+        stream->writeByte(0);
+    auto riffSize = (int)(stream->getPosition() - 8);
+    stream->setPosition(4);
+    stream->writeInt(riffSize);
 }
 void pcm(const juce::File &file)
 {
@@ -150,11 +164,11 @@ void waveform()
     view.setCursor(30000);
     view.markOutButton().onClick();
     check(view.endSample() == 30000, "Transport OUT retains marking");
-    auto pointer = [&](juce::Point<float> position, juce::Point<float> down)
+    auto pointer = [&](juce::Point<float> position, juce::Point<float> down, int clicks = 1)
     {
         return juce::MouseEvent(juce::Desktop::getInstance().getMainMouseSource(), position,
                                 juce::ModifierKeys::leftButtonModifier, 1, 0, 0, 0, 0, &view, &view,
-                                juce::Time::getCurrentTime(), down, juce::Time::getCurrentTime(), 1,
+                                juce::Time::getCurrentTime(), down, juce::Time::getCurrentTime(), clicks,
                                 position != down);
     };
     view.setRange(0, 48000, false, false);
@@ -163,7 +177,19 @@ void waveform()
     view.mouseUp(pointer({250, 100}, {50, 100}));
     check(view.isRangeSelected() && view.startSample() == 4800 && view.endSample() == 24000,
           "Actual waveform drag creates a highlighted range from an unselected recording");
-    view.setRange(0, 48000, false, false);
+    view.zoomRange();
+    view.mouseDown(pointer({250, 100}, {250, 100}));
+    view.mouseUp(pointer({250, 100}, {250, 100}));
+    check(view.cursorSample() == 14400 && view.startSample() == 4800 && view.endSample() == 24000,
+          "Zoom Range maps the waveform midpoint to the exact marked range midpoint");
+    int clears = 0;
+    view.onClearRange = [&] { ++clears; };
+    const auto doubleClick = pointer({125, 100}, {125, 100}, 2);
+    view.mouseDown(doubleClick);
+    view.mouseUp(doubleClick);
+    view.mouseDoubleClick(doubleClick);
+    check(!view.isRangeSelected() && view.startSample() == 0 && view.endSample() == 48000 && clears == 1,
+          "Double-click clears the dragged range and restores whole-recording bounds");
     view.mouseDown(pointer({250, 100}, {250, 100}));
     view.mouseUp(pointer({250, 100}, {250, 100}));
     check(!view.isRangeSelected() && view.cursorSample() == 24000,
@@ -198,6 +224,28 @@ struct PlaybackSearchTestAccess
         v.table.selectRow(19);
         v.selectedRowsChanged(19);
         check(!v.regionSelected, "Selecting a recording does not mark a range");
+        until([&]
+        {
+            v.updateRecordingHeaders({});
+            return v.recordingDetails.getText().contains("Category: Field recordings");
+        }, "Recording details read embedded genre from a generated WAV");
+        check(v.recordingDetails.getText().contains("48000 Hz") &&
+                  v.recordingDetails.getText().contains("24-bit integer") &&
+                  v.recordingDetails.getText().contains(v.selectedAsset->path) &&
+                  v.recordingDetails.getText().contains("Microphone: Test microphone"),
+              "Recording details include catalog and custom WAV iXML metadata");
+        auto microphoneColumn = v.addEmbeddedColumn("Microphone");
+        v.toggleMetadataColumn(microphoneColumn);
+        check(v.table.getHeader().isColumnVisible(microphoneColumn) &&
+                  v.table.getHeader().getColumnName(microphoneColumn) == "Microphone",
+              "A custom embedded tag can become a visible result column");
+        v.setRegion(20, 500);
+        v.matchMode = true;
+        v.waveform.onClearRange();
+        check(!v.regionSelected && !v.waveform.isRangeSelected() && !v.matchMode && v.regionStart == 0 &&
+                  v.regionEnd == v.selectedAsset->samples && v.moments.getSelectedId() == 0 &&
+                  v.moments.getTextWhenNothingSelected() == "Whole recording",
+              "Clearing the range updates Library playback bounds and the range selector");
         v.playMatch.onClick();
         check(!v.regionSelected, "Play Match alone does not create a visual range selection");
         v.audio.stop();

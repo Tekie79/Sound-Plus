@@ -278,9 +278,8 @@ std::pair<int64_t, int64_t> markRangeAtPlayhead(int64_t first, int64_t last, int
 }
 WaveformView::WaveformView()
 {
-    setTitle("Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. "
-             "Right-click "
-             "for exact range.");
+    setTitle("Recording waveform. Click to seek, drag to mark, double-click to clear the range. "
+             "I marks IN, O marks OUT. Right-click for exact range.");
     setWantsKeyboardFocus(true);
     addAndMakeVisible(zoom);
     addAndMakeVisible(all);
@@ -355,13 +354,10 @@ void WaveformView::showWhole()
 }
 void WaveformView::zoomRange()
 {
-    if (!waveform || last <= first)
+    if (!waveform || waveform->samples <= 0 || last <= first)
         return;
-    auto margin = (int64_t)std::llround(waveform->rate * 2);
-    viewFirst = std::max<int64_t>(0, first - margin);
-    viewLast = std::min(waveform->samples, last + margin);
-    if (viewLast <= viewFirst)
-        viewLast = viewFirst + 1;
+    viewFirst = std::clamp<int64_t>(first, 0, waveform->samples - 1);
+    viewLast = std::clamp<int64_t>(last, viewFirst + 1, waveform->samples);
     repaint();
 }
 int64_t WaveformView::sampleAt(float x) const
@@ -491,11 +487,22 @@ void WaveformView::mouseUp(const juce::MouseEvent &e)
         return;
     if (e.mods.isPopupMenu())
         return;
+    if (rangeSelected && e.getNumberOfClicks() >= 2)
+        return;
     if (!dragging)
     {
         setCursor(sampleAt(e.position.x));
         if (onSeek)
             onSeek(cursor);
     }
+}
+void WaveformView::mouseDoubleClick(const juce::MouseEvent &e)
+{
+    if (!waveform || waveform->samples <= 0 || !rangeSelected || dragging || e.mods.isPopupMenu())
+        return;
+    setRange(0, waveform->samples, false, false);
+    showWhole();
+    if (onClearRange)
+        onClearRange();
 }
 } // namespace sp

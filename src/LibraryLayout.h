@@ -12,7 +12,7 @@ inline juce::Range<int> visibleLibraryRows(juce::Rectangle<int> area, int height
 }
 struct LibraryLayout
 {
-    juce::Rectangle<int> results, selection, waveform, referenceWave, preview;
+    juce::Rectangle<int> collections, results, details, selection, waveform, referenceWave, preview;
     int referenceTop = 176, referenceHeight = 0, controlsY = 0, monitorY = 0, statusY = 0;
     bool small = false;
 };
@@ -26,23 +26,27 @@ inline LibraryLayout libraryLayout(int width, int height, bool compact, bool ref
         result.waveform = {12, height - 180, std::max(1, width - 24), 94};
         return result;
     }
-    const int left = 212, inset = 14;
-    const int previewWidth = std::clamp(width * 34 / 100, 390, 540);
-    const int split = width - previewWidth;
-    result.preview = {split + 5, 12, previewWidth - 17, height - 24};
-    result.selection = result.preview.reduced(12, 0).withTrimmedTop(54).withHeight(26);
+    const int sidebar = std::clamp(width / 5, 272, 320);
+    const int left = sidebar + 14, contentWidth = std::max(1, width - left - 14);
+    const int detailWidth = std::clamp(width / 5, 218, 280);
+    const int auditionHeight = result.small ? 238 : 300;
+    const int auditionTop = height - auditionHeight;
+    result.collections = {0, 0, sidebar, height};
+    result.preview = {left, auditionTop - 8, contentWidth, auditionHeight - 22};
+    result.selection = result.preview.reduced(12, 0).withTrimmedTop(8).withHeight(26);
     result.referenceTop = 101;
-    result.referenceHeight = reference ? (result.small ? 112 : 139) : 0;
+    result.referenceHeight = reference ? (result.small ? 136 : 156) : 0;
     const int top = reference ? result.referenceTop + result.referenceHeight + 8 : 103;
-    result.results = {left + inset, top, std::max(1, split - left - inset * 2),
-                      std::max(44, height - top - 42)};
-    result.referenceWave = {left + inset, result.referenceTop + 59, result.results.getWidth(),
-                            result.referenceHeight - 64};
-    auto inner = result.preview.reduced(12, 0);
-    result.waveform = {inner.getX(), 142, inner.getWidth(), std::clamp(height - 402, 96, 460)};
-    result.controlsY = result.waveform.getBottom() + 12;
-    result.monitorY = result.controlsY + 108;
-    result.statusY = height - 32;
+    const int resultsWidth = std::max(1, contentWidth - detailWidth - 14);
+    result.results = {left, top, resultsWidth, std::max(0, auditionTop - 16 - top)};
+    result.details = {result.results.getRight() + 14, 12, detailWidth, result.results.getBottom() - 12};
+    result.referenceWave = {left, result.referenceTop + 59, resultsWidth,
+                            std::max(0, result.referenceHeight - 79)};
+    result.waveform = {result.selection.getX(), auditionTop + 34, result.selection.getWidth(),
+                       auditionHeight - 148};
+    result.controlsY = height - 105;
+    result.monitorY = height - 58;
+    result.statusY = height - 28;
     return result;
 }
 } // namespace sp
