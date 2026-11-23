@@ -10,8 +10,8 @@ from datetime import datetime, timezone
 
 phase = sys.argv[1]
 if phase not in ('before', 'after'):
-    raise SystemExit('usage: qualify_hosted_release.py before|after')
-out = Path('docs/verification/hosted-automation/final/release')
+    raise SystemExit('usage: qualify_hosted_release.py before|after [evidence-directory]')
+out = Path(sys.argv[2] if len(sys.argv) > 2 else 'docs/verification/hosted-automation/final/release')
 out.mkdir(parents=True, exist_ok=True)
 files = [Path('CMakeLists.txt')] + [p for name in ('src', 'tests', 'resources', 'scripts')
                                     for p in Path(name).rglob('*')

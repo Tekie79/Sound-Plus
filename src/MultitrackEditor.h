@@ -16,6 +16,9 @@ class MultitrackEditor final : public juce::Component,
     bool audibleScrub = false;
     std::function<void()> onRowsChanged;
     std::function<void(const juce::String &)> onOpenMidi, onInstrument;
+    std::function<bool(const juce::KeyPress &)> onCommand;
+    void openSurroundPanner(const juce::String &);
+    void closeSurroundPanner();
     std::function<void(juce::var, int64_t)> onAssetDrop;
     void refresh();
     void transportTick();
@@ -49,6 +52,7 @@ class MultitrackEditor final : public juce::Component,
 
   private:
     struct Header;
+    std::unique_ptr<juce::DocumentWindow> surroundWindow;
     juce::OwnedArray<Header> headers;
     juce::OwnedArray<AutomationEditor> lanes;
     DesignSession &session;

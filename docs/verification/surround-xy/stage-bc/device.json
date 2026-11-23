@@ -1,0 +1,13 @@
+{
+  "device": "MacBook Pro Speakers",
+  "rate": 48000.0,
+  "buffer": 512,
+  "inputs": 89,
+  "applied": 88,
+  "milliseconds": 1919.89983332157135,
+  "underruns": 0,
+  "producerMaxMs": 0.287708282470703,
+  "rssBytes": 53886976,
+  "cpuDeltaSeconds": 0.08499,
+  "receiptBytes": 1683
+}

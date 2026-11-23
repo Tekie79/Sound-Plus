@@ -1,6 +1,12 @@
 #include "DesignAudio.h"
 #include "DesignLive.h"
 #include "TrackModel.h"
+#include "SurroundTouch.h"
+#include "DesignRecovery.h"
+#include "DesignSession.h"
+#include "MidiModel.h"
+#include "SourcePools.h"
+#include <CoreFoundation/CoreFoundation.h>
 #include <iostream>
 
 namespace
@@ -78,9 +84,10 @@ void compare(const AudioBuffer<float> &a, const AudioBuffer<float> &b)
             check(std::abs(a.getSample(c, n) - b.getSample(c, n)) < 1e-7f,
                   "Partition-invariant surround PCM");
 }
+#include "SurroundMotionTests.inc"
 } // namespace
 
-void runSurroundXYTests(const juce::File &base)
+void runSurroundXYTests(const juce::File &base, const juce::File &app)
 {
     using namespace sp;
     using namespace juce;
@@ -196,6 +203,7 @@ void runSurroundXYTests(const juce::File &base)
                 }
                 check(std::abs(power - 1) < 2e-7 && g[3] == 0, "Normalized speaker power");
             }
+        checkMotionOutput(root, output);
         auto unsupported = fixture(root, output, 1, 48000);
         auto &track = unsupported.original.tracks.front();
         track.surroundXY = SurroundPosition{};
@@ -209,6 +217,7 @@ void runSurroundXYTests(const juce::File &base)
         unsupported.original.layers.front().routing.spatial = true;
         rejects([&] { validateTracks(unsupported.original, 48000); }, "Double spatial processing rejected");
     }
+    seedNativeFixture(base, root, app);
     std::cout
         << "Square Surround gain, rate/partition, versioning and independent mono/stereo PCM checks passed\n";
 }

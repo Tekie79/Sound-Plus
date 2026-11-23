@@ -34,6 +34,24 @@ std::vector<juce::String> visibleTracks(const DesignMix &);
 ChannelLayout trackOutputLayout(const DesignMix &, const DesignTrack &);
 inline const AutomationTarget surroundX{"square-surround-v1", "position-x"},
     surroundY{"square-surround-v1", "position-y"}, surroundSpread{"square-surround-v1", "stereo-spread"};
+enum class MotionShape
+{
+    linear,
+    hold,
+    smooth
+};
+struct SurroundNode
+{
+    int64_t frame = 0;
+    double x = 0, y = 0;
+    MotionShape shape = MotionShape::linear;
+};
+SurroundPosition surroundPositionAt(const DesignTrack &, int64_t, bool readOnly = true);
+std::vector<SurroundNode> surroundNodes(const DesignTrack &);
+void setSurroundNode(DesignTrack &, SurroundNode);
+void eraseSurroundNodes(DesignTrack &, const std::set<int64_t> &);
+AutomationPoint &splitSquareSegment(AutomationCurve &, int64_t frame, double base);
+
 bool trackSquareSurroundSupported(const DesignMix &, const DesignTrack &);
 void validateSquareSurround(const DesignMix &, const DesignTrack &);
 bool hasSquareSurround(const DesignMix &);

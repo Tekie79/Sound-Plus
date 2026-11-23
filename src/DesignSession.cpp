@@ -1,3 +1,4 @@
+#include "SurroundTouch.h"
 #include "AdvancedIR.h"
 #include "DesignSession.h"
 #include "TrackModel.h"
@@ -86,6 +87,7 @@ DesignSessionServices nativeServices(AudioClient &audio)
     services.stop = [&audio] { audio.stop(); };
     services.finishTake = [&audio](bool cancel) { audio.finishTake(cancel); };
     services.reserveTake = [&audio](bool reserve) { audio.reserveTake(reserve); };
+    services.squareTouchCommand = [&audio](auto command) { audio.squareTouch(std::move(command)); };
     services.inputCommand = [&audio](juce::var command) { audio.inputCommand(std::move(command)); };
     services.inputPermission = [](auto done) { requestAudioInputPermission(std::move(done)); };
     return services;
@@ -529,6 +531,19 @@ void DesignSession::withLiveState(std::function<void()> continuation, std::funct
 bool DesignSession::flushLive(std::function<void()> continuation, bool allowFailure,
                               std::function<void()> rejected)
 {
+    if (squarePass)
+    {
+        endSquareTouch();
+        if (afterSquareTouch)
+        {
+            message = "Finishing Square Surround Touch";
+            if (rejected)
+                rejected();
+            return true;
+        }
+        afterSquareTouch = std::move(continuation);
+        return true;
+    }
     if (gesture)
         endGesture();
     if (liveReady)
@@ -1556,6 +1571,98 @@ std::optional<int64_t> DesignSession::automationFrame() const
         return {};
     return std::max<int64_t>(0, (int64_t)state["sourceSample"]);
 }
+void DesignSession::sendSquareTouch(const char *phase, juce::Point<double> point)
+{
+    if (!squarePass || !services.squareTouchCommand)
+        return;
+    auto command = sp::message("square_touch");
+    auto *o = command.getDynamicObject();
+    o->setProperty("id", "design:" + squarePass->document);
+    o->setProperty("owner", squarePass->owner);
+    o->setProperty("pass", squarePass->id);
+    o->setProperty("playGeneration", (juce::int64)squarePass->generation);
+    o->setProperty("graphEpoch", (juce::int64)squarePass->epoch);
+    o->setProperty("phase", phase);
+    o->setProperty("x", point.x);
+    o->setProperty("y", point.y);
+    services.squareTouchCommand(std::move(command));
+}
+bool DesignSession::beginSquareTouch(const juce::String &owner, juce::Point<double> point)
+{
+    if (squarePass || gesture || !services.squareTouchCommand || replacing || takeBusy() || midiBusy() ||
+        inputBusy() || document.activeTake.isNotEmpty() || !automationFrame())
+        return false;
+    const auto state = services.status();
+    auto *t = findTrack(document.activeMix(), owner);
+    if (!t || !t->surroundXY || !(bool)state["playing"] ||
+        (uint64_t)(int64_t)state["playGeneration"] != expectedGeneration ||
+        state["id"].toString() != "design:" + document.id)
+        return false;
+    squarePass = SquarePass{juce::Uuid().toString(),
+                            owner,
+                            document.id,
+                            document.activeVariation,
+                            lifetime,
+                            expectedGeneration,
+                            (int64_t)state["graphEpoch"],
+                            (int64_t)state["helperPid"]};
+    sendSquareTouch("begin", point);
+    return true;
+}
+bool DesignSession::moveSquareTouch(juce::Point<double> point)
+{
+    if (!squarePass || squarePass->ending)
+        return false;
+    sendSquareTouch("move", point);
+    return true;
+}
+void DesignSession::endSquareTouch()
+{
+    if (!squarePass || squarePass->ending)
+        return;
+    squarePass->ending = true;
+    squarePass->deadline = services.now() + 1800;
+    sendSquareTouch("end");
+}
+void DesignSession::pollSquareTouch(const juce::var &state)
+{
+    if (!squarePass)
+        return;
+    const auto pass = *squarePass;
+    const auto receipt = state["squareTouch"];
+    const bool matched = receipt["pass"].toString() == pass.id && receipt["owner"].toString() == pass.owner &&
+                         (uint64_t)(int64_t)receipt["playGeneration"] == pass.generation &&
+                         (int64_t)receipt["graphEpoch"] == pass.epoch;
+    const bool sameContext = pass.lifetime == lifetime && pass.document == document.id &&
+                             pass.variation == document.activeVariation && document.activeTake.isEmpty();
+    if (!matched && sameContext)
+    {
+        const bool lost = (uint64_t)(int64_t)state["playGeneration"] > pass.generation ||
+                          (int64_t)state["helperPid"] != pass.helper || !(bool)state["playing"];
+        if (lost && !pass.ending)
+            endSquareTouch();
+        if (!squarePass->ending || services.now() < squarePass->deadline)
+            return;
+    }
+    if (matched)
+        sendSquareTouch("ack");
+    squarePass.reset();
+    if (matched && sameContext && (int)receipt["pointCount"] > 0 && !replacing)
+    {
+        const auto revision = document.revision;
+        edit("Square Surround Touch",
+             [&](auto &d) { retainSquareTouch(d.activeMix(), pass.owner, receipt, d.sampleRate); });
+        if (document.revision != revision)
+            message = (bool)receipt["interrupted"] ? "Applied surround motion retained after interruption"
+                                                   : "Surround motion recorded";
+    }
+    else
+        message = "No applied surround motion to retain";
+    notify();
+    if (auto next = std::exchange(afterSquareTouch, {}))
+        services.post(std::move(next));
+}
+
 bool DesignSession::ownsPlayback() const
 {
     return active || previewWaiting;
@@ -1692,6 +1799,7 @@ void DesignSession::stop()
         message = "Recording owns transport; use Stop or Cancel Take";
         return;
     }
+    endSquareTouch();
     auto state = services.status();
     if (active && !seekGesture && (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration &&
         state["id"].toString() == "design:" + document.id)
@@ -1783,6 +1891,7 @@ void DesignSession::timerCallback()
     pollMidi(state);
     pollInput(state);
     pollTake(state);
+    pollSquareTouch(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;
     if (active && !previewWaiting && owned && !(bool)state["pendingPlayback"])

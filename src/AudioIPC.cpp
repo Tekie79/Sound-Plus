@@ -114,6 +114,13 @@ void AudioClient::enqueueLocked(juce::var v)
     else if (command == "design_parameters")
         std::erase_if(outgoing,
                       [](const auto &old) { return old["command"].toString() == "design_parameters"; });
+    else if (command == "square_touch" && v["phase"].toString() == "move")
+        std::erase_if(outgoing,
+                      [&](const auto &old)
+                      {
+                          return old["command"].toString() == "square_touch" &&
+                                 old["phase"].toString() == "move" && old["pass"] == v["pass"];
+                      });
     else if (command == "gain")
         std::erase_if(outgoing, [](const auto &old) { return old["command"].toString() == "gain"; });
     if (outgoing.size() >= 16)

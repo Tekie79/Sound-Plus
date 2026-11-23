@@ -202,6 +202,11 @@ void AudioEngine::command(const juce::var &message)
         playback.core.volume = juce::jlimit(0.f, 1.f, (float)message["value"]);
         return;
     }
+    if (name == "square_touch")
+    {
+        playback.squareTouch(message);
+        return;
+    }
     if (name == "design_parameters")
     {
         playback.parameters(message);

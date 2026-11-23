@@ -612,7 +612,12 @@ void AutomationEditor::setHold(bool hold)
                      if (auto *c = automationCurve(*automationLane(d.activeMix(), owner), t))
                          for (auto &p : c->points)
                              if (selection.contains(p.id))
+                             {
                                  p.hold = hold || parameter.discrete;
+                                 p.smooth = false;
+                                 p.smoothStart = 0;
+                                 p.smoothEnd = 1;
+                             }
                  });
 }
 void AutomationEditor::offsetPoints(double amount)

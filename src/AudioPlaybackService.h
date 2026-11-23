@@ -18,6 +18,7 @@ class AudioPlaybackService
     void request(juce::var command, double outputRate);
     void stop(uint64_t generation);
     void parameters(juce::var);
+    void squareTouch(juce::var);
     void finishCapture(uint64_t generation, bool cancel = false)
     {
         captureFinishGeneration = generation;
@@ -83,6 +84,7 @@ class AudioPlaybackService
     std::optional<Request> pending;
     std::optional<Ready> ready;
     juce::var controls, telemetry;
+    std::vector<juce::var> squareCommands;
     std::atomic<bool> quitting{false};
     std::atomic<uint64_t> epoch{0}, stopEpoch{0}, stopGeneration{0};
     std::atomic<int64_t> clockFrame{0};

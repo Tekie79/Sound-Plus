@@ -1,0 +1,20 @@
+Window: "Square Surround", App: SoundPlus.
+0 standard window Square Surround, Secondary Actions: Raise
+	1 container Square Surround panner, Description: Square sound field. Front is up. Drag or use arrow keys. Shift makes fine moves. Double-click to add a motion point at the playhead.
+	2 text (settable) Stereo object 5.1 Rear
+	3 button (settable) XY enabled, Help: Activate the previewed Square Surround routing. Undo restores the previous routing., Value: On
+	4 button Add motion point at playhead
+	5 button Motion options
+	6 text (settable) X Y 17.323 s
+	7 text entry area (settable) Position X, left -1 to right +1, Value: -0.579, Secondary Actions: Delete
+	8 text entry area (settable) Position Y, rear -1 to front +1, Value: 0.431, Secondary Actions: Delete
+	9 text (settable) Spread
+	10 slider (settable) Stereo Spread, Help: Spread the independent left and right source positions, Value: 0.500, Secondary Actions: Delete
+	11 button (settable) Touch, Help: Record Position X and Y while playing. Release returns to Read over 100 ms., Value: Off
+	12 close button
+	13 zoom button
+	14 text Square Surround
+15 menu bar
+	16 SoundPlus
+
+The focused UI element is 1 container Square Surround panner, Description: Square sound field. Front is up. Drag or use arrow keys. Shift makes fine moves. Double-click to add a motion point at the playhead.

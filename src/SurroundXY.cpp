@@ -1,4 +1,5 @@
 #include "TrackModel.h"
+#include "SurroundTouch.h"
 #include <cmath>
 
 namespace sp
@@ -116,7 +117,17 @@ void validateSquareSurround(const DesignMix &mix, const DesignTrack &track)
 bool hasSquareSurround(const DesignMix &mix)
 {
     return std::any_of(mix.tracks.begin(), mix.tracks.end(),
-                       [](const auto &t) { return t.surroundXY.has_value(); });
+                       [](const auto &t)
+                       {
+                           return t.surroundXY ||
+                                  std::any_of(t.automation.curves.begin(), t.automation.curves.end(),
+                                              [](const auto &c)
+                                              {
+                                                  return !c.points.empty() &&
+                                                         (c.target == surroundX || c.target == surroundY ||
+                                                          c.target == surroundSpread);
+                                              });
+                       });
 }
 
 bool hasSquareSurround(const DesignDocument &doc)
@@ -146,5 +157,196 @@ SurroundPosition squareSurroundFromJson(const juce::var &v)
         !number(v["spread"]))
         throw std::runtime_error("Unsupported square panning policy");
     return {(double)v["x"], (double)v["y"], (double)v["spread"]};
+}
+} // namespace sp
+
+namespace sp
+{
+namespace
+{
+double axisAt(const DesignTrack &track, const AutomationTarget &target, double base, int64_t frame,
+              bool readOnly)
+{
+    auto *curve = automationCurve(track.automation, target);
+    if (!curve || (readOnly && !curve->read))
+        return base;
+    AutomationParameter parameter;
+    parameter.base = base;
+    return automationValue(*curve, parameter, frame);
+}
+} // namespace
+
+SurroundPosition surroundPositionAt(const DesignTrack &track, int64_t frame, bool readOnly)
+{
+    auto p = track.surroundXY.value_or(SurroundPosition{});
+    return {axisAt(track, surroundX, p.x, frame, readOnly), axisAt(track, surroundY, p.y, frame, readOnly),
+            axisAt(track, surroundSpread, p.spread, frame, readOnly)};
+}
+
+std::vector<SurroundNode> surroundNodes(const DesignTrack &track)
+{
+    std::set<int64_t> frames;
+    for (const auto &axis : {surroundX, surroundY})
+        if (auto *curve = automationCurve(track.automation, axis))
+            for (const auto &p : curve->points)
+                frames.insert(p.frame);
+    std::vector<SurroundNode> nodes;
+    nodes.reserve(frames.size());
+    for (auto frame : frames)
+    {
+        const auto p = surroundPositionAt(track, frame, false);
+        MotionShape shape = MotionShape::linear;
+        if (auto *curve = automationCurve(track.automation, surroundX))
+        {
+            auto i = std::lower_bound(curve->points.begin(), curve->points.end(), frame,
+                                      [](const auto &point, auto f) { return point.frame < f; });
+            if (i != curve->points.end() && i->frame == frame)
+                shape = i->hold ? MotionShape::hold : i->smooth ? MotionShape::smooth : MotionShape::linear;
+        }
+        nodes.push_back({frame, p.x, p.y, shape});
+    }
+    return nodes;
+}
+void setSurroundNode(DesignTrack &track, SurroundNode node)
+{
+    for (const auto &[target, value] : {std::pair{surroundX, node.x}, std::pair{surroundY, node.y}})
+    {
+        auto *c = automationCurve(track.automation, target, true);
+        auto at = std::lower_bound(c->points.begin(), c->points.end(), node.frame,
+                                   [](const auto &p, auto frame) { return p.frame < frame; });
+        if (at == c->points.end() || at->frame != node.frame)
+            at = c->points.insert(at, {juce::Uuid().toString(), node.frame});
+        at->value = std::clamp(value, -1., 1.);
+        at->hold = node.shape == MotionShape::hold;
+        bool smooth = node.shape == MotionShape::smooth;
+        if (at->smooth != smooth)
+        {
+            at->smoothStart = 0;
+            at->smoothEnd = 1;
+        }
+        at->smooth = smooth;
+    }
+}
+AutomationPoint &splitSquareSegment(AutomationCurve &curve, int64_t frame, double base)
+{
+    auto next = std::lower_bound(curve.points.begin(), curve.points.end(), frame,
+                                 [](auto &p, int64_t time) { return p.frame < time; });
+    if (next != curve.points.end() && next->frame == frame)
+        return *next;
+    AutomationParameter parameter;
+    parameter.base = base;
+    AutomationPoint split{juce::Uuid().toString(), frame, automationValue(curve, parameter, frame)};
+    if (next != curve.points.begin() && next != curve.points.end())
+    {
+        auto &previous = *std::prev(next);
+        split.hold = previous.hold;
+        if (previous.smooth)
+        {
+            auto fraction = (double)(frame - previous.frame) / (next->frame - previous.frame);
+            auto phase = std::lerp(previous.smoothStart, previous.smoothEnd, fraction);
+            if (phase > previous.smoothStart && phase < previous.smoothEnd)
+            {
+                split.smooth = true;
+                split.smoothStart = phase;
+                split.smoothEnd = previous.smoothEnd;
+                previous.smoothEnd = phase;
+            }
+        }
+    }
+    else
+        split.hold = true;
+    return *curve.points.insert(next, std::move(split));
+}
+void eraseSurroundNodes(DesignTrack &track, const std::set<int64_t> &frames)
+{
+    for (const auto &axis : {surroundX, surroundY})
+        if (auto *c = automationCurve(track.automation, axis))
+            std::erase_if(c->points, [&](const auto &point) { return frames.contains(point.frame); });
+}
+} // namespace sp
+
+namespace sp
+{
+std::vector<SquareTouchPass::Point> unpackSquareTouch(const juce::var &receipt)
+{
+    const auto count = (int)receipt["pointCount"];
+    const auto packed = receipt["packedPoints"].toString();
+    if ((int)receipt["wireVersion"] != 1 || count < 0 || count > (int)squareTouchPointLimit ||
+        packed.length() != count * 16)
+        throw std::runtime_error("Invalid Square Surround receipt envelope");
+    juce::MemoryOutputStream decoded;
+    if (!juce::Base64::convertFromBase64(decoded, packed) || decoded.getDataSize() != (size_t)count * 12)
+        throw std::runtime_error("Invalid Square Surround receipt payload");
+    juce::MemoryInputStream input(decoded.getData(), decoded.getDataSize(), false);
+    std::vector<SquareTouchPass::Point> points;
+    points.reserve((size_t)count);
+    for (int i = 0; i < count; ++i)
+    {
+        auto frame = (int64_t)input.readInt();
+        double x = std::bit_cast<float>(input.readInt());
+        double y = std::bit_cast<float>(input.readInt());
+        points.push_back({frame, {x, y}});
+    }
+    return points;
+}
+void retainSquareTouch(DesignMix &mix, const juce::String &owner, const juce::var &receipt, double rate)
+{
+    auto *track = findTrack(mix, owner);
+    auto applied = unpackSquareTouch(receipt);
+    if (!track || !track->surroundXY || applied.empty())
+        throw std::runtime_error("No matching applied Square Surround Touch motion");
+    for (auto key : {"returnX", "returnY"})
+    {
+        const auto v = (double)receipt[key];
+        if (!std::isfinite(v) || std::abs(v) > 1)
+            throw std::runtime_error("Invalid Square Surround return value");
+    }
+    const auto release = (int64_t)receipt["release"];
+    const auto returnEnd = (int64_t)receipt["returnEnd"];
+    if (returnEnd - release != (int64_t)std::llround(rate * .1))
+        throw std::runtime_error("Invalid Square Surround return frame");
+    std::array<std::vector<AutomationPoint>, 2> axes;
+    int64_t previous = -1;
+    for (auto &row : applied)
+    {
+        const auto frame = row.frame;
+        if (frame <= previous || frame > release)
+            throw std::runtime_error("Invalid Square Surround gesture frame");
+        previous = frame;
+        for (int axis = 0; axis < 2; ++axis)
+        {
+            const auto value = axis == 0 ? row.position.x : row.position.y;
+            if (!std::isfinite(value) || std::abs(value) > 1)
+                throw std::runtime_error("Invalid Square Surround gesture value");
+            axes[(size_t)axis].push_back({juce::Uuid().toString(), frame, value, frame != release});
+        }
+    }
+    for (int axis = 0; axis < 2; ++axis)
+    {
+        const auto &target = axis == 0 ? surroundX : surroundY;
+        auto *curve = automationCurve(track->automation, target, true);
+        auto base = axis == 0 ? track->surroundXY->x : track->surroundXY->y;
+        const auto first = axes[(size_t)axis].front().frame;
+        if (first > 0)
+        {
+            auto &edge = splitSquareSegment(*curve, first - 1, base);
+            edge.hold = true;
+            edge.smooth = false;
+            edge.smoothStart = 0;
+            edge.smoothEnd = 1;
+        }
+        auto suffix = splitSquareSegment(*curve, returnEnd, base);
+        curve->read = true;
+        auto endpoint = (double)receipt[axis == 0 ? "returnX" : "returnY"];
+        writeTouchPass(mix, owner, target, axes[(size_t)axis], release, rate, endpoint);
+        curve = automationCurve(track->automation, target);
+        for (auto &point : curve->points)
+            if (point.frame == returnEnd)
+            {
+                point = suffix;
+                point.value = endpoint;
+                break;
+            }
+    }
 }
 } // namespace sp

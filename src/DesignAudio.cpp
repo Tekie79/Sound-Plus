@@ -1,3 +1,4 @@
+#include "SurroundTouch.h"
 #include "AdvancedIR.h"
 #include "NativeSampler.h"
 #include "NativeEffectsDSP.h"
@@ -642,6 +643,7 @@ struct DesignGraph::Impl
     DesignDocument document;
     std::optional<DesignDocument> padBase;
     std::optional<PerformControls> lastPadControls;
+    std::optional<SquareTouchPass> squareTouch;
     void applyControlPacket(const juce::var &p)
     {
         applyDesignParameters(document, p);
@@ -914,6 +916,9 @@ struct DesignGraph::Impl
                                              node.legacyConversion[c][k]);
             node.rack->automate(*node.automation, cursor - node.inputLatency);
             node.rack->process(node.pcm, frames);
+            auto *motion = squareTouch && squareTouch->owner == node.track.id ? &*squareTouch : nullptr;
+            if (motion)
+                motion->apply(std::max<int64_t>(0, cursor - node.outputLatency), sampleRate);
             ChannelMatrix matrix{};
             int matrixEnd = 0;
             for (int n = 0; n < frames; ++n)
@@ -931,6 +936,13 @@ struct DesignGraph::Impl
                         position->x = node.automation->value(surroundX, position->x, time);
                         position->y = node.automation->value(surroundY, position->y, time);
                         position->spread = node.automation->value(surroundSpread, position->spread, time);
+                        if (motion && !motion->points.empty() &&
+                            (motion->release < 0 || frame <= motion->returnEnd))
+                        {
+                            auto applied = motion->value(std::max(time, motion->points.back().frame));
+                            position->x = applied.x;
+                            position->y = applied.y;
+                        }
                         matrix = squareSurroundMatrix(node.bus, node.destinationBus, *position);
                     }
                     else
@@ -940,6 +952,8 @@ struct DesignGraph::Impl
                         for (int k = 0; k < node.bus.size(); ++k)
                             node.matrixGains[(size_t)c][(size_t)k].setTargetValue(matrix[c][k]);
                     matrixEnd = n + node.automation->untilBoundary(frame, frames - n);
+                    if (motion && motion->release >= 0 && frame < motion->returnEnd)
+                        matrixEnd = std::min(matrixEnd, n + (int)(motion->returnEnd - frame));
                 }
                 float gain = node.volumeAutomated
                                  ? juce::Decibels::decibelsToGain((float)node.automation->value(
@@ -1186,6 +1200,58 @@ void DesignGraph::updateParameters(const juce::var &parameters)
     impl->applyControlPacket(parameters);
 }
 
+bool DesignGraph::squareTouch(const juce::var &command)
+{
+    if (impl->inputEnd >= 0)
+        return false;
+    auto phase = command["phase"].toString();
+    auto pass = command["pass"].toString();
+    auto owner = command["owner"].toString();
+    auto point = juce::Point<double>{(float)command["x"], (float)command["y"]};
+    if (pass.length() != 32 || owner.isEmpty() || !std::isfinite(point.x) || !std::isfinite(point.y) ||
+        std::abs(point.x) > 1 || std::abs(point.y) > 1)
+        return false;
+    if (phase == "begin")
+    {
+        if (impl->squareTouch && impl->squareTouch->release < 0)
+            return false;
+        auto *t = findTrack(impl->document.activeMix(), owner);
+        if (!t || !t->surroundXY)
+            return false;
+        auto &motion = impl->squareTouch.emplace();
+        motion.id = pass;
+        motion.owner = owner;
+        motion.generation = command["playGeneration"];
+        motion.graphEpoch = command["graphEpoch"];
+        motion.underlying = *t;
+        motion.points.reserve(squareTouchPointLimit);
+        motion.pending = point;
+        return true;
+    }
+    if (!impl->squareTouch || impl->squareTouch->id != pass || impl->squareTouch->owner != owner ||
+        impl->squareTouch->release >= 0 || impl->squareTouch->ending)
+        return false;
+    if (phase == "move")
+        impl->squareTouch->pending = point;
+    else if (phase == "end")
+        impl->squareTouch->ending = true;
+    else
+        return false;
+    return true;
+}
+juce::var DesignGraph::squareTouchReceipt(bool close)
+{
+    if (!impl->squareTouch)
+        return {};
+    auto &motion = *impl->squareTouch;
+    if (close && motion.release < 0)
+        for (auto &node : impl->tracks)
+            if (node->track.id == motion.owner)
+                motion.finish(std::max<int64_t>(0, impl->cursor - node->outputLatency), impl->sampleRate,
+                              true);
+    return motion.result();
+}
+
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)
 {
@@ -1336,6 +1402,14 @@ void DesignReader::updateParameters(const juce::var &parameters)
                 (int64_t)std::llround(impl->tailSeconds * impl->document.sampleRate);
     impl->total = std::max<int64_t>(0, (int64_t)std::ceil((long double)(impl->end - impl->firstFrame) *
                                                           impl->outputRate / impl->document.sampleRate));
+}
+bool DesignReader::squareTouch(const juce::var &command)
+{
+    return !impl->immutableReplay && impl->graph.squareTouch(command);
+}
+juce::var DesignReader::squareTouchReceipt(bool close)
+{
+    return impl->graph.squareTouchReceipt(close);
 }
 void DesignReader::updatePerformance(const PerformControls &controls, TakeCapture &capture)
 {

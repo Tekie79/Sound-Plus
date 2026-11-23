@@ -25,6 +25,14 @@ class PcmStream
         bool grain = false);
     void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
+    bool squareTouch(const juce::var &command)
+    {
+        return designReader && !takeCapture && !previewGrain && designReader->squareTouch(command);
+    }
+    juce::var squareTouchReceipt(bool close = false)
+    {
+        return designReader ? designReader->squareTouchReceipt(close) : juce::var();
+    }
     int64_t injectMidi(const juce::String &owner, MidiPacket p)
     {
         return designReader ? designReader->injectMidi(owner, p) : p.frame;

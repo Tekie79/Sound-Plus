@@ -91,6 +91,15 @@ void AudioPlaybackService::parameters(juce::var command)
     std::lock_guard lock(mutex);
     controls = std::move(command);
 }
+void AudioPlaybackService::squareTouch(juce::var command)
+{
+    std::lock_guard lock(mutex);
+    if (command["phase"].toString() == "move")
+        std::erase_if(squareCommands, [&](auto &old)
+                      { return old["phase"].toString() == "move" && old["pass"] == command["pass"]; });
+    if (squareCommands.size() < 16)
+        squareCommands.push_back(std::move(command));
+}
 juce::var AudioPlaybackService::status()
 {
     std::lock_guard lock(telemetryMutex);
@@ -271,7 +280,22 @@ void AudioPlaybackService::produce()
     int64_t revision = 0;
     juce::String id, error, structure, context;
     bool immutableReplay = false;
-    juce::var latestControls;
+    juce::var latestControls, lastSquareReceipt;
+    juce::String lastSquarePass;
+    double squareReceiptExpiry = 0;
+    auto harvestSquare = [&](bool finish)
+    {
+        if (auto *stream = core.producerStream())
+            if (auto receipt = stream->squareTouchReceipt(finish);
+                receipt.isObject() && receipt["pass"].toString() != lastSquarePass)
+            {
+                lastSquarePass = receipt["pass"].toString();
+                lastSquareReceipt = std::move(receipt);
+                auto bytes = juce::JSON::toString(lastSquareReceipt, true).getNumBytesAsUTF8();
+                lastSquareReceipt.getDynamicObject()->setProperty("receiptBytes", (int)bytes);
+                squareReceiptExpiry = monotonicMs() + 4000;
+            }
+    };
     while (!quitting)
     {
         auto stop = stopEpoch.load();
@@ -328,6 +352,7 @@ void AudioPlaybackService::produce()
         }
         if (stop > lastStop)
         {
+            harvestSquare(true);
             if (core.capture() && core.capture()->phase <= TakeCapture::recording)
                 core.finishTake(false);
             core.stop();
@@ -341,6 +366,7 @@ void AudioPlaybackService::produce()
         }
         std::optional<Ready> next, retired;
         juce::var incoming;
+        std::vector<juce::var> incomingSquare;
         {
             std::lock_guard lock(mutex);
             if (ready)
@@ -358,10 +384,20 @@ void AudioPlaybackService::produce()
                     ready.reset();
                 }
             }
+            incomingSquare.swap(squareCommands);
             incoming = controls;
             controls = juce::var();
         }
         retired.reset();
+        for (auto &command : incomingSquare)
+            if (command["phase"].toString() == "ack" && command["pass"].toString() == lastSquarePass &&
+                lastSquareReceipt.isObject())
+            {
+                lastSquareReceipt = lastSquareReceipt.clone();
+                lastSquareReceipt.getDynamicObject()->removeProperty("packedPoints");
+            }
+        if (squareReceiptExpiry > 0 && monotonicMs() >= squareReceiptExpiry)
+            lastSquareReceipt = juce::var();
         try
         {
             if (incoming.isObject() &&
@@ -394,6 +430,7 @@ void AudioPlaybackService::produce()
                         captureRequestActive = false;
                     if (next->stream)
                         next->stream->transportGeneration = next->generation;
+                    harvestSquare(true);
                     core.adopt(std::move(next->stream));
                     if (next->capture && prepared)
                         next->capture->phase = TakeCapture::recording;
@@ -426,6 +463,13 @@ void AudioPlaybackService::produce()
                                           (double)latestControls["eventMs"]);
                 lastEdit = (uint64_t)(int64_t)latestControls["sequence"];
             }
+            if (!immutableReplay && !core.capture() && core.designPlaying() && activeEpoch == epoch.load())
+                for (const auto &command : incomingSquare)
+                    if (command["id"].toString() == id &&
+                        (uint64_t)(int64_t)command["playGeneration"] == generation &&
+                        command["graphEpoch"] == juce::var((juce::int64)activeEpoch))
+                        if (auto *stream = core.producerStream())
+                            stream->squareTouch(command);
             if (midiInput)
                 midiInput->service(core.producerStream());
             int ahead = 1536;
@@ -435,6 +479,7 @@ void AudioPlaybackService::produce()
                             : midiLookaheadFrames(core.producerStream()->outputRate(),
                                                   core.callbackFrames.load(), core.producerMaxMs());
             core.service(ahead);
+            harvestSquare(!core.playing());
             if (auto capture = core.capture();
                 capture && (capture->phase == TakeCapture::recording || capture->checkpointFailed))
             {
@@ -449,6 +494,7 @@ void AudioPlaybackService::produce()
         }
         catch (const std::exception &failure)
         {
+            harvestSquare(true);
             captureRequestActive = false;
             if (auto capture = core.capture())
             {
@@ -465,6 +511,8 @@ void AudioPlaybackService::produce()
         clockFrame = core.sourceSample();
         auto state = message("status");
         auto *object = state.getDynamicObject();
+        if (lastSquareReceipt.isObject())
+            object->setProperty("squareTouch", lastSquareReceipt);
         object->setProperty("id", id);
         object->setProperty("playGeneration", (juce::int64)generation);
         object->setProperty("graphEpoch", (juce::int64)activeEpoch);

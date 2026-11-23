@@ -56,6 +56,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         resized();
         tracks->grabKeyboardFocus();
     };
+    tracks->onCommand = [this](auto &key) { return commandKey(key); };
     tracks->onOpenMidi = [this](const auto &id)
     {
         midiEditorOpen = true;
@@ -1645,6 +1646,8 @@ void DesignerView::resized()
 }
 void DesignerView::setPerformMode(bool enabled)
 {
+    if (enabled)
+        tracks->closeSurroundPanner();
     performMode = enabled;
     preferences.setValue("performWorkspace", enabled);
     resized();

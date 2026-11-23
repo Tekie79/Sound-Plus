@@ -84,6 +84,15 @@ juce::var laneJson(const AutomationLane &l)
             put(x, "frame", (juce::int64)p.frame);
             put(x, "value", p.value);
             put(x, "hold", p.hold);
+            if (p.smooth)
+            {
+                put(x, "smooth", true);
+                if (p.smoothStart != 0 || p.smoothEnd != 1)
+                {
+                    put(x, "smoothStart", p.smoothStart);
+                    put(x, "smoothEnd", p.smoothEnd);
+                }
+            }
             points.add(x);
         }
         put(row, "points", points);
@@ -109,8 +118,10 @@ AutomationLane laneFrom(const juce::var &v)
             c.hostedBinding = hostedBindingFromJson(row["hostedBinding"]);
         require(row["points"].isArray() && row["points"].size() <= 2048, "Automation curve point bound");
         for (auto &p : *row["points"].getArray())
-            c.points.push_back(
-                {p["id"].toString(), (int64_t)p["frame"], (double)p["value"], (bool)p["hold"]});
+            c.points.push_back({p["id"].toString(), (int64_t)p["frame"], (double)p["value"], (bool)p["hold"],
+                                (bool)p["smooth"],
+                                p.hasProperty("smoothStart") ? (double)p["smoothStart"] : 0.,
+                                p.hasProperty("smoothEnd") ? (double)p["smoothEnd"] : 1.});
         l.curves.push_back(std::move(c));
     }
     return l;
@@ -222,7 +233,11 @@ void rebaseAutomation(DesignMix &m, int64_t first)
                                   [&](auto &v) { return v.target == curve.target; });
             std::optional<double> start;
             if (p != targets.end())
+            {
                 start = automationValue(curve, *p, first);
+                if ((curve.target == surroundX || curve.target == surroundY) && !curve.points.empty())
+                    splitSquareSegment(curve, first, p->base);
+            }
             std::erase_if(curve.points, [&](auto &v) { return v.frame < first; });
             for (auto &v : curve.points)
                 v.frame -= first;
@@ -697,6 +712,13 @@ double automationValue(const AutomationCurve &curve, const AutomationParameter &
     if (next == points.end() || a.hold || p.discrete)
         return a.value;
     double x = (double)(frame - a.frame) / (next->frame - a.frame);
+    if (a.smooth)
+    {
+        const auto ease = [](double f) { return f * f * (3 - 2 * f); };
+        auto first = ease(a.smoothStart), last = ease(a.smoothEnd);
+        if (last - first > 1e-14)
+            x = std::clamp((ease(std::lerp(a.smoothStart, a.smoothEnd, x)) - first) / (last - first), 0., 1.);
+    }
     if (p.logarithmic)
         return std::exp(std::log(std::max(p.minimum, a.value)) * (1 - x) +
                         std::log(std::max(p.minimum, next->value)) * x);
@@ -913,6 +935,13 @@ void validateTracks(const DesignMix &m, double rate)
                 require(p.id.isNotEmpty() && points.insert(p.id).second && p.frame > previous &&
                             p.frame <= rate * 86400 * 7 && std::isfinite(p.value),
                         "Invalid automation point/time/value");
+                require(!p.smooth || (!p.hold && (c.target == surroundX || c.target == surroundY) &&
+                                      owner != "master"),
+                        "Smooth interpolation is only for Square XY");
+                require(std::isfinite(p.smoothStart) && std::isfinite(p.smoothEnd) && p.smoothStart >= 0 &&
+                            p.smoothEnd <= 1 && p.smoothStart < p.smoothEnd &&
+                            (p.smooth || (p.smoothStart == 0 && p.smoothEnd == 1)),
+                        "Invalid smooth automation segment interval");
                 auto target = std::find_if(registry.begin(), registry.end(),
                                            [&](auto &v) { return v.target == c.target; });
                 if (target != registry.end())

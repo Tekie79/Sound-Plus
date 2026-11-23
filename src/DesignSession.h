@@ -27,7 +27,7 @@ struct DesignSessionServices
     std::function<void()> stop;
     std::function<void(bool)> finishTake;
     std::function<void(bool)> reserveTake;
-    std::function<void(juce::var)> inputCommand;
+    std::function<void(juce::var)> inputCommand, squareTouchCommand;
     std::function<void(std::function<void(bool)>)> inputPermission;
     // Optional controlled capture service, same completion boundary as the native service.
     std::function<void(std::function<void(bool)>)> captureLive;
@@ -193,6 +193,13 @@ class DesignSession final : public juce::Component, private juce::Timer
     void stop();
     bool ownsPlayback() const;
     std::optional<int64_t> automationFrame() const;
+    bool beginSquareTouch(const juce::String &owner, juce::Point<double>);
+    bool moveSquareTouch(juce::Point<double>);
+    void endSquareTouch();
+    bool squareTouchBusy() const
+    {
+        return squarePass.has_value();
+    }
     enum class TakeState
     {
         idle,
@@ -303,6 +310,18 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
+    struct SquarePass
+    {
+        juce::String id, owner, document, variation;
+        uint64_t lifetime, generation;
+        int64_t epoch, helper;
+        bool ending = false;
+        double deadline = 0;
+    };
+    std::optional<SquarePass> squarePass;
+    std::function<void()> afterSquareTouch;
+    void sendSquareTouch(const char *, juce::Point<double> = {});
+    void pollSquareTouch(const juce::var &);
     double lastEdit = 0, previewDue = 0, lastAudioUpdate = -1000, autosaveRetry = 0;
     int64_t autoRevision = 0;
     juce::String autoDocument, publishedStructure;

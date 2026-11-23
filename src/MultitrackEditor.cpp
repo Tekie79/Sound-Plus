@@ -1,3 +1,4 @@
+#include "SurroundPanner.h"
 #include "MultitrackEditor.h"
 #include "PerformanceState.h"
 namespace sp
@@ -780,8 +781,9 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
             layout.addItem(n++, layoutName(l), true, t->layout == l);
         }
         m.addSubMenu("Track bus", layout);
-        m.addItem(4, "Spatial panning",
-                  t->layout.size() <= 2 &&
+        m.addItem(405, "Square Surround…", trackSquareSurroundSupported(session.document.activeMix(), *t));
+        m.addItem(4, "Angular spatial panning",
+                  !t->surroundXY && t->layout.size() <= 2 &&
                       horizontalLayout(trackOutputLayout(session.document.activeMix(), *t)),
                   t->spatial);
     }
@@ -796,6 +798,11 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
             if (!safe || !n || safe->session.documentGeneration() != incarnation ||
                 safe->session.document.id != document || safe->session.document.activeVariation != variation)
                 return;
+            if (n == 405)
+            {
+                safe->openSurroundPanner(id);
+                return;
+            }
             if (n == 403)
             {
                 safe->midiInputMenu(id, *safe);
@@ -850,6 +857,45 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
                                                                         "5.1-rear-v1", "7.1-v1"}[n - 300]);
                 });
         });
+}
+void MultitrackEditor::openSurroundPanner(const juce::String &owner)
+{
+    auto *t = findTrack(session.document.activeMix(), owner);
+    if (!t || !trackSquareSurroundSupported(session.document.activeMix(), *t))
+        return;
+    class PannerWindow final : public juce::DocumentWindow
+    {
+      public:
+        PannerWindow() : juce::DocumentWindow("Square Surround", ui::background, closeButton)
+        {
+            setUsingNativeTitleBar(true);
+            setAlwaysOnTop(true);
+            setResizable(true, false);
+            setResizeLimits(350, 400, 820, 970);
+        }
+        void closeButtonPressed() override
+        {
+            if (auto *panel = dynamic_cast<SurroundPanner *>(getContentComponent()))
+                panel->finish();
+            setVisible(false);
+        }
+    };
+    auto window = std::make_unique<PannerWindow>();
+    auto *panel = new SurroundPanner(
+        session, owner,
+        [this](auto frame) { return snapFrame(frame, session.document, {}, viewport, snapping); },
+        [this](auto &key) { return onCommand && onCommand(key); });
+    window->setContentOwned(panel, true);
+    window->centreWithSize(390, 525);
+    surroundWindow = std::move(window);
+    surroundWindow->setVisible(true);
+    surroundWindow->toFront(true);
+    panel->grabKeyboardFocus();
+}
+void MultitrackEditor::closeSurroundPanner()
+{
+    if (surroundWindow)
+        surroundWindow->closeButtonPressed();
 }
 void MultitrackEditor::midiInputMenu(const juce::String &owner, juce::Component &anchor)
 {

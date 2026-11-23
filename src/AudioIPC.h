@@ -41,6 +41,10 @@ class AudioClient
     void finishTake(bool cancel = false);
     void reserveTake(bool reserve);
     void inputCommand(juce::var);
+    void squareTouch(juce::var command)
+    {
+        enqueue(std::move(command));
+    }
     bool captureBusy() const
     {
         return captureOwned.load() || captureReserved.load() || inputOwned.load() || midiOwned.load();

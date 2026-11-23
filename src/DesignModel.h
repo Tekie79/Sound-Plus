@@ -200,7 +200,9 @@ struct AutomationPoint
     juce::String id = juce::Uuid().toString();
     int64_t frame = 0;
     double value = 0;
-    bool hold = false; // Outgoing segment. Discrete targets always hold.
+    bool hold = false;                     // Outgoing segment. Discrete targets always hold.
+    bool smooth = false;                   // Square XY only.
+    double smoothStart = 0, smoothEnd = 1; // Retain the shape when a segment is cut.
 };
 struct AutomationCurve
 {
