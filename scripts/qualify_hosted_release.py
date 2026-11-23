@@ -21,6 +21,7 @@ bundle = Path('build/SoundPlus_artefacts/Release/SoundPlus.app/Contents')
 binaries = [bundle / 'MacOS/SoundPlus',
             Path('build/SoundPlusTests_artefacts/Release/SoundPlusTests'),
             Path('build/SoundPlusAdvancedSanity_artefacts/Release/SoundPlusAdvancedSanity'),
+            Path('build/SoundPlusPublicationDebug_artefacts/Release/SoundPlusPublicationDebug'),
             Path('build/SoundPlusMidiSource_artefacts/Release/SoundPlusMidiSource')]
 binaries += [bundle / 'Helpers' / name for name in ('SoundPlusAudio', 'SoundPlusAI', 'SoundPlusPlugin',
                 'SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor')]
@@ -28,6 +29,9 @@ for target in ('SoundPlusFixture', 'SoundPlusStereoFixture', 'SoundPlusMidiFixtu
     for p in Path('build/' + target + '_artefacts/Release').rglob('*'):
         if p.is_file() and p.parent.name == 'MacOS':
             binaries.append(p)
+for p in Path('build/SoundPlus QA Multi.vst3').rglob('*'):
+    if p.is_file() and p.parent.name == 'MacOS':
+        binaries.append(p)
 identity = {'timestampUTC': datetime.now(timezone.utc).isoformat(),
             'sources': {str(p): sha(p) for p in sorted(files)},
             'binaries': {str(p): sha(p) for p in sorted(set(binaries))}}
