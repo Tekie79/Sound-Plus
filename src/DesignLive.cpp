@@ -292,6 +292,9 @@ juce::String designStructure(const DesignDocument &document)
             for (auto key : {"name", "parent", "mute", "solo", "collapsed", "colour", "volumeDb", "pan",
                              "spatial", "azimuth", "width", "automation", "input"})
                 track.getDynamicObject()->removeProperty(key);
+            if (auto *square = track["surroundXY"].getDynamicObject())
+                for (auto key : {"x", "y", "spread"})
+                    square->removeProperty(key);
             stripChain(track["insertChain"], document.liveInserts);
             if (auto *instrument = track["instrument"].getDynamicObject())
             {
@@ -379,6 +382,8 @@ juce::var designParameters(const DesignDocument &base, bool resolve)
             o->setProperty("spatial", track.spatial);
             o->setProperty("azimuth", track.azimuth);
             o->setProperty("width", track.width);
+            if (track.surroundXY)
+                o->setProperty("surroundXY", squareSurroundJson(*track.surroundXY));
             o->setProperty("automation", automationLaneJson(track.automation));
             o->setProperty("chainBypass", track.inserts.bypass);
             o->setProperty("effects", rackParameters(track.inserts.stock));
@@ -479,6 +484,10 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
             track->spatial = (bool)v["spatial"];
             track->azimuth = (double)v["azimuth"];
             track->width = (double)v["width"];
+            if (track->surroundXY.has_value() != v.hasProperty("surroundXY"))
+                throw std::runtime_error("Changing square panning policy requires graph preparation");
+            if (track->surroundXY)
+                track->surroundXY = squareSurroundFromJson(v["surroundXY"]);
             track->automation = automationLaneFromJson(v["automation"]);
             if (track->instrument && track->instrument->version == 1)
             {

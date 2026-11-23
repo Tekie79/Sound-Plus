@@ -1,5 +1,6 @@
 #pragma once
 #include <juce_audio_formats/juce_audio_formats.h>
+#include <juce_graphics/juce_graphics.h>
 #include <array>
 namespace sp
 {
@@ -30,6 +31,14 @@ using ChannelMatrix = std::array<std::array<float, 16>, 16>; // output,input
 ChannelMatrix conversionMatrix(const ChannelLayout &from, const ChannelLayout &to);
 std::array<float, 16> spatialGains(const ChannelLayout &, double degrees, double divergence = 0,
                                    int routingVersion = 2);
+struct SurroundPosition
+{
+    double x = 0, y = 1, spread = .5;
+};
+bool squareSurroundLayout(const ChannelLayout &);
+juce::Point<double> squareSpeakerPosition(const juce::String &role);
+std::array<float, 16> squareSurroundGains(const ChannelLayout &, double x, double y);
+ChannelMatrix squareSurroundMatrix(const ChannelLayout &input, const ChannelLayout &output, SurroundPosition);
 bool horizontalLayout(const ChannelLayout &);
 struct ChannelRoute
 {

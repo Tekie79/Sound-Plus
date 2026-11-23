@@ -787,10 +787,18 @@ struct DesignGraph::Impl
                 node->route.inputs.push_back(c);
             auto matrix = trackMatrix(node->track, node->destinationBus, node->track.pan, node->track.azimuth,
                                       node->track.width);
+            if (auto position = node->track.surroundXY)
+            {
+                position->x = node->automation->value(surroundX, position->x, 0);
+                position->y = node->automation->value(surroundY, position->y, 0);
+                position->spread = node->automation->value(surroundSpread, position->spread, 0);
+                matrix = squareSurroundMatrix(node->bus, node->destinationBus, *position);
+            }
             for (int c = 0; c < node->destinationBus.size(); ++c)
                 for (int k = 0; k < node->bus.size(); ++k)
                 {
-                    node->matrixGains[(size_t)c][(size_t)k].reset(sampleRate, .005);
+                    node->matrixGains[(size_t)c][(size_t)k].reset(sampleRate,
+                                                                  node->track.surroundXY ? .01 : .005);
                     node->matrixGains[(size_t)c][(size_t)k].setCurrentAndTargetValue(matrix[c][k]);
                 }
         }
@@ -918,8 +926,16 @@ struct DesignGraph::Impl
                     node.route.azimuth = node.automation->value({{}, "azimuth"}, node.track.azimuth, time);
                     node.route.width = node.automation->value({{}, "width"}, node.track.width, time);
                     auto pan = node.automation->value({{}, "pan"}, node.track.pan, time);
-                    matrix = trackMatrix(node.track, node.destinationBus, pan, node.route.azimuth,
-                                         node.route.width);
+                    if (auto position = node.track.surroundXY)
+                    {
+                        position->x = node.automation->value(surroundX, position->x, time);
+                        position->y = node.automation->value(surroundY, position->y, time);
+                        position->spread = node.automation->value(surroundSpread, position->spread, time);
+                        matrix = squareSurroundMatrix(node.bus, node.destinationBus, *position);
+                    }
+                    else
+                        matrix = trackMatrix(node.track, node.destinationBus, pan, node.route.azimuth,
+                                             node.route.width);
                     for (int c = 0; c < node.destinationBus.size(); ++c)
                         for (int k = 0; k < node.bus.size(); ++k)
                             node.matrixGains[(size_t)c][(size_t)k].setTargetValue(matrix[c][k]);
@@ -931,12 +947,31 @@ struct DesignGraph::Impl
                                  : node.gain.getNextValue();
                 if (!node.audible)
                     gain = 0;
+                std::array<float, 2> inputGain{};
+                std::array<std::array<float, 2>, 6> smoothed;
+                if (node.track.surroundXY)
+                {
+                    for (int k = 0; k < node.bus.size(); ++k)
+                    {
+                        float power = 0;
+                        for (int c = 0; c < node.destinationBus.size(); ++c)
+                        {
+                            auto value = node.matrixGains[(size_t)c][(size_t)k].getNextValue();
+                            smoothed[c][k] = value;
+                            power += value * value;
+                        }
+                        inputGain[k] = node.pcm.getSample(k, n) * gain / std::sqrt(power * node.bus.size());
+                    }
+                }
                 for (int c = 0; c < node.destinationBus.size(); ++c)
                 {
                     float value = 0;
                     for (int k = 0; k < node.bus.size(); ++k)
-                        value += node.matrixGains[(size_t)c][(size_t)k].getNextValue() *
-                                 node.pcm.getSample(k, n) * gain;
+                        if (node.track.surroundXY)
+                            value += smoothed[c][k] * inputGain[k];
+                        else
+                            value += node.matrixGains[(size_t)c][(size_t)k].getNextValue() *
+                                     node.pcm.getSample(k, n) * gain;
                     if (node.alignFrames)
                     {
                         auto delayed = node.alignment.getSample(c, node.alignPosition);
@@ -1014,9 +1049,10 @@ struct DesignGraph::Impl
         // Recipe7 retains the bounded source dependencies used by compensated
         // lookahead/causalized IR conversion during the consumed body. Output
         // duration stays bodyEnd; historical recipes keep their original gate.
-        if (auto *t = selectedTake(d); t && (t->processing == "advanced-effects-takes-v1" ||
-                                             t->processing == "hosted-automation-takes-v1" ||
-                                             t->processing == "multi-pad-perform-takes-v1"))
+        if (auto *t = selectedTake(d);
+            t &&
+            (t->processing == "advanced-effects-takes-v1" || t->processing == "hosted-automation-takes-v1" ||
+             t->processing == "multi-pad-perform-takes-v1" || t->processing == "square-surround-takes-v1"))
             inputEnd += pipelineDependencies;
         if (auto *t = selectedTake(d);
             t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
@@ -1560,6 +1596,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
         result.processing = "hosted-automation-v1";
     if (hasMultiPad(effectiveInput.activeMix()))
         result.processing = "multi-pad-perform-v1";
+    if (hasSquareSurround(effectiveInput.activeMix()))
+        result.processing = "square-surround-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

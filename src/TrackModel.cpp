@@ -388,13 +388,16 @@ ChannelLayout trackOutputLayout(const DesignMix &m, const DesignTrack &t)
 bool trackPanSupported(const DesignMix &m, const DesignTrack &t)
 {
     auto dest = trackOutputLayout(m, t);
-    return !t.spatial && ((t.layout.size() == 1 && (dest.id == "stereo-v1" ||
-                                                    (horizontalLayout(dest) && !dest.roles.contains("C")))) ||
-                          (t.layout.id == "stereo-v1" && dest.id == "stereo-v1"));
+    return !t.surroundXY && !t.spatial &&
+           ((t.layout.size() == 1 &&
+             (dest.id == "stereo-v1" || (horizontalLayout(dest) && !dest.roles.contains("C")))) ||
+            (t.layout.id == "stereo-v1" && dest.id == "stereo-v1"));
 }
 ChannelMatrix trackMatrix(const DesignTrack &t, const ChannelLayout &dest, double pan, double azimuth,
                           double width)
 {
+    if (t.surroundXY)
+        return squareSurroundMatrix(t.layout, dest, *t.surroundXY);
     LayerRouting route;
     route.interpretation = t.layout;
     if (!t.spatial)
@@ -474,7 +477,16 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
     {
         if (trackPanSupported(m, *track))
             out.push_back({{{}, "pan"}, "Track Controls", "Pan", "", -1, 1, track->pan});
-        if (track->spatial)
+        if (track->surroundXY)
+        {
+            auto position = *track->surroundXY;
+            out.push_back({surroundX, "Square Surround", "Position X", "", -1, 1, position.x});
+            out.push_back({surroundY, "Square Surround", "Position Y", "", -1, 1, position.y});
+            if (track->layout.id == "stereo-v1")
+                out.push_back(
+                    {surroundSpread, "Square Surround", "Stereo Spread", "", 0, 1, position.spread});
+        }
+        if (track->spatial && !track->surroundXY)
         {
             out.push_back(
                 {{{}, "azimuth"}, "Track Controls", "Azimuth", "degrees", -180, 180, track->azimuth});
@@ -869,7 +881,9 @@ void validateTracks(const DesignMix &m, double rate)
             require(!ancestry(m, t.parent, t.id, false), "Folder cycle");
         if (t.output.isNotEmpty())
             require(!ancestry(m, t.output, t.id, true), "Routing cycle");
-        if (t.spatial)
+        if (t.surroundXY)
+            validateSquareSurround(m, t);
+        if (t.spatial && !t.surroundXY)
             require(t.layout.size() <= 2 && horizontalLayout(trackOutputLayout(m, t)),
                     "Spatial Track requires Mono/Stereo into a horizontal named bus");
     }
@@ -945,6 +959,8 @@ juce::var tracksToJson(const DesignMix &m)
         put(x, "spatial", t.spatial);
         put(x, "azimuth", t.azimuth);
         put(x, "width", t.width);
+        if (t.surroundXY)
+            put(x, "surroundXY", squareSurroundJson(*t.surroundXY));
         put(x, "insertChain", insertChainToJson(t.inserts));
         if (t.midiInputUID.isNotEmpty())
         {
@@ -1002,6 +1018,8 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
         t.spatial = x["spatial"];
         t.azimuth = (double)x["azimuth"];
         t.width = (double)x["width"];
+        if (x.hasProperty("surroundXY"))
+            t.surroundXY = squareSurroundFromJson(x["surroundXY"]);
         t.inserts = insertChainFromJson(x["insertChain"]);
         if (x.hasProperty("input"))
         {

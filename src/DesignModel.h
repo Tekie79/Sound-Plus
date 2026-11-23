@@ -240,6 +240,7 @@ struct DesignTrack
     bool mute = false, solo = false, collapsed = false, spatial = false;
     uint32_t colour = 0;
     double volumeDb = 0, pan = 0, azimuth = 0, width = 60;
+    std::optional<SurroundPosition> surroundXY; // Explicit square-surround-v1 processing.
     InsertChain inserts; // Clip-source compatibility chains stay on clips, before their routing.
     std::optional<InstrumentSlot>
         instrument; // Dedicated processor before the Track inserts; version0 is historical reserved metadata.

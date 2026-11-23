@@ -32,6 +32,14 @@ void routeTrack(DesignMix &, const juce::String &, const juce::String &);
 void deleteTrack(DesignMix &, const juce::String &); // Folders unwrap; nonempty routed buses reject.
 std::vector<juce::String> visibleTracks(const DesignMix &);
 ChannelLayout trackOutputLayout(const DesignMix &, const DesignTrack &);
+inline const AutomationTarget surroundX{"square-surround-v1", "position-x"},
+    surroundY{"square-surround-v1", "position-y"}, surroundSpread{"square-surround-v1", "stereo-spread"};
+bool trackSquareSurroundSupported(const DesignMix &, const DesignTrack &);
+void validateSquareSurround(const DesignMix &, const DesignTrack &);
+bool hasSquareSurround(const DesignMix &);
+bool hasSquareSurround(const DesignDocument &);
+juce::var squareSurroundJson(SurroundPosition);
+SurroundPosition squareSurroundFromJson(const juce::var &);
 bool trackPanSupported(const DesignMix &, const DesignTrack &);
 ChannelMatrix trackMatrix(const DesignTrack &, const ChannelLayout &, double pan, double azimuth,
                           double width);

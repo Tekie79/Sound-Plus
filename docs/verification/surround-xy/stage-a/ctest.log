@@ -1,0 +1,18 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: surround_xy
+1/6 Test  #2: surround_xy ......................   Passed    0.51 sec
+    Start  3: multi_pad
+2/6 Test  #3: multi_pad ........................   Passed    0.42 sec
+    Start 11: multitrack_automation
+3/6 Test #11: multitrack_automation ............   Passed    0.83 sec
+    Start 15: multichannel_corrections
+4/6 Test #15: multichannel_corrections .........   Passed   14.81 sec
+    Start 16: multichannel
+5/6 Test #16: multichannel .....................   Passed    5.19 sec
+    Start 47: ordered_corrections
+6/6 Test #47: ordered_corrections ..............   Passed    0.13 sec
+
+100% tests passed, 0 tests failed out of 6
+
+Total Test time (real) =  21.89 sec
