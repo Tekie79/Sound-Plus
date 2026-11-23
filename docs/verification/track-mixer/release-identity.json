@@ -1,0 +1,17 @@
+{
+  "sourceCommit": "4fa36ef4a49d3d13a97c58f7bf0933a1527e564d",
+  "appSha256": "844dadf85aa79444ccced8f2940ec309ea852d26ace5843ca08393ec5dbe815d",
+  "audioHelperSha256": "38ac232f90b2c0c819001c8fb1e4c5bf6865c014ceda3e55a265e2337618d1a6",
+  "hardware": "Apple M5 Pro",
+  "os": "ProductName:\t\tmacOS\nProductVersion:\t\t26.3.2\nBuildVersion:\t\t25D2150",
+  "architecture": "arm64",
+  "beforeUTC": "2026-11-23T20:44:21.925546+00:00",
+  "afterUTC": "2026-11-23T20:53:41.879425+00:00",
+  "sourceResourceScriptHashes": 393,
+  "binaryHashes": 17,
+  "bundleFileHashes": 25,
+  "unchanged": true,
+  "passed": 56,
+  "failed": 0,
+  "elapsedSeconds": 559.75
+}

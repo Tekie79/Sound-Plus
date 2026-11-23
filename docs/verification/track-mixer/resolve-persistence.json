@@ -1,0 +1,72 @@
+{
+  "version": "21.1.2.10",
+  "project": "SoundPlus Track Mixer QA 20261123",
+  "timeline": "Aligned Mix and Stems",
+  "fps": 24,
+  "importMethod": "Resolve native Import Media dialog",
+  "status": "Pass",
+  "nativeDrag": {
+    "status": "Failed to import in controlled attempts",
+    "attempts": 2,
+    "nativeSessionsStarted": 2,
+    "nativeSessionsEnded": 2,
+    "file": "~/Music/SoundPlus/Mixer QA/Native-20261123/Stems-222b7a3795374414a67527302b7d2c93/02 FX Return.wav",
+    "newMediaItemsObserved": 0,
+    "reason": "Resolve Media Pool was unchanged after each attempt. Receiver rejection and pointer targeting could not be distinguished."
+  },
+  "soundPlusExitedBeforeResolveExit": true,
+  "resolveExitedAndRelaunched": true,
+  "saved": true,
+  "receiverCopiesMedia": false,
+  "sourceWavSamples": 14192,
+  "sourceWavBitsPerSample": 24,
+  "sourceWavsWereStagedByQA": true,
+  "rows": [
+    {
+      "role": "Master",
+      "track": 2,
+      "name": "Untitled design-r1-92580a3e.wav",
+      "id": "4dda5a5c-e523-4776-93f6-0a318e63d210",
+      "firstFrame": 0,
+      "frames": 7,
+      "path": "~/Music/SoundPlus/Mixer QA/20261123-d7998372/Untitled design-r1-92580a3e.wav",
+      "rate": "48000",
+      "channels": "2",
+      "duration": "00:00:00:07",
+      "status": "Online",
+      "audioMapping": "{\"embedded_audio_channels\":2,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2],\"mute\":false,\"type\":\"stereo\"}}}",
+      "identicalPlacement": true
+    },
+    {
+      "role": "Group stem",
+      "track": 3,
+      "name": "01 Repeated name.wav",
+      "id": "b053afd1-57e9-4251-9583-1aefe945599f",
+      "firstFrame": 0,
+      "frames": 7,
+      "path": "~/Music/SoundPlus/Mixer QA/20261123-d7998372/01 Repeated name.wav",
+      "rate": "48000",
+      "channels": "2",
+      "duration": "00:00:00:07",
+      "status": "Online",
+      "audioMapping": "{\"embedded_audio_channels\":2,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2],\"mute\":false,\"type\":\"stereo\"}}}",
+      "identicalPlacement": true
+    },
+    {
+      "role": "FX Return stem",
+      "track": 4,
+      "name": "02 Repeated name.wav",
+      "id": "948951d6-2c65-47aa-95a9-98fe0628e57e",
+      "firstFrame": 0,
+      "frames": 7,
+      "path": "~/Music/SoundPlus/Mixer QA/20261123-d7998372/02 Repeated name.wav",
+      "rate": "48000",
+      "channels": "2",
+      "duration": "00:00:00:07",
+      "status": "Online",
+      "audioMapping": "{\"embedded_audio_channels\":2,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2],\"mute\":false,\"type\":\"stereo\"}}}",
+      "identicalPlacement": true
+    }
+  ],
+  "previousProjectRestored": true
+}

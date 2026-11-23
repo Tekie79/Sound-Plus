@@ -1,0 +1,34 @@
+{
+  "fileNames": [
+    "Untitled design-r14-bca32ed1.wav",
+    "01 mono_440hz_48k.wav.wav",
+    "02 FX Return.wav"
+  ],
+  "sha256": [
+    "b9542623bef24440a5d33cdc9704d7838ac687e909ef2838d8fcdf801fbd50e2",
+    "64214e5df30b79198e9c952b601f176a4cc09ca63f2cd15323bf5c3a7f0be281",
+    "4a0212f49b256cc05e1710ce0401525cf0235d734d6d00f718166d2b831e944a"
+  ],
+  "sampleFrames": 336000,
+  "sampleRate": 48000,
+  "bits": 24,
+  "channels": 2,
+  "senderFaderDb": -6,
+  "sendDb": -12,
+  "masterFaderDb": -6,
+  "maxSourceToReturnError": 8.5058175648689e-08,
+  "maxMasterVsStemSumError": 1.1271526813294575e-07,
+  "renderOrigin": "Native Deliver, Master inputs, pre-Master",
+  "capturedWith": "b80c10c6ed745f34dd32295f6ddac024cdd70f09",
+  "printedAgainWithCorrectedSuffix": true,
+  "outputFolder": "~/Music/SoundPlus/Mixer QA/Native-20261123",
+  "finalCandidate": {
+    "commit": "b25bea76098d7a1a768be1df892a10d4572b7c58",
+    "correctedBatch": "Stems-5fa4c2ee5c3543f0a9426b981300ee70",
+    "repeatedPcmByteIdentical": true,
+    "pcmSha256": [
+      "13e71543a2118b8ad78c58ff7e93d01934c66b2cd80cbb01f264761c1c6a5e28",
+      "7cc71887d5f133f726dbcb0107102f546850637dd26aed1c3d097ff994724ab5"
+    ]
+  }
+}

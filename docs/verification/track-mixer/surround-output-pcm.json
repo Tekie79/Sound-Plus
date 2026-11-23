@@ -1,0 +1,36 @@
+[
+  {
+    "layout": "side",
+    "mask": "0x60f",
+    "roles": [
+      "L",
+      "R",
+      "C",
+      "LFE",
+      "Ls",
+      "Rs"
+    ],
+    "frames": 3072,
+    "rate": 48000,
+    "bits": 24,
+    "allSixMonoSplitsMatch": true,
+    "sha256": "64dddfcc75538690d38c1ccaa7c24ff1e943fca003094c4364cb5c73391e79c3"
+  },
+  {
+    "layout": "rear",
+    "mask": "0x3f",
+    "roles": [
+      "L",
+      "R",
+      "C",
+      "LFE",
+      "Lb",
+      "Rb"
+    ],
+    "frames": 3072,
+    "rate": 48000,
+    "bits": 24,
+    "allSixMonoSplitsMatch": true,
+    "sha256": "7818c558092995b9680df23d5a9198b642e18606c96e16723f3762c4f4361653"
+  }
+]

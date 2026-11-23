@@ -1,0 +1,36 @@
+{
+  "stripCount": 24,
+  "designLayout": "5.1-side-v1",
+  "device": "MacBook Pro Speakers",
+  "sampleRate": 48000.0,
+  "audioCallbacks": 11261,
+  "producerFills": 11261,
+  "underruns": 0,
+  "producerP95UpperMs": 3.85,
+  "producerMaxMs": 7.141541659832001,
+  "helperRestarts": 0,
+  "lastSubmittedEdit": 465,
+  "lastHeardEdit": 465,
+  "observedMaxEditLatencyMs": 74.43070834875107,
+  "seconds": 120.131179041,
+  "monitorGain": 0,
+  "buildCommit": "4fa36ef4a49d3d13a97c58f7bf0933a1527e564d",
+  "bufferFrames": 512,
+  "sourceFixture": "One generated 128-second 440 Hz mono fixture referenced by 20 stereo Audio Tracks",
+  "graph": "20 Audio Tracks, two Group Buses, two FX Returns, five native EQ inserts, Advanced Delay and Algorithmic Reverb",
+  "resources": {
+    "sampleCount": 34,
+    "maxObservedHelperRssKiB": 66720,
+    "maxObservedHelperCpuPercent": 39.3,
+    "medianObservedHelperCpuPercent": 36.05
+  },
+  "initialFailure": {
+    "priorCommit": "b25bea76098d7a1a768be1df892a10d4572b7c58",
+    "lastCommand": "design_parameters",
+    "errno": 60,
+    "reason": "Command write timed out while the helper and client were writing on the same socket",
+    "lastAdoptedEdit": 6,
+    "lastStatusBytes": 14391,
+    "underrunsBeforeFailure": 0
+  }
+}
