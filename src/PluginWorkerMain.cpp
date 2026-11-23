@@ -275,6 +275,7 @@ var describe(AudioPluginInstance &p)
         if (auto *hosted = p.getHostedParameter(n))
             put(item, "stableId", hosted->getParameterID());
         put(item, "index", n);
+        put(item, "callbackIndex", v->getParameterIndex());
         put(item, "name", v->getName(128));
         put(item, "unit", v->getLabel());
         put(item, "discrete", v->isDiscrete());

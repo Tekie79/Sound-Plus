@@ -3,6 +3,8 @@
 #include "PluginProcessing.h"
 #include "DesignAudio.h"
 #include "TrackModel.h"
+#include "HostedTouchCapture.h"
+#include <signal.h>
 #include "AudioStream.h"
 #include <iostream>
 #include <juce_events/juce_events.h>
@@ -39,11 +41,14 @@ void put(var &v, const char *key, var x)
     v.getDynamicObject()->setProperty(key, x);
 }
 } // namespace
+#include "HostedTouchCaptureTests.inc"
 #include "HostedAutomationReadTests.inc"
 #include "HostedAutomationLiveTests.inc"
+#include "HostedTouchWorkerTests.inc"
 void runHostedAutomationTests(const juce::File &base, const juce::File &app, const juce::File &fixture)
 {
     ScopedJuceInitialiser_GUI gui;
+    runHostedTouchCaptureTests();
     auto root = base.getChildFile(Uuid().toString());
     root.createDirectory();
     auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
@@ -74,6 +79,11 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
     auto description = worker.call(settings, root, 20000);
     for (auto key : {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
         put(settings, key, description[key]);
+    if (juce::SystemStats::getEnvironmentVariable("SOUNDPLUS_QA_TOUCH_ONLY", {}).isNotEmpty())
+    {
+        runHostedTouchWorkerTests(settings, root);
+        return;
+    }
     auto named = [&](const char *name)
     {
         for (auto &p : *description["parameters"].getArray())
@@ -254,6 +264,7 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
             "Worker rejects wrong instance/native identity before processing");
     runHostedReadTests(settings, root);
     runHostedOverlayTests(settings, root);
+    runHostedTouchWorkerTests(settings, root);
     if (au)
         unsetenv("SOUNDPLUS_QA_LOCAL_AU");
     std::cout << "Hosted automation foundation: " << checks

@@ -14,6 +14,7 @@ struct HostedParameterEvent
     int32_t offset = 0, index = 0;
     uint16_t slot = 0, policy = 0; // v1: normalized stepped sub-block boundary.
     float value = 0;
+    float touchReturnValue = 0;
 };
 inline constexpr int hostedEventLimit = 16384;
 inline void validateHostedEvents(std::span<const HostedParameterEvent> events, int frames, int slots,
@@ -27,7 +28,9 @@ inline void validateHostedEvents(std::span<const HostedParameterEvent> events, i
         if (event.offset < 0 || event.offset >= frames || event.offset < offset || event.slot >= slots ||
             event.index < 0 || event.index >= 16384 || event.sequence <= prior || event.identity == 0 ||
             event.policy != 0 || event.projectFrame < 0 || event.inputFrame != first + event.offset ||
-            !std::isfinite(event.value) || event.value < 0 || event.value > 1)
+            !std::isfinite(event.value) || event.value < 0 || event.value > 1 ||
+            !std::isfinite(event.touchReturnValue) || event.touchReturnValue < 0 ||
+            event.touchReturnValue > 1)
             throw std::runtime_error("Invalid hosted parameter event/sequence/clock");
         offset = event.offset;
         prior = event.sequence;

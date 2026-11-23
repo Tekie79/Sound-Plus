@@ -8,7 +8,7 @@ namespace sp
 // plugin service. The device callback consumes its existing independent PCM ring.
 struct HostedRackExchange
 {
-    static constexpr uint32_t magic = 0x53505235;
+    static constexpr uint32_t magic = 0x53505236;
     uint32_t protocol = magic;
     std::atomic<uint64_t> lease{0}, resetRequested{0}, resetAcknowledged{0};
     std::atomic<int64_t> heartbeatTicks{0}, lastRequestTicks{0};

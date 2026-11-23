@@ -1,5 +1,6 @@
 #pragma once
 #include "UIComponents.h"
+#include "HostedTouchCapture.h"
 #include <deque>
 #include <mutex>
 // Included by the isolated service after restore/describe helpers are defined.
@@ -29,7 +30,24 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     std::atomic<bool> writing{false}, nativeDirty{false};
     std::atomic<int64_t> gestureSequence{0};
     std::atomic<int> activeGestures{0};
-    bool pendingCapture = false;
+    std::atomic<bool> pendingCapture{false};
+    sp::HostedTouchCapture touchCapture;
+    std::atomic<bool> needsTouchProcessing{false};
+    int64_t lastTouchCommand = 0, lastTouchArm = 0;
+    std::atomic<int> touchBeginIndex{-1}, touchBeginArmed{-1}, touchBeginIdle{-1}, touchBeginMatch{-1};
+    double processingRate = 48000;
+    void endActiveTouch()
+    {
+        auto index = touchCapture.callbackTarget();
+        if (index >= 0)
+            touchCapture.end(index);
+        const bool native = activeGestures.exchange(0) > 0;
+        if (index >= 0 || native)
+        {
+            nativeDirty = true;
+            nativeEventTicks = Time::getHighResolutionTicks();
+        }
+    }
     struct WriteScope
     {
         std::atomic<bool> &flag;
@@ -55,8 +73,15 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         for (size_t i = 0; i < slots.size(); ++i)
             if (slots[i].effect.get() == processor && isPositiveAndBelow(index, slots[i].parameterIds.size()))
             {
-                if (slots[i].overlayActive[(size_t)index] &&
-                    value == slots[i].overlayValues[(size_t)index].load() && activeGestures.load() == 0)
+                if (slots.size() == 1 && touchCapture.value(index, value))
+                {
+                    nativeDirty = true;
+                    nativeEventTicks = tick;
+                    return;
+                }
+                // Read owns this value. Unbracketed plugin feedback (including
+                // delayed/quantized AU notifications) cannot rewrite manual base.
+                if (slots[i].overlayActive[(size_t)index])
                     return;
                 slots[i].manualValues[(size_t)index] = value;
                 auto before = observedControlValues[i][index].exchange(value);
@@ -99,6 +124,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     {
         if (!writing.load())
         {
+            touchBeginIndex = index;
+            touchBeginArmed = touchCapture.armedIndex();
+            touchBeginIdle = idle();
+            touchBeginMatch = slots.size() == 1 && slots[0].effect.get() == processor;
+            if (slots.size() == 1 && slots[0].effect.get() == processor && !idle())
+                touchCapture.begin(index, slots[0].effect->getParameters()[index]->getValue());
             noteNativeGesture(processor, index);
             ++activeGestures;
             ++gestureSequence;
@@ -112,6 +143,8 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     {
         if (!writing.load())
         {
+            if (slots.size() == 1 && slots[0].effect.get() == processor)
+                touchCapture.end(index);
             noteNativeGesture(processor, index);
             activeGestures = std::max(0, activeGestures.load() - 1);
             {
@@ -143,6 +176,8 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     bool idle() const
     {
         const auto requested = exchange.lastRequestTicks.load(std::memory_order_acquire);
+        if (exchange.lease.load() != 0 && exchange.request.load() != exchange.response.load())
+            return false;
         return exchange.lease.load() == 0 || requested == 0 ||
                Time::highResolutionTicksToSeconds(Time::getHighResolutionTicks() - requested) > .1;
     }
@@ -177,8 +212,16 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             setUsingNativeTitleBar(true);
             setAlwaysOnTop(true);
         }
+        std::function<void()> finishTouch;
+        void activeWindowStatusChanged() override
+        {
+            if (!isActiveWindow() && finishTouch)
+                finishTouch();
+        }
         void closeButtonPressed() override
         {
+            if (finishTouch)
+                finishTouch();
             setVisible(false);
         }
     };
@@ -208,7 +251,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         {
             for (int p = 0; p < slot.parameterIds.size(); ++p)
                 if (slot.overlayActive[(size_t)p])
-                    slot.effect->getParameters()[p]->setValueNotifyingHost(slot.overlayValues[(size_t)p]);
+                    slot.effect->getParameters()[p]->setValueNotifyingHost(slot.audibleValues[(size_t)p]);
             flush();
         }
     };
@@ -315,6 +358,18 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         put(record, "dspBlockStartTicks", (int64)processBegin.load());
         put(record, "dspBlockEndTicks", (int64)processEnd.load());
         put(record, "slots", captures);
+        onPluginMessageThread(
+            [&]
+            {
+                put(record, "touchBeginIndex", touchBeginIndex.load());
+                put(record, "touchBeginArmed", touchBeginArmed.load());
+                put(record, "touchBeginIdle", touchBeginIdle.load());
+                put(record, "touchBeginMatch", touchBeginMatch.load());
+                put(record, "touchSequence", (int64)touchCapture.serial());
+                put(record, "touchFrame", (int64)touchCapture.acknowledgedFrame());
+                put(record, "touchPasses", touchCapture.json());
+                put(record, "gestureCommand", (int64)lastTouchCommand);
+            });
         put(record, "opaqueObservation", opaqueObservation);
         put(record, "skippedControls", skippedControls);
         hasPublished = true;
@@ -332,6 +387,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         : job(request), slots(prepared), exchange(e), directory(request["liveDirectory"].toString()),
           generation(request["generation"].toString()), requested(sp::hostedRackFromJson(request["rack"]))
     {
+        processingRate = (double)job["rate"];
         restoredSequence.resize(slots.size());
         for (auto &slot : slots)
         {
@@ -376,6 +432,42 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     slot.effect->removeListener(this);
             });
     }
+    bool touchEnabled() const
+    {
+        return needsTouchProcessing.load();
+    }
+    int touchIndex()
+    {
+        return touchCapture.activeIndex();
+    }
+    int touchArmedIndex()
+    {
+        return touchCapture.armedIndex();
+    }
+    std::optional<float> touchOverride(int index, int64_t frame)
+    {
+        return touchCapture.overrideValue(index, frame);
+    }
+    int touchBoundary(int64_t frame, int maximum)
+    {
+        return touchCapture.nextBoundary(frame, maximum);
+    }
+    template <class F> void prepareTouch(int64_t first, double rate, F returned)
+    {
+        if (touchCapture.prepare(first, rate, returned))
+        {
+            pendingCapture = true;
+            nativeDirty = true;
+        }
+    }
+    void finishTouchBlock(int64_t end)
+    {
+        if (touchCapture.finishBlock(end))
+        {
+            pendingCapture = true;
+            nativeDirty = true;
+        }
+    }
     template <class F> void automationWrite(F &&apply)
     {
         WriteScope own(writing);
@@ -413,6 +505,8 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     // Serialize the entire DSP/dry-ring/request completion, not
                     // merely the plugin's callback. A new borrower drains first.
                     std::lock_guard operation(dspOperationMutex);
+                    touchCapture.stop(processingRate,
+                                      [&](int p) { return slots[0].overlayValues[(size_t)p].load(); });
                     for (auto &slot : slots)
                     {
                         if (requested.instrument)
@@ -455,6 +549,85 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     for (auto &[id, window] : windows)
                         window->setVisible(false);
                 });
+        auto arm = read("touch.json");
+        if (arm.isObject() && (int64_t)arm["sequence"] > lastTouchArm)
+        {
+            lastTouchArm = (int64_t)arm["sequence"];
+            onPluginMessageThread(
+                [&]
+                {
+                    check(slots.size() == 1, "Native Touch needs one retained slot service");
+                    auto id = arm["parameter"].toString();
+                    int index = id.isEmpty() ? -1 : slots[0].parameterIds.indexOf(id);
+                    check(id.isEmpty() || (index >= 0 && slots[0].automatable[(size_t)index]),
+                          "Native Touch target unavailable");
+                    touchCapture.arm(index, arm["owner"].toString(), (uint64_t)(int64_t)arm["acknowledged"],
+                                     index >= 0 && slots[0].discrete[(size_t)index]);
+                    needsTouchProcessing = touchCapture.enabled();
+                });
+        }
+        auto gestures = read("touch-commands.json");
+        if (gestures.isObject())
+        {
+            auto *commands = gestures["commands"].getArray();
+            check(commands && commands->size() <= 4096, "Hosted Touch command bound exceeded");
+            onPluginMessageThread(
+                [&]
+                {
+                    for (auto &command : *commands)
+                    {
+                        auto serial = (int64_t)command["sequence"];
+                        if (serial <= lastTouchCommand)
+                            continue;
+                        check(slots.size() == 1, "Hosted Touch requires exact slot");
+                        int index = slots[0].parameterIds.indexOf(command["parameter"].toString());
+                        check(index >= 0 && slots[0].automatable[(size_t)index],
+                              "Hosted Touch native ID changed");
+                        auto *parameter = slots[0].effect->getParameters()[index];
+                        int kind = (int)command["kind"];
+                        float value = (float)command["value"];
+                        check(kind >= 0 && kind <= 2 && std::isfinite(value) && value >= 0 && value <= 1,
+                              "Invalid hosted Touch command");
+                        if (kind == 0)
+                        {
+                            if (idle())
+                            {
+                                lastTouchCommand = serial;
+                                continue;
+                            }
+                            touchCapture.arm(index, command["owner"].toString(), 0,
+                                             slots[0].discrete[(size_t)index]);
+                            touchCapture.begin(index, parameter->getValue());
+                        }
+                        else if (kind == 1)
+                            touchCapture.value(index, value);
+                        else
+                            touchCapture.end(index);
+                        needsTouchProcessing = touchCapture.enabled();
+                        lastTouchCommand = serial;
+                    }
+                });
+        }
+        if (idle())
+            onPluginMessageThread(
+                [&]
+                {
+                    if (touchCapture.stop(processingRate,
+                                          [&](int p) { return slots[0].overlayValues[(size_t)p].load(); }))
+                    {
+                        WriteScope own(writing);
+                        for (auto &slot : slots)
+                            for (int p = 0; p < slot.parameterIds.size(); ++p)
+                                if (slot.overlayActive[(size_t)p])
+                                {
+                                    slot.audibleValues[(size_t)p] = slot.overlayValues[(size_t)p].load();
+                                    slot.effect->getParameters()[p]->setValueNotifyingHost(
+                                        slot.overlayValues[(size_t)p]);
+                                }
+                        pendingCapture = true;
+                        nativeDirty = true;
+                    }
+                });
         auto command = read("editor.json");
         if (command.isObject() && (int64_t)command["sequence"] > lastEditor)
         {
@@ -468,6 +641,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         {
                             if (!(bool)command["open"])
                             {
+                                endActiveTouch();
                                 if (windows.contains(id))
                                     windows[id]->setVisible(false);
                                 return;
@@ -480,6 +654,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                                     editor = new GenericAudioProcessorEditor(effect);
                                 auto window = std::make_unique<Window>(effect.getName() + " · " +
                                                                        job["binding"]["label"].toString());
+                                window->finishTouch = [this] { endActiveTouch(); };
                                 window->setContentOwned(editor, true);
                                 window->setResizable(editor->isResizable(), false);
                                 window->centreWithSize(editor->getWidth(), editor->getHeight());
@@ -629,6 +804,8 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         if (command.isObject() && (int64_t)command["sequence"] > captureSequence)
         {
             captureSequence = (int64_t)command["sequence"];
+            if ((bool)command["finishTouch"])
+                onPluginMessageThread([&] { endActiveTouch(); });
             settleStopped();
             pendingCapture = true;
         }

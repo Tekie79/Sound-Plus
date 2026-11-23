@@ -1,4 +1,6 @@
 #include "HostedRack.h"
+#include "HostedTouchCapture.h"
+#include <signal.h>
 #include "HostedParameterIdentity.h"
 #include "PluginProcessing.h"
 #include "DesignAudio.h"
@@ -25,6 +27,7 @@ void put(var &v, const char *key, var x)
     v.getDynamicObject()->setProperty(key, x);
 }
 } // namespace
+#include "HostedTouchWorkerTests.inc"
 void runHostedInstrumentAutomationTests(const juce::File &base, const juce::File &app,
                                         const juce::File &fixture)
 {
@@ -64,6 +67,7 @@ void runHostedInstrumentAutomationTests(const juce::File &base, const juce::File
         if (p["name"].toString() == "Gain")
             gain = p;
     check(gain.isObject(), "Instrument gain has a native ID");
+    runHostedTouchWorkerTests(settings, root, true);
     for (double rate : {44100., 48000., 96000.})
     {
         DesignDocument d;

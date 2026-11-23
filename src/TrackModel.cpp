@@ -717,7 +717,8 @@ void addAutomationPoint(DesignMix &m, const juce::String &owner, const Automatio
     std::sort(curve->points.begin(), curve->points.end(), [](auto &a, auto &b) { return a.frame < b.frame; });
 }
 void writeTouchPass(DesignMix &m, const juce::String &owner, const AutomationTarget &t,
-                    const std::vector<AutomationPoint> &points, int64_t end, double rate)
+                    const std::vector<AutomationPoint> &points, int64_t end, double rate,
+                    std::optional<double> returnValue)
 {
     if (points.empty())
         return;
@@ -732,7 +733,7 @@ void writeTouchPass(DesignMix &m, const juce::String &owner, const AutomationTar
         old = *c;
     const auto first = points.front().frame;
     const auto returnEnd = end + (int64_t)std::llround(rate * .1);
-    double underlying = automationValue(old, *p, returnEnd);
+    double underlying = returnValue.value_or(automationValue(old, *p, returnEnd));
     addAutomationPoint(m, owner, t, first, points.front().value, rate);
     auto *curve = automationCurve(*lane, t);
     std::erase_if(curve->points, [&](auto &x) { return x.frame >= first && x.frame <= returnEnd; });
@@ -1032,7 +1033,7 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
 namespace sp
 {
 std::vector<HostedParameterEvent> CompiledAutomation::hostedEvents(const HostedRack &rack, int64_t first,
-                                                                   int frames, int latency) const
+                                                                   int frames, int latency, double rate) const
 {
     std::vector<HostedParameterEvent> result;
     for (size_t slot = 0; slot < rack.slots.size(); ++slot)
@@ -1050,8 +1051,9 @@ std::vector<HostedParameterEvent> CompiledAutomation::hostedEvents(const HostedR
                     if (next != b.curve.points.begin())
                         phase = std::max(phase, std::prev(next)->frame);
                     result.push_back({token, 1, frame, first + offset, offset, b.parameter.nativeIndex,
-                                      (uint16_t)slot, 0,
-                                      (float)automationValue(b.curve, b.parameter, phase)});
+                                      (uint16_t)slot, 0, (float)automationValue(b.curve, b.parameter, phase),
+                                      (float)automationValue(b.curve, b.parameter,
+                                                             frame + (int64_t)std::llround(rate * .1))});
                     if (result.size() > hostedEventLimit)
                         throw std::runtime_error("Hosted automation event capacity exceeded");
                     int n = std::min(frames - offset, 32 - (int)(frame % 32));

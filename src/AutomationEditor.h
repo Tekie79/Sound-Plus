@@ -21,6 +21,8 @@ class AutomationEditor final : public juce::Component
     bool keyPressed(const juce::KeyPress &) override;
     void focusLost(FocusChangeType) override;
     void chooseTarget();
+    bool repairHostedTarget(const AutomationTarget &from, const AutomationTarget &to, bool confirmed,
+                            std::optional<HostedAutomationBinding> expected = {});
     void insertPoint(int64_t, double);
     void numericPoint(int64_t, double);
     void deletePoints();
@@ -49,7 +51,7 @@ class AutomationEditor final : public juce::Component
     AutomationTarget capturedTarget;
     DesignDocument original;
     juce::Point<float> anchor;
-    bool dragging = false, range = false, touching = false, updating = false;
+    bool dragging = false, range = false, touching = false, updating = false, hostedWriting = false;
     std::vector<AutomationPoint> touchPoints;
     int64_t firstTouch = 0;
     AutomationLane *lane();
@@ -59,5 +61,6 @@ class AutomationEditor final : public juce::Component
     int pointAt(juce::Point<float>) const;
     int64_t frameAt(float, bool bypass = false) const;
     void numericDialog();
+    void requestRepair();
 };
 } // namespace sp

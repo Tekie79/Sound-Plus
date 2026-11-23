@@ -3,6 +3,14 @@ namespace sp
 {
 namespace
 {
+double snappedAutomation(double value, const AutomationParameter &p)
+{
+    value = std::clamp(value, p.minimum, p.maximum);
+    if (p.discrete)
+        value = p.normalizedStep > 0 ? std::round(value / p.normalizedStep) * p.normalizedStep
+                                     : std::round(value);
+    return std::clamp(value, p.minimum, p.maximum);
+}
 class TargetSearch final : public juce::Component, private juce::ListBoxModel
 {
     juce::TextEditor search;
@@ -52,9 +60,10 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
         }
         g.setColour(p.writable ? ui::text : ui::muted);
         g.setFont(juce::FontOptions(12.f));
-        g.drawText(p.name + (p.units.isNotEmpty() ? juce::String::fromUTF8(" · ") + p.units : "") +
-                       (p.writable ? "" : juce::String::fromUTF8(" · unavailable")),
-                   10, 0, w - 20, h, juce::Justification::centredLeft, true);
+        g.drawText(
+            p.name + (p.units.isNotEmpty() ? juce::String::fromUTF8(" · ") + p.units : "") +
+                (p.writable ? " · " + juce::String(p.base, 3) : juce::String::fromUTF8(" · unavailable")),
+            10, 0, w - 20, h, juce::Justification::centredLeft, true);
     }
     void listBoxItemClicked(int row, const juce::MouseEvent &) override
     {
@@ -165,7 +174,7 @@ void AutomationEditor::finishInteraction()
         if (dragging || touching)
             session.endGesture();
     }
-    dragging = touching = false;
+    dragging = touching = hostedWriting = false;
 }
 AutomationLane *AutomationEditor::lane()
 {
@@ -218,8 +227,10 @@ void AutomationEditor::refresh()
     }
     write.setTooltip("Touch: " + armed.name + juce::String::fromUTF8(" · ") + armed.units +
                      ". Captured when armed; return 100 ms.");
-    valueLabel.setText(juce::String(touching ? write.getValue() : value, parameter.discrete ? 0 : 2) + " " +
-                           parameter.units,
+    valueLabel.setText(juce::String(touching ? write.getValue() : value, parameter.normalizedStep > 0 ? 3
+                                                                         : parameter.discrete         ? 0
+                                                                                                      : 2) +
+                           " " + parameter.units,
                        juce::dontSendNotification);
     write.setEnabled(l->touch && armed.writable);
     touch.setEnabled(parameter.writable);
@@ -249,7 +260,7 @@ double AutomationEditor::valueAt(float y) const
     double u = std::clamp((getHeight() - 10 - y) / (getHeight() - 46.0), 0.0, 1.0);
     auto v = parameter.logarithmic ? parameter.minimum * std::pow(parameter.maximum / parameter.minimum, u)
                                    : parameter.minimum + u * (parameter.maximum - parameter.minimum);
-    return parameter.discrete ? std::round(v) : v;
+    return snappedAutomation(v, parameter);
 }
 int64_t AutomationEditor::frameAt(float x, bool bypass) const
 {
@@ -321,8 +332,23 @@ void AutomationEditor::paint(juce::Graphics &g)
 void AutomationEditor::chooseTarget()
 {
     auto safe = juce::Component::SafePointer<AutomationEditor>(this);
+    auto targets = automationTargets(session.document.activeMix(), owner);
+    for (auto &p : targets)
+    {
+        if (p.hostedBinding)
+        {
+            auto problem = session.liveInsertProblem(p.target.instance);
+            if (problem.isNotEmpty())
+            {
+                p.writable = false;
+                p.unavailable = problem;
+            }
+        }
+        if (auto *curve = automationCurve(*lane(), p.target); curve && curve->read && !curve->points.empty())
+            p.base = automationValue(*curve, p, session.document.playhead);
+    }
     auto content = std::make_unique<TargetSearch>(
-        automationTargets(session.document.activeMix(), owner),
+        std::move(targets),
         [safe](auto t)
         {
             if (!safe || !safe->contextValid() || !safe->lane())
@@ -331,6 +357,95 @@ void AutomationEditor::chooseTarget()
                                        { automationLane(d.activeMix(), safe->owner)->shown = t; });
             safe->selection.clear();
             safe->refresh();
+        });
+    juce::CallOutBox::launchAsynchronously(std::move(content), target.getScreenBounds(), nullptr);
+}
+bool AutomationEditor::repairHostedTarget(const AutomationTarget &from, const AutomationTarget &to,
+                                          bool confirmed, std::optional<HostedAutomationBinding> expected)
+{
+    if (!confirmed || !contextValid() || !lane())
+        return false;
+    auto *old = automationCurve(*lane(), from);
+    if (!old || !old->hostedBinding || (expected && *old->hostedBinding != *expected))
+        return false;
+    auto mix = session.document.activeMix();
+    std::erase_if(automationLane(mix, owner)->curves, [&](auto &c) { return c.target == from; });
+    auto targets = automationTargets(mix, owner);
+    auto p = std::find_if(targets.begin(), targets.end(),
+                          [&](auto &p) { return p.target == to && p.hostedBinding && p.writable; });
+    if (p == targets.end() || session.liveInsertProblem(to.instance).isNotEmpty())
+        return false;
+    auto destination = *p;
+    auto binding = *old->hostedBinding;
+    bool applied = false;
+    session.edit(
+        "Repair hosted automation target",
+        [&](auto &d)
+        {
+            auto &l = *automationLane(d.activeMix(), owner);
+            auto *source = automationCurve(l, from);
+            if (!source || !source->hostedBinding || *source->hostedBinding != binding)
+                return;
+            if (auto *existing = automationCurve(l, to); existing && to != from && !existing->points.empty())
+                throw std::runtime_error("Destination already has a curve; existing automation retained");
+            auto repaired = *source;
+            repaired.target = to;
+            repaired.hostedBinding = destination.hostedBinding;
+            for (auto &point : repaired.points)
+            {
+                point.value = snappedAutomation(point.value, destination);
+                point.hold = point.hold || destination.discrete;
+            }
+            std::erase_if(l.curves, [&](auto &c) { return c.target == from || c.target == to; });
+            l.curves.push_back(std::move(repaired));
+            if (l.shown == from)
+                l.shown = to;
+            if (l.armed == from)
+                l.armed = to;
+            applied = true;
+        });
+    auto *result = lane() ? automationCurve(*lane(), to) : nullptr;
+    applied = applied && result && result->hostedBinding == destination.hostedBinding;
+    refresh();
+    return applied;
+}
+void AutomationEditor::requestRepair()
+{
+    if (!lane())
+        return;
+    auto from = lane()->shown;
+    auto *curve = automationCurve(*lane(), from);
+    if (!curve || !curve->hostedBinding)
+        return;
+    auto expected = *curve->hostedBinding;
+    auto mix = session.document.activeMix();
+    std::erase_if(automationLane(mix, owner)->curves, [&](auto &c) { return c.target == from; });
+    auto targets = automationTargets(mix, owner);
+    std::erase_if(targets,
+                  [&](auto &p) {
+                      return !p.hostedBinding || !p.writable ||
+                             session.liveInsertProblem(p.target.instance).isNotEmpty();
+                  });
+    auto safe = juce::Component::SafePointer<AutomationEditor>(this);
+    auto content = std::make_unique<TargetSearch>(
+        std::move(targets),
+        [safe, from, expected](auto to)
+        {
+            if (!safe || !safe->contextValid())
+                return;
+            juce::AlertWindow::showOkCancelBox(
+                juce::AlertWindow::WarningIcon, "Repair automation target",
+                "Move this curve from instance " + from.instance + " / " + from.parameter + " to " +
+                    to.instance + " / " + to.parameter +
+                    "? Points remain in project time. Discrete destinations use their legal steps. Existing "
+                    "destination curves are preserved.",
+                "Repair", "Cancel", safe.getComponent(),
+                juce::ModalCallbackFunction::create(
+                    [safe, from, to, expected](int result)
+                    {
+                        if (safe && result != 0)
+                            safe->repairHostedTarget(from, to, true, expected);
+                    }));
         });
     juce::CallOutBox::launchAsynchronously(std::move(content), target.getScreenBounds(), nullptr);
 }
@@ -345,7 +460,7 @@ void AutomationEditor::insertPoint(int64_t frame, double value)
 }
 void AutomationEditor::mouseDown(const juce::MouseEvent &e)
 {
-    if (!lane() || e.y < 30 || e.x < viewport.header || !parameter.writable)
+    if (!lane() || e.y < 30 || e.x < viewport.header || (!parameter.writable && !e.mods.isPopupMenu()))
         return;
     grabKeyboardFocus();
     capturedTarget = lane()->shown;
@@ -357,11 +472,13 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
         if (at >= 0)
             selection.insert(curve()->points[(size_t)at].id);
         juce::PopupMenu m;
-        m.addItem(1, juce::String::fromUTF8("Numeric time / value…"), !selection.empty());
-        m.addItem(2, "Linear", !selection.empty());
-        m.addItem(3, "Hold", !selection.empty());
+        m.addItem(7, juce::String::fromUTF8("Repair target…"), curve() && curve()->hostedBinding.has_value());
+        m.addItem(1, juce::String::fromUTF8("Numeric time / value…"),
+                  parameter.writable && !selection.empty());
+        m.addItem(2, "Linear", parameter.writable && !selection.empty());
+        m.addItem(3, "Hold", parameter.writable && !selection.empty());
         m.addItem(4, "Copy", !selection.empty());
-        m.addItem(5, "Paste at playhead");
+        m.addItem(5, "Paste at playhead", parameter.writable);
         m.addItem(6, "Delete", !selection.empty());
         juce::Component::SafePointer<AutomationEditor> safe(this);
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
@@ -369,6 +486,8 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
                         {
                             if (!safe || !safe->contextValid() || !safe->lane())
                                 return;
+                            if (n == 7)
+                                safe->requestRepair();
                             if (n == 1)
                                 safe->numericDialog();
                             if (n == 2 || n == 3)
@@ -437,7 +556,7 @@ void AutomationEditor::mouseDrag(const juce::MouseEvent &e)
                     p.frame = std::max<int64_t>(0, p.frame + delta);
                     p.value = std::clamp(p.value + dv, capturedParameter.minimum, capturedParameter.maximum);
                     if (capturedParameter.discrete)
-                        p.value = std::round(p.value);
+                        p.value = snappedAutomation(p.value, capturedParameter);
                 }
             std::sort(c->points.begin(), c->points.end(), [](auto &a, auto &b) { return a.frame < b.frame; });
             for (size_t i = 1; i < c->points.size(); ++i)
@@ -507,7 +626,7 @@ void AutomationEditor::offsetPoints(double amount)
                      if (auto *c = automationCurve(*automationLane(d.activeMix(), owner), t))
                          for (auto &p : c->points)
                              if (selection.contains(p.id))
-                                 p.value = std::clamp(p.value + amount, parameter.minimum, parameter.maximum);
+                                 p.value = snappedAutomation(p.value + amount, parameter);
                  });
 }
 void AutomationEditor::copyPoints()
@@ -568,7 +687,7 @@ void AutomationEditor::numericPoint(int64_t frame, double value)
             point.frame = std::max<int64_t>(0, frame);
             point.value = std::clamp(value, parameter.minimum, parameter.maximum);
             if (parameter.discrete)
-                point.value = std::round(point.value);
+                point.value = snappedAutomation(point.value, parameter);
             std::erase_if(c->points, [&](auto &p) { return p.id == point.id || p.frame == point.frame; });
             c->points.push_back(point);
             std::sort(c->points.begin(), c->points.end(), [](auto &a, auto &b) { return a.frame < b.frame; });
@@ -618,6 +737,14 @@ bool AutomationEditor::keyPressed(const juce::KeyPress &k)
         return false;
     if (k.isKeyCode(juce::KeyPress::escapeKey) && (dragging || touching))
     {
+        if (hostedWriting)
+        {
+            session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 2);
+            hostedWriting = false;
+            touching = false;
+            session.message = "Touch ended; Undo removes the completed pass";
+            return true;
+        }
         dragging = touching = false;
         session.cancelGesture();
         return true;
@@ -681,6 +808,15 @@ void AutomationEditor::beginTouch()
     if (p == targets.end())
         return;
     capturedParameter = *p;
+    if (p->hostedBinding)
+    {
+        hostedWriting =
+            session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 0);
+        touching = hostedWriting;
+        if (!hostedWriting)
+            session.message = "Hosted Touch is waiting for the retained plugin service";
+        return;
+    }
     original = session.document;
     touchPoints.clear();
     firstTouch = *session.automationFrame();
@@ -691,6 +827,12 @@ void AutomationEditor::touchValue(double value)
 {
     if (!touching || !lane())
         return;
+    if (hostedWriting)
+    {
+        session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 1,
+                            (float)snappedAutomation(value, capturedParameter));
+        return;
+    }
     auto clock = session.automationFrame();
     if (!clock)
         return;
@@ -723,6 +865,13 @@ void AutomationEditor::endTouch()
     if (!contextValid())
     {
         touching = false;
+        return;
+    }
+    if (touching && hostedWriting)
+    {
+        session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 2);
+        hostedWriting = touching = false;
+        refresh();
         return;
     }
     if (touching)

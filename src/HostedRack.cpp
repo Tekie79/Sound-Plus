@@ -89,7 +89,7 @@ struct HostedRackClient::Impl
     HostedRackExchange *exchange = nullptr;
     uint32_t sequence = 0;
     bool valid = false, borrowed = false, liveOwner = false, composite = false;
-    uint64_t lease = 0, commandSequence = 0, modelCommand = 0, automationSequence = 0;
+    uint64_t lease = 0, commandSequence = 0, modelCommand = 0, automationSequence = 0, touchWindow = 0;
     bool leaseAcquired = false;
     juce::String instance;
     std::vector<std::unique_ptr<HostedRackClient>> children;
@@ -653,12 +653,53 @@ void HostedRackClient::editor(const juce::String &slot, bool open)
     o->setProperty("open", open);
     saveProcessingJson(impl->workspace.getChildFile("editor.json"), v);
 }
-void HostedRackClient::capture(uint64_t sequence)
+void HostedRackClient::capture(uint64_t sequence, bool finishTouch)
 {
     auto v = juce::var(new juce::DynamicObject());
     auto *o = v.getDynamicObject();
     o->setProperty("generation", impl->instance);
     o->setProperty("sequence", (juce::int64)sequence);
+    o->setProperty("finishTouch", finishTouch);
     saveProcessingJson(impl->workspace.getChildFile("capture.json"), v);
+}
+void HostedRackClient::armTouch(const juce::String &nativeId, const juce::String &owner,
+                                uint64_t acknowledged)
+{
+    if (!impl->liveOwner)
+        throw std::runtime_error("Only retained UI owner can arm hosted Touch");
+    auto v = juce::var(new juce::DynamicObject);
+    auto *o = v.getDynamicObject();
+    o->setProperty("generation", impl->instance);
+    o->setProperty("sequence", (juce::int64)++impl->commandSequence);
+    o->setProperty("parameter", nativeId);
+    o->setProperty("owner", owner);
+    o->setProperty("acknowledged", (juce::int64)acknowledged);
+    saveProcessingJson(impl->workspace.getChildFile("touch.json"), v);
+}
+void HostedRackClient::touchCommands(const juce::var &commands)
+{
+    if (!impl->liveOwner || !commands.isArray() || commands.size() > 4096)
+        throw std::runtime_error("Invalid hosted Touch command queue");
+    auto v = juce::var(new juce::DynamicObject);
+    auto *o = v.getDynamicObject();
+    o->setProperty("generation", impl->instance);
+    juce::Array<juce::var> window;
+    size_t bytes = 128;
+    for (auto &command : *commands.getArray())
+    {
+        auto size = juce::JSON::toString(command, true).getNumBytesAsUTF8() + 1;
+        if (bytes + size > 60 * 1024)
+            break;
+        bytes += size;
+        window.add(command);
+    }
+    if (window.isEmpty())
+        throw std::runtime_error("Hosted Touch command exceeds bounded control window");
+    auto last = (uint64_t)(int64_t)window.getLast()["sequence"];
+    if (last == impl->touchWindow)
+        return;
+    impl->touchWindow = last;
+    o->setProperty("commands", window);
+    saveProcessingJson(impl->workspace.getChildFile("touch-commands.json"), v);
 }
 } // namespace sp

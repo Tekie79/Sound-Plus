@@ -1,6 +1,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <array>
 #include <cstdlib>
+#include <unistd.h>
 class MidiFixture final : public juce::AudioProcessor
 {
     juce::AudioParameterFloat *gain, *latency;
@@ -157,12 +158,43 @@ class MidiFixture final : public juce::AudioProcessor
         return p ? "Half" : "Full";
     }
     void changeProgramName(int, const juce::String &) override {}
+    struct QAEditor final : juce::GenericAudioProcessorEditor, private juce::Timer
+    {
+        MidiFixture &fixture;
+        int last = 0;
+        bool gesture = false;
+        explicit QAEditor(MidiFixture &f) : GenericAudioProcessorEditor(f), fixture(f)
+        {
+            startTimer(10);
+        }
+        void timerCallback() override
+        {
+            auto *directory = std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA");
+            if (!directory)
+                return;
+            auto file = juce::File(directory).getChildFile(juce::String((int)::getpid()) + ".json");
+            auto v = juce::JSON::parse(file.loadFileAsString());
+            if (!v.isObject() || (int)v["sequence"] <= last)
+                return;
+            last = (int)v["sequence"];
+            auto *p = fixture.getParameters()[(int)v["index"]];
+            if (!gesture)
+                p->beginChangeGesture();
+            p->setValueNotifyingHost((float)v["value"]);
+            auto stage = v["gestureStage"].toString();
+            gesture = stage == "begin" || stage == "continue";
+            if (!gesture)
+                p->endChangeGesture();
+        }
+    };
     bool hasEditor() const override
     {
         return true;
     }
     juce::AudioProcessorEditor *createEditor() override
     {
+        if (std::getenv("SOUNDPLUS_FIXTURE_LIVE_QA"))
+            return new QAEditor(*this);
         return new juce::GenericAudioProcessorEditor(*this);
     }
     void getStateInformation(juce::MemoryBlock &b) override

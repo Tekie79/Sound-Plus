@@ -1,0 +1,10 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start 33: hosted_touch_session
+1/2 Test #33: hosted_touch_session .............   Passed    0.65 sec
+    Start 34: hosted_touch_device
+2/2 Test #34: hosted_touch_device ..............   Passed    6.55 sec
+
+100% tests passed, 0 tests failed out of 2
+
+Total Test time (real) =   7.20 sec

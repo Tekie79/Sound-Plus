@@ -15,7 +15,7 @@ class LiveInsertSession
     {
         juce::String document, variation, owner, slot, generation, expected, settings, gesture;
         uint64_t incarnation = 0;
-        bool native = false;
+        bool native = false, touchOnly = false;
         juce::var evidence;
     };
     using Receiver = std::function<void(Capture)>;
@@ -25,6 +25,10 @@ class LiveInsertSession
     void sync(const DesignDocument &, uint64_t);
     void editor(const juce::String &, const juce::File &, const juce::String &, bool = true);
     void flush(std::function<void(bool)>);
+    bool gesture(const juce::String &slot, const juce::String &parameter, const juce::String &owner, int kind,
+                 float value, uint64_t incarnation, const juce::String &document);
+    void acknowledgeTouch(const juce::String &slot, const juce::String &generation, uint64_t pass);
+
     void suspendEditors(bool value)
     {
         editorsSuspended.store(value);
@@ -58,6 +62,16 @@ class LiveInsertSession
     std::map<juce::String, EditorRequest> open;
     std::vector<std::function<void(bool)>> flushes;
     std::vector<juce::var> traces;
+    struct GestureRequest
+    {
+        juce::String slot, generation, parameter, owner, document;
+        int kind;
+        float value;
+        uint64_t incarnation, sequence;
+    };
+    std::vector<GestureRequest> gestures;
+    uint64_t gestureSequence = 0;
+    std::map<juce::String, std::pair<juce::String, uint64_t>> touchAcks;
     std::thread worker;
     void run();
 };

@@ -31,6 +31,9 @@ struct DesignSessionServices
     std::function<void(std::function<void(bool)>)> inputPermission;
     // Optional controlled capture service, same completion boundary as the native service.
     std::function<void(std::function<void(bool)>)> captureLive;
+    std::function<bool(const juce::String &, const juce::String &, const juce::String &, int, float)>
+        hostedGesture;
+    std::function<void(const juce::String &, const juce::String &, uint64_t)> hostedTouchAck;
     bool automaticRecovery = true, timers = true;
 };
 
@@ -92,6 +95,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     {
         return liveInserts ? liveInserts->problem(slot) : juce::String();
     }
+    bool hostedTouch(const juce::String &slot, const juce::String &parameter, uint64_t incarnation, int kind,
+                     float value = 0);
     void withLiveState(std::function<void()>, std::function<void()> rejected = {});
     bool hasLiveInserts() const
     {
@@ -369,6 +374,29 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::String liveHistoryKey;
     int64_t liveHistoryRevision = -1;
     void syncLive();
+    friend struct HostedAutomationTestAccess;
+    void receiveHostedTouches(const LiveInsertSession::Capture &);
+    void acknowledgeRetainedTouch(const juce::String &, const juce::String &, uint64_t);
+    struct HostedTouchContext
+    {
+        juce::String document, variation, generation, slot, owner;
+        uint64_t incarnation = 0, id = 0;
+        AutomationTarget target;
+        HostedAutomationBinding binding;
+        std::vector<AutomationPoint> points;
+        bool applied = false, retentionPending = false;
+    };
+    void retainHostedTouch(const juce::String &);
+    std::map<juce::String, HostedTouchContext> nativeTouches;
+    std::map<juce::String, std::set<uint64_t>> completedTouches;
+    std::map<juce::String, uint64_t> retainedTouch;
+    struct InlineTouch
+    {
+        juce::String owner, variation;
+        HostedAutomationBinding binding;
+    };
+    std::map<juce::String, InlineTouch> inlineTouches;
+    uint64_t touchLifetime = 0;
     void receiveLive(LiveInsertSession::Capture);
     bool flushLive(std::function<void()>, bool allowFailure = false, std::function<void()> rejected = {});
     std::map<juce::String, LiveInsertSession::Capture> deferredNativeCaptures;

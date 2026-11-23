@@ -22,7 +22,7 @@ juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAsset
 add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/InputRecording.cpp
-  src/DesignInputSession.cpp src/DesignMidiSession.cpp
+  src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
@@ -200,7 +200,11 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING)
-  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp tests/HostedAutomationTests.cpp tests/HostedInstrumentAutomationTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp tests/HostedAutomationTests.cpp tests/HostedInstrumentAutomationTests.cpp tests/HostedTouchSessionTests.cpp)
+  add_test(NAME hosted_touch_session COMMAND SoundPlusTests --hosted-touch-session "${CMAKE_BINARY_DIR}/hosted-automation/session" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
+  set_tests_properties(hosted_touch_session PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)
+  add_test(NAME hosted_touch_device COMMAND SoundPlusTests --hosted-touch-session "${CMAKE_BINARY_DIR}/hosted-automation/device" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
+  set_tests_properties(hosted_touch_device PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE ENVIRONMENT "SOUNDPLUS_QA_TOUCH_DEVICE=1")
   add_test(NAME hosted_automation COMMAND SoundPlusTests --hosted-automation "${CMAKE_BINARY_DIR}/hosted-automation/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
   add_test(NAME hosted_automation_au COMMAND SoundPlusTests --hosted-automation "${CMAKE_BINARY_DIR}/hosted-automation/au-tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_AU>/../..")
   add_test(NAME hosted_instrument_automation COMMAND SoundPlusTests --hosted-instrument-automation "${CMAKE_BINARY_DIR}/hosted-automation/instrument" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusMidiFixture_VST3>/../..")

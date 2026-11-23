@@ -858,7 +858,7 @@ struct DesignGraph::Impl
                     node.pcm, frames, &node.midi, cursor, document.activeMix().midiTiming,
                     node.audible && !node.endedMidi, node.panic, inputEnd,
                     node.automation->hostedEvents(node.track.instrument->hostedInstrument.hosted, cursor,
-                                                  frames, 0));
+                                                  frames, 0, sampleRate));
                 node.panic = false;
                 if (ending)
                     node.endedMidi = true;

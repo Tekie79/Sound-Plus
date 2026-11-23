@@ -59,7 +59,9 @@ class HostedRackClient
     void checkHealth() const;
     juce::var liveState() const;
     void editor(const juce::String &slot, bool open);
-    void capture(uint64_t sequence);
+    void capture(uint64_t sequence, bool finishTouch = false);
+    void armTouch(const juce::String &nativeId, const juce::String &owner, uint64_t acknowledged = 0);
+    void touchCommands(const juce::var &commands);
     juce::String instanceGeneration() const;
 
   private:

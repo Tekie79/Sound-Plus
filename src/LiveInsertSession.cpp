@@ -1,4 +1,6 @@
 #include "LiveInsertSession.h"
+#include "TrackModel.h"
+#include "HostedTouchCapture.h"
 #include "PluginProcessing.h"
 #include <juce_events/juce_events.h>
 #include <juce_cryptography/juce_cryptography.h>
@@ -12,8 +14,13 @@ struct LiveInsertSession::Entry
     Capture binding;
     std::unique_ptr<HostedRackClient> client;
     juce::String lastCapture, pendingSettings;
+    juce::var lastState;
     bool failed = false, editorVisible = false;
     int64_t lastNative = 0;
+    double touchDelivery = 0;
+    juce::String touchParameter, touchOwner;
+    uint64_t touchAck = 0;
+    juce::Array<juce::var> touchCommands;
 };
 LiveInsertSession::LiveInsertSession(juce::File directory, Receiver callback,
                                      std::function<void(juce::String)> error)
@@ -51,6 +58,29 @@ void LiveInsertSession::flush(std::function<void(bool)> callback)
 {
     std::lock_guard lock(mutex);
     flushes.push_back(std::move(callback));
+    wake.notify_one();
+}
+bool LiveInsertSession::gesture(const juce::String &slot, const juce::String &parameter,
+                                const juce::String &owner, int kind, float value, uint64_t incarnation,
+                                const juce::String &document)
+{
+    std::lock_guard lock(mutex);
+    if (quitting || !generations.contains(slot) || gestures.size() >= (kind == 2 ? 4096 : 4032))
+        return false;
+    gestures.push_back(
+        {slot, generations[slot], parameter, owner, document, kind, value, incarnation, ++gestureSequence});
+    wake.notify_one();
+    return true;
+}
+void LiveInsertSession::acknowledgeTouch(const juce::String &slot, const juce::String &generation,
+                                         uint64_t pass)
+{
+    std::lock_guard lock(mutex);
+    auto &ack = touchAcks[slot];
+    if (ack.first != generation)
+        ack = {generation, pass};
+    else
+        ack.second = std::max(ack.second, pass);
     wake.notify_one();
 }
 bool LiveInsertSession::accepts(const Capture &capture)
@@ -179,6 +209,22 @@ void LiveInsertSession::run()
                         entries.erase(found);
                     }
                     auto &e = entries[slot.id];
+                    auto automationOwner = owner.startsWith("instrument:") ? owner.substring(11) : owner;
+                    if (auto *clip = findClip(next->document.activeMix(), owner))
+                        automationOwner = clip->trackId;
+                    juce::String armedParameter;
+                    if (auto *lane = automationLane(next->document.activeMix(), automationOwner);
+                        lane && lane->touch && lane->armed.instance == slot.id)
+                    {
+                        auto *curve = automationCurve(*lane, lane->armed);
+                        if (!curve || curve->read)
+                            for (auto &parameter :
+                                 automationTargets(next->document.activeMix(), automationOwner))
+                                if (parameter.target == lane->armed && parameter.writable &&
+                                    parameter.hostedBinding)
+                                    armedParameter = lane->armed.parameter;
+                    }
+
                     if (e.binding.slot.isEmpty())
                     {
                         {
@@ -204,6 +250,14 @@ void LiveInsertSession::run()
                         b->setProperty("incarnation", (juce::int64)e.binding.incarnation);
                         b->setProperty("variation", e.binding.variation);
                         b->setProperty("owner", owner);
+                        b->setProperty("source",
+                                       findClip(next->document.activeMix(), owner) ? owner : juce::String());
+                        juce::String instrument;
+                        if (owner.startsWith("instrument:"))
+                            if (auto *track = findTrack(next->document.activeMix(), owner.substring(11));
+                                track && track->instrument)
+                                instrument = track->instrument->id;
+                        b->setProperty("instrument", instrument);
                         b->setProperty("slot", slot.id);
                         b->setProperty("rack", rack.id);
                         b->setProperty("label", label);
@@ -261,6 +315,24 @@ void LiveInsertSession::run()
                         e.binding.expected = slot.settings;
                         e.pendingSettings.clear();
                     }
+                    if (e.client && !e.failed)
+                    {
+                        uint64_t ack = 0;
+                        {
+                            std::lock_guard lock(mutex);
+                            auto at = touchAcks.find(slot.id);
+                            if (at != touchAcks.end() && at->second.first == e.binding.generation)
+                                ack = at->second.second;
+                        }
+                        if (e.touchParameter != armedParameter || e.touchOwner != automationOwner ||
+                            e.touchAck != ack)
+                        {
+                            e.client->armTouch(armedParameter, automationOwner, ack);
+                            e.touchParameter = armedParameter;
+                            e.touchOwner = automationOwner;
+                            e.touchAck = ack;
+                        }
+                    }
                 }
             };
             if (next->document.activeTake.isEmpty())
@@ -290,6 +362,33 @@ void LiveInsertSession::run()
                 std::erase_if(problems, [&](auto &p) { return !wanted.contains(p.first); });
             }
         }
+        std::vector<GestureRequest> commands;
+        {
+            std::lock_guard lock(mutex);
+            commands.swap(gestures);
+        }
+        for (auto &command : commands)
+            if (auto at = entries.find(command.slot); at != entries.end())
+            {
+                auto &e = at->second;
+                if (!e.client || e.failed || e.binding.generation != command.generation ||
+                    e.binding.document != command.document || e.binding.incarnation != command.incarnation)
+                    continue;
+                if (e.touchCommands.size() >= 4096)
+                {
+                    e.failed = true;
+                    continue;
+                }
+                auto v = juce::var(new juce::DynamicObject);
+                auto *o = v.getDynamicObject();
+                o->setProperty("sequence", (juce::int64)command.sequence);
+                o->setProperty("parameter", command.parameter);
+                o->setProperty("owner", command.owner);
+                o->setProperty("kind", command.kind);
+                o->setProperty("value", command.value);
+                e.touchCommands.add(v);
+                e.client->touchCommands(e.touchCommands);
+            }
         bool allCaptured = true;
         if (requestFlush)
         {
@@ -316,7 +415,7 @@ void LiveInsertSession::run()
                     editors.erase(id);
                 }
                 if (requestFlush)
-                    e.client->capture(captureTicket);
+                    e.client->capture(captureTicket, true);
                 if (editorsSuspended.load() && e.editorVisible)
                     e.client->editor(id, false);
                 auto state = e.client->liveState();
@@ -326,20 +425,40 @@ void LiveInsertSession::run()
                     allCaptured = false;
                     continue;
                 }
+                e.lastState = state;
                 if ((uint64_t)(juce::int64)state["captureSequence"] < captureTicket)
                     allCaptured = false;
+                bool unretained = false;
+                if (auto *passes = state["touchPasses"].getArray())
+                    for (auto &pass : *passes)
+                    {
+                        bool retained = (uint64_t)(int64_t)pass["id"] <= e.touchAck;
+                        if ((bool)pass["complete"] && !retained)
+                            unretained = true;
+                        if (!waiting.empty() && (!(bool)pass["complete"] || !retained))
+                            allCaptured = false;
+                    }
+                for (int i = e.touchCommands.size() - 1; i >= 0; --i)
+                    if ((int64_t)e.touchCommands[i]["sequence"] <= (int64_t)state["gestureCommand"])
+                        e.touchCommands.remove(i);
+                if (!e.touchCommands.isEmpty())
+                    e.client->touchCommands(e.touchCommands);
                 auto serial = state["nativeSequence"].toString() + ":" + state["modelSequence"].toString() +
-                              ":" + state["captureSequence"].toString();
+                              ":" + state["captureSequence"].toString() + ":" +
+                              state["touchSequence"].toString();
                 const bool visible = (bool)state["editorVisible"],
                            visibilityChanged = visible != e.editorVisible;
                 e.editorVisible = visible;
-                if (e.lastCapture == serial && !visibilityChanged)
+                const auto now = juce::Time::getMillisecondCounterHiRes();
+                if (e.lastCapture == serial && !visibilityChanged &&
+                    !(unretained && now - e.touchDelivery >= 250))
                     continue;
+                e.touchDelivery = now;
                 e.lastCapture = serial;
                 const bool nativeChanged = (juce::int64)state["nativeSequence"] > e.lastNative;
                 e.lastNative = (juce::int64)state["nativeSequence"];
                 auto settings = juce::JSON::toString(state["slots"][0]["settings"], true);
-                if (settings == e.binding.expected && !visibilityChanged)
+                if (settings == e.binding.expected && !visibilityChanged && state["touchPasses"].size() == 0)
                     continue;
                 auto capture = e.binding;
                 capture.settings = settings;
@@ -359,6 +478,30 @@ void LiveInsertSession::run()
                 flushOkay = false;
                 juce::MessageManager::callAsync([callback = failure, text = juce::String(error.what())]
                                                 { callback(text); });
+                // The checkpoint survives helper death. Preserve its acknowledged
+                // partial pass before reporting failure; never adopt stale opaque
+                // state or queued, unprocessed UI input.
+                auto checkpoint = e.lastState;
+                try
+                {
+                    auto newest = e.client->liveState();
+                    if (newest["generation"].toString() == e.binding.generation &&
+                        (uint64_t)(int64_t)newest["modelSequence"] == e.client->modelSequence())
+                        checkpoint = newest;
+                }
+                catch (...)
+                {
+                }
+                if (checkpoint["generation"].toString() == e.binding.generation &&
+                    checkpoint["touchPasses"].size() > 0)
+                {
+                    auto capture = e.binding;
+                    capture.touchOnly = true;
+                    capture.settings = juce::JSON::toString(checkpoint["slots"][0]["settings"], true);
+                    capture.evidence = HostedTouchCapture::interruptedCheckpoint(
+                        checkpoint, "Plugin interrupted; retained acknowledged partial Touch pass");
+                    juce::MessageManager::callAsync([callback = receive, capture] { callback(capture); });
+                }
                 e.client.reset();
             }
         }

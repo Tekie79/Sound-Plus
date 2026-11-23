@@ -16,6 +16,7 @@ class OrderedRack
     std::vector<Step> steps;
     juce::AudioBuffer<float> dry, ring;
     juce::SmoothedValue<float> wet;
+    double processingRate = 48000;
     int delay = 0, inputDependencies = 0, position = 0, channels = 2;
     bool fixed = false, initialBypass = false;
     const CompiledAutomation *automation = nullptr;
@@ -51,7 +52,7 @@ class OrderedRack
   public:
     OrderedRack(const InsertChain &c, const ChannelLayout &bus, double rate, bool invariant, bool aware,
                 bool immutable, const std::function<bool()> &cancelled, MidiTiming timing = {})
-        : channels(bus.size()), fixed(immutable), initialBypass(c.bypass)
+        : channels(bus.size()), processingRate(rate), fixed(immutable), initialBypass(c.bypass)
     {
         negotiateStockBus({bus, bus, false});
         for (auto &ref : resolvedInsertOrder(c))
@@ -206,10 +207,10 @@ class OrderedRack
             else
             {
                 auto first = automationInput - prefix;
-                auto events =
-                    automation ? automation->hostedEvents(s.hostedRecipe, first, count, s.hosted->latency())
-                               : std::vector<HostedParameterEvent>();
-                s.hosted->process(b, count, nullptr, events.empty() ? 0 : first, {}, true, false, -1, events);
+                auto events = automation ? automation->hostedEvents(s.hostedRecipe, first, count,
+                                                                    s.hosted->latency(), processingRate)
+                                         : std::vector<HostedParameterEvent>();
+                s.hosted->process(b, count, nullptr, first, {}, true, false, -1, events);
                 prefix += s.hosted->latency();
             }
             if (s.native)

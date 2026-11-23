@@ -52,7 +52,8 @@ double automationValue(const AutomationCurve &, const AutomationParameter &, int
 void addAutomationPoint(DesignMix &, const juce::String &, const AutomationTarget &, int64_t, double,
                         double rate);
 void writeTouchPass(DesignMix &, const juce::String &, const AutomationTarget &,
-                    const std::vector<AutomationPoint> &, int64_t end, double rate);
+                    const std::vector<AutomationPoint> &, int64_t end, double rate,
+                    std::optional<double> returnValue = {});
 // Typed prepared bindings; snapshots are built on the decoder/graph worker.
 struct CompiledAutomation
 {
@@ -67,6 +68,6 @@ struct CompiledAutomation
     int untilBoundary(int64_t frame, int maximum) const;
     int64_t segmentFrame(int64_t) const;
     std::vector<HostedParameterEvent> hostedEvents(const HostedRack &, int64_t inputFrame, int frames,
-                                                   int latency) const;
+                                                   int latency, double rate = 48000) const;
 };
 } // namespace sp

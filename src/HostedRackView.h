@@ -78,6 +78,7 @@ class HostedRackView final : public juce::Component
     }
     ~HostedRackView() override
     {
+        finishSliderGestures();
         for (auto &edit : editors)
             *edit->cancel = true;
         editors.clear();
@@ -210,6 +211,7 @@ class HostedRackView final : public juce::Component
                    pluginParameterSchemaSignature(params);
         if (key != parameterKey)
         {
+            finishSliderGestures();
             sliders.clear();
             labels.clear();
             parameterKey = key;
@@ -233,14 +235,45 @@ class HostedRackView final : public juce::Component
                     v->setScrollWheelEnabled(false);
                     v->setTitle("External insert / " + p["name"].toString() + " (normalized)");
                     parameterContent.addAndMakeVisible(v);
-                    v->onDragStart = [this] { session.beginGesture(); };
-                    v->onDragEnd = [this] { session.endGesture(); };
+                    auto recording = std::make_shared<bool>(false);
+                    auto manual = std::make_shared<bool>(false);
+                    auto native = p["stableId"].toString();
+                    v->onDragStart = [this, target, id, native, recording, manual]
+                    {
+                        *recording = session.hostedTouch(id, native, target.generation, 0);
+                        if (!*recording)
+                        {
+                            *manual = true;
+                            session.beginGesture();
+                        }
+                    };
+                    v->onDragEnd = [this, target, id, native, recording, manual]
+                    {
+                        if (*recording)
+                            session.hostedTouch(id, native, target.generation, 2);
+                        else if (*manual)
+                            session.endGesture();
+                        *recording = *manual = false;
+                    };
+                    sliderEnds.push_back(v->onDragEnd);
                     v->onValueChange = [this, slider = juce::Component::SafePointer<juce::Slider>(v), target,
-                                        id, parameter, schema = pluginParameterSchemaSignature(params)]
+                                        id, parameter, native, recording,
+                                        schema = pluginParameterSchemaSignature(params)]
                     {
                         if (updating || !slider)
                             return;
                         double value = slider->getValue();
+                        if (*recording)
+                        {
+                            session.hostedTouch(id, native, target.generation, 1, (float)value);
+                            return;
+                        }
+                        if (session.hostedTouch(id, native, target.generation, 0))
+                        {
+                            session.hostedTouch(id, native, target.generation, 1, (float)value);
+                            session.hostedTouch(id, native, target.generation, 2);
+                            return;
+                        }
                         change(target, "Adjust external insert",
                                [&](auto &rack)
                                {
@@ -400,6 +433,14 @@ class HostedRackView final : public juce::Component
         more{"Effect actions", ActionIcon::more};
     juce::Viewport parameterViewport;
     juce::Component parameterContent;
+    std::vector<std::function<void()>> sliderEnds;
+    void finishSliderGestures()
+    {
+        auto ends = std::move(sliderEnds);
+        sliderEnds.clear();
+        for (auto &end : ends)
+            end();
+    }
     juce::OwnedArray<juce::Slider> sliders;
     juce::OwnedArray<juce::Label> labels;
     std::map<juce::String, std::pair<juce::String, juce::var>> parsed;

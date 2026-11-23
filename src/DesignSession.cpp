@@ -423,6 +423,9 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
         capture.document != document.id || capture.variation != document.activeVariation ||
         document.activeTake.isNotEmpty())
         return;
+    receiveHostedTouches(capture);
+    if (capture.touchOnly)
+        return;
     auto rack = [&](DesignDocument &d) -> HostedRack *
     {
         if (capture.owner == "master")

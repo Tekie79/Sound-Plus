@@ -63,8 +63,9 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             AudioProcessor::BusesLayout buses;
             StringArray parameterIds;
             std::vector<uint64_t> parameterTokens;
-            std::vector<bool> automatable;
-            std::unique_ptr<std::atomic<float>[]> manualValues, overlayValues;
+            std::vector<bool> automatable, discrete;
+            std::vector<int> parameterSteps;
+            std::unique_ptr<std::atomic<float>[]> manualValues, overlayValues, audibleValues;
             std::unique_ptr<std::atomic<bool>[]> overlayActive;
             std::vector<uint8_t> activeThisBlock;
             std::vector<float> requestedValues, opaqueValues, baselineRequests;
@@ -111,9 +112,14 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                         prepared.parameterTokens.push_back(
                             sp::hostedParameterToken(slot.id, settings["plugin"], id));
                         prepared.automatable.push_back(p->getParameters()[i]->isAutomatable());
+                        auto steps = p->getParameters()[i]->getNumSteps();
+                        prepared.parameterSteps.push_back(steps);
+                        prepared.discrete.push_back(p->getParameters()[i]->isDiscrete() ||
+                                                    (steps > 1 && steps < 0x7fffffff));
                     }
                     const auto count = (size_t)p->getParameters().size();
                     prepared.manualValues = std::make_unique<std::atomic<float>[]>(count);
+                    prepared.audibleValues = std::make_unique<std::atomic<float>[]>(count);
                     prepared.overlayValues = std::make_unique<std::atomic<float>[]>(count);
                     prepared.overlayActive = std::make_unique<std::atomic<bool>[]>(count);
                     prepared.activeThisBlock.resize(count);
@@ -121,6 +127,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     {
                         prepared.manualValues[i] = p->getParameters()[(int)i]->getValue();
                         prepared.overlayValues[i] = prepared.manualValues[i].load();
+                        prepared.audibleValues[i] = prepared.manualValues[i].load();
                         prepared.overlayActive[i] = false;
                     }
                     prepared.requestedValues.assign((size_t)p->getParameters().size(),
@@ -306,16 +313,34 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                 bool overlayPresent = false;
                 for (int p = 0; p < slot.parameterIds.size(); ++p)
                     overlayPresent |= slot.overlayActive[(size_t)p].load();
-                if (!events.empty() || overlayPresent)
+                if (!events.empty() || overlayPresent || (live && live->touchEnabled()))
                     onPluginMessageThread(
                         [&]
                         {
                             auto processAutomated = [&]
                             {
+                                const auto sourceFirst = std::max<int64_t>(
+                                    0, e->automationInputFrame - (rack.instrument ? 0 : slot.latency));
+                                if (live)
+                                    live->prepareTouch(sourceFirst, rate,
+                                                       [&](int p)
+                                                       {
+                                                           for (auto &event : events)
+                                                               if (event.slot == slotIndex &&
+                                                                   event.index == p && event.offset == 0)
+                                                                   return event.touchReturnValue;
+                                                           return slot.manualValues[(size_t)p].load();
+                                                       });
                                 std::fill(slot.activeThisBlock.begin(), slot.activeThisBlock.end(), 0);
                                 for (auto &event : events)
                                     if (event.slot == slotIndex)
                                         slot.activeThisBlock[(size_t)event.index] = 1;
+                                if (live && live->touchIndex() >= 0)
+                                {
+                                    int p = live->touchIndex();
+                                    slot.activeThisBlock[(size_t)p] = 1;
+                                    slot.overlayActive[(size_t)p] = true;
+                                }
                                 for (int p = 0; p < slot.parameterIds.size(); ++p)
                                     if (slot.overlayActive[(size_t)p] && !slot.activeThisBlock[(size_t)p])
                                     {
@@ -331,6 +356,15 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                             slot.effect->getHostedParameter(event.index)->getParameterID() ==
                                                 slot.parameterIds[event.index],
                                             "Hosted automation stable ID changed; reprepare required");
+                                for (auto &event : events)
+                                    if (event.slot == slotIndex)
+                                        check(
+                                            slot.effect->getParameters()[event.index]->getNumSteps() ==
+                                                    slot.parameterSteps[(size_t)event.index] &&
+                                                slot.effect->getParameters()[event.index]->isAutomatable() ==
+                                                    slot.automatable[(size_t)event.index],
+                                            "Hosted parameter scheduling metadata changed; explicitly "
+                                            "reprepare");
                                 // One bounded IPC request, one message-thread dispatch.
                                 // Preserve processor history and rebase MIDI for every slice.
                                 for (int at = 0; at < frames;)
@@ -343,12 +377,38 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                             {
                                                 slot.overlayValues[(size_t)event.index] = event.value;
                                                 slot.overlayActive[(size_t)event.index] = true;
-                                                slot.effect->getParameters()[event.index]
-                                                    ->setValueNotifyingHost(event.value);
+                                                if (!live ||
+                                                    !live->touchOverride(event.index, sourceFirst + at))
+                                                {
+                                                    slot.audibleValues[(size_t)event.index] = event.value;
+                                                    slot.effect->getParameters()[event.index]
+                                                        ->setValueNotifyingHost(event.value);
+                                                }
                                             }
                                             else if (event.offset > at)
                                                 next = std::min(next, event.offset);
                                         }
+                                    if (live)
+                                    {
+                                        int armed = live->touchArmedIndex();
+                                        if (armed >= 0 && !slot.activeThisBlock[(size_t)armed] &&
+                                            !live->touchOverride(armed, sourceFirst + at))
+                                        {
+                                            slot.audibleValues[(size_t)armed] =
+                                                slot.manualValues[(size_t)armed].load();
+                                            slot.effect->getParameters()[armed]->setValueNotifyingHost(
+                                                slot.manualValues[(size_t)armed]);
+                                        }
+                                        next = std::min(
+                                            next, at + live->touchBoundary(sourceFirst + at, frames - at));
+                                        for (int p = 0; p < slot.parameterIds.size(); ++p)
+                                            if (auto value = live->touchOverride(p, sourceFirst + at))
+                                            {
+                                                slot.audibleValues[(size_t)p] = *value;
+                                                slot.effect->getParameters()[p]->setValueNotifyingHost(
+                                                    *value);
+                                            }
+                                    }
                                     juce::AudioBuffer<float> slice(audio.getArrayOfWritePointers(),
                                                                    bus.size(), at, next - at);
                                     sliceMidi.clear();
@@ -357,6 +417,8 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                     slot.effect->processBlock(slice, sliceMidi);
                                     at = next;
                                 }
+                                if (live)
+                                    live->finishTouchBlock(sourceFirst + frames);
                             };
                             if (live)
                                 live->automationWrite(processAutomated);
