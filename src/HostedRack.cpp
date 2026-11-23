@@ -1,4 +1,5 @@
 #include "HostedRack.h"
+#include "HostedParameterIdentity.h"
 #include "HostedRackExchange.h"
 #include "PluginProcessing.h"
 #include <sys/mman.h>
@@ -88,7 +89,7 @@ struct HostedRackClient::Impl
     HostedRackExchange *exchange = nullptr;
     uint32_t sequence = 0;
     bool valid = false, borrowed = false, liveOwner = false, composite = false;
-    uint64_t lease = 0, commandSequence = 0, modelCommand = 0;
+    uint64_t lease = 0, commandSequence = 0, modelCommand = 0, automationSequence = 0;
     bool leaseAcquired = false;
     juce::String instance;
     std::vector<std::unique_ptr<HostedRackClient>> children;
@@ -361,12 +362,25 @@ int HostedRackClient::latency() const
 }
 void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames,
                                const std::vector<MidiPacket> *midi, int64_t first, const MidiTiming &timing,
-                               bool notesAllowed, bool panic, int64_t inputEnd)
+                               bool notesAllowed, bool panic, int64_t inputEnd,
+                               std::span<const HostedParameterEvent> automation)
 {
     if (impl->composite)
     {
-        for (auto &child : impl->children)
-            child->process(buffer, frames, midi, first, timing, notesAllowed, panic, inputEnd);
+        // Ordered chains normally submit one isolated slot. A composite borrow
+        // must partition by slot rather than broadcast another instance's events.
+        for (size_t i = 0; i < impl->children.size(); ++i)
+        {
+            std::vector<HostedParameterEvent> selected;
+            for (auto event : automation)
+                if (event.slot == i)
+                {
+                    event.slot = 0;
+                    selected.push_back(event);
+                }
+            impl->children[i]->process(buffer, frames, midi, first, timing, notesAllowed, panic, inputEnd,
+                                       selected);
+        }
         return;
     }
     auto *e = impl->exchange;
@@ -376,6 +390,18 @@ void HostedRackClient::process(juce::AudioBuffer<float> &buffer, int frames,
         throw std::runtime_error("Invalid hosted rack block");
     for (int c = 0; c < e->channels; ++c)
         std::copy_n(buffer.getReadPointer(c), frames, e->input[c]);
+    if (automation.size() > hostedEventLimit)
+        throw std::runtime_error("Hosted automation capacity exceeded");
+    e->automationCount = (int)automation.size();
+    e->automationInputFrame = first;
+    for (size_t n = 0; n < automation.size(); ++n)
+    {
+        auto event = automation[n];
+        event.sequence = ++impl->automationSequence;
+        e->automation[n] = event;
+    }
+    validateHostedEvents({e->automation, automation.size()}, frames, (int)impl->configuration.slots.size(),
+                         first, 0);
     e->frames = frames;
     e->midiCount = 0;
     e->projectFrame = first;

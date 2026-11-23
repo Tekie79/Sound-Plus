@@ -200,7 +200,9 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING)
-  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp tests/HostedAutomationTests.cpp)
+  add_test(NAME hosted_automation COMMAND SoundPlusTests --hosted-automation "${CMAKE_BINARY_DIR}/hosted-automation/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
+  set_tests_properties(hosted_automation PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   target_include_directories(SoundPlusTests PRIVATE "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
   juce_add_plugin(SoundPlusMidiFixture COMPANY_NAME "SoundPlus" BUNDLE_ID "org.soundplus.midi-fixture" PLUGIN_MANUFACTURER_CODE SpQA
     PLUGIN_CODE SpM1 FORMATS VST3 PRODUCT_NAME "SoundPlus MIDI Oracle" COPY_PLUGIN_AFTER_BUILD FALSE

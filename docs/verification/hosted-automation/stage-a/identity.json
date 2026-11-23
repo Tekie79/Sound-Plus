@@ -1,0 +1,20 @@
+{
+  "baseline": "3da199dfe3e48db19e08daec88c420962ccfb8bc",
+  "stage": "A event foundation; registry remains read-only; live overlays and saved bindings pending",
+  "sources": {
+    "src/HostedParameterEvents.h": "a5ba6a9f94577d08f0a94907ea64119b9981ab27e953be210e775ec16a4ba675",
+    "src/HostedParameterIdentity.h": "496e5e772022b6a0da294a48704809194762a69da97920e91c3c9a04b7855042",
+    "src/HostedRack.cpp": "ab90014fa0a74ff8dbc382717293b8edeb3b0ef93cdbc16a8e996ed59b31d5f8",
+    "src/HostedRack.h": "f992eb3762ce87d5f6753ea015d825e91d4806082f4a3083c5b6a43086ae1316",
+    "src/HostedRackExchange.h": "9408d0797c5818cf1a2f8a5e2df8b9c24eeaeffe2494cd2b13645a36eec02d48",
+    "src/HostedRackService.h": "34ceedadd49655adcd28dce835e79c348a81cfaa19aa8311881e44102884838a",
+    "tests/HostedAutomationTests.cpp": "eea16bb80c7123c83239037e82f66c09e70562d0e4143e1f827a132c8f885c5b",
+    "tests/Tests.cpp": "bb9d72daf47353bcb474255bcb631a63f4d844017e80a027c268a89f0b3d9c31",
+    "CMakeLists.txt": "e7869677bd51b8e506a2b2dd3f3b7011c8890475bc2b02633d041109c9601c01"
+  },
+  "executables": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": "a6b6cfce4a15767c788d12b4e8b342fd8d9f82cf25eee9f653cbec07ed0e863a",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "ce231ef85da72a1dc2c8f8b5b2b0a6c697bf16e674abc59dfc243893d6b043ef",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "0368db0a8ade6528e915db34a5f206bc821ae29e0cda6f868bca03e0064b09f0"
+  }
+}

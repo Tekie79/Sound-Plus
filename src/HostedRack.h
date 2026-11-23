@@ -1,6 +1,7 @@
 #pragma once
 #include "ChannelLayout.h"
 #include "MidiModel.h"
+#include "HostedParameterEvents.h"
 #include <map>
 namespace sp
 {
@@ -49,7 +50,8 @@ class HostedRackClient
     ~HostedRackClient();
     void process(juce::AudioBuffer<float> &, int frames, const std::vector<MidiPacket> *midi = nullptr,
                  int64_t first = 0, const MidiTiming &timing = {}, bool notesAllowed = true,
-                 bool panic = false, int64_t inputEnd = -1);
+                 bool panic = false, int64_t inputEnd = -1,
+                 std::span<const HostedParameterEvent> automation = {});
     int latency() const;
     void update(const HostedRack &);
     void acceptCapture(const HostedRack &);

@@ -1,4 +1,5 @@
 #pragma once
+#include "HostedParameterEvents.h"
 #include <atomic>
 #include <cstdint>
 namespace sp
@@ -7,7 +8,7 @@ namespace sp
 // plugin service. The device callback consumes its existing independent PCM ring.
 struct HostedRackExchange
 {
-    static constexpr uint32_t magic = 0x53505234;
+    static constexpr uint32_t magic = 0x53505235;
     uint32_t protocol = magic;
     std::atomic<uint64_t> lease{0}, resetRequested{0}, resetAcknowledged{0};
     std::atomic<int64_t> heartbeatTicks{0}, lastRequestTicks{0};
@@ -23,6 +24,9 @@ struct HostedRackExchange
         uint8_t status, data1, data2, padding;
     };
     Event midi[midiLimit]{};
+    int32_t automationCount = 0;
+    int64_t automationInputFrame = 0;
+    HostedParameterEvent automation[hostedEventLimit]{};
     uint32_t controls = 0;
     uint32_t bypass = 0;
     int32_t parameterCount[8]{};
