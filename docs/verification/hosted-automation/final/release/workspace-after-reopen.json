@@ -1,0 +1,13 @@
+{
+  "policy": "Preserve raw audit; allow only additive parameter descriptive metadata plus one autosave revision increment. No file restored or older snapshot adopted.",
+  "expectedRevision": 4498,
+  "reopenedRevision": 4499,
+  "addedMetadataFields": 60,
+  "unchangedFiles": 392,
+  "allProtectedFileHashesUnchanged": true,
+  "all18CatalogTablesUnchanged": true,
+  "allOtherPayloadFieldsUnchanged": true,
+  "scope": "One existing hosted slot: native callback index, discrete eligibility and native unit metadata in parameters and parameterBaseline. Values, IDs, binary fingerprint, program/opaque state, sources, recordings, routing, source pools, all take recipes/hashes, outputs and all other creative/session fields unchanged.",
+  "rawAudit": "workspace-after-reopen-raw.json",
+  "exactDiff": "reopen-payload-diff.json"
+}

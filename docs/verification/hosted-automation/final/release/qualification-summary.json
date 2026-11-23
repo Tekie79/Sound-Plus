@@ -1,0 +1,27 @@
+{
+  "sourceHEAD": "37c7a4d6bafc1e08a8127047aab852c985198adb",
+  "passed": 51,
+  "failed": 0,
+  "seconds": 547.3,
+  "unchangedSourcesResourcesScripts": 377,
+  "unchangedRunnableBinaries": 17,
+  "unchanged": true,
+  "hostedVendorCases": 6,
+  "hostedVendorMaxAbsError": 0.0,
+  "nativeTouch": {
+    "inputs": 160,
+    "wallMs": 4766.632958352566,
+    "retainedPoints": 161,
+    "largestCommandBytes": 557,
+    "underrunsBefore": 0,
+    "underrunsAfter": 0,
+    "graphUnchanged": true,
+    "playGenerationUnchanged": true
+  },
+  "qualificationBoundaries": [
+    "human listening not performed",
+    "physical MIDI/surround/acoustic path not qualified",
+    "Resolve receiving-project workflow not qualified",
+    "public signing/notarization not qualified"
+  ]
+}

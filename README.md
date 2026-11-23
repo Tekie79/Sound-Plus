@@ -1,5 +1,7 @@
 # SoundPlus
 
+**Hosted automation and four-pad Perform:** supported VST3/AUv2 effects and Instruments now have Read/Touch curves in the existing single track lane. Perform supports up to four independent pads on one transport, editable overdubs and combined/per-pad printing. See the [milestone report, native evidence, commands and limits](docs/HOSTED_AUTOMATION_MILESTONE_REPORT.md).
+
 A standalone macOS sound library built with C++20, JUCE 8.0.6, CMake and SQLite FTS5. Add existing folders, search filenames or describe a sound, and audition original files or matching regions. No project, account or DAW is needed. Sound-description search runs locally and works offline after installing its optional model.
 
 The product reference is [the architecture and requirements specification](docs/Sound_Design_Workstation_Architecture_and_Requirements.docx). Saved-job recovery now verifies authoritative raw PCM before adopting completed processing. Designer has independent track/master stock and external insert stages, with isolated persistent VST3 and Audio Unit processing. The details panel uses distinct collapsible section cards, one combined stock/plug-in list per track/master, and contextual tools that appear only when an effect is present. See [hosting contract](docs/PLUGIN_HOSTING_CONTRACT.md), [rack UX](docs/INSERT_RACKS_UX.md) and [qualification report](docs/SAVED_JOB_AND_RACKS_REPORT.md).

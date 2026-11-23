@@ -7,8 +7,9 @@ Follows hosted-automation stage C at d4d113d. Original r4498 remains protected a
 ✓ Non-destructive selected-pad recording while other pad curves replay; retained immutable takes plus editable independent curves, Undo/Redo and Save/Reopen.
 ✓ Combined and per-pad durable rendering; independent PCM/partition/transport tests, actual native CoreAudio recording A then B and Render Selection comparison.
 ✓ Final native UI retest: Command-S/Space from pad tabs; recorded Read off/on preserves points; Pad B/D waveforms ready; Master lane navigation; desktop and1040×680 screenshots.
-◉ Full unchanged Release gate.
-○ Final reports, protected original audit/reopen, commit and push.
+✓ Full unchanged Release gate:51/51 in547.30s;377source/script/resource and17binary identities unchanged.
+✓ Final report and protected original in-place reopen: r4498→r4499 additive metadata refresh only,392protected file hashes and18catalog tables unchanged.
+◉ Final evidence commit and push.
 
 Bounded v1 policy: at most four pads; audio layer ownership is exclusive across explicit pad sources/mappings. Pad A retains previously unassigned audio layers. MIDI tracks remain on the shared timeline, outside four-source audio slots. Per-pad stems contain that pad's sources through the existing common routing/Master; shared MIDI is excluded from pad stems. Combined playback preserves shared MIDI. No extra automation lane is introduced.
 

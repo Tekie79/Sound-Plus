@@ -1,0 +1,108 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+      Start  1: hosted_vendor_automation
+ 1/51 Test  #1: hosted_vendor_automation ..........   Passed    5.73 sec
+      Start  2: multi_pad
+ 2/51 Test  #2: multi_pad .........................   Passed    0.41 sec
+      Start  3: multi_pad_device
+ 3/51 Test  #3: multi_pad_device ..................   Passed    5.10 sec
+      Start  4: midi_responsiveness
+ 4/51 Test  #4: midi_responsiveness ...............   Passed   46.26 sec
+      Start  5: advanced_effects
+ 5/51 Test  #5: advanced_effects ..................   Passed    2.27 sec
+      Start  6: native_effects
+ 6/51 Test  #6: native_effects ....................   Passed    0.66 sec
+      Start  7: library_collections
+ 7/51 Test  #7: library_collections ...............   Passed    1.53 sec
+      Start  8: midi_sequencing
+ 8/51 Test  #8: midi_sequencing ...................   Passed    0.11 sec
+      Start  9: audio_input_recording
+ 9/51 Test  #9: audio_input_recording .............   Passed    0.57 sec
+      Start 10: multitrack_automation
+10/51 Test #10: multitrack_automation .............   Passed    0.79 sec
+      Start 11: pool_corrections
+11/51 Test #11: pool_corrections ..................   Passed    6.06 sec
+      Start 12: source_pools
+12/51 Test #12: source_pools ......................   Passed    0.37 sec
+      Start 13: library_playback_search
+13/51 Test #13: library_playback_search ...........   Passed    2.96 sec
+      Start 14: multichannel_corrections
+14/51 Test #14: multichannel_corrections ..........   Passed   16.80 sec
+      Start 15: multichannel
+15/51 Test #15: multichannel ......................   Passed    5.24 sec
+      Start 16: take_integrity
+16/51 Test #16: take_integrity ....................   Passed    3.82 sec
+      Start 17: capture_device_lifecycle
+17/51 Test #17: capture_device_lifecycle ..........   Passed    4.73 sec
+      Start 18: recorded_takes
+18/51 Test #18: recorded_takes ....................   Passed    8.93 sec
+      Start 19: library_stability
+19/51 Test #19: library_stability .................   Passed    1.37 sec
+      Start 20: waveform_scheduling
+20/51 Test #20: waveform_scheduling ...............   Passed    2.22 sec
+      Start 21: audio_health
+21/51 Test #21: audio_health ......................   Passed    8.33 sec
+      Start 22: waveform_previews
+22/51 Test #22: waveform_previews .................   Passed    0.51 sec
+      Start 23: performance_state
+23/51 Test #23: performance_state .................   Passed    3.28 sec
+      Start 24: designer_view_commands
+24/51 Test #24: designer_view_commands ............   Passed    0.36 sec
+      Start 25: icon_system
+25/51 Test #25: icon_system .......................   Passed    0.12 sec
+      Start 26: library_and_audio
+26/51 Test #26: library_and_audio .................   Passed    9.82 sec
+      Start 27: library_selection_audition
+27/51 Test #27: library_selection_audition ........   Passed    3.78 sec
+      Start 28: library_performance_regression
+28/51 Test #28: library_performance_regression ....   Passed    7.11 sec
+      Start 29: library_semantic_integrity
+29/51 Test #29: library_semantic_integrity ........   Passed    0.69 sec
+      Start 30: library_similar_integrity
+30/51 Test #30: library_similar_integrity .........   Passed    1.45 sec
+      Start 31: designer_transport
+31/51 Test #31: designer_transport ................   Passed   15.83 sec
+      Start 32: designer_canvas
+32/51 Test #32: designer_canvas ...................   Passed    0.19 sec
+      Start 33: designer_session
+33/51 Test #33: designer_session ..................   Passed    0.11 sec
+      Start 34: designer_workflow
+34/51 Test #34: designer_workflow .................   Passed    9.90 sec
+      Start 35: designer_fades
+35/51 Test #35: designer_fades ....................   Passed    2.46 sec
+      Start 36: hosted_touch_session
+36/51 Test #36: hosted_touch_session ..............   Passed    0.36 sec
+      Start 37: hosted_touch_device
+37/51 Test #37: hosted_touch_device ...............   Passed    6.09 sec
+      Start 38: hosted_automation
+38/51 Test #38: hosted_automation .................   Passed   47.34 sec
+      Start 39: hosted_automation_au
+39/51 Test #39: hosted_automation_au ..............   Passed   45.66 sec
+      Start 40: hosted_instrument_automation
+40/51 Test #40: hosted_instrument_automation ......   Passed   13.43 sec
+      Start 41: hosted_instrument_automation_au
+41/51 Test #41: hosted_instrument_automation_au ...   Passed   13.40 sec
+      Start 42: midi_instruments
+42/51 Test #42: midi_instruments ..................   Passed   26.03 sec
+      Start 43: plugin_processing
+43/51 Test #43: plugin_processing .................   Passed   69.58 sec
+      Start 44: plugin_correctness
+44/51 Test #44: plugin_correctness ................   Passed   10.51 sec
+      Start 45: plugin_gate_a
+45/51 Test #45: plugin_gate_a .....................   Passed   17.24 sec
+      Start 46: ordered_corrections
+46/51 Test #46: ordered_corrections ...............   Passed    0.14 sec
+      Start 47: plugin_takes
+47/51 Test #47: plugin_takes ......................   Passed   30.98 sec
+      Start 48: ordered_inserts
+48/51 Test #48: ordered_inserts ...................   Passed   36.27 sec
+      Start 49: native_view_scale
+49/51 Test #49: native_view_scale .................   Passed    0.01 sec
+      Start 50: plugin_live
+50/51 Test #50: plugin_live .......................   Passed   44.65 sec
+      Start 51: advanced_effects_asan
+51/51 Test #51: advanced_effects_asan .............   Passed    5.71 sec
+
+100% tests passed, 0 tests failed out of 51
+
+Total Test time (real) = 547.30 sec
