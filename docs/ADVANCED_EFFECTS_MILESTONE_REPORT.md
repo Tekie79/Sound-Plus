@@ -10,7 +10,7 @@ Definitions drive the existing compact Inspector groups, units/numeric fields, l
 
 Every definition parameter appears by stable instance/parameter ID in the **same single automation lane**. Live parameters are writable, structural controls are explicitly read-only targets. Volume remains the default collapsed display. Selecting/collapsing a displayed curve does not disable other read-enabled curves. Existing Perform mappings/precedence and fixed-state hosted plugins are preserved; this milestone does not add hosted parameter automation.
 
-Staged commits: A `ca68fcb`, B `97cd411`, C `84b52cc`, D `2519cf8`, all pushed. The final verified implementation/evidence commit and publication receipt are recorded in the repository log.
+Staged commits: A `ca68fcb`, B `97cd411`, C `84b52cc`, D `2519cf8`, all pushed. Final implementation/evidence commit **`84d2a13`**, pushed to origin/main; [publication receipt](verification/advanced-effects/publication-receipt.json) proves all328 frozen source files match that commit. The final receipt commit changes documentation only.
 
 [Exact DSP/schema/resource/tail policy](ADVANCED_EFFECTS_CONTRACT.md). Implementation: [definitions](../src/AdvancedEffects.cpp), [delay adapter](../src/AdvancedEffectsDSP.cpp), [FDN](../src/AdvancedReverb.inc), [partitioned convolution](../src/AdvancedConvolution.inc), [IR preparation/integrity](../src/AdvancedIR.cpp), [ordered processing](../src/OrderedRack.inc), [Inspector](../src/NativeParameterPanel.h), [worker/session command](../src/DesignSession.cpp), [take and PDC history](../src/PerformTake.cpp), [graph/render publication](../src/DesignAudio.cpp).
 
@@ -93,7 +93,7 @@ The initial audit confirms all103 protected source/final-output/journal/media ha
 |28 Native device/UI/presets/reopen | Qualified within native scope above; no human/acoustic claim |
 |29 Realistic stress/resources/timing | Qualified for measured16-channel combination/device setting; no maximum-capacity realtime guarantee |
 |30 Unchanged final gate/workspace | Passed;42/42 in408.23s,328+9 matching hashes; original r4478 reopened and audited |
-|31 Stage commits/push/report/roadmap | A–D pushed; final verified stage and publication receipt identify the remaining commit/push |
+|31 Stage commits/push/report/roadmap | Complete; A–D plus E `84d2a13` pushed, source identity checked against the commit; publication receipt and roadmap committed |
 
 ## Build, launch and five-minute check
 

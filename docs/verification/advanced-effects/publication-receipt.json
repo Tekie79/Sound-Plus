@@ -1,0 +1,19 @@
+{
+  "sourceCommit": "84d2a13efaf84e5ddb3ad2d40a77994426e1bb05",
+  "publishedRemote": "origin/main",
+  "sourceFilesMatchingVerifiedCommit": 328,
+  "unchangedExecutables": 9,
+  "releaseSuitesPassed": 42,
+  "releaseSeconds": 408.23,
+  "sourceIdentity": "final/release/identity-before.json",
+  "binaryIdentityAfter": "final/release/identity-after.json",
+  "workspaceAudit": "workspace-final.json",
+  "userDocument": "0403deec259f4169857b336246f201da",
+  "userRevisionObserved": 4478,
+  "limitations": [
+    "Human listening",
+    "Physical multichannel/controller/DAC loopback",
+    "Resolve receiver import/placement/save/quit/reopen",
+    "Signed/notarized public release"
+  ]
+}
