@@ -27,7 +27,15 @@ class DesignerView final : public juce::Component,
     std::function<void()> onLibrary;
     std::function<void(const juce::File &)> onProcessOutput;
     std::function<void()> onToggleBrowser;
-    std::function<void()> onSearch;
+    std::function<void()> onSearch, onWorkspaceChanged;
+    void useWorkspaceShell() { shell = true; resized(); }
+    bool inPerform() const { return performMode; }
+    void showPerform(bool enabled) { setPerformMode(enabled); }
+    void saveFromShell() { saveDesign(); }
+    void monitorFromShell() { monitorPopup(); }
+    void exportFolderFromShell() { chooseFile(4); }
+    std::unique_ptr<juce::Component> exportSettings() { return makeRenderPanel(); }
+    void exportStems(juce::Component &anchor) { mixer->stemMenu(anchor); }
     void addSource(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0);
     void paint(juce::Graphics &) override;
     void resized() override;
@@ -94,6 +102,11 @@ class DesignerView final : public juce::Component,
     ui::TextActionButton mixerButton{"Mixer", true};
     int mixerHeight = 240;
     bool mixerOpen = false;
+    bool shell = false;
+    int inspectorPage = 0;
+    ui::TextActionButton controlsPage{"Controls", true}, effectsPage{"Effects", true}, routingPage{"Routing", true};
+    IconButton projectTools{"Project tools", ActionIcon::more};
+    void projectToolsMenu();
     std::unique_ptr<MidiEditor> midiEditor;
     bool midiEditorOpen = false;
     IconButton addTrackButton{"Add track", ActionIcon::addLayer};

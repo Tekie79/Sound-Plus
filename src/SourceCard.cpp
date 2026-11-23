@@ -53,24 +53,9 @@ void SourceCard::bind(const DesignLayer *value, const juce::String &id, const ju
                                                     : "Drop sound";
     title.setText(nameToShow, juce::dontSendNotification);
     filename = layer && nameToShow != layer->source.name ? layer->source.name : juce::String();
-    const auto description =
-        layer ? nameToShow + "\n" + layer->source.path +
-                    "\nAll-channel source overview before fades, gain and inserts. " +
-                    juce::String(readOnly
-                                     ? "Frozen take source. Choose Live Design to edit."
-                                     : "Double-click waveform or press Return to open in Edit. Drag to "
-                                       "assign another corner. Right-click or Shift-Return for Alternatives.")
-              : "Drop a Library sound or design layer, or choose a layer with the arrow.";
-    title.setTooltip(description + (readOnly ? "" : "\nDouble-click title to edit alias."));
-    auto channels =
-        layer ? "\nSource: " + layoutBadge(observedSource(*layer)) +
-                    "; confidence: " + layer->source.layoutConfidence + "; input: " +
-                    (layer->routing.interpretation.id.isEmpty() ? juce::String("Legacy pair")
-                                                                : layoutBadge(layer->routing.interpretation))
-              : juce::String();
-    setTooltip(description + channels);
-    chooser.setTooltip(readOnly ? "Frozen take source assignment"
-                                : "Choose, replace or clear this blend assignment");
+    title.setTooltip(readOnly ? nameToShow : layer ? "Rename source" : "Assign source");
+    setTooltip(layer ? (readOnly ? "Frozen source" : "Open source in Edit") : "Drop sound");
+    chooser.setTooltip(readOnly ? "Frozen assignment" : "Choose source");
     setTitle(nameToShow + (layer ? ", " + layoutBadge(observedSource(*layer)) : juce::String()) +
              (layer ? ", " +
                           cardDuration((layer->region.endSample - layer->region.startSample) /
@@ -170,8 +155,8 @@ void SourceCard::resized()
 void SourceCard::paint(juce::Graphics &g)
 {
     const auto colour = layer ? ui::trackColour(layer->colour) : ui::muted;
-    g.setColour(ui::background.withAlpha(.55f));
-    g.fillRoundedRectangle(getLocalBounds().toFloat(), 6);
+    g.setColour(ui::raised);
+    g.fillRoundedRectangle(getLocalBounds().toFloat(), ui::radius);
     g.setColour(colour.withAlpha(selected ? .8f : .28f));
     g.fillRoundedRectangle(1, 5, 2, getHeight() - 10.f, 1);
     if (geometry)

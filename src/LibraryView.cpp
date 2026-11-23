@@ -10,8 +10,8 @@ namespace sp
 {
 namespace
 {
-const auto bg = ui::background, panel = ui::surface, line = ui::line, text = ui::text, muted = ui::muted,
-           accent = ui::accent;
+const auto &bg = ui::background, &panel = ui::surface, &line = ui::line, &text = ui::text, &muted = ui::muted,
+           &accent = ui::accent;
 const juce::Colour amber{0xffffc384};
 juce::String duration(double seconds)
 {
@@ -62,9 +62,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     pauseIndex.setToggleable(true);
     for (auto *button : {&repeatOne, &repeatAll})
         button->setToggleable(true);
-    repeatOne.setTooltip("Repeat the current recording or marked range. Click again for Off.");
-    repeatAll.setTooltip("Repeat all current results, skipping known offline/unreadable recordings. A new "
-                         "search ends the queue. Pinned references are independent.");
+    repeatOne.setTooltip("Repeat current sound");
+    repeatAll.setTooltip("Repeat search results");
     repeatOne.onClick = [this]
     { setRepeatMode(repeatMode == RepeatMode::one ? RepeatMode::off : RepeatMode::one); };
     repeatAll.onClick = [this]
@@ -190,7 +189,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     add.setTitle("Add existing sound folders");
     add.onClick = [this] { chooseFolder(); };
     rescan.onClick = [this] { library.rescan(); };
-    rescan.setTooltip("Reconcile all sources. Unchanged audio headers are reused.");
+    rescan.setTooltip("Rescan source folders");
     play.setColour(juce::TextButton::buttonColourId, juce::Colour(0xff334c61));
     play.setPrimary();
     play.onClick = [this] { toggle(); };
@@ -241,12 +240,12 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     gain.onValueChange = [this] { audio.gain((float)gain.getValue()); };
     volumeLabel.setText("Listen", juce::dontSendNotification);
     auto &h = table.getHeader();
-    h.addColumn("RECORDING / LOCATION", 1, 440, 200, 2000, juce::TableHeaderComponent::visible);
-    h.addColumn("DURATION", 2, 90, 70, 140, juce::TableHeaderComponent::visible);
-    h.addColumn("CHANNELS", 3, 85, 70, 140, juce::TableHeaderComponent::visible);
-    h.addColumn("RATE", 4, 90, 70, 140, juce::TableHeaderComponent::visible);
-    h.addColumn("STATUS", 5, 120, 90, 180, juce::TableHeaderComponent::visible);
-    h.addColumn("MATCH", 6, 170, 120, 240, juce::TableHeaderComponent::visible);
+    h.addColumn("Recording", 1, 440, 200, 2000, juce::TableHeaderComponent::visible);
+    h.addColumn("Length", 2, 90, 70, 140, juce::TableHeaderComponent::visible);
+    h.addColumn("Channels", 3, 85, 70, 140, juce::TableHeaderComponent::visible);
+    h.addColumn("Rate", 4, 90, 70, 140, juce::TableHeaderComponent::visible);
+    h.addColumn("Status", 5, 120, 90, 180, juce::TableHeaderComponent::visible);
+    h.addColumn("Match", 6, 170, 120, 240, juce::TableHeaderComponent::visible);
     table.setRowHeight(58);
     table.setHeaderHeight(34);
     table.setMultipleSelectionEnabled(true);
@@ -316,8 +315,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
             rangeEdited = false;
         }
     };
-    context.setTooltip("Adds 250 ms before and after the range, clamped to the recording. Stored match "
-                       "boundaries stay unchanged.");
+    context.setTooltip("Include nearby audio");
     context.setButtonText(juce::String::fromUTF8("±250 ms"));
     context.setTitle("Add 250 milliseconds of audition context");
     waveform.onRange = [this](int64_t first, int64_t last)
@@ -363,8 +361,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
             installModelMenu(&findSimilar);
     };
     externalReference.onClick = [this] { chooseReference(); };
-    externalReference.setTooltip(
-        "Use a local audio file as a temporary search reference. You can also drop one file here.");
+    externalReference.setTooltip("Choose reference file");
     referencePlay.onClick = [this] { playReference(); };
     referenceSearch.onClick = [this] { submitReference(pinnedReference); };
     clearReference.onClick = [this]
@@ -382,8 +379,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     };
     addReference.onClick = [this]
     { library.addFolder(juce::File(pinnedReference.source.path).getParentDirectory()); };
-    addReference.setTooltip("Add this reference's containing folder to the Library in place, including its "
-                            "other audio files. Using a reference alone never indexes it.");
+    addReference.setTooltip("Index reference folder");
     includeSource.setTitle("Include the source recording in similar results");
     includeSource.onClick = [this]
     {
@@ -395,9 +391,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                  (int)std::llround(cutoff * 100));
     similarityCutoff.setSelectedId(55, juce::dontSendNotification);
     similarityCutoff.setTitle("Minimum similarity (cosine)");
-    similarityCutoff.setTooltip(
-        "Show only recordings whose strongest matching moment meets this cosine score, highest first. Scores "
-        "are similarities, not probabilities. Lower this if too few matches remain.");
+    similarityCutoff.setTooltip("Minimum similarity");
     similarityCutoff.onChange = [this]
     {
         minimumSimilarity = similarityCutoff.getSelectedId() / 100.;
@@ -603,32 +597,18 @@ void LibraryView::paint(juce::Graphics &g)
         return;
     }
     g.fillAll(bg);
+    auto layout = libraryLayout(getWidth(), getHeight(), false, snapshot.reference.present);
     g.setColour(panel);
-    g.fillRect(0, 84, 238, getHeight() - 84);
+    g.fillRect(0, 0, 212, getHeight());
+    g.fillRoundedRectangle(layout.preview.toFloat(), 12);
     g.setColour(line);
-    g.drawHorizontalLine(83, 0, (float)getWidth());
-    g.drawVerticalLine(238, 84, (float)getHeight());
-    g.drawHorizontalLine(
-        libraryLayout(getWidth(), getHeight(), false, snapshot.reference.present).selection.getY() - 8, 238,
-        (float)getWidth());
+    g.drawVerticalLine(211, 0, (float)getHeight());
     g.setColour(text);
-    g.setFont(juce::FontOptions(23.0f, juce::Font::bold));
-    g.drawText("SOUND+", 24, 19, 175, 30, juce::Justification::centredLeft);
-    g.setColour(muted);
-    g.setFont(juce::FontOptions(12.0f));
-    g.drawText("SOUND LIBRARY", 25, 49, 180, 18, juce::Justification::centredLeft);
-    g.setColour(text);
-    g.setFont(juce::FontOptions(21.0f));
-    g.drawText("Library", 266, 19, 110, 30, juce::Justification::centredLeft);
-    g.setColour(muted);
-    g.setFont(juce::FontOptions(12.0f, juce::Font::bold));
-    g.drawText("SOURCES", 22, 106, 170, 20, juce::Justification::centredLeft);
-    g.setFont(juce::FontOptions(12.0f));
-    g.drawText("Original files stay where they are.", 22, getHeight() - 102, 200, 20,
-               juce::Justification::centredLeft);
-    g.drawText(juce::String::fromUTF8("⌘F  Search     ↓  Results"), 22, getHeight() - 76, 205, 20,
-               juce::Justification::centredLeft);
-    g.drawText("Space  Play / stop", 22, getHeight() - 53, 200, 20, juce::Justification::centredLeft);
+    g.setFont(juce::FontOptions(17.f, juce::Font::bold));
+    g.drawText("Collections", 14, 12, 124, 28, juce::Justification::centredLeft);
+    g.drawText("Sounds", layout.results.getX(), 12, 110, 28, juce::Justification::centredLeft);
+    g.drawText("Preview", layout.preview.getX() + 12, 20, 115, 25, juce::Justification::centredLeft);
+
 }
 void LibraryView::paintOverChildren(juce::Graphics &g)
 {
@@ -694,6 +674,8 @@ void LibraryView::resized()
     {
         compactVisibility();
         add.setBounds(getWidth() - 46, 13, 30, 30);
+        findSimilar.setBounds(getWidth() - 190, 12, 28, 28);
+        findSimilar.setLabelVisible(false);
         search.setBounds(12, 54, getWidth() - 24, 38);
         auto layout = libraryLayout(getWidth(), getHeight(), true, false);
         collectionSelector.setBounds(12, 98, getWidth() - 82, 28);
@@ -716,90 +698,98 @@ void LibraryView::resized()
         transport.setBounds(12, getHeight() - 27, getWidth() - 24, 20);
         return;
     }
-    designer.setBounds(264, 14, 125, 32);
-    add.setBounds(getWidth() - 66, 24, 40, 35);
-    externalReference.setBounds(getWidth() - 114, 24, 40, 35);
-    rescan.setBounds(176, 101, 34, 28);
-    summary.setBounds(264, 50, getWidth() - 450, 24);
-    search.setBounds(264, 103, getWidth() - 340, 44);
-    refresh.setBounds(getWidth() - 64, 103, 36, 44);
-    semanticCoverage.setBounds(264, 149, getWidth() - 292, 27);
-    pauseIndex.setBounds(16, 140, 40, 32);
-    aiStatusLabel.setBounds(16, 182, 204, 62);
-    installAI.setBounds(64, 140, 40, 32);
-    cancelInstall.setBounds(64, 140, 40, 32);
-    retryAI.setBounds(112, 140, 40, 32);
-    sources.setBounds(12, 286, 216, std::max(70, getHeight() - 410));
+    const bool hasReference = snapshot.reference.present;
+    auto layout = libraryLayout(getWidth(), getHeight(), false, hasReference);
+    const auto listing = layout.results;
+    const auto preview = layout.preview.reduced(12, 0);
+    const int left = listing.getX(), right = listing.getRight(), top = layout.referenceTop;
+    const int previewLeft = preview.getX(), previewRight = preview.getRight();
+    designer.setBounds({});
+    add.setBounds(170, 11, 30, 30);
+    externalReference.setBounds(right - 31, 49, 31, 34);
+    rescan.setBounds(168, 54, 32, 28);
+    summary.setBounds(left + 112, 15, std::max(0, listing.getWidth() - 114), 24);
+    search.setBounds(left, 49, std::max(88, listing.getWidth() - 72), 34);
+    refresh.setBounds(right - 67, 49, 30, 34);
+    semanticCoverage.setBounds(left, 84, listing.getWidth(), 18);
+    pauseIndex.setBounds(14, 54, 32, 28);
+    installAI.setBounds(50, 54, 32, 28);
+    cancelInstall.setBounds(50, 54, 32, 28);
+    retryAI.setBounds(86, 54, 32, 28);
+    aiStatusLabel.setBounds(14, 87, 184, 42);
+    favoriteButton.setBounds(14, 132, 30, 30);
+    collectionActions.setBounds(130, 132, 30, 30);
+    newCollection.setBounds(168, 132, 30, 30);
+    sources.setBounds(6, 169, 199, std::max(70, getHeight() - 187));
     collectionSelector.setVisible(false);
-    newCollection.setBounds(194, 250, 30, 30);
-    favoriteButton.setBounds(16, 250, 30, 30);
-    collectionActions.setBounds(158, 250, 30, 30);
     scopeLabel.setVisible(false);
     clearScope.setVisible(false);
-    bool hasReference = snapshot.reference.present;
-    auto layout = libraryLayout(getWidth(), getHeight(), false, hasReference);
-    for (auto *component : std::initializer_list<juce::Component *>{
-             &referenceTitle, &referenceStatus, &referenceUnits, &referenceWaveform, &referencePlay,
-             &referenceSearch, &clearReference, &includeSource, &referenceDesigner, &similarityCutoff})
+
+    for (auto *component : std::initializer_list<juce::Component *>{&referenceTitle, &referenceStatus,
+         &referenceUnits, &referenceWaveform, &referencePlay, &referenceSearch, &clearReference,
+         &includeSource, &referenceDesigner, &similarityCutoff})
         component->setVisible(hasReference);
     addReference.setVisible(hasReference && pinnedReference.external);
-    int ref = layout.referenceTop;
-    referenceTitle.setBounds(264, ref + 3, getWidth() - 480, 26);
-    referencePlay.setBounds(getWidth() - 142, ref + 3, 32, 28);
-    addReference.setBounds(getWidth() - 104, ref + 3, 32, 28);
-    clearReference.setBounds(getWidth() - 66, ref + 3, 32, 28);
-    referenceUnits.setBounds(264, ref + 29, getWidth() - 304, 20);
-    referenceUnits.setVisible(hasReference && !layout.small);
-    int actionY = ref + (layout.small ? 28 : 55);
-    includeSource.setBounds(264, actionY, 215, 24);
-    similarityCutoff.setBounds(491, actionY, 162, 24);
-    referenceSearch.setBounds(getWidth() - 184, actionY, 150, 24);
-    referenceDesigner.setBounds(getWidth() - 224, actionY, 32, 24);
-    referenceStatus.setBounds(264, ref + 83, getWidth() - 300, 23);
-    if (layout.small)
-        referenceStatus.setBounds(layout.referenceWave);
-    referenceStatus.setVisible(hasReference && (!layout.small || snapshot.reference.loading ||
+    referenceTitle.setBounds(left, top + 2, std::max(74, listing.getWidth() - 118), 26);
+    referencePlay.setBounds(right - 106, top + 2, 30, 26);
+    addReference.setBounds(right - 71, top + 2, 30, 26);
+    clearReference.setBounds(right - 36, top + 2, 30, 26);
+    referenceUnits.setBounds({});
+    referenceStatus.setBounds(left, top + layout.referenceHeight - 18, listing.getWidth(), 18);
+    referenceStatus.setVisible(hasReference && (snapshot.reference.loading ||
                                                 snapshot.reference.error.isNotEmpty()));
+    const int precision = std::min(115, listing.getWidth() / 4);
+    similarityCutoff.setBounds(left, top + 31, precision, 24);
+    includeSource.setBounds(left + precision + 5, top + 31, std::max(60, listing.getWidth() - precision - 161), 24);
+    referenceDesigner.setBounds(right - 145, top + 31, 26, 24);
+    referenceSearch.setBounds(right - 114, top + 31, 114, 24);
     referenceWaveform.setBounds(layout.referenceWave);
-    table.setBounds(layout.results);
+    table.setBounds(listing);
+    auto &header = table.getHeader();
+    const int columns = listing.getWidth() >= 650 ? 4 : listing.getWidth() >= 514 ? 3 : 2;
+    const bool scores = similarMode || hasReference;
     int fixed = 0;
-    double factor = std::clamp((table.getWidth() - 258) / 555., .72, 1.);
-    for (auto pair :
-         {std::pair{2, 90}, std::pair{3, 85}, std::pair{4, 90}, std::pair{5, 120}, std::pair{6, 170}})
+    for (int id = 2; id <= 6; ++id)
     {
-        int width = std::max(pair.first == 6 ? 120 : pair.first == 5 ? 90 : 70, (int)(pair.second * factor));
-        table.getHeader().setColumnWidth(pair.first, width);
-        fixed += width;
+        const bool visible = (id <= columns && (!scores || id <= 2)) || (id == 6 && scores);
+        header.setColumnVisible(id, visible);
+        if (visible)
+        {
+            const int width = id == 6 ? 120 : 80;
+            header.setColumnWidth(id, width);
+            fixed += width;
+        }
     }
-    table.getHeader().setColumnWidth(1, std::max(200, table.getWidth() - fixed - 18));
-    int y = layout.selection.getY(), left = 264, right = getWidth() - 28, centre = (left + right) / 2;
-    detail.setBounds(left, y, std::max(80, right - left - 410), 26);
-    processPlugin.setBounds(right - 226, y, 30, 30);
-    findSimilar.setBounds(right - 148, y, 148, 30);
-    addDesigner.setBounds(right - 188, y, 32, 30);
-    moments.setBounds(right - 390, y + 2, 190, 26);
-    channelDetails.setBounds(left, y + 27, 28, 24);
-    assetId.setBounds(left + 36, y + 27, right - left - 36, 18);
+    header.setColumnWidth(1, std::max(200, table.getWidth() - fixed - 16));
+
+    const int y = layout.selection.getY(), controls = layout.controlsY;
+    detail.setBounds(previewLeft, y, preview.getWidth(), 24);
+    channelDetails.setBounds(previewLeft, y + 26, 27, 27);
+    assetId.setBounds(previewLeft + 34, y + 26, preview.getWidth() - 34, 24);
+    findSimilar.setBounds(previewRight - 145, 19, 145, 31);
+    findSimilar.setLabelVisible(true);
+    addDesigner.setBounds(previewRight - 31, 106, 31, 29);
+    processPlugin.setBounds(previewRight - 64, 106, 30, 29);
+    moments.setBounds(previewLeft, 106, preview.getWidth() - 71, 29);
     waveform.setBounds(layout.waveform);
-    int controlsY = layout.controlsY;
-    repeatOne.setBounds(centre - 221, controlsY + 6, 28, 28);
-    repeatAll.setBounds(centre - 187, controlsY + 6, 28, 28);
-    playWhole.setBounds(centre - 110, controlsY + 4, 32, 32);
-    previous.setBounds(centre - 66, controlsY + 4, 32, 32);
-    play.setBounds(centre - 20, controlsY, 40, 40);
-    next.setBounds(centre + 34, controlsY + 4, 32, 32);
-    playMatch.setBounds(centre + 78, controlsY + 4, 32, 32);
-    waveform.markInButton().setBounds(centre - 150, controlsY + 6, 28, 28);
-    waveform.markOutButton().setBounds(centre + 122, controlsY + 6, 28, 28);
-    context.setBounds(right - 109, controlsY + 7, 109, 26);
-    transport.setBounds(left, layout.monitorY - 23, right - left, 20);
-    volumeLabel.setBounds(left, layout.monitorY, 48, 25);
-    gain.setBounds(left + 48, layout.monitorY, 170, 25);
-    output.setBounds(left + 240, layout.monitorY, 225, 26);
-    auditionChannels.setBounds(left + 479, layout.monitorY, std::max(100, right - left - 529), 26);
-    restart.setBounds(right - 36, layout.monitorY, 36, 26);
-    status.setBounds(left, layout.statusY, getWidth() - 290, 22);
-    dragOriginal.setBounds(left, controlsY + 4, 30, 30);
+    int x = preview.getCentreX() - 146;
+    for (auto *button : {&repeatOne, &repeatAll, &waveform.markInButton(), &playWhole, &previous, &play,
+                         &next, &playMatch, &waveform.markOutButton()})
+    {
+        const int size = button == &play ? 42 : 28;
+        button->setBounds(x, controls + (42 - size) / 2, size, size);
+        x += size + 3;
+    }
+    dragOriginal.setBounds(previewLeft, controls + 49, 30, 30);
+    context.setBounds(previewLeft + 36, controls + 50, 105, 28);
+    gain.setBounds(previewRight - 112, controls + 51, 112, 25);
+    volumeLabel.setBounds(previewRight - 156, controls + 51, 44, 25);
+    transport.setBounds(previewLeft, controls + 80, preview.getWidth(), 22);
+    output.setBounds(previewLeft, layout.monitorY, preview.getWidth() / 2 - 8, 28);
+    auditionChannels.setBounds(output.getRight() + 6, layout.monitorY, previewRight - output.getRight() - 43, 28);
+    restart.setBounds(previewRight - 30, layout.monitorY, 30, 28);
+    status.setBounds(left, layout.statusY, listing.getWidth(), 22);
+
 }
 void LibraryView::compactVisibility()
 {
@@ -809,7 +799,7 @@ void LibraryView::compactVisibility()
             continue;
         c->setVisible(c == &search || c == &add || c == &table || c == &waveform || c == &play ||
                       c == &addDesigner || c == &processPlugin || c == &channelDetails ||
-                      c == &dragOriginal || c == &scopeLabel || c == &clearScope ||
+                      c == &dragOriginal || c == &scopeLabel || c == &clearScope || c == &findSimilar ||
                       c == &collectionSelector || c == &collectionActions || c == &favoriteButton ||
                       c == &newCollection || c == &repeatOne || c == &repeatAll ||
                       (c == &transport && transport.getText().isNotEmpty()));
@@ -837,8 +827,7 @@ void LibraryView::updateScope()
         if (c.id == collectionScope)
             scopeName = c.name;
     collectionSelector.setButtonText(scopeName);
-    collectionSelector.setTooltip("Browse " + scopeName + " · " + name +
-                                  ". Collections and source filters intersect.");
+    collectionSelector.setTooltip("Choose collection or source");
     clearScope.setEnabled(rootFilter.isNotEmpty() || similarMode);
 }
 void LibraryView::setCompact(bool value)
@@ -1064,7 +1053,7 @@ void LibraryView::handleAsyncUpdate()
 }
 void LibraryView::paintRowBackground(juce::Graphics &g, int row, int w, int h, bool isSelected)
 {
-    g.fillAll(isSelected ? juce::Colour(0xff253d52) : (row % 2 ? juce::Colour(0xff151b22) : bg));
+    g.fillAll(isSelected ? panel.interpolatedWith(accent, .20f) : (row % 2 ? panel : bg));
     g.setColour(line.withAlpha(0.45f));
     g.drawHorizontalLine(h - 1, 0, (float)w);
     if (isSelected)
@@ -1287,8 +1276,8 @@ void LibraryView::updateSelection(bool explicitUserSelection)
         updatingRange = false;
         detail.setText(a->name, juce::dontSendNotification);
         assetId.setText(a->error, juce::dontSendNotification);
-        detail.setTooltip(a->path + "\nAsset " + a->id + " | Revision " + juce::String(a->revision));
-        assetId.setTooltip(a->path + "\n" + a->error);
+        detail.setTooltip(a->name);
+        assetId.setTooltip(a->error.isEmpty() ? "Source details" : "Source unavailable");
         if (explicitUserSelection && continueAudition)
             playSelected(matchMode);
     }

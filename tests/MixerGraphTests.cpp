@@ -34,10 +34,11 @@ void compare(const juce::AudioBuffer<float> &base, const juce::AudioBuffer<float
         for (int n = 0; n < base.getNumSamples(); ++n)
         {
             auto expected = base.getSample(c, n) * scale(n);
+            require(std::isfinite(actual.getSample(c, n)), "Graph output must be finite");
             error = std::max(error, std::abs(actual.getSample(c, n) - expected));
             peak = std::max(peak, std::abs((double)base.getSample(c, n)));
         }
-    if (error >= 3e-6 || peak <= .025)
+    if (error > 2.4e-7 || peak <= .025)
     {
         std::cerr << "error " << error << ", peak " << peak << "\n";
         throw std::runtime_error(message);
@@ -102,7 +103,9 @@ void runMixerGraphTests(const juce::File &root)
             compare(oracle, render(wet, block), [&](int) { return dryGain * (1. + sendGain); },
                     "Post-fader branch sums once and stays sample-aligned for every partition");
         send.postFader = false;
-        compare(oracle, render(wet), [&](int) { return dryGain + sendGain; }, "Pre-fader ignores source volume");
+        for (const auto block : {1, 32, 61, 257, 512})
+            compare(oracle, render(wet, block), [&](int) { return dryGain + sendGain; },
+                    "Pre-fader branch ignores source volume at every partition");
         sender->solo = true;
         compare(oracle, render(wet), [&](int) { return dryGain + sendGain; }, "Solo source retains send return");
         sender->solo = false;
@@ -218,6 +221,29 @@ void runMixerStemTests(const juce::File &root)
                         std::abs(pcm.getSample(1, n) - (n == 1500 ? -.125 * gain : 0.)) < 2e-7,
                     "Pre-Master PCM, exact impulse alignment and independent route gain");
     }
+    const auto linear = [&]
+    {
+        auto copy = doc;
+        copy.original.masterDb = 0;
+        copy.original.inserts = {};
+        return renderDesign(copy, work.getChildFile("Linear"), copy.renderSettings, quit, progress);
+    }();
+    std::unique_ptr<juce::AudioFormatReader> masterReader(formats.createReaderFor(juce::File(linear.path)));
+    require(masterReader && masterReader->lengthInSamples == 14192, "Linear Master shares the stem origin");
+    juce::AudioBuffer<float> sum(2, 14192), stem(2, 14192), reference(2, 14192);
+    sum.clear();
+    masterReader->read(&reference, 0, 14192, 0, true, true);
+    for (auto &entry : outputs)
+    {
+        std::unique_ptr<juce::AudioFormatReader> stemReader(formats.createReaderFor(juce::File(entry.path)));
+        require(stemReader && stemReader->read(&stem, 0, 14192, 0, true, true), "Read complete stem PCM");
+        for (int channel = 0; channel < sum.getNumChannels(); ++channel)
+            sum.addFrom(channel, 0, stem, channel, 0, stem.getNumSamples());
+    }
+    compare(reference, sum, [](int) { return 1.; }, "Linear Master equals the sum of non-overlapping stems");
+    auto master = renderDesign(doc, work.getChildFile("Master"), doc.renderSettings, quit, progress);
+    require(master.samples == linear.samples && master.peak < linear.peak * .2,
+            "Master chain changes the Mix WAV and never changes pre-Master stems");
     auto receipt = juce::File(outputs.front().sourceProvenance["receipt"].toString());
     auto json = juce::JSON::parse(receipt);
     require(json["files"].size() == 2 && json["files"][0]["sha256"] == juce::var(outputs[0].sha256),
@@ -231,8 +257,9 @@ void runMixerStemTests(const juce::File &root)
                     juce::File::findDirectories, "*") == 1,
             "Failed batch cleans staging and preserves the earlier output");
     doc.outputs = outputs;
+    doc.outputs.push_back(master);
     auto saved = work.getChildFile("stem-receipt.soundplus");
     saveDesignAtomic(saved, doc);
-    require(loadDesign(saved).outputs.size() == 2, "Every stem persists in the project output receipt list");
-    std::cout << "Aligned pre-Master stems: exact impulse PCM, common tail, receipt, cancellation and reopen\n";
+    require(loadDesign(saved).outputs.size() == 3, "Every stem persists in the project output receipt list");
+    std::cout << "Aligned pre-Master stems: exact impulse PCM, common tail, additive reference, Master isolation, receipt, cancellation and reopen\n";
 }

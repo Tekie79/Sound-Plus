@@ -47,10 +47,10 @@ struct TrackMixer::Strip final : juce::Component
         sends.onClick = [this] { mixer.sendMenu(id, sends); };
         spatial.setTitle("Open Square Surround");
         spatial.onClick = [this] { mixer.timeline.openSurroundPanner(id); };
-        mute.setTitle("Mute");
-        solo.setTitle("Solo");
-        arm.setTitle("Record arm");
-        monitor.setTitle("Input monitoring");
+        mute.setTooltip("Mute track");
+        solo.setTooltip("Solo track");
+        arm.setTooltip("Arm recording");
+        monitor.setTooltip("Input monitoring");
         mute.onClick = [this]
         {
             changeTrack("Mute track", [](DesignTrack &track) { track.mute = !track.mute; });
@@ -192,8 +192,12 @@ struct TrackMixer::Strip final : juce::Component
         const auto *destination = track ? findTrack(mix, track->output) : nullptr;
         route.setButtonText(destination ? destination->name : "Master");
         route.setTitle("Output route for " + title);
-        sends.setTitle("Sends for " + title);
+        route.setTooltip("Output route");
         sends.setButtonText(track && !track->sends.empty() ? juce::String((int)track->sends.size()) : "+");
+        sends.setTitle("Sends for " + title);
+        sends.setTooltip("Track sends");
+        inserts.setTitle("Inserts for " + title);
+        inserts.setTooltip("Edit inserts");
         const auto layout = track ? trackOutputLayout(mix, *track) : designLayout(s.document);
         if (roles != layout.roles)
             roles = layout.roles;
@@ -210,6 +214,10 @@ struct TrackMixer::Strip final : juce::Component
         monitor.setEnabled(editable && armed);
         for (auto *c : std::initializer_list<juce::Component *>{&route, &mute, &solo, &spatial, &pan})
             c->setEnabled(editable);
+        mute.setTitle("Mute " + title);
+        solo.setTitle("Solo " + title);
+        arm.setTitle("Record arm for " + title);
+        monitor.setTitle("Input monitoring for " + title);
         fader.setTitle("Volume for " + title);
         pan.setTitle("Pan for " + title);
         fader.setEnabled(editable);

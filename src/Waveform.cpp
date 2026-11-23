@@ -1,4 +1,5 @@
 #include "Waveform.h"
+#include "Theme.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <cmath>
 namespace sp
@@ -385,13 +386,13 @@ void WaveformView::resized()
 }
 void WaveformView::paint(juce::Graphics &g)
 {
-    g.fillAll(juce::Colour(0xff151b22));
+    g.fillAll(ui::surface);
     auto area = getLocalBounds().toFloat();
     area.removeFromTop(28);
     area.removeFromBottom(14);
     if (!waveform || waveform->peaks.empty())
     {
-        g.setColour(juce::Colour(0xff9baabc));
+        g.setColour(ui::muted);
         g.setFont(juce::FontOptions(13.0f));
         g.drawText(waveform && waveform->error.isNotEmpty() ? waveform->error
                                                             : "Select a recording to prepare its waveform",
@@ -439,7 +440,7 @@ void WaveformView::paint(juce::Graphics &g)
                 return p;
             }(x));
     }
-    g.setColour(juce::Colour(0xff9baabc));
+    g.setColour(ui::muted);
     g.setFont(juce::FontOptions(11.0f));
     g.drawText(juce::String(viewFirst / waveform->rate, 2) + " s", 2, getHeight() - 14, 100, 14,
                juce::Justification::left);

@@ -6,7 +6,7 @@ namespace sp
 {
 namespace
 {
-const auto bg = ui::background, panel = ui::surface, text = ui::text, muted = ui::muted, accent = ui::accent;
+const auto &bg = ui::background, &panel = ui::surface, &text = ui::text, &muted = ui::muted, &accent = ui::accent;
 juce::String timeText(int64_t frame, double rate)
 {
     return juce::String(frame / rate, 3) + " s";
@@ -70,6 +70,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     {
         tracks->selectTrack(id);
         inspectorOpen = true;
+        inspectorPage = 1;
+        preferences.setValue("inspector.tab", inspectorPage);
         preferences.setValue("inspectorOpen", true);
         const auto group = id == "master" ? "MASTER INSERTS" : "TRACK INSERTS";
         for (auto &item : groups)
@@ -176,15 +178,13 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
         if (i >= 0 && i < (int)session.document.outputs.size())
             session.chooseOutput(session.document.outputs[(size_t)i].path);
     };
-    recordTake.setTooltip("Record Live Design from frame zero with fresh effect history. Maximum 120 seconds "
-                          "/ 8192 applied changes.");
+    recordTake.setTooltip("Record performance take");
     takeStatus.setColour(juce::Label::textColourId, ui::muted);
     takeStatus.setFont(juce::FontOptions(11.f));
     performMode = preferences.getBoolValue("performWorkspace", false);
     editWorkspace.onClick = [this] { setPerformMode(false); };
     performWorkspace.onClick = [this] { setPerformMode(true); };
-    snapshotButton.setTooltip("Save the current static sound and its control settings as a named snapshot. "
-                              "No control motion is recorded.");
+    snapshotButton.setTooltip("Save a control snapshot");
     snapshotButton.onClick = [this]
     {
         auto token = session.beginDialog();
@@ -763,6 +763,22 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
                 master->setValue(effectiveDisplay.masterDb, juce::dontSendNotification);
         });
     finishGroups();
+    addChildComponent(projectTools);
+    projectTools.onClick = [this] { projectToolsMenu(); };
+    inspectorPage = std::clamp(preferences.getIntValue("inspector.tab"), 0, 2);
+    int page = 0;
+    for (auto *tab : {&controlsPage, &effectsPage, &routingPage})
+    {
+        addChildComponent(*tab);
+        tab->onClick = [this, index = page++]
+        {
+            inspectorPage = index;
+            preferences.setValue("inspector.tab", index);
+            inspectorViewport.setViewPosition(0, 0);
+            layoutInspector();
+            updateEffects();
+        };
+    }
     session.onChange = [this] { refresh(); };
     addKeyListener(this);
     canvas->addKeyListener(this);
@@ -851,6 +867,12 @@ void DesignerView::layoutInspector()
             (g.name == "SOURCE INSERTS" && !multitrack) ||
             (multitrack && !session.selectedLayer() && clipSection) ||
             (multitrack && g.name == "TRACK INSERTS" && (!track || track->kind == TrackKind::folder));
+        if (shell)
+        {
+            const bool effects = g.name.endsWith("INSERTS") || g.name == "INSTRUMENT";
+            const bool routing = g.name == "MASTER";
+            hidden |= inspectorPage != (effects ? 1 : routing ? 2 : 0);
+        }
         g.header->setVisible(!hidden);
         if (hidden)
         {
@@ -1162,18 +1184,13 @@ void DesignerView::refresh()
     effectiveDisplay = resolvePerformance(session.performanceMix());
     title.setText(d.name, juce::dontSendNotification);
     info.setText(session.dirty ? "Unsaved changes" : juce::String(), juce::dontSendNotification);
-    title.setTooltip("Referenced design | " + juce::String(d.sampleRate, 0) + " Hz timeline | revision " +
-                     juce::String(d.revision));
+    title.setTooltip("Rename design");
     auto *layer = session.selectedLayer();
     if (alternatives)
         alternatives->bind();
     layerName.setText(layer ? layer->name : "Select a layer", juce::dontSendNotification);
     sourceInfo.setText(layer ? layer->source.error : juce::String(), juce::dontSendNotification);
-    layerName.setTooltip(layer ? layer->source.path + "\n" + juce::String(layer->source.sampleRate, 0) +
-                                     " Hz, " + juce::String(layer->source.channels) +
-                                     " source channels, revision " + juce::String(layer->source.revision) +
-                                     "\n" + layer->source.id
-                               : juce::String());
+    layerName.setTooltip(layer ? "Rename layer" : juce::String());
     channelMap.clear(juce::dontSendNotification);
     if (layer)
     {
@@ -1416,22 +1433,13 @@ void DesignerView::timerCallback()
         : session.document.activeTake.isNotEmpty()
             ? (playing ? "Stop take audition" : "Audition take: " + selectedTake(session.document)->name)
             : (playing ? "Stop design" : "Play design"));
-    play.setTooltip(hasMidi(session.performanceMix())
-                        ? "Play / Stop (Space). MIDI seeks rebuild full voice/effect history in the "
-                          "background; Stop cancels preparation."
-                        : "Play / Stop (Space). Live seeks reset effect history with 250 ms of pre-roll. Use "
-                          "Accurate audition to judge long tails.");
+    play.setTooltip(playing ? "Stop playback" : "Play design (Space)");
     play.setEnabled(session.inputBusy() || session.midiBusy() ||
                     ((!session.performanceMix().layers.empty() || hasMidi(session.performanceMix())) &&
                      (!selectedTake(session.document) || selectedTake(session.document)->complete)));
     recordAudio.setButtonText(session.hasArmedMidi() ? "Record armed MIDI Tracks (R)"
                                                      : "Record armed Audio Tracks (R)");
-    recordAudio.setTooltip(
-        session.hasArmedMidi()
-            ? "Record armed MIDI Tracks from the playhead (R). Stop retains editable clips and a durable "
-              "MIDI journal. Escape cancels and preserves the journal."
-            : "Record armed Audio Tracks from the playhead (R). Stop finalizes source WAVs; Escape cancels "
-              "and retains a recoverable prefix. Monitoring starts off.");
+    recordAudio.setTooltip(session.hasArmedMidi() ? "Record armed MIDI" : "Record armed audio");
     recordAudio.setEnabled(!performMode && (session.inputReady() || (bool)session.midiStatus()["open"]) &&
                            !session.midiBusy() && !session.inputBusy() && !session.takeBusy() &&
                            session.document.activeTake.isEmpty());
@@ -1462,9 +1470,8 @@ void DesignerView::timerCallback()
                            ? juce::String::fromUTF8("Monitor · pair 1/2")
                            : juce::String::fromUTF8("Monitor · Stereo downmix");
     monitorControl.setButtonText(monitorText);
-    monitorControl.setTooltip(
-        meterDescription +
-        "Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.");
+    monitorControl.setTooltip("Monitor routing");
+    monitorControl.setDescription(meterDescription);
     position.setVisible(!performMode && position.getWidth() > 0);
     position.setText(juce::String(session.document.playhead / session.document.sampleRate, 4) + " s",
                      juce::dontSendNotification);
@@ -1555,6 +1562,10 @@ void DesignerView::paint(juce::Graphics &g)
 void DesignerView::resized()
 {
     int side = inspectorOpen && !performMode ? 350 : 0, creative = getWidth() - side;
+    editWorkspace.setVisible(!shell);
+    performWorkspace.setVisible(!shell);
+    library.setVisible(!shell);
+    projectTools.setVisible(shell);
     editWorkspace.setBounds(getWidth() - 174, 55, 58, 30);
     performWorkspace.setBounds(getWidth() - 114, 55, 68, 30);
     editWorkspace.setToggleState(!performMode, juce::dontSendNotification);
@@ -1613,7 +1624,9 @@ void DesignerView::resized()
         x += 32;
     }
     int pianoHeight = midiEditorOpen && !performMode ? std::clamp((getHeight() - 340) / 2, 170, 250) : 0;
-    const int dockHeight = mixerOpen && !performMode ? std::min(mixerHeight, getHeight() - 430) : 0;
+    const int dockHeight = mixerOpen && !performMode ? std::max(0, std::min(mixerHeight, getHeight() - 430)) : 0;
+    if (dockHeight > 0)
+        pianoHeight = std::min(pianoHeight, std::max(0, getHeight() - 440 - dockHeight));
     mixer->setVisible(dockHeight > 0);
     mixer->setBounds(12, getHeight() - 204 - dockHeight, std::max(280, creative - 24), dockHeight);
     midiEditor->setVisible(pianoHeight > 0);
@@ -1641,7 +1654,36 @@ void DesignerView::resized()
     inspect.setToggleState(inspectorOpen, juce::dontSendNotification);
     inspect.setButtonText(inspectorOpen ? "Hide layer inspector" : "Show layer inspector");
     inspector.setEnabled(!session.transitionPending());
-    inspectorViewport.setBounds(getWidth() - 342, 100, 334, getHeight() - 175);
+    inspectorViewport.setBounds(getWidth() - 342, shell ? 135 : 100, 334, getHeight() - (shell ? 210 : 175));
+    int tabX = getWidth() - 338, tabIndex = 0;
+    for (auto *tab : {&controlsPage, &effectsPage, &routingPage})
+    {
+        tab->setVisible(shell && inspectorOpen && !performMode);
+        tab->setBounds(tabX, 98, 106, 29);
+        tab->setToggleState(inspectorPage == tabIndex++, juce::dontSendNotification);
+        tabX += 108;
+    }
+    if (shell)
+    {
+        const int right = getWidth();
+        browse.setBounds(12, 54, 66, 30);
+        newButton.setBounds(84, 54, 30, 30);
+        openButton.setBounds(118, 54, 30, 30);
+        saveButton.setBounds(152, 54, 30, 30);
+        undoButton.setBounds(188, 54, 30, 30);
+        redoButton.setBounds(222, 54, 30, 30);
+        addTrackButton.setBounds(256, 54, 30, 30);
+        projectTools.setBounds(290, 54, 30, 30);
+        mixerButton.setBounds(324, 54, 58, 30);
+        for (auto *button : {&recover, &duplicate, &remove, &up, &down,
+                             &render, &renderSettings, &renderSelection, &chooseFolder, &cancel})
+            button->setBounds({});
+        add.setBounds(performMode ? juce::Rectangle<int>{256, 54, 30, 30} : juce::Rectangle<int>{});
+        const int labelX = performMode ? 334 : 396;
+        title.setBounds(labelX, 51, std::max(0, right - labelX - 205), 26);
+        info.setBounds(labelX + 3, 76, std::max(0, right - labelX - 216), 15);
+        layoutControl.setBounds(right - 188, 56, 137, 28);
+    }
     int y = getHeight() - (performMode ? 148 : 180);
     generate.setBounds(16, y, 32, 32);
     variationSettings.setBounds(52, y, 32, 32);
@@ -1697,6 +1739,8 @@ void DesignerView::setPerformMode(bool enabled)
     performMode = enabled;
     preferences.setValue("performWorkspace", enabled);
     resized();
+    if (onWorkspaceChanged)
+        onWorkspaceChanged();
 }
 bool DesignerView::benchmarkWorkspaceSwitch()
 {
@@ -1747,7 +1791,7 @@ void DesignerView::preparePerformanceBenchmark()
 }
 void DesignerView::addSource(const Asset &a, int64_t first, int64_t last, bool external, int pair)
 {
-    session.add(a, first, last, external, pair);
+    session.add(a, first, last, external, pair, -1, shell);
 }
 bool DesignerView::isInterestedInDragSource(const SourceDetails &details)
 {
@@ -1771,7 +1815,7 @@ void DesignerView::itemDropped(const SourceDetails &details)
         session.beginGesture();
         for (auto &layer : captured.original.layers)
             session.add(layer.source, layer.region.startSample, layer.region.endSample, layer.external,
-                        layer.routing.needsSelection ? -3 : layer.region.auditionPair, frame);
+                        layer.routing.needsSelection ? -3 : layer.region.auditionPair, frame, shell);
         session.endGesture();
         canvas->grabKeyboardFocus();
     }
@@ -2070,6 +2114,46 @@ void DesignerView::variationPopup()
     };
     panel->setSize(376, y + 42);
     juce::CallOutBox::launchAsynchronously(std::move(panel), variationSettings.getBounds(), this);
+}
+void DesignerView::projectToolsMenu()
+{
+    juce::PopupMenu menu;
+    menu.addItem(1, "Recover design", recover.isEnabled());
+    menu.addItem(2, "Duplicate selection", duplicate.isEnabled());
+    menu.addItem(3, "Delete selection", remove.isEnabled());
+    menu.addItem(4, "Move layer up", up.isEnabled());
+    menu.addItem(5, "Move layer down", down.isEnabled());
+    menu.addSeparator();
+    menu.addItem(6, "Source pool", session.selectedLayer() != nullptr);
+    menu.addItem(7, "Variations");
+    menu.addItem(8, "Save snapshot", snapshotButton.isEnabled());
+    menu.addItem(9, "Takes");
+    menu.addItem(10, "Export settings");
+    menu.addItem(11, "Import audio");
+    juce::Component::SafePointer<DesignerView> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(projectTools), [safe](int action)
+    {
+        if (!safe) return;
+        switch (action)
+        {
+        case 1: safe->recover.triggerClick(); break;
+        case 2: safe->duplicate.triggerClick(); break;
+        case 3: safe->remove.triggerClick(); break;
+        case 4: safe->up.triggerClick(); break;
+        case 5: safe->down.triggerClick(); break;
+        case 6:
+            if (auto *layer = safe->session.selectedLayer()) safe->showPoolPopup(layer->id);
+            break;
+        case 7: safe->variationPopup(); break;
+        case 8: safe->snapshotButton.triggerClick(); break;
+        case 9: safe->takePopup(); break;
+        case 10:
+            juce::CallOutBox::launchAsynchronously(safe->makeRenderPanel(), safe->projectTools.getBounds(), safe);
+            break;
+        case 11: safe->chooseFile(0); break;
+        default: break;
+        }
+    });
 }
 void DesignerView::renderPopup()
 {

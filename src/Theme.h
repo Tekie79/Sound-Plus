@@ -2,16 +2,25 @@
 #include <juce_gui_basics/juce_gui_basics.h>
 namespace sp::ui
 {
-inline const juce::Colour background{0xff101419}, surface{0xff171d25}, raised{0xff202b35}, line{0xff293440},
-    text{0xffe6ecf2}, muted{0xff98a8b8}, accent{0xff91cbe8};
-inline constexpr int gap = 8, control = 32, radius = 6;
-inline const auto playhead = accent;
-inline const auto fadeCurve = accent.interpolatedWith(text, .35f);
-inline const auto gainLine = text, gainLineOutline = background.withAlpha(.65f);
+// Only the message thread changes appearance. Audio and catalog services never read these tokens.
+inline constexpr std::array<juce::uint32, 11> darkPalette{
+    0xff0c1016, 0xff111821, 0xff161f2a, 0xff263340, 0xffe8eef4, 0xff92a0af,
+    0xff83aee0, 0xffa5b3c1, 0xfff2f7fb, 0xff637180, 0xffbed3eb};
+inline constexpr std::array<juce::uint32, 11> lightPalette{
+    0xffe9eff6, 0xfff7f9fc, 0xffe1eaf4, 0xffbccbdc, 0xff14243a, 0xff52647a,
+    0xff2b629f, 0xff405774, 0xff132d4d, 0xff687b91, 0xff2b629f};
+inline juce::Colour background{darkPalette[0]}, surface{darkPalette[1]}, raised{darkPalette[2]},
+    line{darkPalette[3]}, text{darkPalette[4]}, muted{darkPalette[5]}, accent{darkPalette[6]};
+inline bool lightAppearance = false;
+inline constexpr int gap = 8, control = 32, radius = 8;
+inline const auto &playhead = accent;
+inline auto fadeCurve = accent.interpolatedWith(text, .35f);
+inline const auto &gainLine = text;
+inline auto gainLineOutline = background.withAlpha(.65f);
 namespace button
 {
-inline const juce::Colour normal{0xffa5afb9}, hover{0xffeef2f6}, disabled{0xff65717e}, focus{0xffcbd5df};
-inline const auto hoverBackground = text.withAlpha(.055f), pressedBackground = text.withAlpha(.10f),
+inline juce::Colour normal{darkPalette[7]}, hover{darkPalette[8]}, disabled{darkPalette[9]}, focus{darkPalette[10]};
+inline auto hoverBackground = text.withAlpha(.055f), pressedBackground = text.withAlpha(.10f),
                   selectedBackground = accent.withAlpha(.13f);
 inline constexpr float toolbarIcon = 18, compactIcon = 16, disclosureIcon = 13, transportIcon = 24;
 struct Style
@@ -32,7 +41,7 @@ inline Style style(bool enabled, bool over, bool down, bool selected, bool focus
                 : over     ? hoverBackground
                 : labelled ? surface
                            : juce::Colours::transparentBlack;
-    return {primary        ? background
+    return {primary        ? (lightAppearance ? surface : background)
             : selected     ? accent
             : over || down ? hover
                            : normal,
@@ -57,4 +66,19 @@ inline void paintBackground(juce::Graphics &g, juce::Rectangle<float> bounds, co
     }
 }
 } // namespace button
+inline juce::Colour contrastingInk() { return lightAppearance ? surface : background; }
+inline void setAppearance(bool light)
+{
+    lightAppearance = light;
+    auto &palette = light ? lightPalette : darkPalette;
+    juce::Colour *tokens[]{&background, &surface, &raised, &line, &text, &muted, &accent,
+                           &button::normal, &button::hover, &button::disabled, &button::focus};
+    for (size_t i = 0; i < palette.size(); ++i)
+        *tokens[i] = juce::Colour(palette[i]);
+    fadeCurve = accent.interpolatedWith(text, .35f);
+    gainLineOutline = background.withAlpha(.65f);
+    button::hoverBackground = text.withAlpha(.055f);
+    button::pressedBackground = text.withAlpha(.10f);
+    button::selectedBackground = accent.withAlpha(.13f);
+}
 } // namespace sp::ui

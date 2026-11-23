@@ -8,6 +8,10 @@ class LookAndFeel : public juce::LookAndFeel_V4
     LookAndFeel()
     {
         icons::preload();
+        refreshPalette();
+    }
+    void refreshPalette()
+    {
         setColour(juce::ResizableWindow::backgroundColourId, background);
         setColour(juce::TextEditor::backgroundColourId, surface);
         setColour(juce::TextEditor::textColourId, text);
@@ -24,6 +28,31 @@ class LookAndFeel : public juce::LookAndFeel_V4
         setColour(juce::PopupMenu::highlightedBackgroundColourId, raised);
         setColour(juce::ListBox::backgroundColourId, surface);
         setColour(juce::ListBox::textColourId, text);
+        setColour(juce::Label::textColourId, text);
+        setColour(juce::ToggleButton::textColourId, text);
+        setColour(juce::ToggleButton::tickColourId, accent);
+        setColour(juce::ToggleButton::tickDisabledColourId, muted);
+        setColour(juce::ComboBox::arrowColourId, muted);
+        setColour(juce::Slider::textBoxTextColourId, text);
+        setColour(juce::Slider::textBoxBackgroundColourId, surface);
+        setColour(juce::Slider::textBoxOutlineColourId, line);
+        setColour(juce::TextEditor::highlightColourId, accent.withAlpha(.3f));
+        setColour(juce::TextEditor::highlightedTextColourId, text);
+        setColour(juce::CaretComponent::caretColourId, accent);
+        setColour(juce::TextButton::textColourOffId, text);
+        setColour(juce::TooltipWindow::backgroundColourId, raised);
+        setColour(juce::TooltipWindow::textColourId, text);
+        setColour(juce::PopupMenu::highlightedTextColourId, text);
+        setColour(juce::TableHeaderComponent::textColourId, muted);
+        setColour(juce::TableHeaderComponent::backgroundColourId, raised);
+    }
+    void drawCallOutBoxBackground(juce::CallOutBox &, juce::Graphics &g, const juce::Path &path,
+                                  juce::Image &) override
+    {
+        g.setColour(surface);
+        g.fillPath(path);
+        g.setColour(line);
+        g.strokePath(path, juce::PathStrokeType(1.f));
     }
     void drawComboBox(juce::Graphics &g, int width, int height, bool, int, int, int, int,
                       juce::ComboBox &box) override

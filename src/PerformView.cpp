@@ -131,7 +131,7 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
             "Pad " + juce::String::charToString((juce::juce_wchar)('A' + i)), true);
         auto &button = *padTabs[(size_t)i];
         addAndMakeVisible(button);
-        button.setTooltip("Edit this pad. All pads continue on the shared transport.");
+        button.setTooltip("Select pad");
         button.onClick = [this, i]
         {
             endControl();
@@ -143,7 +143,7 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
     }
     addAndMakeVisible(addPad);
     addPad.setTitle("Add Perform pad");
-    addPad.setTooltip("Add Perform pad, up to four");
+    addPad.setTooltip("Add pad");
     addPad.onClick = [this]
     {
         endControl();
@@ -202,9 +202,7 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
     addAndMakeVisible(blendContent);
     for (auto *c : std::initializer_list<juce::Component *>{&pad, &xValue, &yValue, &xLabel, &yLabel})
         blendContent.addAndMakeVisible(c);
-    updateBlend.setTooltip(
-        "Update this mix to continuous sparse blending. This may change its sound near "
-        "empty corners. Undo restores the legacy law; saving requires document version 3.");
+    updateBlend.setTooltip("Update blend law");
     updateBlend.onClick = [this]
     { session.edit("Update blend interpolation", [](auto &d) { editingPerformance(d).blendLaw = 2; }); };
     blendEnable.onClick = [this]
@@ -216,8 +214,7 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
                          s.blendEnabled = !s.blendEnabled;
                      });
     };
-    blendEnable.setTooltip("Enable equal-power blending explicitly. Assigned layers change level; unassigned "
-                           "layers stay unchanged.");
+    blendEnable.setTooltip("Toggle blend");
     blendReset.onClick = [this] { setPad(.5, .5); };
     for (auto *v : std::initializer_list<juce::Slider *>{&xValue, &yValue})
     {
@@ -727,7 +724,7 @@ void PerformView::refresh()
         cards[n]->dragPayload = juce::var(drag);
         auto &m = s.macros[n];
         macroNames[n].setText(m.name, juce::dontSendNotification);
-        macroNames[n].setTooltip(m.name + " · double-click to rename");
+        macroNames[n].setTooltip("Rename macro");
         macros[n].setTitle(m.name + " value, zero to one");
         if (!macros[n].isMouseButtonDown())
             macros[n].setValue(m.value, juce::dontSendNotification);
@@ -777,10 +774,7 @@ void PerformView::refresh()
                        : s.blendEnabled  ? "Equal-power blend"
                                          : "Move to prepare; enable to hear",
                        juce::dontSendNotification);
-    blendState.setTooltip(
-        s.blendLaw == 1
-            ? "Saved sound retained. Update law explicitly to remove sparse-corner jumps. Undo is available."
-            : "While Blend is off, movement prepares a position. Enable Blend to hear it.");
+    blendState.setTooltip("Blend mode");
     if (!xValue.isMouseButtonDown())
         xValue.setValue(s.x, juce::dontSendNotification);
     if (!yValue.isMouseButtonDown())
@@ -887,8 +881,8 @@ void PerformView::paint(juce::Graphics &g)
     if (!mappingOpen)
         for (auto b : macroBounds)
         {
-            g.setColour(ui::background.withAlpha(.4f));
-            g.fillRoundedRectangle(b.toFloat(), 6);
+            g.setColour(ui::raised);
+            g.fillRoundedRectangle(b.toFloat(), ui::radius);
         }
 }
 void PerformView::resized()

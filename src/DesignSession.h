@@ -167,7 +167,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void recoverInputRecording(const juce::File &, bool allowUnverifiedLegacy = false);
     void findInputRecoveries(std::function<void(juce::Array<juce::var>)>);
     void add(const Asset &, int64_t first, int64_t last, bool external = false, int pair = 0,
-             int64_t placement = -1);
+             int64_t placement = -1, bool tracksForNewDesign = false);
     void chooseImpulse(const juce::String &owner, const juce::String &effect, const juce::File &,
                        const juce::String &mapping, bool relink = false);
     void addExternal(const juce::File &, int64_t placement = -1);

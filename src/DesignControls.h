@@ -3,7 +3,7 @@
 #include "UIComponents.h"
 namespace sp::ui
 {
-inline const auto fadeInAccent = fadeCurve, fadeOutAccent = fadeCurve;
+inline const auto &fadeInAccent = fadeCurve, &fadeOutAccent = fadeCurve;
 class TextActionButton final : public juce::TextButton
 {
   public:
@@ -27,13 +27,16 @@ class TextActionButton final : public juce::TextButton
         if (getToggleState() || over || down)
         {
             g.setColour(getToggleState() ? raised : down ? raised : surface);
-            g.fillRoundedRectangle(bounds, 5);
+            g.fillRoundedRectangle(bounds, radius);
         }
         g.setColour((getToggleState() ? accent : sp::ui::text).withMultipliedAlpha(isEnabled() ? 1.f : .3f));
         g.setFont(juce::FontOptions(12.f, juce::Font::bold));
         g.drawText(getButtonText(), getLocalBounds(), juce::Justification::centred);
-        if (hasKeyboardFocus(false) && !getToggleState())
-            g.drawHorizontalLine(getHeight() - 3, 10.f, getWidth() - 10.f);
+        if (hasKeyboardFocus(false))
+        {
+            g.setColour(button::focus);
+            g.drawRoundedRectangle(bounds.reduced(1), radius, 1);
+        }
     }
 };
 inline juce::Colour trackColour(uint32_t value)

@@ -87,10 +87,24 @@ struct Registry
     std::map<juce::String, Images> cache;
     std::array<const Images *, (size_t)ActionIcon::count> actions{};
     int parsed = 0;
+    static std::array<juce::Colour, (size_t)Tone::count> palette()
+    {
+        return {ui::button::normal, ui::button::hover, ui::accent, ui::button::disabled,
+                ui::contrastingInk(), ui::button::focus};
+    }
+    decltype(palette()) inks = palette();
+    void refresh()
+    {
+        auto next = palette();
+        if (inks == next)
+            return;
+        for (auto &[name, images] : cache)
+            for (size_t tone = 0; tone < inks.size(); ++tone)
+                images[tone]->replaceColour(inks[tone], next[tone]);
+        inks = next;
+    }
     Registry()
     {
-        const juce::Colour inks[]{ui::button::normal,   ui::button::hover, ui::accent,
-                                  ui::button::disabled, ui::background,    ui::button::focus};
         for (size_t i = 0; i < std::size(resources); ++i)
         {
             auto [entry, added] = cache.try_emplace(resources[i]);
@@ -129,6 +143,7 @@ Registry *ready = nullptr;
 void preload()
 {
     ready = &registry();
+    ready->refresh();
 }
 int parsedAssetCount()
 {

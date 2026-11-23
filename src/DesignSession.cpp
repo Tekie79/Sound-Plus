@@ -1236,11 +1236,14 @@ void DesignSession::save(const juce::File &file)
 }
 
 void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool external, int pair,
-                        int64_t placement)
+                        int64_t placement, bool tracksForNewDesign)
 {
     edit("Add layer",
          [&](auto &d)
          {
+             if (tracksForNewDesign && d.revision == 1 && savedFile == juce::File() &&
+                 d.activeMix().layers.empty() && !d.activeMix().layout.id.isEmpty())
+                 enableTrackSchema(d.activeMix());
              if (!d.activeMix().layout.id.isEmpty() && d.activeMix().layers.empty() && source.channels > 2 &&
                  source.channels <= 16)
              {

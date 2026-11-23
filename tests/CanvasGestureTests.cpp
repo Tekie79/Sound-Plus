@@ -747,8 +747,8 @@ void runCanvasGestureTests(const juce::File &parent)
         for (bool reference : {false, true})
         {
             auto layout = sp::libraryLayout(1040, height, false, reference);
-            check(layout.results.getBottom() <= layout.selection.getY() - 8,
-                  "Reference/results/selected regions cannot overlap at minimum height");
+            check(layout.results.getRight() + 8 <= layout.preview.getX(),
+                  "Results and contextual preview cannot overlap at minimum size");
             check(layout.results.getHeight() >= 90 && layout.waveform.getHeight() >= 60,
                   "Minimum Library retains usable results and waveform");
             if (reference)
