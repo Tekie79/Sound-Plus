@@ -14,6 +14,8 @@ Current insert ordering, retained native editors and plugin-aware take behavior 
 
 **Square Surround in Edit** positions a Mono or Stereo Audio or MIDI Instrument Track on a named 5.1 Side or Rear bus. Open **Track options → Square Surround**, preview and enable XY, then drag the object or record paired Touch motion. Position X/Y and Stereo Spread use the existing automation lane. [Routing and editing contract](docs/SURROUND_XY_CONTRACT.md), [milestone report and native checks](docs/SURROUND_XY_MILESTONE_REPORT.md)
 
+**Production Beta Gate 1** covers motion and take recovery, end-to-end 5.1 output, Resolve persistence, and the current distribution decision. [Qualification report and reproducible checks](docs/PRODUCTION_BETA_GATE_1_REPORT.md)
+
 ## Build and launch
 
 Run on an Apple Silicon Mac with Xcode Command Line Tools, Python 3.9+ and internet access for initial dependency downloads. Local AI requires macOS 13.3+. The Library/audition application retains its macOS 12.0 compilation minimum. Only macOS 26.3.2 was hardware tested. CMake, Ninja, JUCE and the native ONNX Runtime are installed inside this checkout. No Homebrew packages or administrator install are required.

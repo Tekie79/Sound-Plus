@@ -8,6 +8,6 @@ Reviewed and starting HEAD `2de9e19bd6b440b3d229ac1e879e962e2ff72292`. Feature f
 ✓ Workflow — native 2–6 s region, Side/Rear prints and twelve exact mono splits, routed VST3/Group/Master and offline/relink test, Resolve timeline persistence after both apps quit. MIDI and four-pad checks also run in the final gate.
 ✓ Stress — reproduced and fixed late Stop, passed the 120-second take-limit rerun and focused 8/8, observed ENOSPC, checked bundle dependencies and local copy/reinstall. Signed distribution remains blocked.
 ○ Physical — Blocked: only a two-channel CoreAudio output is available. Human listening and physical 5.1 need a separate session.
-◉ Decide — exact-candidate native viewport checks passed. Run the unchanged Release gate and reopen the original session before publishing the decision.
+✓ Decide — unchanged Release gate passed 54/54 in 545.43 s. Candidate `292f094`, 383 source/resource/script, 17 executable and 18 bundle hashes matched. Reopened r4499 in place and audited it again. No-Go for private beta distribution. [Decision and evidence](PRODUCTION_BETA_GATE_1_REPORT.md)
 
 The host has DaVinci Resolve Studio 21.1.2 and zero valid code-signing identities. Signed installer and notarization require available authorized credentials.

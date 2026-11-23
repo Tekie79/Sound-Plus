@@ -1,0 +1,43 @@
+{
+  "baseline": {
+    "revision": 4499,
+    "payloadUnchanged": true,
+    "protectedFiles": 392,
+    "protectedFilesUnchanged": true,
+    "stateFilesUnchanged": 197,
+    "catalogTables": 18,
+    "catalogRowsUnchanged": true
+  },
+  "beforeGate": {
+    "revision": 4499,
+    "payloadUnchanged": true,
+    "protectedFiles": 392,
+    "protectedFilesUnchanged": true,
+    "stateFilesUnchanged": 197,
+    "catalogTables": 18,
+    "catalogRowsUnchanged": true
+  },
+  "afterGate": {
+    "revision": 4499,
+    "payloadUnchanged": true,
+    "protectedFiles": 392,
+    "protectedFilesUnchanged": true,
+    "stateFilesUnchanged": 197,
+    "catalogTables": 18,
+    "catalogRowsUnchanged": true
+  },
+  "afterReopen": {
+    "revision": 4499,
+    "payloadUnchanged": true,
+    "protectedFiles": 392,
+    "protectedFilesUnchanged": true,
+    "stateFilesUnchanged": 197,
+    "catalogTables": 18,
+    "catalogRowsUnchanged": true
+  },
+  "nativeReopen": {
+    "workspace": "Edit",
+    "designRevision": 4499,
+    "recoveredUnsavedChanges": true
+  }
+}

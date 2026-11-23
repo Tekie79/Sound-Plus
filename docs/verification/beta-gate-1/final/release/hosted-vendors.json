@@ -1,0 +1,56 @@
+[
+  {
+    "name": "OldSkoolVerb",
+    "vendor": "Voxengo",
+    "version": "2.14",
+    "format": "VST3",
+    "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+    "maxError": 0.0,
+    "layout": "mono-v1"
+  },
+  {
+    "name": "OldSkoolVerb",
+    "vendor": "Voxengo",
+    "version": "2.14",
+    "format": "VST3",
+    "fingerprint": "07d6795a69f355fdf5145f96dee45220a1414b5f17907b4f43f78acca3168a83",
+    "maxError": 0.0,
+    "layout": "stereo-v1"
+  },
+  {
+    "name": "LV50A",
+    "vendor": "Viator DSP",
+    "version": "1.0.0",
+    "format": "VST3",
+    "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+    "maxError": 0.0,
+    "layout": "mono-v1"
+  },
+  {
+    "name": "LV50A",
+    "vendor": "Viator DSP",
+    "version": "1.0.0",
+    "format": "VST3",
+    "fingerprint": "058fff6658c6f7b28919755e000586d14f4d69e1b4d16e13b1e92c32d1d45054",
+    "maxError": 0.0,
+    "layout": "stereo-v1"
+  },
+  {
+    "name": "AUDelay",
+    "vendor": "Apple",
+    "version": "1.6.0",
+    "format": "AudioUnit",
+    "fingerprint": "3eda5d20dcd540eeaa4015267ca67e5bc8838197043125d955f70a95fb83aaa1",
+    "maxError": 0.0,
+    "layout": "mono-v1"
+  },
+  {
+    "name": "AUDelay",
+    "vendor": "Apple",
+    "version": "1.6.0",
+    "format": "AudioUnit",
+    "fingerprint": "3eda5d20dcd540eeaa4015267ca67e5bc8838197043125d955f70a95fb83aaa1",
+    "maxError": 0.0,
+    "layout": "stereo-v1"
+  }
+]
