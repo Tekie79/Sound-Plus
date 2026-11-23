@@ -6,8 +6,12 @@
 #include "DesignSession.h"
 #include "MidiModel.h"
 #include "SourcePools.h"
+#include "AdvancedIR.h"
+#include "LibraryService.h"
+#include "PluginProcessing.h"
 #include <CoreFoundation/CoreFoundation.h>
 #include <iostream>
+#include <deque>
 
 namespace
 {
@@ -285,4 +289,174 @@ void runSurroundXYTests(const juce::File &base, const juce::File &app)
     seedNativeFixture(base, root, app);
     std::cout
         << "Square Surround gain, rate/partition, versioning and independent mono/stereo PCM checks passed\n";
+}
+
+void runBetaSurroundWorkflow(const juce::File &base, const juce::File &app, const juce::File &ownedEffect)
+{
+    using namespace sp;
+    using namespace juce;
+    ScopedJuceInitialiser_GUI gui;
+    const auto root = base.getChildFile(Uuid().toString());
+    check(root.createDirectory().wasOk(), "Create an isolated workflow directory");
+    const auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
+    setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
+    const auto put = [](var &v, const char *name, var value)
+    { v.getDynamicObject()->setProperty(name, std::move(value)); };
+    PluginWorker worker(helper);
+    auto scan = var(new DynamicObject);
+    put(scan, "mode", "scan");
+    put(scan, "path", ownedEffect.getFullPathName());
+    auto plugin = worker.call(scan, root, 15000)["plugins"][0];
+    check(plugin.isObject() && plugin["reason"].toString().isEmpty(), "Owned VST3 is available");
+    auto hosted = var(new DynamicObject);
+    put(hosted, "mode", "describe");
+    put(hosted, "plugin", plugin);
+    put(hosted, "rate", 48000);
+    put(hosted, "block", 512);
+    put(hosted, "layout", layoutJson(channelLayout("mono-v1")));
+    auto description = worker.call(hosted, root, 15000);
+    for (auto key : {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
+        put(hosted, key, description[key]);
+    auto parameters = description["parameters"].clone();
+    check(parameters.isArray(), "Hosted fixture parameter descriptors available");
+    bool foundGain = false;
+    for (auto &p : *parameters.getArray())
+        if (p["name"].toString() == "Gain")
+        {
+            put(p, "value", .25);
+            foundGain = true;
+        }
+    check(foundGain, "Owned VST3 trim parameter identified");
+    put(hosted, "parameters", parameters);
+
+    auto indexSource = [&](LibraryService &library, const File &folder)
+    {
+        library.addFolder(folder);
+        const auto until = Time::getMillisecondCounterHiRes() + 12000;
+        while (Time::getMillisecondCounterHiRes() < until)
+        {
+            auto snapshot = library.snapshot();
+            if (snapshot.results.size() == 1 && snapshot.results[0].samples == 4096)
+                return snapshot.results.front();
+            Thread::sleep(10);
+        }
+        throw std::runtime_error("Owned region was not indexed through LibraryService");
+    };
+    for (const auto *id : {"5.1-side-v1", "5.1-rear-v1"})
+    {
+        const auto bus = channelLayout(id);
+        const auto dir = root.getChildFile(id);
+        const auto media = dir.getChildFile("media");
+        check(media.createDirectory().wasOk(), "Own source directory ready");
+        auto doc = fixture(media, bus, 1, 48000);
+        doc.name = "Beta workflow " + layoutName(bus);
+        const auto source = File(doc.original.layers.front().source.path);
+        const auto catalogue = dir.getChildFile("library.sqlite");
+        Asset indexed;
+        {
+            LibraryService library(catalogue);
+            indexed = indexSource(library, media);
+        }
+        check(indexed.path == source.getFullPathName(), "Library retains original in place");
+        std::deque<std::function<void()>> queue;
+        DesignSessionServices services;
+        services.timers = false;
+        services.automaticRecovery = false;
+        services.submit = [&](auto f)
+        {
+            queue.push_back(std::move(f));
+            return true;
+        };
+        services.post = [&](auto f) { queue.push_back(std::move(f)); };
+        auto drain = [&]
+        {
+            while (!queue.empty())
+            {
+                auto f = std::move(queue.front());
+                queue.pop_front();
+                f();
+            }
+        };
+        DesignSession session(catalogue, services);
+        auto trackId = doc.selectedTrack;
+        doc.original.layers.clear();
+        doc.selectedLayer.clear();
+        session.document = doc;
+        session.add(indexed, 512, 3584, false, 0, 0);
+        auto &mix = session.document.original;
+        auto &layer = mix.layers.front();
+        layer.fadeIn = layer.fadeOut = 0;
+        check(layer.region.startSample == 512 && layer.region.endSample == 3584 &&
+                  layer.source.id == indexed.id,
+              "The Library range and original identity reach the existing Audio Track");
+        auto groupId = addTrack(mix, TrackKind::groupBus);
+        auto *group = findTrack(mix, groupId);
+        group->layout = bus;
+        auto *track = findTrack(mix, trackId);
+        track->output = groupId;
+        track->surroundXY = SurroundPosition{0, 1, 0};
+        setSurroundNode(*track, {0, 0, 1, MotionShape::hold});
+        setSurroundNode(*track, {1024, 0, -1});
+        track->inserts.hosted.slots = {{Uuid().toString(), JSON::toString(hosted, true), false}};
+        for (auto *chain : {&group->inserts, &mix.inserts})
+        {
+            auto effect = makeStockEffect("gain");
+            effect.parameters[0] = -6.020599913;
+            chain->stock.push_back(effect);
+        }
+        const auto saved = dir.getChildFile("Routed surround.soundplus");
+        saveDesignAtomic(saved, session.document);
+        auto reopened = loadDesign(saved);
+        auto pcm = render(reopened, 257, 3072);
+        const double center = .125 * .5 * .5 * .5;
+        check(std::abs(pcm.getSample(2, 512) - center) < 2e-6 &&
+                  std::abs(pcm.getSample(4, 2752) - center * std::sqrt(.5)) < 2e-6 &&
+                  std::abs(pcm.getSample(5, 2752) - center * std::sqrt(.5)) < 2e-6 &&
+                  pcm.getMagnitude(3, 0, 3072) == 0,
+              "Track VST3, square Read, Group and Master gains agree with channel PCM oracle");
+        auto settings = reopened.renderSettings;
+        settings.layout = "same";
+        settings.splitMono = true;
+        settings.tailSeconds = 0;
+        auto out = renderDesign(
+            reopened, dir.getChildFile("renders"), settings, [] { return false; }, [](double) {});
+        check(out.files.size() == 6 && inspectDesignSource(File(out.path)).detectedChannels == bus,
+              "Finalized routed 5.1 master and six labeled splits");
+        for (int c = 0; c < 6; ++c)
+            check(out.files[c]["role"] == bus.roles[c], "Published routing retains named channel identity");
+
+        const auto ir = dir.getChildFile("original-ir.wav");
+        check(source.copyFileTo(ir), "Copy generated fixture IR bytes");
+        auto convolution = makeStockEffect("convolution-reverb");
+        convolution.impulse = inspectImpulse(ir, bus, "mono-diagonal");
+        auto irId = convolution.id;
+        session.document.original.inserts.stock.push_back(convolution);
+        const auto sourceMoved = dir.getChildFile("relocated-source.wav");
+        const auto irMoved = dir.getChildFile("relocated-ir.wav");
+        check(source.moveFileTo(sourceMoved) && ir.moveFileTo(irMoved), "Relocate owned fixtures only");
+        auto offline = session.document;
+        resolveDesignSources(offline, catalogue);
+        check(offline.original.layers.front().source.id == indexed.id &&
+                  offline.original.layers.front().source.error.isNotEmpty() &&
+                  !offline.original.inserts.stock.back().impulse->source.online,
+              "Missing source and IR keep their references and report separately");
+        rejects(
+            [&] {
+                renderDesign(
+                    offline, dir.getChildFile("failed"), settings, [] { return false; }, [](double) {});
+            },
+            "An offline IR cannot publish a partial replacement WAV");
+        session.replaceSource(layer.id, sourceMoved);
+        drain();
+        session.chooseImpulse({}, irId, irMoved, "mono-diagonal", true);
+        drain();
+        const auto &restored = session.document.original;
+        check(restored.layers.front().source.path == sourceMoved.getFullPathName() &&
+                  restored.inserts.stock.back().impulse->source.path == irMoved.getFullPathName() &&
+                  restored.inserts.stock.back().impulse->sha256 == convolution.impulse->sha256 &&
+                  inspectDesignSource(File(out.path)).detectedChannels == bus,
+              "Explicit source replacement and identical IR relink preserve the published master");
+        std::cout << id
+                  << " routed VST3/Group/Master PCM, saved region, offline and explicit relink passed\n";
+    }
 }

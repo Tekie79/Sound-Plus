@@ -1,0 +1,73 @@
+{
+  "enteredThrough": "Resolve Media Pool ImportMedia",
+  "soundPlusQuitBeforeResolveQuit": true,
+  "resolveProcessExitConfirmed": true,
+  "receiverReferencesSourcePaths": true,
+  "before": {
+    "qaName": "SoundPlus Beta Gate 1 20261123",
+    "version": "21.1.2.10",
+    "rows": [
+      {
+        "roleLayout": "5.1 Rear",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/native-renders/Square Surround QA-r17-97fe1024-split/Mix.wav",
+        "duration": "00:00:19:00",
+        "samplesPerSecond": "48000",
+        "audioChannels": "6",
+        "online": "Online",
+        "mediaId": "61d9ea73-f24b-4a23-8d32-2fb2ec0ba984",
+        "track": 2,
+        "itemName": "Mix.wav",
+        "timelineFrames": 456
+      },
+      {
+        "roleLayout": "5.1 Side",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/native-renders/Square Surround QA-r19-bcf8e39f-split/Mix.wav",
+        "duration": "00:00:19:00",
+        "samplesPerSecond": "48000",
+        "audioChannels": "6",
+        "online": "Online",
+        "mediaId": "c0eaed72-e724-4b60-9208-51e48119536c",
+        "track": 3,
+        "itemName": "Mix.wav",
+        "timelineFrames": 456
+      }
+    ],
+    "saved": true
+  },
+  "after": {
+    "version": "21.1.2.10",
+    "qaName": "SoundPlus Beta Gate 1 20261123",
+    "rows": [
+      {
+        "roleLayout": "5.1 Rear",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/native-renders/Square Surround QA-r17-97fe1024-split/Mix.wav",
+        "duration": "00:00:19:00",
+        "samplesPerSecond": "48000",
+        "audioChannels": "6",
+        "online": "Online",
+        "mediaId": "61d9ea73-f24b-4a23-8d32-2fb2ec0ba984",
+        "track": 2,
+        "itemName": "Mix.wav",
+        "timelineFrames": 456,
+        "audioMapping": "{\"embedded_audio_channels\":6,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2,3,4,5,6],\"mute\":false,\"type\":\"5.1\"}}}"
+      },
+      {
+        "roleLayout": "5.1 Side",
+        "path": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/native-renders/Square Surround QA-r19-bcf8e39f-split/Mix.wav",
+        "duration": "00:00:19:00",
+        "samplesPerSecond": "48000",
+        "audioChannels": "6",
+        "online": "Online",
+        "mediaId": "c0eaed72-e724-4b60-9208-51e48119536c",
+        "track": 3,
+        "itemName": "Mix.wav",
+        "timelineFrames": 456,
+        "audioMapping": "{\"embedded_audio_channels\":6,\"linked_audio\":{},\"track_mapping\":{\"1\":{\"channel_idx\":[1,2,3,4,5,6],\"mute\":false,\"type\":\"5.1\"}}}"
+      }
+    ],
+    "passed": true
+  },
+  "restored": {
+    "previousProjectReopened": true
+  }
+}

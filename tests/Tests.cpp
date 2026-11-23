@@ -46,6 +46,7 @@ void runHostedInstrumentAutomationTests(const juce::File &, const juce::File &, 
 void runHostedTouchSessionTests(const juce::File &, const juce::File &, const juce::File &);
 void runHostedVendorAutomationTests(const juce::File &, const juce::File &);
 void runSurroundXYTests(const juce::File &, const juce::File &);
+void runBetaSurroundWorkflow(const juce::File &, const juce::File &, const juce::File &);
 void runMultiPadTests(const juce::File &, const juce::File &);
 void runHostedAutomationTests(const juce::File &, const juce::File &, const juce::File &);
 void runNativeEffectsTests(const juce::File &);
@@ -138,6 +139,11 @@ int main(int argc, char **argv)
         if (argc >= 3 && juce::String(argv[1]) == "--surround-xy")
         {
             runSurroundXYTests(juce::File(argv[2]), argc >= 4 ? juce::File(argv[3]) : juce::File{});
+            return 0;
+        }
+        if (argc >= 5 && juce::String(argv[1]) == "--beta-surround-workflow")
+        {
+            runBetaSurroundWorkflow(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
             return 0;
         }
         if (argc >= 4 && juce::String(argv[1]) == "--multi-pad")

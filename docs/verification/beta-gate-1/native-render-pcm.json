@@ -1,0 +1,86 @@
+[
+  {
+    "path": "build/beta-gate-1/native-renders/Square Surround QA-r17-97fe1024-split/Mix.wav",
+    "layout": "5.1-rear-v1",
+    "mask": "0x3f",
+    "rate": 48000,
+    "bits": 24,
+    "frames": 912000,
+    "sha256": "65f0173cc5bcd8e8d9b4980681d9f727e7d1b313056ace010d777f4a2170bfbd",
+    "monoSplits": [
+      {
+        "role": "L",
+        "sha256": "2b8f776499e3f016a2a62f9544946b55c854bbc460333d57bfa87ed5f12d27d0",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "R",
+        "sha256": "ce7bf8c6c9e8c5de6fe97f1e2488c53c5abe315877f1ecd8a68a98bb304d4161",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "C",
+        "sha256": "30bb0a59fd44d2c6e7fb4f1c76b1ff1d590bd5ab62e9208a8743e5170324cd04",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "LFE",
+        "sha256": "3f4c21ce62dcc00e712200f2a69dc3d7884c7ba9f3034cc059a9f2da14621016",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "Lb",
+        "sha256": "523b49a9c44f809cf2de83de7b09f4a784c1a185a76d3858b703dd89286ac2ba",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "Rb",
+        "sha256": "95288ca50c9ead2b56962035037f92ce095740ab25f7b28f28d41c3022d9e553",
+        "pcmEqualsMasterChannel": true
+      }
+    ],
+    "positionalLfeSilent": true
+  },
+  {
+    "path": "build/beta-gate-1/native-renders/Square Surround QA-r19-bcf8e39f-split/Mix.wav",
+    "layout": "5.1-side-v1",
+    "mask": "0x60f",
+    "rate": 48000,
+    "bits": 24,
+    "frames": 912000,
+    "sha256": "5bc872e3f2cfe33e4d358c518b9fe9d05a5f1e97968c721ffe3d4c83de6b3d2b",
+    "monoSplits": [
+      {
+        "role": "L",
+        "sha256": "4f0c481b5bfa80225c269719fadd3aacf03d0bca5c2f0906bf6b753817fd76a8",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "R",
+        "sha256": "dff54002349dbbb59df42cdcdfa51a8d46cb86d1234c1b662901385201d0a4f6",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "C",
+        "sha256": "4a1bb7eee90bd84a134036a26877a0a90159e37649c186ce88dbc79b19441ba1",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "LFE",
+        "sha256": "67ddc93e01d6107323ddd2ba2c1b01ffa602e2c0c60d03f85b94c52469b649a2",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "Ls",
+        "sha256": "b977affaf853691e080eaafa7060a179f23411ca3a9ef73c1724f3a22c1866d3",
+        "pcmEqualsMasterChannel": true
+      },
+      {
+        "role": "Rs",
+        "sha256": "640207189a78e9f87893a157f47952dbf5617d068a63cb3635406147a63867ed",
+        "pcmEqualsMasterChannel": true
+      }
+    ],
+    "positionalLfeSilent": true
+  }
+]
