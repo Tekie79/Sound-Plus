@@ -1,0 +1,152 @@
+{
+  "bomFormat": "CycloneDX",
+  "components": [
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/juce-framework/JUCE/tree/8.0.6"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "AGPL-3.0-only OR LicenseRef-JUCE-8"
+        }
+      ],
+      "name": "JUCE",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "compiled"
+        }
+      ],
+      "type": "library",
+      "version": "8.0.6"
+    },
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/juce-framework/JUCE/tree/8.0.6/modules/juce_audio_processors/format_types/VST3_SDK"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "GPL-3.0-only AND BSD-3-Clause"
+        }
+      ],
+      "name": "Steinberg VST 3 SDK (as vendored in JUCE)",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "compiled; GPL option for dual-licensed files"
+        }
+      ],
+      "type": "library",
+      "version": "3.7.12"
+    },
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.nuget.org/packages/Microsoft.ML.OnnxRuntime/1.22.1"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "MIT"
+        }
+      ],
+      "name": "ONNX Runtime",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "bundled optional helper dylib; see third-party notices"
+        }
+      ],
+      "type": "library",
+      "version": "1.22.1"
+    },
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://github.com/lucide-icons/lucide"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "ISC AND MIT"
+        }
+      ],
+      "name": "Lucide with Feather attribution",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "compiled vector assets"
+        }
+      ],
+      "type": "library",
+      "version": "de8d11aac831d519d2377ff516868244475fac06"
+    },
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://huggingface.co/Xenova/clap-htsat-unfused"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "Apache-2.0"
+        }
+      ],
+      "name": "CLAP HTSAT unfused",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "separate optional model download"
+        }
+      ],
+      "type": "library",
+      "version": "c28f2883575e590e04d3146ff0713c2448d691ba"
+    },
+    {
+      "externalReferences": [
+        {
+          "type": "website",
+          "url": "https://www.sqlite.org/copyright.html"
+        }
+      ],
+      "licenses": [
+        {
+          "expression": "LicenseRef-Public-Domain"
+        }
+      ],
+      "name": "SQLite",
+      "properties": [
+        {
+          "name": "soundplus:distribution",
+          "value": "OS-provided"
+        }
+      ],
+      "type": "library",
+      "version": "macOS system"
+    }
+  ],
+  "metadata": {
+    "component": {
+      "name": "SoundPlus",
+      "properties": [
+        {
+          "name": "soundplus:sourceCommit",
+          "value": "3ba7b83e61ba1fe5fa528b89730c4f7b2b3af810"
+        }
+      ],
+      "type": "application",
+      "version": "0.1.0+1"
+    }
+  },
+  "specVersion": "1.6",
+  "version": 1
+}

@@ -1,0 +1,9 @@
+{
+  "embeddingLength": 512,
+  "finite": true,
+  "inferenceMs": 5.11175000667572,
+  "loadMs": 2324.831875026226,
+  "model": "clap-htsat-unfused-q8-c28f2883575e",
+  "preprocessMs": 0.75641667842865,
+  "preprocessing": "soundplus-clap48k-slaney-repeatpad-sinc32-v1"
+}

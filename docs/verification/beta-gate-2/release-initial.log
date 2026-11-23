@@ -1,0 +1,120 @@
+Internal ctest changing into directory: $CHECKOUT/build
+Test project $CHECKOUT/build
+      Start  1: hosted_vendor_automation
+ 1/54 Test  #1: hosted_vendor_automation ..........   Passed    6.30 sec
+      Start  2: surround_xy
+ 2/54 Test  #2: surround_xy .......................   Passed    0.09 sec
+      Start  3: surround_xy_device
+ 3/54 Test  #3: surround_xy_device ................   Passed    5.62 sec
+      Start  4: multi_pad
+ 4/54 Test  #4: multi_pad .........................   Passed    0.43 sec
+      Start  5: multi_pad_device
+ 5/54 Test  #5: multi_pad_device ..................   Passed    4.71 sec
+      Start  6: midi_responsiveness
+ 6/54 Test  #6: midi_responsiveness ...............   Passed   46.22 sec
+      Start  7: advanced_effects
+ 7/54 Test  #7: advanced_effects ..................   Passed    2.64 sec
+      Start  8: native_effects
+ 8/54 Test  #8: native_effects ....................   Passed    0.78 sec
+      Start  9: library_collections
+ 9/54 Test  #9: library_collections ...............   Passed    1.48 sec
+      Start 10: midi_sequencing
+10/54 Test #10: midi_sequencing ...................***Failed    0.11 sec
+FAIL after 0 checks: Create actual owned CoreMIDI virtual source
+
+      Start 11: audio_input_recording
+11/54 Test #11: audio_input_recording .............   Passed    0.53 sec
+      Start 12: multitrack_automation
+12/54 Test #12: multitrack_automation .............   Passed    1.01 sec
+      Start 13: pool_corrections
+13/54 Test #13: pool_corrections ..................   Passed    5.98 sec
+      Start 14: source_pools
+14/54 Test #14: source_pools ......................   Passed    0.42 sec
+      Start 15: library_playback_search
+15/54 Test #15: library_playback_search ...........   Passed    2.72 sec
+      Start 16: multichannel_corrections
+16/54 Test #16: multichannel_corrections ..........   Passed   13.24 sec
+      Start 17: multichannel
+17/54 Test #17: multichannel ......................   Passed    5.43 sec
+      Start 18: take_integrity
+18/54 Test #18: take_integrity ....................   Passed    4.04 sec
+      Start 19: capture_device_lifecycle
+19/54 Test #19: capture_device_lifecycle ..........   Passed    5.26 sec
+      Start 20: recorded_takes
+20/54 Test #20: recorded_takes ....................   Passed    9.25 sec
+      Start 21: library_stability
+21/54 Test #21: library_stability .................   Passed    1.36 sec
+      Start 22: waveform_scheduling
+22/54 Test #22: waveform_scheduling ...............   Passed    1.88 sec
+      Start 23: audio_health
+23/54 Test #23: audio_health ......................   Passed    8.09 sec
+      Start 24: waveform_previews
+24/54 Test #24: waveform_previews .................   Passed    0.46 sec
+      Start 25: performance_state
+25/54 Test #25: performance_state .................   Passed    3.34 sec
+      Start 26: designer_view_commands
+26/54 Test #26: designer_view_commands ............   Passed    0.37 sec
+      Start 27: icon_system
+27/54 Test #27: icon_system .......................   Passed    0.11 sec
+      Start 28: library_and_audio
+28/54 Test #28: library_and_audio .................   Passed    9.01 sec
+      Start 29: library_selection_audition
+29/54 Test #29: library_selection_audition ........   Passed    4.15 sec
+      Start 30: library_performance_regression
+30/54 Test #30: library_performance_regression ....   Passed    6.52 sec
+      Start 31: library_semantic_integrity
+31/54 Test #31: library_semantic_integrity ........   Passed    0.39 sec
+      Start 32: library_similar_integrity
+32/54 Test #32: library_similar_integrity .........   Passed    1.21 sec
+      Start 33: designer_transport
+33/54 Test #33: designer_transport ................   Passed   16.15 sec
+      Start 34: designer_canvas
+34/54 Test #34: designer_canvas ...................   Passed    0.20 sec
+      Start 35: designer_session
+35/54 Test #35: designer_session ..................   Passed    0.19 sec
+      Start 36: designer_workflow
+36/54 Test #36: designer_workflow .................   Passed    9.86 sec
+      Start 37: designer_fades
+37/54 Test #37: designer_fades ....................   Passed    2.42 sec
+      Start 38: hosted_touch_session
+38/54 Test #38: hosted_touch_session ..............   Passed    0.37 sec
+      Start 39: hosted_touch_device
+39/54 Test #39: hosted_touch_device ...............   Passed    6.03 sec
+      Start 40: hosted_automation
+40/54 Test #40: hosted_automation .................   Passed   45.10 sec
+      Start 41: hosted_automation_au
+41/54 Test #41: hosted_automation_au ..............   Passed   42.82 sec
+      Start 42: hosted_instrument_automation
+42/54 Test #42: hosted_instrument_automation ......   Passed   12.60 sec
+      Start 43: hosted_instrument_automation_au
+43/54 Test #43: hosted_instrument_automation_au ...   Passed   12.48 sec
+      Start 44: midi_instruments
+44/54 Test #44: midi_instruments ..................   Passed   25.95 sec
+      Start 45: beta_surround_workflow
+45/54 Test #45: beta_surround_workflow ............   Passed    2.94 sec
+      Start 46: plugin_processing
+46/54 Test #46: plugin_processing .................   Passed   67.68 sec
+      Start 47: plugin_correctness
+47/54 Test #47: plugin_correctness ................   Passed   10.32 sec
+      Start 48: plugin_gate_a
+48/54 Test #48: plugin_gate_a .....................   Passed   17.51 sec
+      Start 49: ordered_corrections
+49/54 Test #49: ordered_corrections ...............   Passed    0.13 sec
+      Start 50: plugin_takes
+50/54 Test #50: plugin_takes ......................   Passed   30.16 sec
+      Start 51: ordered_inserts
+51/54 Test #51: ordered_inserts ...................   Passed   34.33 sec
+      Start 52: native_view_scale
+52/54 Test #52: native_view_scale .................   Passed    0.01 sec
+      Start 53: plugin_live
+53/54 Test #53: plugin_live .......................   Passed   42.99 sec
+      Start 54: advanced_effects_asan
+54/54 Test #54: advanced_effects_asan .............   Passed    6.09 sec
+
+98% tests passed, 1 tests failed out of 54
+
+Total Test time (real) = 539.51 sec
+
+The following tests FAILED:
+	 10 - midi_sequencing (Failed)
+Errors while running CTest

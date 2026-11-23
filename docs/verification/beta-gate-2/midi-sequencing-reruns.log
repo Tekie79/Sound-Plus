@@ -1,0 +1,41 @@
+Internal ctest changing into directory: $CHECKOUT/build
+UpdateCTestConfiguration  from :$CHECKOUT/build/DartConfiguration.tcl
+Parse Config file:$CHECKOUT/build/DartConfiguration.tcl
+UpdateCTestConfiguration  from :$CHECKOUT/build/DartConfiguration.tcl
+Parse Config file:$CHECKOUT/build/DartConfiguration.tcl
+Test project $CHECKOUT/build
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 10
+    Start 10: midi_sequencing
+
+10: Test command: $CHECKOUT/build/SoundPlusTests_artefacts/Release/SoundPlusTests "--midi" "$CHECKOUT/build/midi-tests"
+10: Working Directory: $CHECKOUT/build
+10: Test timeout computed to be: 90
+10: MIDI sequencing/sampler: 1023 checks passed
+    Test #10: midi_sequencing ..................   Passed    0.69 sec
+    Start 10: midi_sequencing
+
+10: Test command: $CHECKOUT/build/SoundPlusTests_artefacts/Release/SoundPlusTests "--midi" "$CHECKOUT/build/midi-tests"
+10: Working Directory: $CHECKOUT/build
+10: Test timeout computed to be: 90
+10: MIDI sequencing/sampler: 1023 checks passed
+    Test #10: midi_sequencing ..................   Passed    0.11 sec
+    Start 10: midi_sequencing
+
+10: Test command: $CHECKOUT/build/SoundPlusTests_artefacts/Release/SoundPlusTests "--midi" "$CHECKOUT/build/midi-tests"
+10: Working Directory: $CHECKOUT/build
+10: Test timeout computed to be: 90
+10: MIDI sequencing/sampler: 1023 checks passed
+1/1 Test #10: midi_sequencing ..................   Passed    0.10 sec
+
+The following tests passed:
+	midi_sequencing
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   0.90 sec

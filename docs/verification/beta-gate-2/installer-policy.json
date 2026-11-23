@@ -1,0 +1,11 @@
+{
+  "payloadComponentId": "org.soundplus.workstation.installer",
+  "installLocation": "/Applications",
+  "versionedAtomicUpgrade": true,
+  "mayRelocate": false,
+  "scriptsPresent": false,
+  "hostArchitectures": "arm64",
+  "minimumOperatingSystem": [
+    "12.0"
+  ]
+}

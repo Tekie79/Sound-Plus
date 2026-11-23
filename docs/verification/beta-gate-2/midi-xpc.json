@@ -1,0 +1,16 @@
+{
+  "checksPerRepeat": 1023,
+  "codeChangeDuringInvestigation": false,
+  "contemporaneousSystemLog": {
+    "messages": [
+      "MIDIProcessXPC: Connection was invalidated",
+      "XPC_ERROR_CONNECTION_INVALID"
+    ],
+    "process": "SoundPlusTests",
+    "subsystem": "com.apple.coremidi"
+  },
+  "firstFullRun": "midi_sequencing failed before assertion checks when trying to create a CoreMIDI virtual source",
+  "focusedRepeats": 3,
+  "localTime": "2026-11-23T12:13:20-05:00",
+  "rootCauseOfInvalidation": "undetermined"
+}

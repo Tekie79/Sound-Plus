@@ -1,0 +1,32 @@
+{
+  "testScope": "existing macOS user, isolated catalogs and generated fixtures, local ad hoc artifact",
+  "previousImplementation": "292f094f64bdf7a5165dbc5214c2baa641541c86",
+  "currentImplementation": "3ba7b83e61ba1fe5fa528b89730c4f7b2b3af810",
+  "olderWorkflowReopenedRevision": 27,
+  "schema": 7,
+  "durableOutputGroups": 2,
+  "assetsRetained": 2,
+  "assetIdentityOnlineAndSourcePathMatched": true,
+  "recoveryPayloadMatchedExceptQAPlaybackCursor": true,
+  "playheadBefore": 0,
+  "playheadAfterAudition": 478208,
+  "rollbackUsedPreUpgradeCatalogCopy": true,
+  "fixtureAndRecoveredOutputsSHA256": {
+    "Gate Two Audition.wav": "1797a1567e2e55675d96d4e6bbf5ebbb774ec5ab1bf73d60b92626dd5be5f9f4",
+    "Beta stereo source.wav": "1797a1567e2e55675d96d4e6bbf5ebbb774ec5ab1bf73d60b92626dd5be5f9f4",
+    "Square Surround QA-r17-97fe1024-split/Mix.wav": "65f0173cc5bcd8e8d9b4980681d9f727e7d1b313056ace010d777f4a2170bfbd",
+    "Square Surround QA-r17-97fe1024-split/L.wav": "2b8f776499e3f016a2a62f9544946b55c854bbc460333d57bfa87ed5f12d27d0",
+    "Square Surround QA-r17-97fe1024-split/R.wav": "ce7bf8c6c9e8c5de6fe97f1e2488c53c5abe315877f1ecd8a68a98bb304d4161",
+    "Square Surround QA-r17-97fe1024-split/C.wav": "30bb0a59fd44d2c6e7fb4f1c76b1ff1d590bd5ab62e9208a8743e5170324cd04",
+    "Square Surround QA-r17-97fe1024-split/LFE.wav": "3f4c21ce62dcc00e712200f2a69dc3d7884c7ba9f3034cc059a9f2da14621016",
+    "Square Surround QA-r17-97fe1024-split/Lb.wav": "523b49a9c44f809cf2de83de7b09f4a784c1a185a76d3858b703dd89286ac2ba",
+    "Square Surround QA-r17-97fe1024-split/Rb.wav": "95288ca50c9ead2b56962035037f92ce095740ab25f7b28f28d41c3022d9e553",
+    "Square Surround QA-r19-bcf8e39f-split/Mix.wav": "5bc872e3f2cfe33e4d358c518b9fe9d05a5f1e97968c721ffe3d4c83de6b3d2b",
+    "Square Surround QA-r19-bcf8e39f-split/L.wav": "4f0c481b5bfa80225c269719fadd3aacf03d0bca5c2f0906bf6b753817fd76a8",
+    "Square Surround QA-r19-bcf8e39f-split/R.wav": "dff54002349dbbb59df42cdcdfa51a8d46cb86d1234c1b662901385201d0a4f6",
+    "Square Surround QA-r19-bcf8e39f-split/C.wav": "4a1bb7eee90bd84a134036a26877a0a90159e37649c186ce88dbc79b19441ba1",
+    "Square Surround QA-r19-bcf8e39f-split/LFE.wav": "67ddc93e01d6107323ddd2ba2c1b01ffa602e2c0c60d03f85b94c52469b649a2",
+    "Square Surround QA-r19-bcf8e39f-split/Ls.wav": "b977affaf853691e080eaafa7060a179f23411ca3a9ef73c1724f3a22c1866d3",
+    "Square Surround QA-r19-bcf8e39f-split/Rs.wav": "640207189a78e9f87893a157f47952dbf5617d068a63cb3635406147a63867ed"
+  }
+}

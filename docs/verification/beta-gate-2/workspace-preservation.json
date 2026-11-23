@@ -1,0 +1,14 @@
+{
+  "expectedRevision": 4506,
+  "actualRevision": 4506,
+  "mediaFiles": 409,
+  "mediaUnchanged": true,
+  "retainedStateFiles": 197,
+  "catalogUnchanged": true,
+  "latestPayloadUnchanged": true,
+  "catalogTables": 18,
+  "stateExceptions": 0,
+  "nativeObserved": "Workflow demonstration, revision 4506, recovered latest changes",
+  "workingAppLeftOpen": true,
+  "previousLibraryViewRestored": true
+}

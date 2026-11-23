@@ -1,0 +1,14 @@
+{
+  "binaries": 17,
+  "bundleFiles": 25,
+  "firstExit": 8,
+  "frozenIdentitiesMatchedAfterSoaks": true,
+  "implementation": "3ba7b83e61ba1fe5fa528b89730c4f7b2b3af810",
+  "mainSHA256": "ed6a1b473718312ef320606a11974d075809655c4d36b1365790872f5288e43d",
+  "sameFrozenInputsAcrossBothRuns": true,
+  "secondExit": 0,
+  "secondFailures": 0,
+  "secondPasses": 54,
+  "secondSeconds": 541.58,
+  "sourceFiles": 387
+}
