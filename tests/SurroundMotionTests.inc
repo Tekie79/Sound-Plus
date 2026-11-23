@@ -40,13 +40,19 @@ void checkMotionOutput(const File &root, const ChannelLayout &bus)
         instrumentTrack.instrument = slot;
         auto clip = createMidiClip(midi, owner, 0);
         MidiNote note;
+        note.tick = 110000;
         note.velocity = 127;
         note.duration = midiPpq;
         findMidiClip(midi.original, clip)->notes = {note};
-        auto signal = render(midi, 257, 512);
-        check(signal.getMagnitude(2, 0, 512) > .12 && signal.getMagnitude(0, 0, 512) == 0 &&
-                  signal.getMagnitude(3, 0, 512) == 0,
-              "MIDI Instrument audio positions through named surround Group and Master");
+        auto signal = render(midi, 257, 1024);
+        constexpr int onset = 275; // 110,000 microticks at 120 BPM and 48 kHz.
+        check(onset > 0 && signal.getMagnitude(2, 0, onset) == 0 &&
+                  signal.getMagnitude(2, onset, 1024 - onset) > .12 &&
+                  signal.getMagnitude(0, 0, 1024) == 0 && signal.getMagnitude(3, 0, 1024) == 0,
+              "MIDI Instrument sample offset reaches C through named Group and Master");
+        auto compensated = midi;
+        compensated.original.inserts.stock = {makeStockEffect("peak-limiter")};
+        compare(signal, render(compensated, 61, 1024));
         auto midiTake = freezeTake(midi, "Square MIDI");
         check(takeFromJson(takeToJson(midiTake)).recipeHash == midiTake.recipeHash,
               "Recipe 10 coexists with immutable MIDI policy");
@@ -272,6 +278,23 @@ void nativeDeviceMotion(const File &root, const File &app, DesignDocument docume
     check((int)received["pointCount"] >= 1 && (bool)received["interrupted"],
           "Stop closes retained paired motion");
     pump(150);
+
+    const auto pairedBeforeLoss =
+        JSON::toString(automationLaneJson(session.document.original.tracks.front().automation), true);
+    session.play();
+    wait([&] { return session.automationFrame().has_value(); }, "Restart isolated playback for helper loss");
+    const auto oldPid = (int)audio.status()["helperPid"];
+    check(oldPid > 0 && session.beginSquareTouch(owner, {-.9, .9}), "Own a live gesture before forced exit");
+    pump(100);
+    check(kill(oldPid, SIGKILL) == 0, "Force exit of this test's owned audio helper");
+    wait([&] { return !session.squareTouchBusy(); }, "Missing producer receipt expires");
+    check(session.message.contains("without a matching playback receipt") &&
+              JSON::toString(automationLaneJson(session.document.original.tracks.front().automation), true) ==
+                  pairedBeforeLoss,
+          "Actual helper loss preserves previously acknowledged X/Y and reports the interrupted pass");
+    wait([&] { return (int)audio.status()["helperPid"] > 0 && (int)audio.status()["helperPid"] != oldPid; },
+         "Supervised audio helper starts a new process");
+    std::cout << "Owned CoreAudio helper exit during Touch preserved prior paired motion\n";
 }
 
 void seedNativeFixture(const File &base, const File &root, const File &app)

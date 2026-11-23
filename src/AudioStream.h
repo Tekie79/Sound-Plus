@@ -153,6 +153,11 @@ class PcmStream
     {
         return maxFillMs;
     }
+    double producerP95UpperMs() const;
+    uint64_t producerFills() const
+    {
+        return fillCount;
+    }
 
   private:
     static constexpr uint64_t capacity = 131072;
@@ -181,7 +186,12 @@ class PcmStream
     juce::AudioBuffer<float> designBlock{2, 4096};
     std::unique_ptr<juce::FileOutputStream> capture;
     std::vector<float> captureData;
+    // Producer and graph-preparation threads own these samples. The device callback never uses them.
+    static constexpr double fillBucketMs = .05;
+    std::array<uint64_t, 128> fillHistogram{};
+    uint64_t fillCount = 0;
     double maxFillMs = 0;
+    void recordProducerFill(double ms);
     bool hostedServices = false;
 };
 class AuditionCore
@@ -303,6 +313,14 @@ class AuditionCore
     double producerMaxMs() const
     {
         return stream ? stream->producerMaxMs() : 0;
+    }
+    double producerP95UpperMs() const
+    {
+        return stream ? stream->producerP95UpperMs() : 0;
+    }
+    uint64_t producerFills() const
+    {
+        return stream ? stream->producerFills() : 0;
     }
     std::atomic<float> preMonitorPeak{0};
     std::atomic<int64_t> callbacks{0}, framesRendered{0}, underruns{0};

@@ -133,6 +133,8 @@ void Benchmark::reliabilityTick(double now)
         auto path = output.getSiblingFile("Sustained QA Take.soundplus");
         if (r.stage == 4 && session.takeState == DesignSession::TakeState::ready)
         {
+            session.editMetadata("Set isolated benchmark render folder",
+                                 [&](auto &d) { d.outputFolder = output.getSiblingFile("renders").getFullPathName(); });
             session.nameTake("Sustained recorded motion");
             session.save(path);
             r.stage = 5;

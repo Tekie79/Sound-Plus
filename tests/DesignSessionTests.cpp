@@ -184,8 +184,8 @@ void checkInterruptedSquareTouch(const juce::File &root)
 {
     using namespace sp;
     using namespace juce;
-    for (const String action :
-         {"stop", "seek", "reprepare", "helper loss", "missing receipt", "focus loss", "escape", "close"})
+    for (const String action : {"stop", "seek", "reprepare", "helper loss", "missing receipt", "focus loss",
+                                "escape", "close", "change design"})
     {
         Harness h(root.getChildFile("square-" + action));
         std::vector<var> commands;
@@ -194,6 +194,7 @@ void checkInterruptedSquareTouch(const juce::File &root)
         DesignSession session(h.directory.getChildFile("library.sqlite"), services);
         session.document = recipe();
         auto &mix = session.document.original;
+        const auto documentId = session.document.id;
         mix.layout = channelLayout("5.1-side-v1");
         auto owner = addTrack(mix, TrackKind::audio);
         auto *ownerTrack = findTrack(mix, owner);
@@ -244,6 +245,13 @@ void checkInterruptedSquareTouch(const juce::File &root)
             pad->keyPressed(KeyPress(KeyPress::escapeKey));
         else if (action == "close")
             pad.reset();
+        else if (action == "change design")
+        {
+            session.dirty = true;
+            session.newDesign();
+            check(session.document.id == documentId && session.squareTouchBusy(),
+                  "Changing design waits for the bound Touch outcome");
+        }
         else
             session.endSquareTouch();
         session.poll();
@@ -267,6 +275,16 @@ void checkInterruptedSquareTouch(const juce::File &root)
         session.poll();
         check(path() == before, "A late receipt cannot mutate an uncertified pass");
         h.drain();
+        if (action == "change design")
+        {
+            auto saved = h.store->entries();
+            const auto retained = std::find_if(saved.begin(), saved.end(),
+                                               [&](const auto &entry) { return entry.document.id == documentId; });
+            check(session.document.id != documentId && retained != saved.end() &&
+                      JSON::toString(automationLaneJson(findTrack(retained->document.original, owner)->automation),
+                                     true) == before,
+                  "Changing designs retains the prior automation before switching");
+        }
     }
 }
 } // namespace

@@ -320,35 +320,52 @@ void AudioPlaybackService::produce()
             error = reason;
         }
         auto finish = captureFinish.exchange(0);
-        if (finish && captureFinishGeneration.load() != captureRequestGeneration.load())
+        const auto finishGeneration = captureFinishGeneration.load();
+        if (finish && finishGeneration != captureRequestGeneration.load())
             finish = 0;
-        if (finish && core.capture() && core.capture()->frozen.generation != captureFinishGeneration.load())
+        if (finish && core.capture() && core.capture()->frozen.generation != finishGeneration)
             finish = 0;
         if (finish && core.capture())
         {
-            core.finishTake(finish == 1);
-            if (finish == 2)
-                core.capture()->phase = TakeCapture::cancelled;
+            auto capture = core.capture();
+            if (capture->phase <= TakeCapture::recording)
+            {
+                core.finishTake(finish == 1);
+                if (finish == 2)
+                    capture->phase = TakeCapture::cancelled;
+            }
             core.stop();
             if (finish == 2)
                 captureRequestActive = false;
         }
         else if (finish)
         {
-            ++epoch;
+            bool settled;
             {
-                std::lock_guard lock(mutex);
-                pending.reset();
-                ready.reset();
+                std::lock_guard lock(captureMutex);
+                settled = retainedCapture && retainedCapture->frozen.generation == finishGeneration &&
+                          retainedCapture->phase >= TakeCapture::finalizing;
             }
-            std::lock_guard lock(captureMutex);
-            if (retainedCapture)
+            // Natural end retires the stream before the durable checkpoint is acknowledged.
+            // A late Stop for that same generation must preserve the consumed prefix and outcome.
+            if (!settled)
             {
-                retainedCapture->finish(0, false);
-                if (finish == 2)
-                    retainedCapture->phase = TakeCapture::cancelled;
+                ++epoch;
+                {
+                    std::lock_guard lock(mutex);
+                    pending.reset();
+                    ready.reset();
+                }
+                std::lock_guard lock(captureMutex);
+                if (retainedCapture && retainedCapture->frozen.generation == finishGeneration &&
+                    retainedCapture->phase <= TakeCapture::recording)
+                {
+                    retainedCapture->finish(0, false);
+                    if (finish == 2)
+                        retainedCapture->phase = TakeCapture::cancelled;
+                }
+                captureRequestActive = false;
             }
-            captureRequestActive = false;
         }
         if (stop > lastStop)
         {
@@ -549,6 +566,8 @@ void AudioPlaybackService::produce()
         if (auto *stream = core.producerStream())
             object->setProperty("nativeMeters", stream->nativeMeters());
         object->setProperty("producerMaxMs", core.producerMaxMs());
+        object->setProperty("producerP95UpperMs", core.producerP95UpperMs());
+        object->setProperty("producerFills", (juce::int64)core.producerFills());
         object->setProperty("error", error);
         object->setProperty("playbackContext", context);
         object->setProperty("immutableReplay", immutableReplay);

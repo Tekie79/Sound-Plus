@@ -6,8 +6,8 @@ Reviewed and starting HEAD `2de9e19bd6b440b3d229ac1e879e962e2ff72292`. Feature f
 ✓ Protect — cleanly closed the latest revision 4499. Post-close snapshot and audit cover 392 protected files, 197 state files and 18 catalog tables under `build/beta-gate-1`.
 ✓ Harden — clipboard and project-time validation, fail-closed interrupted Touch, native input and controlled gesture checks. Focused Release 7/7 in 29.01 s. See the [Stage A record](verification/beta-gate-1/stage-a/README.md) for native modifier and interruption gaps.
 ✓ Workflow — native 2–6 s region, Side/Rear prints and twelve exact mono splits, routed VST3/Group/Master and offline/relink test, Resolve timeline persistence after both apps quit. MIDI and four-pad checks also run in the final gate.
-◉ Stress — concurrent soak, isolated failures, bundle dependencies, clean-data installation and distribution assessment.
+✓ Stress — reproduced and fixed late Stop, passed the 120-second take-limit rerun and focused 8/8, observed ENOSPC, checked bundle dependencies and local copy/reinstall. Signed distribution remains blocked.
 ○ Physical — Blocked: only a two-channel CoreAudio output is available. Human listening and physical 5.1 need a separate session.
-○ Decide — unchanged Release gate, native minimum-size and Perform checks, original session reopen, evidence and beta decision.
+◉ Decide — exact-candidate native viewport checks passed. Run the unchanged Release gate and reopen the original session before publishing the decision.
 
 The host has DaVinci Resolve Studio 21.1.2 and zero valid code-signing identities. Signed installer and notarization require available authorized credentials.

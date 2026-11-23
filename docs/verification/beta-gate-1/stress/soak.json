@@ -1,0 +1,108 @@
+[
+  {
+    "condition": "beforeFix",
+    "success": false,
+    "error": "Sustained recording became Incomplete: Incomplete take: Recording interrupted or generation lost",
+    "appSha256": "965b69b032ff7fb5418ff1be17051c976267357c8e2d1b1d6712b9fd3d184bf6",
+    "activeMilliseconds": 120000.64349997044,
+    "corpusFiles": 1024,
+    "catalogFilesAtEnd": 1089,
+    "sampleRate": 48000.0,
+    "bufferFrames": 512,
+    "capturePlaybackGeneration": 1,
+    "graphEpoch": 2,
+    "underruns": 0,
+    "helperRestarts": 0,
+    "producerMeasurementAtMs": 110041.9775416255,
+    "producerFills": null,
+    "producerP95UpperMs": null,
+    "producerMaxMs": 2.367833316326141,
+    "helperPeakRssAtStopBytes": 220528640,
+    "helperCpuSecondsAtStop": 85.265289,
+    "appPeakResidentBytes": 215613440,
+    "appCpuSeconds": 59.858165,
+    "wholeWaveformViewports": 80,
+    "controlsDuringIndexing": 4263,
+    "offlineObserved": true,
+    "reconnectObserved": true,
+    "recording": {
+      "take": {
+        "id": "570c339c869142cc86a4ac4cf10e548e",
+        "name": "Take 1",
+        "complete": false,
+        "kept": false,
+        "bodyEnd": 5655552,
+        "outputFrames": 5655552,
+        "captureRate": 48000.0,
+        "recipeHash": "278316b34bcaa21a344e1e4380eabcd955a0806b0525ed6e14dd5ae2e419b82d",
+        "eventHash": "5dddaefccf25b21e998c3dcb91d71990fc08614fdb25cc3671718334c63b9f9a"
+      },
+      "events": 4377,
+      "namedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/soak-side-120/Sustained QA Take.soundplus",
+      "outputPath": "",
+      "sourceFingerprints": [
+        {
+          "id": "external-0bda9cda5857437b9cd9df43a254097d",
+          "sha256": "0bec4b8a707a7d9e5bb47c7ad8b1a0c9fff2b509e238c4c7ce62b5d100801394",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        }
+      ]
+    }
+  },
+  {
+    "condition": "afterFix",
+    "success": true,
+    "error": "",
+    "appSha256": "ed6a1b473718312ef320606a11974d075809655c4d36b1365790872f5288e43d",
+    "activeMilliseconds": 119957.79029166698,
+    "corpusFiles": 1024,
+    "catalogFilesAtEnd": 1089,
+    "sampleRate": 48000.0,
+    "bufferFrames": 512,
+    "capturePlaybackGeneration": 1,
+    "graphEpoch": 2,
+    "underruns": 0,
+    "helperRestarts": 0,
+    "producerMeasurementAtMs": 110038.46508336067,
+    "producerFills": 10320,
+    "producerP95UpperMs": 1.0,
+    "producerMaxMs": 2.092166721820831,
+    "helperPeakRssAtStopBytes": 260096000,
+    "helperCpuSecondsAtStop": 85.8574,
+    "appPeakResidentBytes": 282050560,
+    "appCpuSeconds": 78.581988,
+    "wholeWaveformViewports": 80,
+    "controlsDuringIndexing": 4493,
+    "offlineObserved": true,
+    "reconnectObserved": true,
+    "recording": {
+      "take": {
+        "id": "4682d182eb69414b98ab9af9c301d1d3",
+        "name": "Sustained recorded motion",
+        "complete": true,
+        "kept": true,
+        "bodyEnd": 5760000,
+        "outputFrames": 5760000,
+        "captureRate": 48000.0,
+        "recipeHash": "278316b34bcaa21a344e1e4380eabcd955a0806b0525ed6e14dd5ae2e419b82d",
+        "eventHash": "641b4fd5682d332c17d19790fb0ff0072a9e4c5e3b16b83ab3a4c2c4033402ef"
+      },
+      "events": 4652,
+      "namedDocument": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/soak-side-120-retest/Sustained QA Take.soundplus",
+      "outputPath": "/Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/beta-gate-1/soak-side-120-retest/renders/Sustained recorded motion-take-r7-57e32b31.wav",
+      "sourceFingerprints": [
+        {
+          "id": "external-0bda9cda5857437b9cd9df43a254097d",
+          "sha256": "0bec4b8a707a7d9e5bb47c7ad8b1a0c9fff2b509e238c4c7ce62b5d100801394",
+          "overridePath": "",
+          "overrideSize": 0,
+          "overrideModified": 0,
+          "overrideInode": 0
+        }
+      ]
+    }
+  }
+]

@@ -97,6 +97,27 @@ PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, 
         capture->truncate();
     }
 }
+void PcmStream::recordProducerFill(double ms)
+{
+    maxFillMs = std::max(maxFillMs, ms);
+    const auto bucket = std::min((size_t)(ms / fillBucketMs), fillHistogram.size() - 1);
+    ++fillHistogram[bucket];
+    ++fillCount;
+}
+double PcmStream::producerP95UpperMs() const
+{
+    if (fillCount == 0)
+        return 0;
+    const auto rank = fillCount - fillCount / 20;
+    uint64_t found = 0;
+    for (size_t i = 0; i + 1 < fillHistogram.size(); ++i)
+    {
+        found += fillHistogram[i];
+        if (found >= rank)
+            return std::min(maxFillMs, (i + 1) * fillBucketMs);
+    }
+    return maxFillMs;
+}
 void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
 {
     auto began = monotonicMs();
@@ -142,7 +163,7 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
                 capture.reset();
             }
         }
-        maxFillMs = std::max(maxFillMs, monotonicMs() - began);
+        recordProducerFill(monotonicMs() - began);
         return;
     }
     for (int64_t n = 0; n < count; ++n, ++write, ++outputFrame)
@@ -190,7 +211,7 @@ void PcmStream::fill(int budget, const std::function<bool()> &cancelled)
     writeIndex.store(write, std::memory_order_release);
     if (!repeating && outputFrame >= outputLength)
         eof.store(true, std::memory_order_release);
-    maxFillMs = std::max(maxFillMs, monotonicMs() - began);
+    recordProducerFill(monotonicMs() - began);
 }
 int PcmStream::read(float *const *output, int channels, int frames, float &gain, float target,
                     const std::array<std::atomic<int>, 16> *mapping, int solo) noexcept

@@ -165,6 +165,10 @@ struct AudioEngineTestAccess
     {
         return !e.playback.captureBusy() && e.lastPlay.isVoid();
     }
+    static bool finishPending(AudioEngine &e)
+    {
+        return e.playback.captureFinish.load() != 0;
+    }
     static void consume(AudioEngine &e, int blocks = 4)
     {
         juce::AudioBuffer<float> b(2, 512);
@@ -364,7 +368,39 @@ void runDeviceCaptureContract(const juce::File &parent, bool layoutAware)
         "Fresh deliberate capture after recovery reaches durable Ready");
     check(sp::loadDesign(juce::File(fresh.checkpoint)).takes[0].complete,
           "Fresh capture does not inherit stale diagnostic");
+    // Manual Stop can arrive after the final sample already started natural finalization.
     holdCommit = true;
+    commitHeld = false;
+    const auto savedDuration = base.original.duration;
+    base.original.duration = 3072;
+    auto natural = begin("Natural completion followed by late Stop");
+    base.original.duration = savedDuration;
+    recording(natural);
+    A::consume(engine, 5);
+    until([&] { return commitHeld.load(); }, "Final consumed frame entered checkpoint commit");
+    const auto finished = A::status(engine);
+    check((int)finished["takePhase"] == sp::TakeCapture::finalizing && (int64_t)finished["takeEnd"] == 3072 &&
+              !(bool)finished["playing"],
+          "Natural end retired the stream with its full consumed prefix");
+    finish.getDynamicObject()->setProperty("playGeneration", (juce::int64)generation);
+    A::send(engine, finish);
+    until([&] { return !A::finishPending(engine); }, "Producer consumed late Stop");
+    std::this_thread::sleep_for(std::chrono::milliseconds(35));
+    check((int)A::status(engine)["takePhase"] == sp::TakeCapture::finalizing &&
+              (int64_t)A::status(engine)["takeEnd"] == 3072,
+          "Late Stop does not invalidate natural finalization or reset its consumed prefix");
+    holdCommit = false;
+    until([&] { return (int)A::status(engine)["takePhase"] == sp::TakeCapture::ready; },
+          "Natural completion reaches durable Ready despite late Stop");
+    const auto retained = sp::loadDesign(juce::File(natural.checkpoint)).takes.front();
+    A::send(engine, finish);
+    until([&] { return !A::finishPending(engine); }, "Producer consumed a second late Stop");
+    std::this_thread::sleep_for(std::chrono::milliseconds(35));
+    check((int)A::status(engine)["takePhase"] == sp::TakeCapture::ready &&
+              sp::loadDesign(juce::File(natural.checkpoint)).takes.front().eventHash == retained.eventHash,
+          "Repeated Stop leaves a published Ready take intact");
+    holdCommit = true;
+    commitHeld = false;
     auto late = begin("Late checkpoint failure");
     recording(late);
     finish.getDynamicObject()->setProperty("playGeneration", (juce::int64)generation);

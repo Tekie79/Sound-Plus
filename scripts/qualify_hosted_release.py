@@ -34,7 +34,9 @@ for p in Path('build/SoundPlus QA Multi.vst3').rglob('*'):
         binaries.append(p)
 identity = {'timestampUTC': datetime.now(timezone.utc).isoformat(),
             'sources': {str(p): sha(p) for p in sorted(files)},
-            'binaries': {str(p): sha(p) for p in sorted(set(binaries))}}
+            'binaries': {str(p): sha(p) for p in sorted(set(binaries))},
+            'bundle': {str(p.relative_to(bundle)): sha(p)
+                       for p in sorted(bundle.rglob('*')) if p.is_file()}}
 if phase == 'before':
     command = lambda *args: subprocess.check_output(args, text=True).strip()
     identity.update(baseHEAD=command('git', 'rev-parse', 'HEAD'),
@@ -47,8 +49,8 @@ if phase == 'before':
                         'SOUNDPLUS_QUALIFY_AU', 'SOUNDPLUS_HOSTED_VENDOR_QUALIFICATION')})
 else:
     before = json.loads((out / 'identity-before.json').read_text())
-    identity['unchanged'] = all(identity[k] == before[k] for k in ('sources', 'binaries'))
+    identity['unchanged'] = all(identity[k] == before[k] for k in ('sources', 'binaries', 'bundle'))
     assert identity['unchanged'], 'Sources or runnable binaries changed during the final gate'
 (out / ('identity-' + phase + '.json')).write_text(json.dumps(identity, indent=2) + '\n')
 print(len(identity['sources']), 'source/resource/script hashes;', len(identity['binaries']),
-      'binary hashes;', identity.get('unchanged', 'before'))
+      'binary hashes;', len(identity['bundle']), 'bundle file hashes;', identity.get('unchanged', 'before'))

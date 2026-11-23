@@ -10,6 +10,11 @@
 #include "LibraryService.h"
 #include "PluginProcessing.h"
 #include <CoreFoundation/CoreFoundation.h>
+#include <fcntl.h>
+#include <signal.h>
+#include <sys/stat.h>
+#include <unistd.h>
+#include <cerrno>
 #include <iostream>
 #include <deque>
 
@@ -151,6 +156,58 @@ void checkMotionInput(const File &root)
             curve->points.push_back({Uuid().toString(), n});
     }
     rejects([&] { paste("[[0,0,0,0]]"); }, "Both axes counted against total mix budget");
+}
+
+void checkDesignWriteFailures(const File &root, const DesignDocument &prior)
+{
+    auto pending = prior;
+    pending.name = "Unpublished revision";
+    ++pending.revision;
+    const auto permission = root.getChildFile("permission-test");
+    check(permission.createDirectory().wasOk(), "Prepare owned permission fixture");
+    const auto path = permission.getChildFile("Authoritative.soundplus");
+    saveDesignAtomic(path, prior);
+    const auto bytes = path.loadFileAsString();
+    int cancellationChecks = 0;
+    rejects([&] { saveDesignAtomic(path, pending, [&] { return ++cancellationChecks == 2; }); },
+            "Cancel a save after staging and synchronization");
+    check(cancellationChecks == 2 && path.loadFileAsString() == bytes &&
+              loadDesign(path).revision == prior.revision,
+          "Cancelled save leaves original bytes and readable revision");
+    if (::geteuid() != 0)
+    {
+        const auto folder = permission.getFullPathName();
+        check(::chmod(folder.toRawUTF8(), 0555) == 0, "Restrict only the generated directory");
+        ScopeGuard restore{[&] { ::chmod(folder.toRawUTF8(), 0755); }};
+        rejects([&] { saveDesignAtomic(path, pending); }, "Unwritable folder reports a save failure");
+        check(path.loadFileAsString() == bytes && loadDesign(path).revision == prior.revision,
+              "Unwritable directory leaves previous save intact");
+    }
+    const auto volume = SystemStats::getEnvironmentVariable("SOUNDPLUS_BETA_FULL_VOLUME", {});
+    if (volume.isEmpty())
+        return;
+    auto full = File(volume);
+    check(full.isDirectory() && full.getVolumeTotalSize() > 0 && full.getVolumeTotalSize() <= 64 * 1024 * 1024,
+          "ENOSPC test requires the small isolated volume");
+    const auto original = full.getChildFile("Authoritative.soundplus");
+    check(!original.exists(), "Use a fresh fault volume");
+    saveDesignAtomic(original, prior);
+    const auto saved = original.loadFileAsString();
+    const auto filler = full.getChildFile("allocated-filler").getFullPathName();
+    const int fd = ::open(filler.toRawUTF8(), O_WRONLY | O_CREAT | O_EXCL, 0600);
+    check(fd >= 0, "Allocate an owned filler on the fault volume");
+    ScopeGuard close{[&] { ::close(fd); }};
+    std::array<char, 4096> block;
+    block.fill('x');
+    ssize_t written;
+    do
+        written = ::write(fd, block.data(), block.size());
+    while (written > 0);
+    check(written < 0 && errno == ENOSPC, "Observed actual ENOSPC on the isolated volume");
+    rejects([&] { saveDesignAtomic(original, pending); }, "Full filesystem rejects publication");
+    check(original.loadFileAsString() == saved && loadDesign(original).revision == prior.revision,
+          "ENOSPC preserved the prior save byte-for-byte");
+    std::cout << "Observed ENOSPC on a " << full.getVolumeTotalSize() << "-byte volume, previous save intact\n";
 }
 #include "SurroundMotionTests.inc"
 } // namespace
@@ -407,6 +464,8 @@ void runBetaSurroundWorkflow(const juce::File &base, const juce::File &app, cons
         const auto saved = dir.getChildFile("Routed surround.soundplus");
         saveDesignAtomic(saved, session.document);
         auto reopened = loadDesign(saved);
+        if (bus.id == "5.1-side-v1")
+            checkDesignWriteFailures(dir, reopened);
         auto pcm = render(reopened, 257, 3072);
         const double center = .125 * .5 * .5 * .5;
         check(std::abs(pcm.getSample(2, 512) - center) < 2e-6 &&
