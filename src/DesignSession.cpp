@@ -770,7 +770,8 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
         if (takeState != TakeState::recording)
             return;
         if (label != "Macro" && label != "Macro bypass" && label != "Reset macro" &&
-            label != "Blend position" && label != "Blend bypass" && label != "Spatial motion")
+            label != "Blend position" && label != "Blend bypass" && label != "Spatial motion" &&
+            label != "Pad level" && label != "Pad mute" && label != "Pad solo")
         {
             message = "Stop recording before editing the frozen design";
             notify();
@@ -1929,13 +1930,13 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
             }
         });
 }
-void DesignSession::render(bool selection)
+void DesignSession::render(bool selection, int pad)
 {
     const auto incarnation = lifetime;
     const auto id = document.id, variation = document.activeVariation, take = document.activeTake,
                layer = document.selectedLayer;
     auto perform = [safe = juce::Component::SafePointer<DesignSession>(this), selection, incarnation, id,
-                    variation, take, layer]
+                    variation, take, layer, pad]
     {
         if (!safe)
             return;
@@ -1947,12 +1948,12 @@ void DesignSession::render(bool selection)
             safe->notify();
             return;
         }
-        safe->renderReady(selection, layer);
+        safe->renderReady(selection, layer, pad);
     };
     if (!flushLive(perform))
         perform();
 }
-void DesignSession::renderReady(bool selection, const juce::String &requestedLayer)
+void DesignSession::renderReady(bool selection, const juce::String &requestedLayer, int pad)
 {
     if (takeBusy())
         return;
@@ -1961,7 +1962,29 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
         message = "Render Take exports the complete performance";
         return;
     }
-    auto snapshot = document.activeTake.isEmpty() ? resolvePerformance(document) : document;
+    auto snapshot = document;
+    if (pad >= 0)
+    {
+        try
+        {
+            snapshot = padRenderDocument(document, pad);
+        }
+        catch (const std::exception &e)
+        {
+            message = e.what();
+            notify();
+            return;
+        }
+    }
+    else if (document.activeTake.isEmpty() && hasMultiPad(document.activeMix()) && selection)
+    {
+        auto *selected = layerById(document, requestedLayer);
+        if (!selected)
+            return;
+        snapshot = padRenderDocument(document, padLayerOwner(document.activeMix(), selected->id));
+    }
+    else if (document.activeTake.isEmpty() && !hasMultiPad(document.activeMix()))
+        snapshot = resolvePerformance(document);
     if (document.activeTake.isNotEmpty())
     {
         snapshot.renderSettings.first = 0;
@@ -1977,8 +2000,21 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
         rebaseAutomation(snapshot.activeMix(), chosen.placement);
         chosen.placement = 0;
         chosen.mute = chosen.solo = false;
-        snapshot.activeMix().layers = {chosen};
-        snapshot.activeMix().duration = 0;
+        if (hasMultiPad(snapshot.activeMix()))
+        {
+            for (auto &l : snapshot.activeMix().layers)
+            {
+                l.mute = l.id != chosen.id;
+                if (l.id == chosen.id)
+                    l = chosen;
+            }
+            snapshot.activeMix().duration = layerDuration(chosen, snapshot.sampleRate);
+        }
+        else
+        {
+            snapshot.activeMix().layers = {chosen};
+            snapshot.activeMix().duration = 0;
+        }
         if (hostedStem)
         {
             snapshot.activeMix().inserts.stock.clear();
@@ -1986,16 +2022,21 @@ void DesignSession::renderReady(bool selection, const juce::String &requestedLay
             snapshot.activeMix().inserts.order.clear();
             snapshot.activeMix().inserts.bypass = false;
             snapshot.activeMix().masterDb = 0;
-            snapshot.activeMix().masterAutomation = {};
+            if (hasMultiPad(snapshot.activeMix()))
+                std::erase_if(snapshot.activeMix().masterAutomation.curves,
+                              [](auto &c) { return !c.target.instance.startsWith("perform:"); });
+            else
+                snapshot.activeMix().masterAutomation = {};
         }
         snapshot.renderSettings.first = 0;
         snapshot.renderSettings.last = -1;
     }
     startOutput(std::move(snapshot), false, outputFolder(),
-                document.activeTake.isNotEmpty() ? "take-render"
-                : hostedStem                     ? "track-stem-pre-master"
-                : selection                      ? "layer-render"
-                                                 : "design-render");
+                pad >= 0                           ? "pad-render"
+                : document.activeTake.isNotEmpty() ? "take-render"
+                : hostedStem                       ? "track-stem-pre-master"
+                : selection                        ? "layer-render"
+                                                   : "design-render");
 }
 void DesignSession::copyOriginal(const juce::File &folder)
 {

@@ -325,9 +325,9 @@ class HostedRackView final : public juce::Component
             feedback.setText("Live", juce::dontSendNotification);
         updating = false;
         title.setText("Inserts", juce::dontSendNotification);
-        feedback.setTooltip(
-            "Effects run in the displayed insert order; Track and Master remain separate. "
-            "Perform takes freeze the starting plug-in state; native knob automation is not recorded.");
+        feedback.setTooltip("Effects run in the displayed insert order; Track and Master remain separate. "
+                            "Read/Touch uses the owning track lane. Perform takes freeze existing curves; "
+                            "native-editor gestures during take recording are not added to that take.");
         resized();
         reportHeight();
     }

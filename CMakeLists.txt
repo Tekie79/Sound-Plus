@@ -26,7 +26,7 @@ add_library(soundplus_core STATIC
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/PerformanceState.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
+  src/PerformanceState.cpp src/MultiPad.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -91,6 +91,13 @@ include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/MidiEditor.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/MultiPadTests.cpp tests/HostedVendorAutomationTests.cpp)
+  add_test(NAME hosted_vendor_automation COMMAND SoundPlusTests --hosted-vendor-automation "${CMAKE_BINARY_DIR}/hosted-vendor-automation" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(hosted_vendor_automation PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+  add_test(NAME multi_pad COMMAND SoundPlusTests --multi-pad "${CMAKE_BINARY_DIR}/multi-pad-tests" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(multi_pad PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE)
+  add_test(NAME multi_pad_device COMMAND SoundPlusTests --multi-pad "${CMAKE_BINARY_DIR}/multi-pad-device" "$<TARGET_FILE:SoundPlus>")
+  set_tests_properties(multi_pad_device PROPERTIES TIMEOUT 120 RUN_SERIAL TRUE ENVIRONMENT "SOUNDPLUS_QA_PAD_DEVICE=1")
   target_link_libraries(SoundPlusTests PRIVATE soundplus_core)
   target_sources(SoundPlusTests PRIVATE tests/PlaybackSearchTests.cpp)
   target_sources(SoundPlusTests PRIVATE tests/InputRecordingTests.cpp tests/MidiTests.cpp tests/MidiResponsivenessTests.cpp)

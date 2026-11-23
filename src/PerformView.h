@@ -11,9 +11,11 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
   public:
     explicit PerformView(DesignSession &, std::shared_ptr<WaveformPool> = {});
     std::function<void(const juce::String &)> onOpenEdit;
+    std::function<bool(const juce::KeyPress &)> onCommand;
     std::function<void(const juce::String &)> onAlternatives;
     void updateTransport(const juce::var &);
     void refreshSourcePeaks();
+    std::vector<Asset> foregroundSources() const;
     void refresh();
     void resized() override;
     void paint(juce::Graphics &) override;
@@ -25,6 +27,7 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
 
   private:
     friend struct PerformanceViewTestAccess;
+    friend struct MultiPadTestAccess;
     // Keep the responsive pad, axes and source rows together inside the Blend panel.
     juce::Component blendContent;
     struct Pad : juce::Component
@@ -94,6 +97,16 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     ui::TextActionButton addMapping{"Add mapping"};
     std::array<juce::Rectangle<int>, 4> slotBounds, macroBounds;
     juce::Rectangle<int> blendBounds, macroArea;
+    std::array<std::unique_ptr<ui::TextActionButton>, 4> padTabs;
+    ui::TextActionButton addPad{"+"};
+    IconButton padMute{"Mute pad", ActionIcon::mute}, padSolo{"Solo pad", ActionIcon::solo},
+        padActions{"Pad automation and rendering", ActionIcon::more};
+    juce::Slider padLevel;
+    std::optional<PerformanceState> observedPad;
+    juce::String observedPadContext;
+    const PerformanceState &viewState() const;
+    void padMenu();
+    void padAction(int result, int index);
     void setPad(double, double);
     void beginControl();
     void endControl(bool cancel = false);

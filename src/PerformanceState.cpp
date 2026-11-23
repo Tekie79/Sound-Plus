@@ -27,6 +27,8 @@ void bound(double v, double lo, double hi)
 } // namespace
 bool hasPerformance(const PerformanceState &s)
 {
+    if (s.levelDb != 0 || s.mute || s.solo)
+        return true;
     if (s.blendLaw != 2)
         return true;
     if (s.blendEnabled || s.x != .5 || s.y != .5)
@@ -50,6 +52,12 @@ juce::var performanceToJson(const PerformanceState &s)
     if (s.blendLaw != 1)
         put(o, "blendLaw", s.blendLaw);
     put(o, "blendEnabled", s.blendEnabled);
+    if (s.levelDb != 0 || s.mute || s.solo)
+    {
+        put(o, "levelDb", s.levelDb);
+        put(o, "mute", s.mute);
+        put(o, "solo", s.solo);
+    }
     put(o, "x", s.x);
     put(o, "y", s.y);
     juce::Array<juce::var> slots, macros;
@@ -99,6 +107,9 @@ PerformanceState performanceFromJson(const juce::var &o)
     if (!slots || slots->size() != 4 || !macros || macros->size() != 4)
         throw std::runtime_error("Performance controls require four slots/macros");
     s.blendEnabled = (bool)o["blendEnabled"];
+    s.levelDb = (double)o["levelDb"];
+    s.mute = (bool)o["mute"];
+    s.solo = (bool)o["solo"];
     s.x = (double)o["x"];
     s.y = (double)o["y"];
     for (int i = 0; i < 4; ++i)
@@ -196,17 +207,18 @@ double *performanceTargetValue(DesignMix &mix, const PerformanceTarget &t)
 }
 bool performanceOwns(const DesignMix &mix, const PerformanceTarget &t)
 {
-    for (auto &m : mix.performance.macros)
-        for (auto &map : m.mappings)
-            if (map.target == t)
-                return true;
+    for (int i = 0; i <= (int)mix.performancePads.size(); ++i)
+        for (auto &m : padState(mix, i).macros)
+            for (auto &map : m.mappings)
+                if (map.target == t)
+                    return true;
     return false;
 }
-void assignBlendLayer(DesignMix &mix, int slot, const juce::String &id)
+void assignBlendLayer(DesignMix &mix, int slot, const juce::String &id, int pad)
 {
     if (slot < 0 || slot >= 4)
         throw std::runtime_error("Invalid blend slot");
-    auto &assignment = mix.performance.assignments[(size_t)slot];
+    auto &assignment = padState(mix, pad).assignments[(size_t)slot];
     auto previous = std::find_if(mix.layers.begin(), mix.layers.end(),
                                  [&](auto &layer) { return layer.id == assignment.layer; });
     const bool custom =
@@ -214,9 +226,18 @@ void assignBlendLayer(DesignMix &mix, int slot, const juce::String &id)
     const auto alias = custom ? assignment.name : juce::String();
     if (id.isNotEmpty())
     {
-        for (int i = 0; i < 4; ++i)
-            if (i != slot && mix.performance.assignments[(size_t)i].layer == id)
-                throw std::runtime_error("That layer is already assigned");
+        for (int p = 0; p <= (int)mix.performancePads.size(); ++p)
+            for (int i = 0; i < 4; ++i)
+                if ((p != pad || i != slot) && padState(mix, p).assignments[(size_t)i].layer == id)
+                    throw std::runtime_error(
+                        "That layer belongs to another source slot; duplicate it for independent processing");
+        for (int p = 0; p <= (int)mix.performancePads.size(); ++p)
+            if (p != pad)
+                for (auto &macro : padState(mix, p).macros)
+                    for (auto &mapping : macro.mappings)
+                        if (mapping.target.layer == id)
+                            throw std::runtime_error(
+                                "Unlink the other pad's mappings before assigning this source");
         if (performanceOwns(mix, {id, {}, "gain"}))
             throw std::runtime_error("Unlink the gain macro before assigning this blend layer");
         auto l = std::find_if(mix.layers.begin(), mix.layers.end(), [&](auto &v) { return v.id == id; });
@@ -244,10 +265,11 @@ PerformanceTarget performanceEffectTarget(const juce::String &layer, const Stock
 }
 void unlinkPerformanceTarget(DesignMix &mix, const PerformanceTarget &target)
 {
-    for (auto &macro : mix.performance.macros)
-        std::erase_if(macro.mappings, [&](auto &map) { return map.target == target; });
+    for (int p = 0; p <= (int)mix.performancePads.size(); ++p)
+        for (auto &macro : padState(mix, p).macros)
+            std::erase_if(macro.mappings, [&](auto &map) { return map.target == target; });
 }
-void addMacroMapping(DesignMix &mix, int index, PerformanceMapping map)
+void addMacroMapping(DesignMix &mix, int index, PerformanceMapping map, int pad)
 {
     if (index < 0 || index >= 4 || !performanceTargetValue(mix, map.target))
         throw std::runtime_error("Choose an available continuous target");
@@ -257,55 +279,80 @@ void addMacroMapping(DesignMix &mix, int index, PerformanceMapping map)
         for (auto &a : mix.performance.assignments)
             if (a.layer == map.target.layer)
                 throw std::runtime_error("Blend already controls this layer's gain");
-    mix.performance.macros[(size_t)index].mappings.push_back(std::move(map));
+    if (pad > 0 && (map.target.layer.isEmpty() || padLayerOwner(mix, map.target.layer) != pad))
+        throw std::runtime_error("Choose a target from this pad's assigned sources");
+    if (pad == 0 && padLayerOwner(mix, map.target.layer) > 0)
+        throw std::runtime_error("That source belongs to another pad");
+    padState(mix, pad).macros[(size_t)index].mappings.push_back(std::move(map));
     try
     {
         validatePerformance(mix);
     }
     catch (...)
     {
-        mix.performance.macros[(size_t)index].mappings.pop_back();
+        padState(mix, pad).macros[(size_t)index].mappings.pop_back();
         throw;
     }
 }
 void validatePerformance(const DesignMix &mix)
 {
-    auto &s = mix.performance;
-    if (s.blendLaw != 1 && s.blendLaw != 2)
-        throw std::runtime_error("Unsupported blend interpolation law");
-    bound(s.x, 0, 1);
-    bound(s.y, 0, 1);
-    std::set<juce::String> slots, targets;
-    for (auto &a : s.assignments)
-        if (a.layer.isNotEmpty() && !slots.insert(a.layer).second)
-            throw std::runtime_error("Duplicate blend assignment");
-    for (auto &m : s.macros)
+    if (mix.performancePads.size() > 3)
+        throw std::runtime_error("Four Perform pads maximum");
+    std::set<juce::String> allSlots, allTargets, padIds;
+    for (int pad = 0; pad <= (int)mix.performancePads.size(); ++pad)
     {
-        bound(m.value, 0, 1);
-        bound(m.reset, 0, 1);
-        if (m.name.length() > 128 || m.mappings.size() > 16)
-            throw std::runtime_error("Performance mapping/name limit");
-        for (auto &map : m.mappings)
+        auto &s = padState(mix, pad);
+        if (!padIds.insert(padIdentity(mix, pad)).second)
+            throw std::runtime_error("Duplicate pad identity");
+        bound(s.levelDb, -90, 0);
+        for (auto &a : s.assignments)
+            if (a.layer.isNotEmpty() && !allSlots.insert(a.layer).second)
+                throw std::runtime_error("Source belongs to multiple pads");
+        for (auto &macro : s.macros)
+            for (auto &map : macro.mappings)
+                if (!allTargets.insert(key(map.target)).second)
+                    throw std::runtime_error("Conflicting cross-pad macro writers");
+        if (s.blendLaw != 1 && s.blendLaw != 2)
+            throw std::runtime_error("Unsupported blend interpolation law");
+        bound(s.x, 0, 1);
+        bound(s.y, 0, 1);
+        std::set<juce::String> slots, targets;
+        for (auto &a : s.assignments)
+            if (a.layer.isNotEmpty() && !slots.insert(a.layer).second)
+                throw std::runtime_error("Duplicate blend assignment");
+        for (auto &m : s.macros)
         {
-            if (!targets.insert(key(map.target)).second)
-                throw std::runtime_error("Conflicting performance target writers");
-            if (map.target.parameter == "gain" && slots.contains(map.target.layer))
-                throw std::runtime_error("Blend/macro gain conflict");
-            auto p = map.target.parameter;
-            if (p != "gain" && p != "pan" && p != "masterGain" && p != "filterHigh" && p != "filterLow" &&
-                p != "delayWet" && p != "reverbWet")
-                throw std::runtime_error("Unsupported continuous performance target");
-            double lo = p == "pan"               ? -1
-                        : p.contains("Wet")      ? 0
-                        : p.startsWith("filter") ? (p == "filterHigh" ? 10 : 20)
-                                                 : -90;
-            double hi = p == "pan" || p.contains("Wet") ? 1 : p.startsWith("filter") ? 20000 : 24;
-            bound(map.minimum, lo, hi);
-            bound(map.maximum, map.minimum, hi);
-            if (map.curve != "linear" && map.curve != "log" && map.curve != "smooth")
-                throw std::runtime_error("Unsupported mapping curve");
-            if (map.curve == "log" && map.minimum <= 0)
-                throw std::runtime_error("Logarithmic mapping requires positive endpoints");
+            bound(m.value, 0, 1);
+            bound(m.reset, 0, 1);
+            if (m.name.length() > 128 || m.mappings.size() > 16)
+                throw std::runtime_error("Performance mapping/name limit");
+            for (auto &map : m.mappings)
+            {
+                if (hasMultiPad(mix) &&
+                    ((pad > 0 && map.target.layer.isEmpty()) ||
+                     (map.target.layer.isNotEmpty() && performanceTargetValue(mix, map.target) &&
+                      padLayerOwner(mix, map.target.layer) != pad)))
+                    throw std::runtime_error("Macro target belongs to another pad");
+                if (!targets.insert(key(map.target)).second)
+                    throw std::runtime_error("Conflicting performance target writers");
+                if (map.target.parameter == "gain" && slots.contains(map.target.layer))
+                    throw std::runtime_error("Blend/macro gain conflict");
+                auto p = map.target.parameter;
+                if (p != "gain" && p != "pan" && p != "masterGain" && p != "filterHigh" && p != "filterLow" &&
+                    p != "delayWet" && p != "reverbWet")
+                    throw std::runtime_error("Unsupported continuous performance target");
+                double lo = p == "pan"               ? -1
+                            : p.contains("Wet")      ? 0
+                            : p.startsWith("filter") ? (p == "filterHigh" ? 10 : 20)
+                                                     : -90;
+                double hi = p == "pan" || p.contains("Wet") ? 1 : p.startsWith("filter") ? 20000 : 24;
+                bound(map.minimum, lo, hi);
+                bound(map.maximum, map.minimum, hi);
+                if (map.curve != "linear" && map.curve != "log" && map.curve != "smooth")
+                    throw std::runtime_error("Unsupported mapping curve");
+                if (map.curve == "log" && map.minimum <= 0)
+                    throw std::runtime_error("Logarithmic mapping requires positive endpoints");
+            }
         }
     }
 }
@@ -395,7 +442,7 @@ std::array<double, 4> blendWeights(const PerformanceState &s, const DesignMix &m
     }
     return w;
 }
-DesignMix resolvePerformance(const DesignMix &base)
+static DesignMix resolveSinglePerformance(const DesignMix &base)
 {
     auto mix = base;
     auto &s = base.performance;
@@ -423,6 +470,26 @@ DesignMix resolvePerformance(const DesignMix &base)
     mix.performance = {};
     return mix;
 }
+DesignMix resolvePerformance(const DesignMix &base)
+{
+    auto mix = base;
+    bool solo = false;
+    for (int i = 0; i <= (int)base.performancePads.size(); ++i)
+        solo |= padState(base, i).solo;
+    for (int i = 0; i <= (int)base.performancePads.size(); ++i)
+    {
+        mix.performance = padState(base, i);
+        mix = resolveSinglePerformance(mix);
+    }
+    for (auto &layer : mix.layers)
+    {
+        auto &state = padState(base, padLayerOwner(base, layer.id));
+        layer.controlGain *= state.mute || (solo && !state.solo) ? 0 : std::pow(10., state.levelDb / 20);
+    }
+    mix.performance = {};
+    mix.performancePads.clear();
+    return mix;
+}
 DesignDocument resolvePerformance(const DesignDocument &d)
 {
     auto result = d;
@@ -436,13 +503,14 @@ const double *performanceTargetValue(const DesignMix &mix, const PerformanceTarg
 void unlinkManuallyEditedTargets(const DesignMix &before, DesignMix &after)
 {
     auto copy = before;
-    for (auto &m : after.performance.macros)
-        std::erase_if(m.mappings,
-                      [&](auto &map)
-                      {
-                          auto *old = performanceTargetValue(copy, map.target),
-                               *value = performanceTargetValue(after, map.target);
-                          return old && value && *old != *value;
-                      });
+    for (int p = 0; p <= (int)after.performancePads.size(); ++p)
+        for (auto &m : padState(after, p).macros)
+            std::erase_if(m.mappings,
+                          [&](auto &map)
+                          {
+                              auto *old = performanceTargetValue(copy, map.target),
+                                   *value = performanceTargetValue(after, map.target);
+                              return old && value && *old != *value;
+                          });
 }
 } // namespace sp

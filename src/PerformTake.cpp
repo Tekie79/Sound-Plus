@@ -4,6 +4,7 @@
 #include "AdvancedEffects.h"
 #include "AdvancedIR.h"
 #include "SourcePools.h"
+#include "PerformanceState.h"
 #include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include <set>
@@ -45,13 +46,16 @@ juce::var recipeJson(const PerformTake &t)
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
         put(o, "recipeVersion",
-            hasHostedAutomation((const DesignMix &)t.recipe)  ? 8
-            : hasAdvancedEffects((const DesignMix &)t.recipe) ? 7
-            : hasNativeEffects((const DesignMix &)t.recipe)   ? 6
-            : hasMidi((const DesignMix &)t.recipe)            ? 5
-            : t.trackRecipe                                   ? 4
-            : t.pluginAware                                   ? 3
-                                                              : 2);
+            hasMultiPad((const DesignMix &)t.recipe)           ? 9
+            : hasHostedAutomation((const DesignMix &)t.recipe) ? 8
+            : hasAdvancedEffects((const DesignMix &)t.recipe)  ? 7
+            : hasNativeEffects((const DesignMix &)t.recipe)    ? 6
+            : hasMidi((const DesignMix &)t.recipe)             ? 5
+            : t.trackRecipe                                    ? 4
+            : t.pluginAware                                    ? 3
+                                                               : 2);
+    if (hasMultiPad((const DesignMix &)t.recipe))
+        put(o, "padPolicy", "one-clock-independent-pad-curves-v1");
     if (hasHostedAutomation((const DesignMix &)t.recipe))
         put(o, "hostedAutomationPolicy", "normalized-32frame-offset-overlay-v1");
     if (hasNativeEffects((const DesignMix &)t.recipe))
@@ -89,6 +93,9 @@ juce::var recipeJson(const PerformTake &t)
 PerformControls performControls(const PerformanceState &p)
 {
     PerformControls c;
+    c.levelDb = p.levelDb;
+    c.mute = p.mute;
+    c.solo = p.solo;
     c.x = p.x;
     c.y = p.y;
     c.blend = p.blendEnabled;
@@ -101,6 +108,9 @@ PerformControls performControls(const PerformanceState &p)
 }
 void applyPerformControls(PerformanceState &p, const PerformControls &c)
 {
+    p.levelDb = c.levelDb;
+    p.mute = c.mute;
+    p.solo = c.solo;
     p.x = c.x;
     p.y = c.y;
     p.blendEnabled = c.blend;
@@ -138,6 +148,30 @@ juce::var controlsToJson(const PerformControls &c)
             a.add(v);
         }
         put(o, "spatial", a);
+    }
+    if (c.padCount)
+    {
+        put(o, "padPolicy", "one-clock-independent-pad-curves-v1");
+        put(o, "levelDb", c.levelDb);
+        put(o, "mute", c.mute);
+        put(o, "solo", c.solo);
+        juce::Array<juce::var> pads;
+        for (int i = 1; i < c.padCount; ++i)
+        {
+            auto &v = c.pads[(size_t)i - 1];
+            PerformControls q;
+            q.x = v.x;
+            q.y = v.y;
+            q.macros = v.macros;
+            q.enabled = v.enabled;
+            q.blend = v.blend;
+            auto encoded = controlsToJson(q);
+            put(encoded, "levelDb", v.levelDb);
+            put(encoded, "mute", v.mute);
+            put(encoded, "solo", v.solo);
+            pads.add(encoded);
+        }
+        put(o, "pads", pads);
     }
     return o;
 }
@@ -177,6 +211,33 @@ PerformControls controlsFromJson(const juce::var &o)
                 throw std::runtime_error("Invalid spatial target/value");
             last = x.layer;
             c.spatial[(size_t)c.spatialCount++] = x;
+        }
+    }
+    if (o.hasProperty("padPolicy"))
+    {
+        auto *pads = o["pads"].getArray();
+        if (o["padPolicy"].toString() != "one-clock-independent-pad-curves-v1" || !pads || pads->size() > 3)
+            throw std::runtime_error("Invalid multi-pad event");
+        c.padCount = 1 + pads->size();
+        c.levelDb = (double)o["levelDb"];
+        c.mute = (bool)o["mute"];
+        c.solo = (bool)o["solo"];
+        auto level = [](double v)
+        {
+            if (!std::isfinite(v) || v < -90 || v > 0)
+                throw std::runtime_error("Invalid pad level");
+        };
+        level(c.levelDb);
+        for (int i = 0; i < pads->size(); ++i)
+        {
+            auto row = (*pads)[i];
+            if (row.hasProperty("padPolicy"))
+                throw std::runtime_error("Nested pad event");
+            auto q = controlsFromJson(row);
+            auto db = (double)row["levelDb"];
+            level(db);
+            c.pads[(size_t)i] = {
+                q.x, q.y, db, q.macros, q.enabled, q.blend, (bool)row["mute"], (bool)row["solo"]};
         }
     }
     return c;
@@ -236,17 +297,17 @@ PerformTake takeFromJson(const juce::var &o)
     auto r = o["recipe"];
     if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3 &&
         (int)r["recipeVersion"] != 4 && (int)r["recipeVersion"] != 5 && (int)r["recipeVersion"] != 6 &&
-        (int)r["recipeVersion"] != 7 && (int)r["recipeVersion"] != 8)
+        (int)r["recipeVersion"] != 7 && (int)r["recipeVersion"] != 8 && (int)r["recipeVersion"] != 9)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
-    t.trackRecipe =
-        (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5 ||
-        (((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7 || (int)r["recipeVersion"] == 8) &&
-         r.hasProperty("trackPolicy"));
-    t.pluginAware =
-        (int)r["recipeVersion"] == 3 || ((t.trackRecipe || (int)r["recipeVersion"] == 6 ||
-                                          (int)r["recipeVersion"] == 7 || (int)r["recipeVersion"] == 8) &&
-                                         r.hasProperty("pluginPolicy"));
+    t.trackRecipe = (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5 ||
+                    (((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7 ||
+                      ((int)r["recipeVersion"] == 8 || (int)r["recipeVersion"] == 9)) &&
+                     r.hasProperty("trackPolicy"));
+    t.pluginAware = (int)r["recipeVersion"] == 3 ||
+                    ((t.trackRecipe || (int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7 ||
+                      ((int)r["recipeVersion"] == 8 || (int)r["recipeVersion"] == 9)) &&
+                     r.hasProperty("pluginPolicy"));
     if (t.trackRecipe && r["trackPolicy"].toString() != "project-automation-before-perform-v1")
         throw std::runtime_error("Unsupported track take policy");
     if (r["origin"].toString() != "frame-zero-fresh-history")
@@ -256,15 +317,21 @@ PerformTake takeFromJson(const juce::var &o)
     const bool midi = hasMidi((const DesignMix &)t.recipe);
     bool advanced = hasAdvancedEffects((const DesignMix &)t.recipe);
     const bool hosted = hasHostedAutomation((const DesignMix &)t.recipe);
-    if (hosted != ((int)r["recipeVersion"] == 8) ||
+    const bool multi = hasMultiPad((const DesignMix &)t.recipe);
+    if (multi != ((int)r["recipeVersion"] == 9) ||
+        (multi && r["padPolicy"].toString() != "one-clock-independent-pad-curves-v1"))
+        throw std::runtime_error("Unsupported multi-pad take policy");
+    if (hosted != ((int)r["recipeVersion"] == 8 || (multi && r.hasProperty("hostedAutomationPolicy"))) ||
         (hosted && r["hostedAutomationPolicy"].toString() != "normalized-32frame-offset-overlay-v1"))
         throw std::runtime_error("Unsupported hosted automation take policy");
-    if ((!hosted && (((int)r["recipeVersion"] == 7) != advanced ||
-                     native != ((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7))) ||
+    if ((!hosted && !multi &&
+         (((int)r["recipeVersion"] == 7) != advanced ||
+          native != ((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7))) ||
         (native && r["nativePolicy"].toString() !=
                        (advanced ? "advanced-effects-v1-tail-pdc" : "native-effects-v1-fixed-latency")))
         throw std::runtime_error("Unsupported native take policy/version");
-    if ((midi != ((int)r["recipeVersion"] == 5 || ((native || hosted) && r.hasProperty("midiPolicy")))) ||
+    if ((midi !=
+         ((int)r["recipeVersion"] == 5 || ((native || hosted || multi) && r.hasProperty("midiPolicy")))) ||
         (midi && r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
         throw std::runtime_error("Unsupported MIDI take policy/version");
     t.sampleRate = (double)r["rate"];
@@ -326,19 +393,23 @@ void validateTake(const PerformTake &t)
 {
     const bool native = hasNativeEffects((const DesignMix &)t.recipe);
     const bool hosted = hasHostedAutomation((const DesignMix &)t.recipe);
-    if (hosted != (t.processing == "hosted-automation-takes-v1"))
+    const bool multi = hasMultiPad((const DesignMix &)t.recipe);
+    if (multi != (t.processing == "multi-pad-perform-takes-v1"))
+        throw std::runtime_error("Multi-pad take processing mismatch");
+    if (!multi && hosted != (t.processing == "hosted-automation-takes-v1"))
         throw std::runtime_error("Hosted automation take processing mismatch");
-    if (!hosted &&
+    if (!hosted && !multi &&
         (native !=
              (t.processing == "native-effects-takes-v1" || t.processing == "advanced-effects-takes-v1") ||
          hasAdvancedEffects((const DesignMix &)t.recipe) != (t.processing == "advanced-effects-takes-v1")))
         throw std::runtime_error("Native take processing mismatch");
     if (hasHostedInserts((const DesignMix &)t.recipe) != t.pluginAware ||
-        (!native && !t.trackRecipe && (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
+        (!native && !multi && !t.trackRecipe &&
+         (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
         (t.pluginAware && !t.orderedRecipe))
         throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
     if (t.trackRecipe != t.recipe->trackSchema ||
-        (!native && !hosted &&
+        (!native && !hosted && !multi &&
          (t.processing == "track-automation-takes-v1" || t.processing == "midi-instrument-takes-v1") !=
              t.trackRecipe))
         throw std::runtime_error("Track take processing contract mismatch");
@@ -347,7 +418,7 @@ void validateTake(const PerformTake &t)
          t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1" &&
          t.processing != "track-automation-takes-v1" && t.processing != "midi-instrument-takes-v1" &&
          t.processing != "native-effects-takes-v1" && t.processing != "advanced-effects-takes-v1" &&
-         t.processing != "hosted-automation-takes-v1") ||
+         t.processing != "hosted-automation-takes-v1" && t.processing != "multi-pad-perform-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -357,7 +428,7 @@ void validateTake(const PerformTake &t)
         t.bodyEnd != (int64_t)std::ceil((long double)(t.outputFrames - 1) * t.sampleRate / t.captureRate) + 1)
         throw std::runtime_error("Take consumed-frame boundary mismatch");
     if (!native && !t.trackRecipe && !t.pluginAware &&
-        (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty())
+        (!multi && (t.processing == "stock-takes-v1") != t.recipe->layout.id.isEmpty()))
         throw std::runtime_error("Take layout processing contract mismatch");
     if ((t.processing == "stock-layout-takes-v1" && t.recipe->routingVersion != 1) ||
         ((t.processing == "stock-layout-takes-v2" || (t.pluginAware && t.recipe->layout.id.isNotEmpty())) &&
@@ -402,7 +473,8 @@ void validateTake(const PerformTake &t)
     for (auto *a : mixAssets((const DesignMix &)t.recipe))
         if (!ids.contains(a->id))
             throw std::runtime_error("Instrument source fingerprint missing");
-    if (t.processing == "advanced-effects-takes-v1" || t.processing == "hosted-automation-takes-v1")
+    if (t.processing == "advanced-effects-takes-v1" || t.processing == "hosted-automation-takes-v1" ||
+        t.processing == "multi-pad-perform-takes-v1")
     {
         if (t.sources.size() > 128)
             throw std::runtime_error("Advanced take source capacity exceeded");
@@ -491,6 +563,11 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     if (hasHostedAutomation(mix))
     {
         t.processing = "hosted-automation-takes-v1";
+        t.orderedRecipe = true;
+    }
+    if (hasMultiPad(mix))
+    {
+        t.processing = "multi-pad-perform-takes-v1";
         t.orderedRecipe = true;
     }
     auto fixed = [](InsertChain &c)

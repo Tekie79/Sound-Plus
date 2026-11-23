@@ -45,6 +45,26 @@ void runHostedTouchDeviceTests(const sp::DesignDocument &fixture, const juce::Fi
         },
         "Native hosted Read audition starts");
     auto before = audio.status();
+    File endpoint;
+    for (auto &file :
+         folder.getChildFile("live-inserts").findChildFiles(File::findFiles, true, "endpoint.json"))
+        if (file.getParentDirectory().getFileName() == target.instance)
+            endpoint = file;
+    check(endpoint.existsAsFile(), "Native isolated plugin endpoint is available for resource measurement");
+    auto isolatedPid = (int)JSON::parse(endpoint)["pid"];
+    auto isolatedResources = [&]
+    {
+        rusage_info_v4 usage{};
+        check(proc_pid_rusage(isolatedPid, RUSAGE_INFO_V4, (rusage_info_t *)&usage) == 0,
+              "Read actual retained plugin helper resource counters");
+        auto v = obj();
+        put(v, "pid", isolatedPid);
+        put(v, "cpuSeconds", (usage.ri_user_time + usage.ri_system_time) / 1e9);
+        put(v, "residentBytes", (int64_t)usage.ri_resident_size);
+        put(v, "physicalFootprintBytes", (int64_t)usage.ri_phys_footprint);
+        return v;
+    };
+    auto isolatedBefore = isolatedResources();
     auto cpuBefore = performance.json();
     HostedRackView view(live, false, folder.getChildFile("plugins.json"), true, {}, {}, false);
     view.bind(owner);
@@ -77,6 +97,16 @@ void runHostedTouchDeviceTests(const sp::DesignDocument &fixture, const juce::Fi
     auto report = obj();
     put(report, "inputs", inputs);
     put(report, "wallMs", monotonicMs() - started);
+    put(report, "isolatedBefore", isolatedBefore);
+    put(report, "isolatedAfter", isolatedResources());
+    auto commands =
+        endpoint.getParentDirectory().findChildFiles(File::findFiles, true, "touch-commands.json");
+    int64_t largestCommand = 0;
+    for (auto &file : commands)
+        largestCommand = std::max(largestCommand, file.getSize());
+    put(report, "largestCommandBytes", largestCommand);
+    check(largestCommand > 0 && largestCommand <= 64 * 1024,
+          "Actual inline control traffic remains inside64KiB bounded window");
     put(report, "audioBefore", before);
     put(report, "audioAfter", after);
     put(report, "mainBefore", cpuBefore);

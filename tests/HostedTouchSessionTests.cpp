@@ -4,6 +4,7 @@
 #include "HostedTouchCapture.h"
 #include "Performance.h"
 #include <CoreFoundation/CoreFoundation.h>
+#include <libproc.h>
 #include "TrackModel.h"
 #include <deque>
 #include <iostream>

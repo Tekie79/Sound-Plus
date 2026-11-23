@@ -37,8 +37,8 @@ struct BlendAssignment
 struct PerformanceState
 {
     int blendLaw = 2; // 1: saved v1 bilinear sparse law; 2: continuous convex-hull law.
-    bool blendEnabled = false;
-    double x = .5, y = .5;
+    bool blendEnabled = false, mute = false, solo = false;
+    double x = .5, y = .5, levelDb = 0;
     std::array<BlendAssignment, 4> assignments;
     std::array<PerformanceMacro, 4> macros;
     PerformanceState()
@@ -46,6 +46,19 @@ struct PerformanceState
         for (int i = 0; i < 4; ++i)
             macros[(size_t)i].name = "Macro " + juce::String(i + 1);
     }
+};
+struct PerformancePad
+{
+    juce::String id = juce::Uuid().toString();
+    PerformanceState state;
+};
+struct PadControlValues
+{
+    double x = .5, y = .5, levelDb = 0;
+    std::array<double, 4> macros{.5, .5, .5, .5};
+    std::array<bool, 4> enabled{};
+    bool blend = false, mute = false, solo = false;
+    bool operator==(const PadControlValues &) const = default;
 };
 enum VariationParameter : uint32_t
 {
@@ -237,9 +250,10 @@ struct DesignTrack
 };
 struct DesignMix
 {
-    ChannelLayout layout;   // Empty retains the legacy stereo contract verbatim.
-    int routingVersion = 2; // Version1 remains immutable in historical layout-aware takes.
-    PerformanceState performance;
+    ChannelLayout layout;         // Empty retains the legacy stereo contract verbatim.
+    int routingVersion = 2;       // Version1 remains immutable in historical layout-aware takes.
+    PerformanceState performance; // Historical Pad A, unchanged until multi-pad is used.
+    std::vector<PerformancePad> performancePads; // B–D, value-owned; at most three.
     std::vector<DesignLayer> layers; // Persistent audio clips; old IDs and source-stage semantics retained.
     MidiTiming midiTiming;
     bool midiEnabled = false;
@@ -282,6 +296,10 @@ struct SpatialValue
 };
 struct PerformControls
 {
+    int padCount = 0; // 0 retains the historical event encoding.
+    double levelDb = 0;
+    bool mute = false, solo = false;
+    std::array<PadControlValues, 3> pads{};
     int spatialCount = 0;
     std::array<SpatialValue, 16> spatial{};
     double x = .5, y = .5;
@@ -427,6 +445,7 @@ struct DesignDocument
     juce::String id = juce::Uuid().toString(), name = "Untitled design", activeVariation, selectedLayer,
                  outputFolder, activeTake, selectedTrack;
     juce::String selectedMidiClip;
+    int performPad = 0; // Editor tab only, excluded from audio identity.
     int64_t revision = 1, playhead = 0;
     double sampleRate = 48000;
     int64_t liveControlTicks = 0; // Transient UI control-event clock.

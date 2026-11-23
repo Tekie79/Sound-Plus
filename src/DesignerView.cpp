@@ -96,6 +96,7 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     addTrackButton.onClick = [this] { tracks->addTrackMenu(addTrackButton); };
     perform = std::make_unique<PerformView>(session, peakPool);
     perform->onAlternatives = [this](const auto &id) { showPoolPopup(id); };
+    perform->onCommand = [this](const auto &key) { return commandKey(key); };
     perform->onOpenEdit = [this](const juce::String &)
     {
         if (!session.takeBusy() && session.document.activeTake.isEmpty())
@@ -1444,10 +1445,7 @@ void DesignerView::timerCallback()
     {
         if (performMode)
         {
-            for (auto &assignment : session.performanceMix().performance.assignments)
-                for (auto &layer : session.performanceMix().layers)
-                    if (layer.id == assignment.layer)
-                        cards.push_back(layer.source);
+            cards = perform->foregroundSources();
         }
         else
         {

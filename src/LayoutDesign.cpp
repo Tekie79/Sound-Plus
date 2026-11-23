@@ -1,3 +1,4 @@
+#include "PerformanceState.h"
 #include "DesignModel.h"
 namespace sp
 {
@@ -189,6 +190,15 @@ void validateLayoutMix(const DesignMix &m, double rate)
 PerformControls mixControls(const DesignMix &m)
 {
     auto c = performControls(m.performance);
+    if (hasMultiPad(m))
+    {
+        c.padCount = 1 + (int)m.performancePads.size();
+        for (int i = 1; i < c.padCount; ++i)
+        {
+            auto v = performControls(padState(m, i));
+            c.pads[(size_t)i - 1] = {v.x, v.y, v.levelDb, v.macros, v.enabled, v.blend, v.mute, v.solo};
+        }
+    }
     if (!m.layout.id.isEmpty())
         for (size_t i = 0; i < m.layers.size(); ++i)
             if (m.layers[i].routing.spatial)
@@ -202,7 +212,25 @@ PerformControls mixControls(const DesignMix &m)
 }
 void applyMixControls(DesignMix &m, const PerformControls &c)
 {
+    if (c.padCount != (hasMultiPad(m) ? 1 + (int)m.performancePads.size() : 0))
+        throw std::runtime_error("Perform event pad set changed");
     applyPerformControls(m.performance, c);
+    for (int i = 1; i < c.padCount; ++i)
+    {
+        auto &v = c.pads[(size_t)i - 1];
+        auto &p = padState(m, i);
+        p.x = v.x;
+        p.y = v.y;
+        p.levelDb = v.levelDb;
+        p.mute = v.mute;
+        p.solo = v.solo;
+        p.blendEnabled = v.blend;
+        for (size_t n = 0; n < 4; ++n)
+        {
+            p.macros[n].value = v.macros[n];
+            p.macros[n].enabled = v.enabled[n];
+        }
+    }
     int expected = 0;
     for (size_t i = 0; i < m.layers.size(); ++i)
         if (m.layers[i].routing.spatial)

@@ -640,6 +640,34 @@ struct DesignGraph::Impl
     int64_t cursor = 0, lastVerified = -1;
     double master;
     DesignDocument document;
+    std::optional<DesignDocument> padBase;
+    std::optional<PerformControls> lastPadControls;
+    void applyControlPacket(const juce::var &p)
+    {
+        applyDesignParameters(document, p);
+        for (auto &layer : document.activeMix().layers)
+            for (auto &voice : voices)
+                if (voice->id() == layer.id)
+                    voice->update(layer);
+        masterGain.setTargetValue(juce::Decibels::decibelsToGain((float)document.activeMix().masterDb));
+        masterRack->update(document.activeMix().inserts);
+        refreshTracks();
+    }
+    void receivePadPacket(const juce::var &p)
+    {
+        if (!p["padBase"].isObject())
+        {
+            padBase.reset();
+            lastPadControls.reset();
+            return;
+        }
+        if (!padBase)
+            padBase = document;
+        applyDesignParameters(*padBase, p["padBase"]);
+        padBase->activeMix().performance = performanceFromJson(p["padA"]);
+        padsFromJson(padBase->activeMix(), p["performPads"]);
+        lastPadControls.reset();
+    }
     DesignDocument takeBase;
     std::vector<TakeEvent> events;
     size_t nextEvent = 0;
@@ -938,6 +966,8 @@ struct DesignGraph::Impl
             events.assign(t->events.begin(), t->events.end());
             inputEnd = t->bodyEnd;
         }
+        if (hasMultiPad(selectedTake(d) ? takeBase.activeMix() : d.activeMix()))
+            padBase = selectedTake(d) ? takeBase : audioSourceProjection(d);
         master = document.activeMix().masterDb;
         masterGain.reset(sampleRate, .005);
         masterGain.setCurrentAndTargetValue(juce::Decibels::decibelsToGain((float)master));
@@ -985,7 +1015,8 @@ struct DesignGraph::Impl
         // lookahead/causalized IR conversion during the consumed body. Output
         // duration stays bodyEnd; historical recipes keep their original gate.
         if (auto *t = selectedTake(d); t && (t->processing == "advanced-effects-takes-v1" ||
-                                             t->processing == "hosted-automation-takes-v1"))
+                                             t->processing == "hosted-automation-takes-v1" ||
+                                             t->processing == "multi-pad-perform-takes-v1"))
             inputEnd += pipelineDependencies;
         if (auto *t = selectedTake(d);
             t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
@@ -1014,18 +1045,38 @@ struct DesignGraph::Impl
             while (nextEvent < events.size() && events[nextEvent].frame == cursor)
             {
                 applyMixControls(takeBase.activeMix(), events[nextEvent++].controls);
-                auto p = designParameters(takeBase);
-                applyDesignParameters(document, p);
-                for (auto &l : document.activeMix().layers)
-                    for (auto &v : voices)
-                        if (v->id() == l.id)
-                            v->update(l);
-                masterGain.setTargetValue(
-                    juce::Decibels::decibelsToGain((float)document.activeMix().masterDb));
-                masterRack->update(document.activeMix().inserts);
-                refreshTracks();
+                if (padBase)
+                {
+                    padBase = takeBase;
+                    lastPadControls.reset();
+                }
+                else
+                    applyControlPacket(designParameters(takeBase));
             }
             int n = std::min(512, count - done);
+            if (padBase)
+            {
+                const auto frame = std::max<int64_t>(0, cursor - pipelineLatency);
+                auto scheduled = frame - frame % 32;
+                for (auto &curve : padBase->activeMix().masterAutomation.curves)
+                    if (curve.read && curve.target.instance.startsWith("perform:"))
+                        for (auto &point : curve.points)
+                            if (point.frame <= frame && point.frame > scheduled)
+                                scheduled = point.frame;
+                auto evaluated = evaluatePadAutomation(*padBase, scheduled);
+                auto controls = mixControls(evaluated.activeMix());
+                if (!lastPadControls || *lastPadControls != controls)
+                {
+                    applyControlPacket(designParameters(evaluated));
+                    lastPadControls = controls;
+                }
+                n = std::min(n, 32 - (int)(frame % 32));
+                for (auto &curve : padBase->activeMix().masterAutomation.curves)
+                    if (curve.read && curve.target.instance.startsWith("perform:"))
+                        for (auto &point : curve.points)
+                            if (point.frame > frame)
+                                n = (int)std::min<int64_t>(n, point.frame - frame);
+            }
             if (nextEvent < events.size())
                 n = (int)std::min<int64_t>(n, events[nextEvent].frame - cursor);
             block.clear();
@@ -1094,17 +1145,11 @@ DesignGraph::DesignGraph(const DesignDocument &d, const std::function<bool()> &c
 void DesignGraph::updateParameters(const juce::var &parameters)
 {
     if (impl->inputEnd >= 0)
-        return; // A frozen take only accepts its internal event timeline.
-    applyDesignParameters(impl->document, parameters);
-    for (auto &layer : impl->document.activeMix().layers)
-        for (auto &voice : impl->voices)
-            if (voice->id() == layer.id)
-                voice->update(layer);
-    impl->masterGain.setTargetValue(
-        juce::Decibels::decibelsToGain((float)impl->document.activeMix().masterDb));
-    impl->masterRack->update(impl->document.activeMix().inserts);
-    impl->refreshTracks();
+        return;
+    impl->receivePadPacket(parameters);
+    impl->applyControlPacket(parameters);
 }
+
 DesignGraph::~DesignGraph() = default;
 void DesignGraph::render(juce::AudioBuffer<float> &out, int offset, int count)
 {
@@ -1513,6 +1558,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
             hasAdvancedEffects(effectiveInput.activeMix()) ? "advanced-effects-v1" : "native-effects-v1";
     if (hasHostedAutomation(effectiveInput.activeMix()))
         result.processing = "hosted-automation-v1";
+    if (hasMultiPad(effectiveInput.activeMix()))
+        result.processing = "multi-pad-perform-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

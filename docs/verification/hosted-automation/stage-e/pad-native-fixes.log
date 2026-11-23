@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: multi_pad
+1/4 Test  #2: multi_pad ........................   Passed    0.74 sec
+    Start  3: multi_pad_device
+2/4 Test  #3: multi_pad_device .................   Passed    5.30 sec
+    Start 23: performance_state
+3/4 Test #23: performance_state ................   Passed    3.20 sec
+    Start 24: designer_view_commands
+4/4 Test #24: designer_view_commands ...........   Passed    0.37 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =   9.62 sec

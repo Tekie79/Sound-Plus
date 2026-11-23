@@ -220,7 +220,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     void beginSeekGesture(bool audible);
     void dragSeek(int64_t);
     void endSeekGesture();
-    void render(bool selection = false);
+    void render(bool selection = false, int pad = -1);
     void copyOriginal(const juce::File &);
     void transferInsert(const juce::String &sourceOwner, InsertRef, const juce::String &targetOwner,
                         bool move);
@@ -325,6 +325,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     juce::String inputOperation, inputDocument, inputVariation, inputArmContext, inputLastPhase;
     uint64_t inputIncarnation = 0, inputProcessGeneration = 0, inputControlSerial = 0;
     uint64_t inputMonitorControlSerial = 0;
+    int overdubPad = -1;
     bool inputMutation = false, inputReadPending = false, inputStopRequested = false,
          inputCancelRequested = false;
     bool inputConfigPending = false;
@@ -367,7 +368,7 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool liveSuppressHistory = false, liveInvalidateRedo = false;
     void runLiveCommands();
     void finishLiveCommand(bool);
-    void renderReady(bool, const juce::String &);
+    void renderReady(bool, const juce::String &, int pad = -1);
     std::optional<DesignDocument> liveIntentBase;
     void stampLiveIntents(int64_t);
     uint64_t liveUserEdits = 0;

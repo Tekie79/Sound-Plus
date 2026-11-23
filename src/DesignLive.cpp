@@ -258,6 +258,7 @@ juce::String designStructure(const DesignDocument &document)
     auto *object = mix.getDynamicObject();
     object->removeProperty("masterDb");
     object->removeProperty("performance");
+    object->removeProperty("performPads");
     stripChain(mix["insertChain"], document.liveInserts);
     stripRack(mix["masterEffects"]);
     stripHosted(mix["hostedRack"], document.liveInserts);
@@ -308,11 +309,17 @@ juce::String designStructure(const DesignDocument &document)
     auto text = juce::JSON::toString(mix, true);
     return juce::SHA256(text.toRawUTF8(), text.getNumBytesAsUTF8()).toHexString();
 }
-juce::var designParameters(const DesignDocument &base)
+juce::var designParameters(const DesignDocument &base, bool resolve)
 {
     DesignDocument document;
-    document.original = resolvePerformance(base.activeMix());
+    document.original = resolve ? resolvePerformance(base.activeMix()) : base.activeMix();
     auto *object = new juce::DynamicObject();
+    if (resolve && hasMultiPad(base.activeMix()))
+    {
+        object->setProperty("padBase", designParameters(base, false));
+        object->setProperty("padA", performanceToJson(base.activeMix().performance));
+        object->setProperty("performPads", padsToJson(base.activeMix()));
+    }
     if (hasNativeEffects(document.activeMix()))
         object->setProperty("nativeControlsVersion", 1);
     object->setProperty("masterDb", document.activeMix().masterDb);
@@ -394,6 +401,7 @@ void applyDesignParameters(DesignDocument &document, const juce::var &parameters
 {
     auto changed = document;
     changed.activeMix().performance = {};
+    changed.activeMix().performancePads.clear();
     if (hasNativeEffects(changed.activeMix()) && (int)parameters["nativeControlsVersion"] != 1)
         throw std::runtime_error("Unsupported native control protocol");
     changed.activeMix().masterDb = (double)parameters["masterDb"];

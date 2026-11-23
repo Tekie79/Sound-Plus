@@ -1,3 +1,4 @@
+#include "PerformanceState.h"
 #include "TrackModel.h"
 #include "HostedParameterIdentity.h"
 #include "NativeEffects.h"
@@ -467,6 +468,8 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
     std::vector<AutomationParameter> out;
     out.push_back(
         {{{}, "volume"}, "Track Controls", "Volume", "dB", -90, 24, master ? m.masterDb : track->volumeDb});
+    if (master)
+        appendPadAutomationTargets(m, out);
     if (!master)
     {
         if (trackPanSupported(m, *track))

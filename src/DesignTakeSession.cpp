@@ -2,6 +2,7 @@
 #include "TakeCapture.h"
 #include "DesignLive.h"
 #include "Performance.h"
+#include "PerformanceState.h"
 #include <juce_cryptography/juce_cryptography.h>
 namespace sp
 {
@@ -112,6 +113,9 @@ void DesignSession::recordTake()
     // AudioClient has issued the record generation to the helper.
     services.reserveTake(true);
     protectStartupEdits();
+    overdubPad = hasMultiPad(document.activeMix())
+                     ? std::clamp(document.performPad, 0, (int)document.activeMix().performancePads.size())
+                     : -1;
     takeUndoBase = History{document, selectedIds, "Record take"};
     takeState = TakeState::arming;
     captureId = juce::Uuid().toString();
@@ -177,6 +181,10 @@ void DesignSession::prepareTake(Stamp token)
                 resolve(d);
                 if (hasHostedInserts(d.activeMix()) && takeBoundarySignature(d) != boundary)
                     throw std::runtime_error("Source/recipe changed during plugin-aware arming");
+                if (hasMultiPad(d.activeMix()))
+                    disablePadAutomation(
+                        d.activeMix(),
+                        std::clamp(d.performPad, 0, (int)d.activeMix().performancePads.size()));
                 auto t = freezeTake(d, "Take " + juce::String(d.takes.size() + 1));
                 if (!t.recipe->layout.id.isEmpty())
                 {
@@ -568,6 +576,7 @@ void DesignSession::pollTake(const juce::var &state)
                     safe->takeState = t.complete ? TakeState::ready : TakeState::incomplete;
                     safe->takeReadPending = false;
                     safe->takeMutation = true;
+                    juce::String curveFailure;
                     safe->edit("Finalize take",
                                [&](auto &d)
                                {
@@ -575,6 +584,15 @@ void DesignSession::pollTake(const juce::var &state)
                                        if (v.id == id)
                                            v = t;
                                    d.activeTake = id;
+                                   if (t.complete && safe->overdubPad >= 0)
+                                       try
+                                       {
+                                           retainPadTake(d.activeMix(), safe->overdubPad, t);
+                                       }
+                                       catch (const std::exception &e)
+                                       {
+                                           curveFailure = e.what();
+                                       }
                                });
                     safe->takeMutation = false;
                     if (safe->takeUndoBase && !safe->undoHistory.empty() &&
@@ -588,6 +606,10 @@ void DesignSession::pollTake(const juce::var &state)
                     safe->selectContextOutput();
                     safe->message = t.complete ? "Take ready - audition, keep/name or Render Take"
                                                : "Incomplete take: " + t.reason;
+                    if (curveFailure.isNotEmpty())
+                        safe->message =
+                            "Frozen take retained; editable pad curves exceed project capacity: " +
+                            curveFailure + ". Reduce existing points or record a shorter pass.";
                     safe->notify();
                 };
             });

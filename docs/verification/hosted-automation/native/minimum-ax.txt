@@ -1,0 +1,120 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 button New Collection
+	2 button Collection and selection actions
+	3 button Add existing sound folders, Help: Add Folder
+	4 text entry area (settable) Search library, Secondary Actions: Delete
+	5 button All Sounds, Help: Browse All Sounds · All sources. Collections and source filters intersect.
+	6 outline
+	7 container Recording waveform. Click to seek; drag range boundaries to trim; I marks IN, O marks OUT. Right-click for exact range.
+	8 button Per-channel source waveforms
+	9 button (settable) Repeat One, Help: Repeat the current recording or marked range. Click again for Off., Value: Off
+	10 button (settable) Repeat All, Value: Off, Help: Repeat all current results, skipping known offline/unreadable recordings. A new search ends the queue. Pinned references are independent.
+	11 container Library sidebar divider
+	12 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 5, Value: Hosted automation QA
+	13 button Render Design, Help: Render Design (Command-R)
+	14 button Render settings
+	15 button Render selected layer (pre-master stem)
+	16 button Choose permanent output folder
+	17 button Library
+	18 button (settable) Browser, Help: Hide sound browser, Value: On
+	19 button Design · MONO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	20 text (settable)
+	21 button New design, Help: New design (Command-N)
+	22 button Open design, Help: Open design (Command-O)
+	23 button Save design, Help: Save design (Command-S)
+	24 button Recover autosave
+	25 button Undo, Help: Undo (Command-Z)
+	26 button Add source
+	27 button Duplicate layer, Help: Duplicate layer (Command-D)
+	28 button Remove layer, Help: Remove layer (Delete / Backspace)
+	29 button Add track
+	30 button (settable) Edit, Value: On
+	31 button (settable) Perform, Value: Off
+	32 button (settable) Hide layer inspector, Value: On
+	33 button Zoom out
+	34 button Zoom in (Command-wheel)
+	35 button Decrease track height
+	36 button Increase track height (Command-Option-wheel)
+	37 button Fit design
+	38 button Fit selected layers
+	39 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	40 button Snap targets and grid
+	41 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	42 button (settable) Layer, Value: Off
+	43 button (settable) Source, Value: Off
+	44 button (settable) Mix, Value: Off
+	45 button (settable) Fades, Value: Off
+	46 button (settable) Clip source inserts, Value: Off
+	47 button (settable) Track inserts, Value: On
+	48 button (settable) Track chain enabled, Help: Bypass insert chain, Value: On
+	49 text (settable) Audio
+	50 button Add effect
+	51 container SoundPlus QA Effect insert
+	52 button (settable) SoundPlus QA Effect enabled, Help: Bypass effect, Value: On
+	53 button Open live editor
+	54 button (settable) Show external insert parameters, Value: Off
+	55 button Effect actions
+	56 text (settable) Value: Live, Help: Effects run in the displayed insert order; Track and Master remain separate. Perform takes freeze the starting plug-in state; native knob automation is not recorded.
+	57 button (settable) Master inserts, Value: On
+	58 text (settable) Master
+	59 button Add effect
+	60 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	61 container Multitrack Edit timeline
+	62 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Audio
+	63 button Track colour
+	64 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: On
+	65 button (settable) Mute track, Value: Off
+	66 button (settable) Solo track, Value: Off
+	67 button (settable) Arm audio input: Audio, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
+	68 button Track options
+	69 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	70 container Automation lane
+	71 button (settable) Read, Value: On
+	72 button (settable) Touch, Value: On
+	73 button Volume · dB, Help: Show curve: Volume / dB. Stable instance 
+	74 slider (settable) Touch automation value, Help: Touch: 1 · SoundPlus QA Effect · Gain · normalized. Captured when armed; return 100 ms., Value: 0.5000000, Secondary Actions: Delete
+	75 text (settable) 0.00 dB
+	76 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Group
+	77 button Track colour
+	78 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	79 button (settable) Mute track, Value: Off
+	80 button (settable) Solo track, Value: Off
+	81 button Track options
+	82 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	83 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: MIDI
+	84 button Track colour
+	85 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	86 button (settable) Mute track, Value: Off
+	87 button (settable) Solo track, Value: Off
+	88 button (settable) Arm MIDI Track, Help: MIDI arm. Choose device, channel and monitoring in Track options., Value: Off
+	89 button Track options
+	90 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	91 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
+	92 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	93 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	94 button Generate 5
+	95 button Variation bounds and enabled parameters
+	96 pop up button (settable) Original and variation candidates, Value: Original
+	97 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	98 button Copy Original to Project
+	99 text (settable) /Users/harvest/Music/SoundPlus/Renders
+	100 button Play design, Help: Play / Stop (Space). MIDI seeks rebuild full voice/effect history in the background; Stop cancels preparation.
+	101 button Audio recording options
+	102 button Go to start (Home)
+	103 button Previous marker
+	104 button Next marker
+	105 button Go to end (End)
+	106 button Add marker (M)
+	107 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	108 button Monitor · Stereo downmix, Help: Pre-monitor master channels: C -100.0 dBFS; Monitor routing/gain/solo do not affect exports. Extra device outputs are muted until assigned.
+	109 slider (settable) Monitor volume, excluded from render, Value: 0.04, Secondary Actions: Delete
+	110 text (settable) Saved Native hosted automation.soundplus
+	111 close button
+	112 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	113 minimize button
+	114 text SoundPlus
+115 menu bar
+	116 SoundPlus
+
+The focused UI element is 12 text entry area (settable) Help: Referenced design | 48000 Hz timeline | revision 5, Value: Hosted automation QA

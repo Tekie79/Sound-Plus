@@ -28,10 +28,14 @@ void DesignerView::refreshTakes()
     takeContext.setSelectedId(selected, juce::dontSendNotification);
     takeContext.setTooltip(takeContext.getText());
     takeContext.setEnabled(!session.takeBusy());
-    recordTake.setTooltip(hasHostedInserts(session.document.activeMix())
-                              ? "Record Perform controls through a frozen starting plug-in state. Native "
-                                "knob automation is not recorded."
-                              : "Record a performance take");
+    recordTake.setTooltip(
+        hasMultiPad(session.document.activeMix())
+            ? "Record this pad from frame zero while other pad automation replays. Complete passes become "
+              "editable curves in the existing Master lane. 2048 points per curve /8192 project points."
+        : hasHostedInserts(session.document.activeMix())
+            ? "Record Perform controls through a frozen starting plug-in state. Native "
+              "knob automation is not recorded."
+            : "Record a performance take");
     recordTake.setEnabled(
         !session.inputBusy() && !session.takeBusy() && session.document.activeTake.isEmpty() &&
         (!session.document.activeMix().layers.empty() || hasMidi(session.document.activeMix())) &&

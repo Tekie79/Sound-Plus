@@ -5,7 +5,7 @@
 #include <stdexcept>
 namespace sp
 {
-// SPR5 transport only. Saved projects use the complete string identity, never
+// SPR6 transport only. Saved projects use the complete string identity, never
 // this compact token as an identity authority. Built on the graph producer.
 struct HostedParameterEvent
 {

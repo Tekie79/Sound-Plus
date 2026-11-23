@@ -15,7 +15,8 @@ void runHostedOverlayTests(const juce::var &settings, const juce::File &root)
     auto directory = root.getChildFile("overlay").getChildFile(single.id).getChildFile("generation");
     HostedRackClient owner(single, channelLayout("mono-v1"), 48000, [] { return false; }, directory, binding);
     rack.runtimeEndpoint = root.getChildFile("overlay");
-    HostedRackClient reader(rack, channelLayout("mono-v1"), 48000, [] { return false; });
+    auto reader =
+        std::make_unique<HostedRackClient>(rack, channelLayout("mono-v1"), 48000, [] { return false; });
     var gain;
     for (auto &p : *settings["parameters"].getArray())
         if (p["name"].toString() == "Gain")
@@ -35,9 +36,9 @@ void runHostedOverlayTests(const juce::var &settings, const juce::File &root)
     {
         for (int n = 0; n < 512; ++n)
             pcm.setSample(0, n, .2f);
-        reader.process(pcm, 512, nullptr, 0, {}, true, false, -1,
-                       read ? std::span<const HostedParameterEvent>(&event, 1)
-                            : std::span<const HostedParameterEvent>());
+        reader->process(pcm, 512, nullptr, 0, {}, true, false, -1,
+                        read ? std::span<const HostedParameterEvent>(&event, 1)
+                             : std::span<const HostedParameterEvent>());
         if (std::abs(pcm.getSample(0, 511) - expected) >= 1e-6)
             std::cerr << "Live overlay mismatch read " << read << " actual " << pcm.getSample(0, 511)
                       << " expected " << expected << " state " << JSON::toString(owner.liveState(), true)
@@ -84,6 +85,12 @@ void runHostedOverlayTests(const juce::var &settings, const juce::File &root)
     reopened.process(pcm, 512);
     check(std::abs(pcm.getSample(0, 511) - .3) < 1e-6,
           "Fresh worker reopens coherent base/opaque state without automation contamination");
+    reader.reset();
+    reader = std::make_unique<HostedRackClient>(rack, channelLayout("mono-v1"), 48000, [] { return false; });
+    process(true, .1f);
+    process(false, .3f);
+    check(true, "Loop/reacquisition starts a fresh lease and accepts reset event sequence with coherent "
+                "Read/base state");
 }
 } // namespace
 namespace

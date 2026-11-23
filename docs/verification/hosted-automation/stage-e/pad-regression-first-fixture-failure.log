@@ -1,0 +1,23 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build
+    Start  2: multi_pad
+1/4 Test  #2: multi_pad ........................***Failed    0.78 sec
+FAIL after 0 checks: Waveform worker demand follows the edited Pad B rather than always Pad A
+
+    Start  3: multi_pad_device
+2/4 Test  #3: multi_pad_device .................***Failed    0.40 sec
+FAIL after 0 checks: Waveform worker demand follows the edited Pad B rather than always Pad A
+
+    Start 23: performance_state
+3/4 Test #23: performance_state ................   Passed    4.20 sec
+    Start 24: designer_view_commands
+4/4 Test #24: designer_view_commands ...........   Passed    0.36 sec
+
+50% tests passed, 2 tests failed out of 4
+
+Total Test time (real) =   5.74 sec
+
+The following tests FAILED:
+	  2 - multi_pad (Failed)
+	  3 - multi_pad_device (Failed)
+Errors while running CTest
