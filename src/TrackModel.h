@@ -10,6 +10,11 @@ struct AutomationParameter
     juce::String group, name, units;
     double minimum = 0, maximum = 1, base = 0;
     bool logarithmic = false, discrete = false, writable = true;
+    std::optional<HostedAutomationBinding> hostedBinding;
+    int nativeIndex = -1;
+    uint64_t hostedToken = 0;
+    double normalizedStep = 0;
+    juce::String unavailable;
 };
 DesignTrack *findTrack(DesignMix &, const juce::String &);
 const DesignTrack *findTrack(const DesignMix &, const juce::String &);
@@ -36,6 +41,8 @@ juce::var automationLaneJson(const AutomationLane &);
 AutomationLane automationLaneFromJson(const juce::var &);
 juce::var tracksToJson(const DesignMix &);
 void tracksFromJson(DesignMix &, const juce::var &);
+bool hasHostedAutomation(const DesignMix &);
+bool hasHostedAutomation(const DesignDocument &);
 std::vector<AutomationParameter> automationTargets(const DesignMix &, const juce::String &owner);
 AutomationLane *automationLane(DesignMix &, const juce::String &);
 const AutomationLane *automationLane(const DesignMix &, const juce::String &);
@@ -59,5 +66,7 @@ struct CompiledAutomation
     double value(const AutomationTarget &, double base, int64_t frame) const;
     int untilBoundary(int64_t frame, int maximum) const;
     int64_t segmentFrame(int64_t) const;
+    std::vector<HostedParameterEvent> hostedEvents(const HostedRack &, int64_t inputFrame, int frames,
+                                                   int latency) const;
 };
 } // namespace sp

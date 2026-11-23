@@ -53,7 +53,7 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
         g.setColour(p.writable ? ui::text : ui::muted);
         g.setFont(juce::FontOptions(12.f));
         g.drawText(p.name + (p.units.isNotEmpty() ? juce::String::fromUTF8(" · ") + p.units : "") +
-                       (p.writable ? "" : juce::String::fromUTF8(" · registry only")),
+                       (p.writable ? "" : juce::String::fromUTF8(" · unavailable")),
                    10, 0, w - 20, h, juce::Justification::centredLeft, true);
     }
     void listBoxItemClicked(int row, const juce::MouseEvent &) override
@@ -190,10 +190,11 @@ void AutomationEditor::refresh()
     target.setButtonText(parameter.name + (parameter.units.isNotEmpty()
                                                ? juce::String::fromUTF8(" · ") + parameter.units
                                                : ""));
-    target.setTooltip(parameter.writable ? "Show curve: " + parameter.name + " / " + parameter.units +
-                                               ". Stable instance " + parameter.target.instance
-                                         : "Unresolved or registry-only: " + parameter.target.instance +
-                                               " / " + parameter.target.parameter + ". Writes are disabled.");
+    target.setTooltip(parameter.writable
+                          ? "Show curve: " + parameter.name + " / " + parameter.units + ". Stable instance " +
+                                parameter.target.instance
+                          : "Unavailable: " + parameter.unavailable + ". " + parameter.target.instance +
+                                " / " + parameter.target.parameter + ". Writes are disabled.");
     auto *c = curve();
     read.setToggleState(!c || c->read, juce::dontSendNotification);
     touch.setToggleState(l->touch, juce::dontSendNotification);
@@ -201,7 +202,8 @@ void AutomationEditor::refresh()
     for (auto &p : targets)
         if (p.target == l->armed)
             armed = p;
-    write.setRange(armed.minimum, armed.maximum, armed.discrete ? 1 : 0);
+    write.setRange(armed.minimum, armed.maximum,
+                   armed.discrete ? (armed.normalizedStep > 0 ? armed.normalizedStep : 1) : 0);
     if (armed.logarithmic)
         write.setSkewFactorFromMidPoint(std::sqrt(armed.minimum * armed.maximum));
     else

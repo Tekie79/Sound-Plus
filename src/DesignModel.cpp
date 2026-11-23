@@ -786,21 +786,23 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        hasAdvancedEffects(d) ? 16
-        : hasNativeEffects(d) ? 15
-        : hasMidi(d)          ? 14
-        : inputs              ? 13
-        : continuations       ? 12
-        : tracks              ? 11
-        : plugins             ? 10
-        : ordered             ? 9
-        : hasHostedInserts(d) ? 8
-        : hasSourcePools(d)   ? 7
-                              : performanceFormat(d));
+        hasHostedAutomation(d)  ? 17
+        : hasAdvancedEffects(d) ? 16
+        : hasNativeEffects(d)   ? 15
+        : hasMidi(d)            ? 14
+        : inputs                ? 13
+        : continuations         ? 12
+        : tracks                ? 11
+        : plugins               ? 10
+        : ordered               ? 9
+        : hasHostedInserts(d)   ? 8
+        : hasSourcePools(d)     ? 7
+                                : performanceFormat(d));
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasAdvancedEffects(d)       ? "advanced-effects-v1"
+        hasHostedAutomation(d)      ? "hosted-automation-v1"
+        : hasAdvancedEffects(d)     ? "advanced-effects-v1"
         : hasNativeEffects(d)       ? "native-effects-v1"
         : hasMidi(d)                ? "midi-instruments-v1"
         : tracks                    ? "multitrack-automation-v1"
@@ -923,8 +925,9 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 16) ||
-        (version == 16   ? dsp != "advanced-effects-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 17) ||
+        (version == 17   ? dsp != "hosted-automation-v1"
+         : version == 16 ? dsp != "advanced-effects-v1"
          : version == 15 ? dsp != "native-effects-v1"
          : version == 14 ? dsp != "midi-instruments-v1"
          : version >= 11 ? dsp != "multitrack-automation-v1"
@@ -1047,6 +1050,8 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
+    if (version < 17 && hasHostedAutomation(d))
+        throw std::runtime_error("Hosted parameter curves require manifest17");
     if (version < 16 && hasAdvancedEffects(d))
         throw std::runtime_error("Advanced effects require manifest16");
     if (version < 15 && hasNativeEffects(d))

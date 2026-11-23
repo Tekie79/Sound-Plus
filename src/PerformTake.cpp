@@ -1,4 +1,5 @@
 #include "DesignModel.h"
+#include "TrackModel.h"
 #include "NativeEffects.h"
 #include "AdvancedEffects.h"
 #include "AdvancedIR.h"
@@ -44,12 +45,15 @@ juce::var recipeJson(const PerformTake &t)
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
         put(o, "recipeVersion",
-            hasAdvancedEffects((const DesignMix &)t.recipe) ? 7
-            : hasNativeEffects((const DesignMix &)t.recipe) ? 6
-            : hasMidi((const DesignMix &)t.recipe)          ? 5
-            : t.trackRecipe                                 ? 4
-            : t.pluginAware                                 ? 3
-                                                            : 2);
+            hasHostedAutomation((const DesignMix &)t.recipe)  ? 8
+            : hasAdvancedEffects((const DesignMix &)t.recipe) ? 7
+            : hasNativeEffects((const DesignMix &)t.recipe)   ? 6
+            : hasMidi((const DesignMix &)t.recipe)            ? 5
+            : t.trackRecipe                                   ? 4
+            : t.pluginAware                                   ? 3
+                                                              : 2);
+    if (hasHostedAutomation((const DesignMix &)t.recipe))
+        put(o, "hostedAutomationPolicy", "normalized-32frame-offset-overlay-v1");
     if (hasNativeEffects((const DesignMix &)t.recipe))
         put(o, "nativePolicy",
             hasAdvancedEffects((const DesignMix &)t.recipe) ? "advanced-effects-v1-tail-pdc"
@@ -232,15 +236,17 @@ PerformTake takeFromJson(const juce::var &o)
     auto r = o["recipe"];
     if (r.hasProperty("recipeVersion") && (int)r["recipeVersion"] != 2 && (int)r["recipeVersion"] != 3 &&
         (int)r["recipeVersion"] != 4 && (int)r["recipeVersion"] != 5 && (int)r["recipeVersion"] != 6 &&
-        (int)r["recipeVersion"] != 7)
+        (int)r["recipeVersion"] != 7 && (int)r["recipeVersion"] != 8)
         throw std::runtime_error("Unsupported take insert recipe");
     t.orderedRecipe = r.hasProperty("recipeVersion");
     t.trackRecipe =
         (int)r["recipeVersion"] == 4 || (int)r["recipeVersion"] == 5 ||
-        (((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7) && r.hasProperty("trackPolicy"));
-    t.pluginAware = (int)r["recipeVersion"] == 3 ||
-                    ((t.trackRecipe || (int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7) &&
-                     r.hasProperty("pluginPolicy"));
+        (((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7 || (int)r["recipeVersion"] == 8) &&
+         r.hasProperty("trackPolicy"));
+    t.pluginAware =
+        (int)r["recipeVersion"] == 3 || ((t.trackRecipe || (int)r["recipeVersion"] == 6 ||
+                                          (int)r["recipeVersion"] == 7 || (int)r["recipeVersion"] == 8) &&
+                                         r.hasProperty("pluginPolicy"));
     if (t.trackRecipe && r["trackPolicy"].toString() != "project-automation-before-perform-v1")
         throw std::runtime_error("Unsupported track take policy");
     if (r["origin"].toString() != "frame-zero-fresh-history")
@@ -249,12 +255,16 @@ PerformTake takeFromJson(const juce::var &o)
     const bool native = hasNativeEffects((const DesignMix &)t.recipe);
     const bool midi = hasMidi((const DesignMix &)t.recipe);
     bool advanced = hasAdvancedEffects((const DesignMix &)t.recipe);
-    if (((int)r["recipeVersion"] == 7) != advanced ||
-        native != ((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7) ||
+    const bool hosted = hasHostedAutomation((const DesignMix &)t.recipe);
+    if (hosted != ((int)r["recipeVersion"] == 8) ||
+        (hosted && r["hostedAutomationPolicy"].toString() != "normalized-32frame-offset-overlay-v1"))
+        throw std::runtime_error("Unsupported hosted automation take policy");
+    if ((!hosted && (((int)r["recipeVersion"] == 7) != advanced ||
+                     native != ((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7))) ||
         (native && r["nativePolicy"].toString() !=
                        (advanced ? "advanced-effects-v1-tail-pdc" : "native-effects-v1-fixed-latency")))
         throw std::runtime_error("Unsupported native take policy/version");
-    if ((midi != ((int)r["recipeVersion"] == 5 || (native && r.hasProperty("midiPolicy")))) ||
+    if ((midi != ((int)r["recipeVersion"] == 5 || ((native || hosted) && r.hasProperty("midiPolicy")))) ||
         (midi && r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
         throw std::runtime_error("Unsupported MIDI take policy/version");
     t.sampleRate = (double)r["rate"];
@@ -315,23 +325,29 @@ void hashTake(PerformTake &t)
 void validateTake(const PerformTake &t)
 {
     const bool native = hasNativeEffects((const DesignMix &)t.recipe);
-    if (native !=
-            (t.processing == "native-effects-takes-v1" || t.processing == "advanced-effects-takes-v1") ||
-        hasAdvancedEffects((const DesignMix &)t.recipe) != (t.processing == "advanced-effects-takes-v1"))
+    const bool hosted = hasHostedAutomation((const DesignMix &)t.recipe);
+    if (hosted != (t.processing == "hosted-automation-takes-v1"))
+        throw std::runtime_error("Hosted automation take processing mismatch");
+    if (!hosted &&
+        (native !=
+             (t.processing == "native-effects-takes-v1" || t.processing == "advanced-effects-takes-v1") ||
+         hasAdvancedEffects((const DesignMix &)t.recipe) != (t.processing == "advanced-effects-takes-v1")))
         throw std::runtime_error("Native take processing mismatch");
     if (hasHostedInserts((const DesignMix &)t.recipe) != t.pluginAware ||
         (!native && !t.trackRecipe && (t.processing == "plugin-ordered-takes-v1") != t.pluginAware) ||
         (t.pluginAware && !t.orderedRecipe))
         throw std::runtime_error("Hosted take recipes require the explicit version-3 plugin-aware contract");
     if (t.trackRecipe != t.recipe->trackSchema ||
-        (!native && (t.processing == "track-automation-takes-v1" ||
-                     t.processing == "midi-instrument-takes-v1") != t.trackRecipe))
+        (!native && !hosted &&
+         (t.processing == "track-automation-takes-v1" || t.processing == "midi-instrument-takes-v1") !=
+             t.trackRecipe))
         throw std::runtime_error("Track take processing contract mismatch");
     if (t.id.isEmpty() || t.session.isEmpty() ||
         (t.processing != "stock-takes-v1" && t.processing != "stock-layout-takes-v1" &&
          t.processing != "stock-layout-takes-v2" && t.processing != "plugin-ordered-takes-v1" &&
          t.processing != "track-automation-takes-v1" && t.processing != "midi-instrument-takes-v1" &&
-         t.processing != "native-effects-takes-v1" && t.processing != "advanced-effects-takes-v1") ||
+         t.processing != "native-effects-takes-v1" && t.processing != "advanced-effects-takes-v1" &&
+         t.processing != "hosted-automation-takes-v1") ||
         t.events.size() > maxTakeEvents || t.bodyEnd < 0 || t.bodyEnd > t.sampleRate * maxTakeSeconds + 1 ||
         !std::isfinite(t.captureRate) || t.captureRate < 8000 || t.captureRate > 192000 ||
         t.outputFrames < 0 || t.outputFrames > t.captureRate * maxTakeSeconds ||
@@ -386,7 +402,7 @@ void validateTake(const PerformTake &t)
     for (auto *a : mixAssets((const DesignMix &)t.recipe))
         if (!ids.contains(a->id))
             throw std::runtime_error("Instrument source fingerprint missing");
-    if (t.processing == "advanced-effects-takes-v1")
+    if (t.processing == "advanced-effects-takes-v1" || t.processing == "hosted-automation-takes-v1")
     {
         if (t.sources.size() > 128)
             throw std::runtime_error("Advanced take source capacity exceeded");
@@ -470,6 +486,11 @@ PerformTake freezeTake(const DesignDocument &d, const juce::String &name)
     if (hasNativeEffects(mix))
     {
         t.processing = hasAdvancedEffects(mix) ? "advanced-effects-takes-v1" : "native-effects-takes-v1";
+        t.orderedRecipe = true;
+    }
+    if (hasHostedAutomation(mix))
+    {
+        t.processing = "hosted-automation-takes-v1";
         t.orderedRecipe = true;
     }
     auto fixed = [](InsertChain &c)

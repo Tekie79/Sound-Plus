@@ -7,6 +7,7 @@
 #include <juce_audio_processors/juce_audio_processors.h>
 #include <juce_cryptography/juce_cryptography.h>
 #include <CoreFoundation/CoreFoundation.h>
+#include "LocalAudioUnitFixture.h"
 #include <cmath>
 #include <map>
 namespace
@@ -177,6 +178,8 @@ HostedInstance instance(AudioPluginFormatManager &formats, const var &identity, 
               File(d.pluginFormatName == "AudioUnit" ? identity["bundle"].toString() : d.fileOrIdentifier)) ==
               identity["fingerprint"].toString(),
           "Plugin is missing/changed; rescan and explicitly choose it for a new run");
+    if (d.pluginFormatName == "AudioUnit")
+        onPluginMessageThread([&] { registerOwnedAudioUnitFixture(File(identity["bundle"].toString())); });
     stage("class-identity");
     String error;
     std::promise<std::pair<std::unique_ptr<AudioPluginInstance>, String>> created;
@@ -273,6 +276,8 @@ var describe(AudioPluginInstance &p)
             put(item, "stableId", hosted->getParameterID());
         put(item, "index", n);
         put(item, "name", v->getName(128));
+        put(item, "unit", v->getLabel());
+        put(item, "discrete", v->isDiscrete());
         put(item, "id", p.getParameterID(n));
         put(item, "value", v->getValue());
         put(item, "default", v->getDefaultValue());
@@ -377,6 +382,8 @@ var execute(const var &job)
         diagnostic.getDynamicObject()->setProperty("architecture", architectures);
         check(StringArray::fromTokens(architectures, "+", "").contains("arm64"),
               "Native arm64 required; bundle architecture: " + architectures + "; no bridging");
+        if (au)
+            onPluginMessageThread([&] { registerOwnedAudioUnitFixture(scanBundle); });
         stage("class-enumeration");
         onPluginMessageThread([&] { formats.getFormat(au ? 1 : 0)->findAllTypesForFile(types, path); });
         check(!types.isEmpty(), "No audio plugin classes enumerated from bundle");
@@ -635,7 +642,7 @@ var execute(const var &job)
     std::unique_ptr<AudioFormatWriter> w(wav.createWriterFor(staged.getFile().createOutputStream().release(),
                                                              rate, sp::juceChannelSet(bus), 32, meta, 0));
     check(w != nullptr, "Cannot stage processed PCM");
-    AudioBuffer<float> buffer(bus.size(), block);
+    juce::AudioBuffer<float> buffer(bus.size(), block);
     MidiBuffer midi;
     double peak = 0;
     int64_t clipped = 0, written = 0;
@@ -649,7 +656,7 @@ var execute(const var &job)
                   "Input read failed");
         if (!bypass)
         {
-            AudioBuffer<float> view(buffer.getArrayOfWritePointers(), bus.size(), count);
+            juce::AudioBuffer<float> view(buffer.getArrayOfWritePointers(), bus.size(), count);
             onPluginMessageThread([&] { effect->processBlock(view, midi); });
             if (at == 0)
             {

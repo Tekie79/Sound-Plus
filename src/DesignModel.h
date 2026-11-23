@@ -3,6 +3,8 @@
 #include "AudioRegion.h"
 #include "FadeCurve.h"
 #include "HostedRack.h"
+#include "HostedAutomationBinding.h"
+#include <optional>
 #include "MidiModel.h"
 #include <array>
 #include <atomic>
@@ -192,6 +194,7 @@ struct AutomationCurve
     AutomationTarget target;
     bool read = true;
     std::vector<AutomationPoint> points;
+    std::optional<HostedAutomationBinding> hostedBinding;
 };
 struct AutomationLane
 {

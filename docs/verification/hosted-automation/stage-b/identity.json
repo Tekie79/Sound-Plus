@@ -1,0 +1,34 @@
+{
+  "base": "29148056166fe66a7743d08ceaa5e8922c383205",
+  "sources": {
+    "CMakeLists.txt": "789d404a900984b6ba8b1a248b7fab25a644bb66ce5927ce8ba8a3f4c8083ae5",
+    "docs/HOSTED_AUTOMATION_CHECKLIST.md": "3e068448f963890d9520484a47f5cbf911b5607be179ae9ad3b6fc4574b32ef3",
+    "docs/HOSTED_AUTOMATION_CONTRACT.md": "719b3fc3a73ea798fd21f034160c530445a8d4aba3eab1695bd785d97e61347d",
+    "src/AutomationEditor.cpp": "f4ebd9fda3930d63afa28be155943f02c4b6a6466624541617eeddc980e81685",
+    "src/DesignAudio.cpp": "2956e5d18a8f5d01d3c071e86728cd0148ac8033f76a8fb58ef4929391fc3162",
+    "src/DesignModel.cpp": "dc34e0b610d3dead83babc49c67958e695b3c544edc483eccc643a93f068993d",
+    "src/DesignModel.h": "d9eeca7ed74cf4b22891940d4cbe8703e854a79ae9c02f51279abf9f944d6115",
+    "src/HostedRackLive.h": "da0c732d0b776013bea403235d486870ee6c5cabfb087f9d3fcea90306311884",
+    "src/HostedRackService.h": "b624be5c6711305332c8bae95f40fb2b530a334f0a63f3abcae50a24572ada26",
+    "src/OrderedRack.inc": "ee2da0bbb7f7f9014fbd80bf36529e44092dd4de4f2ec965325b883f87a9d250",
+    "src/PerformTake.cpp": "88b2a27a511c48c6240083eac1fcda4491de2a44cae47df59b6ba93fad04baca",
+    "src/PluginWorkerMain.cpp": "84b12bf051b05c0eee2dd0d96048eb047a73d96cf3ed56c434a1760c6e7c0911",
+    "src/TrackModel.cpp": "db658dacb813aa0b8a35de6cb69ca33024cba076accb102320c4ac381770c412",
+    "src/TrackModel.h": "ee5e0a8882cf907e5cae8264894e8ae92aef56729bb4554a4e82325e5c995eb1",
+    "tests/HostedAutomationTests.cpp": "8e750fe2f0b7c99e3a89d65f2935d11e1f7ac17ce636af8e97eccc471403fe02",
+    "tests/Tests.cpp": "eef6b40174dd0bbf9b3954dacb993700f577f0e3753a465508371ceb5a33b8d2",
+    "src/HostedAutomationBinding.h": "2fd769a4255e44530cca33bd49ee10a57b1c21b55dec6c553477a95c06ff3a5c",
+    "src/LocalAudioUnitFixture.h": "5d361fd7081c47d474b7ae584141ebe48fab02bab32deed33e461801ca42f5bd",
+    "tests/HostedAutomationLiveTests.inc": "fd8a0985637e033c1700902c31e809aa39a24db9462a9e4199a97e2091dfaf5e",
+    "tests/HostedAutomationReadTests.inc": "bac3a5a52e5ff3bcdcaad71af2ae537f10c20e314d9647fb7c466b2b2bb9f32c",
+    "tests/HostedInstrumentAutomationTests.cpp": "b729d98fe72931ed4d5741bc5f53559dcfd65fa775e35aa3b62c6c93a697a67e"
+  },
+  "executables": {
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus": "f3ed19ac615bb9cea7f6c241ac140192937a9b9ea3ed9803bd3eec877f04dc80",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPlugin": "5e1a85cfdd48e140696825e9fbb3b3bccf74fdc81da184229b355d7c0f2a6b66",
+    "build/SoundPlus_artefacts/Release/SoundPlus.app/Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "310208442c31b8b377985bcfb0e6d7fa268d69ae4f82048b79f1e8b99bb768a4",
+    "build/SoundPlusTests_artefacts/Release/SoundPlusTests": "b5424efba527932c2852889735de004d12266050f047197e8fba629a04cc41ce"
+  },
+  "hardware": "Apple M5 Pro, macOS26.3.2, arm64 Release SDK26.5",
+  "qualification": "Owned actual VST3 and process-local AUv2, pre-monitor PCM. Human listening/native new Touch/device/receiver qualification pending."
+}

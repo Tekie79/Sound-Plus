@@ -11,6 +11,7 @@ class OrderedRack
         std::vector<AutomationTarget> targets;
         AutomationTarget bypassTarget;
         std::unique_ptr<HostedRackClient> hosted;
+        HostedRack hostedRecipe;
     };
     std::vector<Step> steps;
     juce::AudioBuffer<float> dry, ring;
@@ -85,6 +86,7 @@ class OrderedRack
             {
                 auto recipe = hosted(c, ref.id);
                 recipe.runtimeFixedState = fixed;
+                step.hostedRecipe = recipe;
                 step.hosted = std::make_unique<HostedRackClient>(recipe, bus, rate, cancelled);
                 delay += step.hosted->latency();
                 inputDependencies += step.hosted->latency();
@@ -139,7 +141,10 @@ class OrderedRack
                     s.stock->update(s.base);
             }
             else
-                s.hosted->update(hosted(c, s.ref.id));
+            {
+                s.hostedRecipe = hosted(c, s.ref.id);
+                s.hosted->update(s.hostedRecipe);
+            }
         }
         wet.setTargetValue(c.bypass ? 0.f : 1.f);
     }
@@ -200,7 +205,11 @@ class OrderedRack
                 s.native->process(b, count);
             else
             {
-                s.hosted->process(b, count);
+                auto first = automationInput - prefix;
+                auto events =
+                    automation ? automation->hostedEvents(s.hostedRecipe, first, count, s.hosted->latency())
+                               : std::vector<HostedParameterEvent>();
+                s.hosted->process(b, count, nullptr, events.empty() ? 0 : first, {}, true, false, -1, events);
                 prefix += s.hosted->latency();
             }
             if (s.native)

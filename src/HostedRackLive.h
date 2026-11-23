@@ -55,6 +55,10 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         for (size_t i = 0; i < slots.size(); ++i)
             if (slots[i].effect.get() == processor && isPositiveAndBelow(index, slots[i].parameterIds.size()))
             {
+                if (slots[i].overlayActive[(size_t)index] &&
+                    value == slots[i].overlayValues[(size_t)index].load() && activeGestures.load() == 0)
+                    return;
+                slots[i].manualValues[(size_t)index] = value;
                 auto before = observedControlValues[i][index].exchange(value);
                 if (before == value && activeGestures.load() == 0)
                     return;
@@ -127,8 +131,10 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
             int index = 0;
             for (auto *p : slot.effect->getParameters())
             {
-                values.push_back(p->getValue());
-                observedControlValues[i][index++] = p->getValue();
+                auto value = slot.overlayActive[(size_t)index] ? slot.manualValues[(size_t)index].load()
+                                                               : p->getValue();
+                values.push_back(value);
+                observedControlValues[i][index++] = value;
             }
             lastValues.push_back(std::move(values));
             observedPrograms.push_back(slot.effect->getCurrentProgram());
@@ -152,8 +158,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     WriteScope own(writing);
                     for (auto &slot : slots)
                     {
+                        // AU setters are synchronous. AudioUnitRender with zero frames
+                        // can cache this timestamp and suppress the next real render.
+                        if (!slot.needsParameterFlush)
+                            continue;
                         const ScopedLock lock(slot.effect->getCallbackLock());
-                        AudioBuffer<float> zero(slot.effect->getTotalNumInputChannels(), 0);
+                        juce::AudioBuffer<float> zero(slot.effect->getTotalNumInputChannels(), 0);
                         MidiBuffer midi;
                         slot.effect->processBlock(zero, midi);
                     }
@@ -170,6 +180,36 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         void closeButtonPressed() override
         {
             setVisible(false);
+        }
+    };
+    struct BaseCapture
+    {
+        Slot &slot;
+        bool active = false;
+        explicit BaseCapture(Slot &s) : slot(s)
+        {
+            for (int p = 0; p < slot.parameterIds.size(); ++p)
+                if (slot.overlayActive[(size_t)p])
+                {
+                    active = true;
+                    slot.effect->getParameters()[p]->setValueNotifyingHost(slot.manualValues[(size_t)p]);
+                }
+            flush();
+        }
+        void flush()
+        {
+            if (!active || !slot.needsParameterFlush)
+                return;
+            juce::AudioBuffer<float> zero(slot.effect->getTotalNumOutputChannels(), 0);
+            MidiBuffer midi;
+            slot.effect->processBlock(zero, midi);
+        }
+        ~BaseCapture()
+        {
+            for (int p = 0; p < slot.parameterIds.size(); ++p)
+                if (slot.overlayActive[(size_t)p])
+                    slot.effect->getParameters()[p]->setValueNotifyingHost(slot.overlayValues[(size_t)p]);
+            flush();
         }
     };
     std::map<String, std::unique_ptr<Window>> windows;
@@ -204,6 +244,8 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         check(slots[i].effect->getHostedParameter(p)->getParameterID() ==
                                   slots[i].parameterIds[p],
                               "Live parameter identity changed; reprepare required");
+                    WriteScope host(writing);
+                    BaseCapture base(slots[i]);
                     auto state = describe(*slots[i].effect);
                     for (auto key :
                          {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
@@ -334,6 +376,11 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                     slot.effect->removeListener(this);
             });
     }
+    template <class F> void automationWrite(F &&apply)
+    {
+        WriteScope own(writing);
+        apply();
+    }
     std::mutex &operationMutex()
     {
         return dspOperationMutex;
@@ -377,7 +424,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                                 panic.addEvent(MidiMessage::allSoundOff(ch), 0);
                                 panic.addEvent(MidiMessage::allNotesOff(ch), 0);
                             }
-                            AudioBuffer<float> silence(slot.effect->getTotalNumOutputChannels(), 1);
+                            juce::AudioBuffer<float> silence(slot.effect->getTotalNumOutputChannels(), 1);
                             silence.clear();
                             slot.effect->processBlock(silence, panic);
                         }
@@ -501,6 +548,14 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                             else
                             {
                                 restore(*slot.effect, after, &slot.opaqueValues);
+                                for (int p = 0; p < slot.parameterIds.size(); ++p)
+                                {
+                                    slot.manualValues[(size_t)p] =
+                                        slot.effect->getParameters()[p]->getValue();
+                                    if (slot.overlayActive[(size_t)p])
+                                        slot.effect->getParameters()[p]->setValueNotifyingHost(
+                                            slot.overlayValues[(size_t)p]);
+                                }
                                 restored = true;
                                 applied = true;
                                 validateRequestedIdentity(*slot.effect, after);
@@ -541,7 +596,11 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                                     float effective = x == slot.baselineRequests[(size_t)index]
                                                           ? slot.opaqueValues[(size_t)index]
                                                           : x;
-                                    slot.effect->getParameters()[index]->setValueNotifyingHost(effective);
+                                    slot.manualValues[(size_t)index] = effective;
+                                    slot.effect->getParameters()[index]->setValueNotifyingHost(
+                                        slot.overlayActive[(size_t)index]
+                                            ? slot.overlayValues[(size_t)index].load()
+                                            : effective);
                                     observedControlValues[i][index] =
                                         slot.effect->getParameters()[index]->getValue();
                                     applied = true;
@@ -593,7 +652,9 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                         check(effect.getHostedParameter(p)->getParameterID() == slots[i].parameterIds[p],
                               "Live parameter identity changed; reprepare required");
                     for (int p = 0; p < effect.getParameters().size(); ++p)
-                        if (effect.getParameters()[p]->getValue() != lastValues[i][(size_t)p])
+                        if ((slots[i].overlayActive[(size_t)p]
+                                 ? slots[i].manualValues[(size_t)p].load()
+                                 : effect.getParameters()[p]->getValue()) != lastValues[i][(size_t)p])
                             changed = true;
                 }
             });

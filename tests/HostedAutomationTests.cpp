@@ -1,6 +1,9 @@
 #include "HostedRack.h"
 #include "HostedParameterIdentity.h"
 #include "PluginProcessing.h"
+#include "DesignAudio.h"
+#include "TrackModel.h"
+#include "AudioStream.h"
 #include <iostream>
 #include <juce_events/juce_events.h>
 namespace
@@ -36,6 +39,8 @@ void put(var &v, const char *key, var x)
     v.getDynamicObject()->setProperty(key, x);
 }
 } // namespace
+#include "HostedAutomationReadTests.inc"
+#include "HostedAutomationLiveTests.inc"
 void runHostedAutomationTests(const juce::File &base, const juce::File &app, const juce::File &fixture)
 {
     ScopedJuceInitialiser_GUI gui;
@@ -44,11 +49,21 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
     auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
     setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
     PluginWorker worker(helper);
+    const bool au = fixture.hasFileExtension("component");
+    if (au)
+        setenv("SOUNDPLUS_QA_LOCAL_AU", fixture.getFullPathName().toRawUTF8(), 1);
     auto job = obj();
     put(job, "mode", "scan");
     put(job, "path", fixture.getFullPathName());
+    if (au)
+    {
+        put(job, "format", "AudioUnit");
+        put(job, "bundle", fixture.getFullPathName());
+        put(job, "fingerprint", pluginFingerprint(fixture));
+    }
     auto found = worker.call(job, root, 20000);
     auto plugin = found["plugins"][0];
+    saveProcessingJson(root.getChildFile("qualification-scan.json"), found);
     check(plugin["reason"].toString().isEmpty(), "Owned VST3 loads through real isolated host");
     auto settings = obj();
     put(settings, "mode", "describe");
@@ -59,7 +74,14 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
     auto description = worker.call(settings, root, 20000);
     for (auto key : {"state", "stateHash", "parameters", "parameterBaseline", "program", "programName"})
         put(settings, key, description[key]);
-    auto gain = description["parameters"][0], invert = description["parameters"][1];
+    auto named = [&](const char *name)
+    {
+        for (auto &p : *description["parameters"].getArray())
+            if (p["name"].toString() == name)
+                return p;
+        throw std::runtime_error("Owned parameter missing");
+    };
+    auto gain = named("Gain"), invert = named("Invert"), creative = named("Creative delay");
     HostedRack rack;
     rack.slots.push_back({Uuid().toString(), JSON::toString(settings, true), false});
     auto token = [&](const var &parameter)
@@ -127,11 +149,18 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
             {
                 int count = std::min(partition, 700 - first);
                 std::vector<HostedParameterEvent> events;
+                float initial = .5f;
                 for (auto [frame, value] : values)
-                    if (frame >= first && frame < first + count)
+                    if (frame <= first)
+                        initial = value;
+                events.push_back({token(gain), 1, first, first, 0, (int)gain["index"], 0, 0, initial});
+                if (first >= 61)
+                    events.push_back({token(invert), 1, first, first, 0, (int)invert["index"], 0, 0, 1.f});
+                for (auto [frame, value] : values)
+                    if (frame > first && frame < first + count)
                         events.push_back(
                             {token(gain), 1, frame, frame, frame - first, (int)gain["index"], 0, 0, value});
-                if (first <= 61 && first + count > 61)
+                if (first < 61 && first + count > 61)
                     events.push_back({token(invert), 1, 61, 61, 61 - first, (int)invert["index"], 0, 0, 1.f});
                 std::stable_sort(events.begin(), events.end(),
                                  [](auto &a, auto &b) { return a.offset < b.offset; });
@@ -155,9 +184,31 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
                 first += count;
             }
         }
+    for (auto bus : {channelLayout("5.1-side-v1"), channelLayout("5.1-rear-v1"), discreteLayout(16)})
+    {
+        if (!plugin["layouts"].getArray()->contains(bus.id))
+        {
+            rejects([&] { HostedRackClient unsupported(rack, bus, 48000, [] { return false; }); },
+                    "Unavailable exact format/bus combination fails closed without implicit conversion");
+            continue;
+        }
+        HostedRackClient roles(rack, bus, 48000, [] { return false; });
+        AudioBuffer<float> pcm(bus.size(), 32);
+        for (int c = 0; c < bus.size(); ++c)
+            for (int n = 0; n < 32; ++n)
+                pcm.setSample(c, n, (c + 1) * .01f);
+        HostedParameterEvent e{token(gain), 1, 0, 0, 0, (int)gain["index"], 0, 0, .25f};
+        roles.process(pcm, 32, nullptr, 0, {}, true, false, -1, {&e, 1});
+        for (int c = 0; c < bus.size(); ++c)
+            for (int n = 0; n < 32; ++n)
+                check(std::abs(pcm.getSample(c, n) - (c + 1) * .005f) < 1e-6,
+                      "Hosted Read preserves named Side/Rear and explicit16-role channels without folding");
+    }
     // A real stateful delay must retain its input history across parameter slices.
     auto delayedSettings = settings.clone();
-    delayedSettings["parameters"][3].getDynamicObject()->setProperty("value", 3.0 / 1024);
+    for (auto &p : *delayedSettings["parameters"].getArray())
+        if ((int)p["index"] == (int)creative["index"])
+            p.getDynamicObject()->setProperty("value", 3.0 / 1024);
     auto delayed = rack;
     delayed.slots[0].settings = JSON::toString(delayedSettings, true);
     {
@@ -166,8 +217,8 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
         for (int c = 0; c < 2; ++c)
             for (int n = 0; n < 32; ++n)
                 pcm.setSample(c, n, (float)(n + 1) / 100);
-        std::vector<HostedParameterEvent> events{{token(gain), 1, 0, 0, 0, 0, 0, 0, .5f},
-                                                 {token(gain), 2, 7, 7, 7, 0, 0, 0, .25f}};
+        std::vector<HostedParameterEvent> events{{token(gain), 1, 0, 0, 0, (int)gain["index"], 0, 0, .5f},
+                                                 {token(gain), 2, 7, 7, 7, (int)gain["index"], 0, 0, .25f}};
         history.process(pcm, 32, nullptr, 0, {}, true, false, -1, events);
         for (int n = 0; n < 32; ++n)
             check(std::abs(pcm.getSample(0, n) - (n < 3 ? 0 : (float)(n - 2) / 100 * (n < 7 ? 1.f : .5f))) <
@@ -185,9 +236,10 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
             for (int n = 0; n < 32; ++n)
                 pcm.setSample(c, n, .2f);
         auto siblingToken = hostedParameterToken(sibling.id, plugin, gain["stableId"].toString());
-        std::vector<HostedParameterEvent> events{{token(gain), 1, 0, 0, 0, 0, 0, 0, .125f},
-                                                 {siblingToken, 2, 0, 0, 0, 0, 1, 0, .75f},
-                                                 {token(invert), 3, 7, 7, 7, 1, 0, 0, 1.f}};
+        std::vector<HostedParameterEvent> events{
+            {token(gain), 1, 0, 0, 0, (int)gain["index"], 0, 0, .125f},
+            {siblingToken, 2, 0, 0, 0, (int)gain["index"], 1, 0, .75f},
+            {token(invert), 3, 7, 7, 7, (int)invert["index"], 0, 0, 1.f}};
         isolated.process(pcm, 32, nullptr, 0, {}, true, false, -1, events);
         for (int n = 0; n < 32; ++n)
             check(std::abs(pcm.getSample(0, n) - .075f * (n < 7 ? 1 : -1)) < 1e-6,
@@ -200,6 +252,10 @@ void runHostedAutomationTests(const juce::File &base, const juce::File &app, con
     wrong.identity ^= 1;
     rejects([&] { client.process(audio, 32, nullptr, 1000, {}, true, false, -1, {&wrong, 1}); },
             "Worker rejects wrong instance/native identity before processing");
+    runHostedReadTests(settings, root);
+    runHostedOverlayTests(settings, root);
+    if (au)
+        unsetenv("SOUNDPLUS_QA_LOCAL_AU");
     std::cout << "Hosted automation foundation: " << checks
               << " checks; owned VST3 offsets, identity and independent PCM passed\n";
 }

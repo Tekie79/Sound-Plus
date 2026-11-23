@@ -179,7 +179,7 @@ endif()
 
 if(BUILD_TESTING)
   juce_add_plugin(SoundPlusFixture COMPANY_NAME "SoundPlus QA" PLUGIN_MANUFACTURER_CODE SpQA
-    PLUGIN_CODE SpF1 FORMATS VST3 PRODUCT_NAME "SoundPlus QA Effect" COPY_PLUGIN_AFTER_BUILD FALSE
+    PLUGIN_CODE SpF1 FORMATS VST3 AU PRODUCT_NAME "SoundPlus QA Effect" COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Fx IS_SYNTH FALSE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT TRUE)
   target_sources(SoundPlusFixture PRIVATE tests/PluginFixture.cpp)
   target_compile_definitions(SoundPlusFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0 SOUNDPLUS_FIXTURE_STEREO=0)
@@ -200,18 +200,21 @@ if(BUILD_TESTING)
 endif()
 
 if(BUILD_TESTING)
-  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp tests/HostedAutomationTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/PluginProcessingTests.cpp tests/HostedAutomationTests.cpp tests/HostedInstrumentAutomationTests.cpp)
   add_test(NAME hosted_automation COMMAND SoundPlusTests --hosted-automation "${CMAKE_BINARY_DIR}/hosted-automation/tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_VST3>/../..")
-  set_tests_properties(hosted_automation PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
+  add_test(NAME hosted_automation_au COMMAND SoundPlusTests --hosted-automation "${CMAKE_BINARY_DIR}/hosted-automation/au-tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusFixture_AU>/../..")
+  add_test(NAME hosted_instrument_automation COMMAND SoundPlusTests --hosted-instrument-automation "${CMAKE_BINARY_DIR}/hosted-automation/instrument" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusMidiFixture_VST3>/../..")
+  add_test(NAME hosted_instrument_automation_au COMMAND SoundPlusTests --hosted-instrument-automation "${CMAKE_BINARY_DIR}/hosted-automation/instrument-au" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusMidiFixture_AU>/../..")
+  set_tests_properties(hosted_automation hosted_automation_au hosted_instrument_automation hosted_instrument_automation_au PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   target_include_directories(SoundPlusTests PRIVATE "${JUCE_DIR}/modules/juce_audio_processors/format_types/VST3_SDK")
   juce_add_plugin(SoundPlusMidiFixture COMPANY_NAME "SoundPlus" BUNDLE_ID "org.soundplus.midi-fixture" PLUGIN_MANUFACTURER_CODE SpQA
-    PLUGIN_CODE SpM1 FORMATS VST3 PRODUCT_NAME "SoundPlus MIDI Oracle" COPY_PLUGIN_AFTER_BUILD FALSE
+    PLUGIN_CODE SpM1 FORMATS VST3 AU PRODUCT_NAME "SoundPlus MIDI Oracle" COPY_PLUGIN_AFTER_BUILD FALSE
     VST3_CATEGORIES Instrument Synth IS_SYNTH TRUE NEEDS_MIDI_INPUT TRUE NEEDS_MIDI_OUTPUT FALSE)
   target_sources(SoundPlusMidiFixture PRIVATE tests/MidiInstrumentFixture.cpp)
   target_compile_definitions(SoundPlusMidiFixture PRIVATE JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_VST3_CAN_REPLACE_VST2=0)
   target_link_libraries(SoundPlusMidiFixture PRIVATE juce::juce_audio_processors)
   target_sources(SoundPlusTests PRIVATE tests/MidiInstrumentTests.cpp)
-  add_dependencies(SoundPlusTests SoundPlusMidiFixture_VST3)
+  add_dependencies(SoundPlusTests SoundPlusMidiFixture_VST3 SoundPlusMidiFixture_AU SoundPlusFixture_AU)
   add_test(NAME midi_instruments COMMAND SoundPlusTests --midi-instruments "${CMAKE_BINARY_DIR}/midi-instrument-tests" "$<TARGET_FILE:SoundPlus>" "$<TARGET_FILE_DIR:SoundPlusMidiFixture_VST3>/../..")
   set_tests_properties(midi_instruments PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   add_dependencies(SoundPlusTests SoundPlusFixture_VST3 SoundPlusStereoFixture_VST3 SoundPlusInstrumentFixture_VST3 SoundPlusPlugin)

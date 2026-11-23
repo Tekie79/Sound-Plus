@@ -42,6 +42,7 @@ void runInputRecordingTests(const juce::File &);
 void runMidiInstrumentTests(const juce::File &, const juce::File &, const juce::File &);
 void runMidiResponsivenessTests(const juce::File &);
 void runMidiTests(const juce::File &);
+void runHostedInstrumentAutomationTests(const juce::File &, const juce::File &, const juce::File &);
 void runHostedAutomationTests(const juce::File &, const juce::File &, const juce::File &);
 void runNativeEffectsTests(const juce::File &);
 void runAdvancedEffectsTests(const juce::File &);
@@ -113,6 +114,11 @@ int main(int argc, char **argv)
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-native-effects-ui")
         {
             prepareNativeEffectsUI(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 5 && juce::String(argv[1]) == "--hosted-instrument-automation")
+        {
+            runHostedInstrumentAutomationTests(juce::File(argv[2]), juce::File(argv[3]), juce::File(argv[4]));
             return 0;
         }
         if (argc >= 5 && juce::String(argv[1]) == "--hosted-automation")

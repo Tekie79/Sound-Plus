@@ -1,4 +1,5 @@
 #include "TrackModel.h"
+#include "HostedParameterIdentity.h"
 #include "NativeEffects.h"
 #include "CanvasEditing.h"
 #include "SourcePools.h"
@@ -72,6 +73,8 @@ juce::var laneJson(const AutomationLane &l)
         auto row = obj();
         put(row, "target", targetJson(c.target));
         put(row, "read", c.read);
+        if (c.hostedBinding && !c.points.empty())
+            put(row, "hostedBinding", hostedBindingJson(*c.hostedBinding));
         juce::Array<juce::var> points;
         for (auto &p : c.points)
         {
@@ -101,6 +104,8 @@ AutomationLane laneFrom(const juce::var &v)
         AutomationCurve c;
         c.target = targetFrom(row["target"]);
         c.read = row["read"];
+        if (row.hasProperty("hostedBinding"))
+            c.hostedBinding = hostedBindingFromJson(row["hostedBinding"]);
         require(row["points"].isArray() && row["points"].size() <= 2048, "Automation curve point bound");
         for (auto &p : *row["points"].getArray())
             c.points.push_back(
@@ -260,6 +265,11 @@ void splitClip(DesignDocument &d, const juce::String &id, int64_t frame)
                 if (curve.target.instance == oldOrder[i].id)
                 {
                     curve.target.instance = newOrder[i].id;
+                    if (curve.hostedBinding)
+                    {
+                        curve.hostedBinding->slot = newOrder[i].id;
+                        curve.hostedBinding->source = right.id;
+                    }
                     for (auto &point : curve.points)
                         point.id = juce::Uuid().toString();
                     lane->curves.push_back(std::move(curve));
@@ -476,7 +486,9 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
             {{s.id, "instrument-gain"}, "Instrument", "Sampler gain", "dB", -90, 24, s.instrumentGainDb});
         out.push_back({{s.id, "tuning"}, "Instrument", "Sampler tuning", "semitones", -48, 48, s.transpose});
     }
-    auto rack = [&](const InsertChain &c, const juce::String &prefix)
+    auto rack = [&](const InsertChain &c, const juce::String &prefix,
+                    const juce::String &source = juce::String(),
+                    const juce::String &instrument = juce::String())
     {
         int index = 0;
         for (auto &ref : resolvedInsertOrder(c))
@@ -563,15 +575,40 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
                                     stable = v["id"].toString();
                                 out.push_back({{e.id, stable},
                                                "Inserts",
-                                               prefix + settings["plugin"]["name"].toString() +
+                                               prefix + juce::String(index) + " · " +
+                                                   settings["plugin"]["name"].toString() +
                                                    juce::String::fromUTF8(" · ") + v["name"].toString(),
-                                               "normalized",
+                                               "normalized" + (v["unit"].toString().isNotEmpty()
+                                                                   ? " / " + v["unit"].toString()
+                                                                   : juce::String()),
                                                0,
                                                1,
                                                (double)v["value"],
                                                false,
                                                false,
                                                false});
+                                auto &parameter = out.back();
+                                parameter.hostedBinding =
+                                    HostedAutomationBinding{owner,
+                                                            source,
+                                                            instrument,
+                                                            e.id,
+                                                            settings["plugin"]["format"],
+                                                            settings["plugin"]["id"],
+                                                            settings["plugin"]["fingerprint"],
+                                                            stable};
+                                parameter.nativeIndex = (int)v["index"];
+                                parameter.hostedToken =
+                                    hostedParameterToken(e.id, settings["plugin"], stable);
+                                parameter.discrete = (int)v["steps"] > 1 && (int)v["steps"] < 0x7fffffff;
+                                parameter.normalizedStep =
+                                    parameter.discrete ? 1. / ((int)v["steps"] - 1) : 0;
+                                parameter.writable =
+                                    (bool)v["automatable"] && v["stableId"].toString().isNotEmpty();
+                                parameter.unavailable =
+                                    parameter.writable
+                                        ? juce::String()
+                                        : "Plugin declares parameter unavailable for automation";
                             }
                     }
         }
@@ -579,19 +616,60 @@ std::vector<AutomationParameter> automationTargets(const DesignMix &m, const juc
     if (track && track->instrument && !track->instrument->hostedInstrument.hosted.slots.empty())
     {
         auto first = out.size();
-        rack(track->instrument->hostedInstrument, {});
+        rack(track->instrument->hostedInstrument, {}, {}, track->instrument->id);
         for (size_t i = first; i < out.size(); ++i)
         {
             out[i].group = "Instrument";
-            out[i].writable = false;
         }
     }
     rack(master ? m.inserts : track->inserts, {});
     if (!master)
         for (auto &clip : m.layers)
             if (clip.trackId == owner)
-                rack(clip.inserts, "Source / " + clip.name + juce::String::fromUTF8(" · "));
+                rack(clip.inserts, "Source / " + clip.name + juce::String::fromUTF8(" · "), clip.id);
+    if (auto *lane = automationLane(m, owner))
+        for (auto &curve : lane->curves)
+            if (curve.hostedBinding && !curve.points.empty())
+            {
+                auto p =
+                    std::find_if(out.begin(), out.end(), [&](auto &p) { return p.target == curve.target; });
+                if (p == out.end())
+                {
+                    out.push_back({curve.target, "Unavailable", "Missing plugin parameter", "normalized", 0,
+                                   1, 0, false, false, false});
+                    p = std::prev(out.end());
+                }
+                if (!p->hostedBinding || *p->hostedBinding != *curve.hostedBinding)
+                {
+                    p->writable = false;
+                    p->unavailable = "Saved owner/plugin fingerprint/native ID differs; curve retained. "
+                                     "Restore the exact plugin or intentionally replace the curve.";
+                }
+            }
     return out;
+}
+bool hasHostedAutomation(const DesignMix &m)
+{
+    auto used = [](const AutomationLane &lane)
+    {
+        return std::any_of(lane.curves.begin(), lane.curves.end(),
+                           [](auto &c) { return c.hostedBinding && !c.points.empty(); });
+    };
+    if (used(m.masterAutomation))
+        return true;
+    return std::any_of(m.tracks.begin(), m.tracks.end(), [&](auto &t) { return used(t.automation); });
+}
+bool hasHostedAutomation(const DesignDocument &d)
+{
+    if (hasHostedAutomation(d.original))
+        return true;
+    for (auto &v : d.variations)
+        if (hasHostedAutomation(v.mix))
+            return true;
+    for (auto &t : d.takes)
+        if (hasHostedAutomation(t.recipe))
+            return true;
+    return false;
 }
 double automationValue(const AutomationCurve &curve, const AutomationParameter &p, int64_t frame)
 {
@@ -620,6 +698,7 @@ void addAutomationPoint(DesignMix &m, const juce::String &owner, const Automatio
     auto *curve = automationCurve(*lane, t, true);
     if (curve->points.empty())
     {
+        curve->hostedBinding = p->hostedBinding;
         curve->points.push_back({juce::Uuid().toString(), 0, p->base, false});
         auto end = std::max<int64_t>(frame + 1, mixDuration(m, rate));
         curve->points.push_back({juce::Uuid().toString(), end, p->base, false});
@@ -627,7 +706,8 @@ void addAutomationPoint(DesignMix &m, const juce::String &owner, const Automatio
     frame = std::max<int64_t>(0, frame);
     value = std::clamp(value, p->minimum, p->maximum);
     if (p->discrete)
-        value = std::round(value);
+        value = p->normalizedStep > 0 ? std::round(value / p->normalizedStep) * p->normalizedStep
+                                      : std::round(value);
     auto it =
         std::find_if(curve->points.begin(), curve->points.end(), [&](auto &x) { return x.frame == frame; });
     if (it != curve->points.end())
@@ -676,9 +756,19 @@ CompiledAutomation::CompiledAutomation(const DesignMix &m, const juce::String &o
     auto targets = automationTargets(m, owner);
     for (auto &curve : lane->curves)
         if (curve.read)
+        {
+            bool resolved = false;
             for (auto &p : targets)
-                if (p.target == curve.target && p.writable)
+                if (p.target == curve.target && p.writable &&
+                    (!p.hostedBinding || (curve.hostedBinding && *p.hostedBinding == *curve.hostedBinding)))
+                {
                     bindings.push_back({p, curve});
+                    resolved = true;
+                }
+            if (curve.hostedBinding && !curve.points.empty() && !resolved)
+                throw std::runtime_error("Hosted automation binding unavailable; restore the exact "
+                                         "plugin/owner/parameter or disable Read");
+        }
 }
 double CompiledAutomation::value(const AutomationTarget &target, double base, int64_t frame) const
 {
@@ -792,6 +882,12 @@ void validateTracks(const DesignMix &m, double rate)
                         targets.emplace(c.target.instance, c.target.parameter).second,
                     "Duplicate/invalid curve target");
             require(c.points.size() <= 2048, "Curve point bound");
+            if (c.hostedBinding)
+            {
+                auto validated = hostedBindingFromJson(hostedBindingJson(*c.hostedBinding));
+                require(validated.slot == c.target.instance && validated.parameter == c.target.parameter,
+                        "Hosted binding target differs from curve");
+            }
             int64_t previous = -1;
             std::set<juce::String> points;
             for (auto &p : c.points)
@@ -803,7 +899,11 @@ void validateTracks(const DesignMix &m, double rate)
                                            [&](auto &v) { return v.target == c.target; });
                 if (target != registry.end())
                     require(p.value >= target->minimum && p.value <= target->maximum &&
-                                (!target->discrete || p.value == std::round(p.value)),
+                                (!target->discrete ||
+                                 (target->normalizedStep > 0
+                                      ? std::abs(p.value / target->normalizedStep -
+                                                 std::round(p.value / target->normalizedStep)) < 1e-5
+                                      : p.value == std::round(p.value))),
                             "Automation value outside target units");
                 previous = p.frame;
                 ++pointCount;
@@ -926,5 +1026,43 @@ void tracksFromJson(DesignMix &m, const juce::var &v)
         t.automation = laneFrom(x["automation"]);
         m.tracks.push_back(std::move(t));
     }
+}
+} // namespace sp
+
+namespace sp
+{
+std::vector<HostedParameterEvent> CompiledAutomation::hostedEvents(const HostedRack &rack, int64_t first,
+                                                                   int frames, int latency) const
+{
+    std::vector<HostedParameterEvent> result;
+    for (size_t slot = 0; slot < rack.slots.size(); ++slot)
+        for (auto &b : bindings)
+            if (b.parameter.hostedBinding && b.parameter.target.instance == rack.slots[slot].id &&
+                !b.curve.points.empty())
+            {
+                auto token = b.parameter.hostedToken;
+                for (int offset = 0; offset < frames;)
+                {
+                    auto frame = std::max<int64_t>(0, first + offset - latency);
+                    auto phase = frame - frame % 32;
+                    auto next = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,
+                                                 [](auto f, auto &p) { return f < p.frame; });
+                    if (next != b.curve.points.begin())
+                        phase = std::max(phase, std::prev(next)->frame);
+                    result.push_back({token, 1, frame, first + offset, offset, b.parameter.nativeIndex,
+                                      (uint16_t)slot, 0,
+                                      (float)automationValue(b.curve, b.parameter, phase)});
+                    if (result.size() > hostedEventLimit)
+                        throw std::runtime_error("Hosted automation event capacity exceeded");
+                    int n = std::min(frames - offset, 32 - (int)(frame % 32));
+                    if (next != b.curve.points.end())
+                        n = (int)std::min<int64_t>(n, next->frame - frame);
+                    if (first + offset - latency < 0)
+                        n = (int)std::min<int64_t>(frames - offset, latency - first - offset);
+                    offset += std::max(1, n);
+                }
+            }
+    std::stable_sort(result.begin(), result.end(), [](auto &a, auto &b) { return a.offset < b.offset; });
+    return result;
 }
 } // namespace sp

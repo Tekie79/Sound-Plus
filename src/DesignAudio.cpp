@@ -854,9 +854,11 @@ struct DesignGraph::Impl
             if (node.instrument)
             {
                 bool ending = inputEnd >= 0 && cursor + frames > inputEnd && !node.endedMidi;
-                node.instrument->process(node.pcm, frames, &node.midi, cursor,
-                                         document.activeMix().midiTiming, node.audible && !node.endedMidi,
-                                         node.panic, inputEnd);
+                node.instrument->process(
+                    node.pcm, frames, &node.midi, cursor, document.activeMix().midiTiming,
+                    node.audible && !node.endedMidi, node.panic, inputEnd,
+                    node.automation->hostedEvents(node.track.instrument->hostedInstrument.hosted, cursor,
+                                                  frames, 0));
                 node.panic = false;
                 if (ending)
                     node.endedMidi = true;
@@ -982,7 +984,8 @@ struct DesignGraph::Impl
         // Recipe7 retains the bounded source dependencies used by compensated
         // lookahead/causalized IR conversion during the consumed body. Output
         // duration stays bodyEnd; historical recipes keep their original gate.
-        if (auto *t = selectedTake(d); t && t->processing == "advanced-effects-takes-v1")
+        if (auto *t = selectedTake(d); t && (t->processing == "advanced-effects-takes-v1" ||
+                                             t->processing == "hosted-automation-takes-v1"))
             inputEnd += pipelineDependencies;
         if (auto *t = selectedTake(d);
             t && (t->pluginAware || t->trackRecipe || hasNativeEffects((const DesignMix &)t->recipe)))
@@ -1508,6 +1511,8 @@ DesignOutput renderDesign(const DesignDocument &d, const juce::File &folder,
     if (hasNativeEffects(effectiveInput.activeMix()))
         result.processing =
             hasAdvancedEffects(effectiveInput.activeMix()) ? "advanced-effects-v1" : "native-effects-v1";
+    if (hasHostedAutomation(effectiveInput.activeMix()))
+        result.processing = "hosted-automation-v1";
     if (hostedPass)
     {
         if (result.processing.isEmpty())

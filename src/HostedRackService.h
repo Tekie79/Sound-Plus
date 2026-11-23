@@ -57,12 +57,16 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
         {
             HostedInstance effect;
             int latency = 0, write = 0;
+            bool needsParameterFlush = false;
             std::shared_ptr<std::atomic<bool>> bypass = std::make_shared<std::atomic<bool>>(false);
-            AudioBuffer<float> dry;
+            juce::AudioBuffer<float> dry;
             AudioProcessor::BusesLayout buses;
             StringArray parameterIds;
             std::vector<uint64_t> parameterTokens;
             std::vector<bool> automatable;
+            std::unique_ptr<std::atomic<float>[]> manualValues, overlayValues;
+            std::unique_ptr<std::atomic<bool>[]> overlayActive;
+            std::vector<uint8_t> activeThisBlock;
             std::vector<float> requestedValues, opaqueValues, baselineRequests;
         };
         std::vector<Slot> slots;
@@ -91,6 +95,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             check(latency >= 0 && latency <= (int)rate && totalLatency + latency <= (int)rate,
                   "Hosted rack latency exceeds one-second bound");
             Slot prepared;
+            prepared.needsParameterFlush = settings["plugin"]["format"].toString() == "VST3";
             prepared.opaqueValues = std::move(opaqueValues);
             prepared.latency = latency;
             *prepared.bypass = rack.bypass || slot.bypass;
@@ -106,6 +111,17 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                         prepared.parameterTokens.push_back(
                             sp::hostedParameterToken(slot.id, settings["plugin"], id));
                         prepared.automatable.push_back(p->getParameters()[i]->isAutomatable());
+                    }
+                    const auto count = (size_t)p->getParameters().size();
+                    prepared.manualValues = std::make_unique<std::atomic<float>[]>(count);
+                    prepared.overlayValues = std::make_unique<std::atomic<float>[]>(count);
+                    prepared.overlayActive = std::make_unique<std::atomic<bool>[]>(count);
+                    prepared.activeThisBlock.resize(count);
+                    for (size_t i = 0; i < count; ++i)
+                    {
+                        prepared.manualValues[i] = p->getParameters()[(int)i]->getValue();
+                        prepared.overlayValues[i] = prepared.manualValues[i].load();
+                        prepared.overlayActive[i] = false;
                     }
                     prepared.requestedValues.assign((size_t)p->getParameters().size(),
                                                     std::numeric_limits<float>::quiet_NaN());
@@ -141,7 +157,7 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             totalLatency += latency;
         }
         e->latency = totalLatency;
-        AudioBuffer<float> audio(bus.size(), 512), dry(bus.size(), 512);
+        juce::AudioBuffer<float> audio(bus.size(), 512), dry(bus.size(), 512);
         MidiBuffer midi, sliceMidi;
         midi.ensureSize(sp::HostedRackExchange::midiLimit * 16);
         sliceMidi.ensureSize(sp::HostedRackExchange::midiLimit * 16);
@@ -208,7 +224,11 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                                     float effective = x == slot.baselineRequests[(size_t)index]
                                                           ? slot.opaqueValues[(size_t)index]
                                                           : x;
-                                    parameter->setValueNotifyingHost(effective);
+                                    slot.manualValues[(size_t)index] = effective;
+                                    parameter->setValueNotifyingHost(
+                                        slot.overlayActive[(size_t)index]
+                                            ? slot.overlayValues[(size_t)index].load()
+                                            : effective);
                                     slot.requestedValues[(size_t)index] = x;
                                 }
                             }
@@ -232,7 +252,6 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
             std::span<const sp::HostedParameterEvent> events(e->automation, (size_t)e->automationCount);
             sp::validateHostedEvents(events, frames, (int)slots.size(), e->automationInputFrame,
                                      eventSequence);
-            check(!live || events.empty(), "Live automation overlay is not yet qualified");
             for (auto &event : events)
             {
                 auto &slot = slots[event.slot];
@@ -283,40 +302,66 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                     }
                     slot.write = (at + 1) % slot.dry.getNumSamples();
                 }
-                AudioBuffer<float> view(audio.getArrayOfWritePointers(), bus.size(), frames);
-                if (!events.empty())
+                juce::AudioBuffer<float> view(audio.getArrayOfWritePointers(), bus.size(), frames);
+                bool overlayPresent = false;
+                for (int p = 0; p < slot.parameterIds.size(); ++p)
+                    overlayPresent |= slot.overlayActive[(size_t)p].load();
+                if (!events.empty() || overlayPresent)
                     onPluginMessageThread(
                         [&]
                         {
-                            check(slot.effect->getParameters().size() == slot.parameterIds.size(),
-                                  "Hosted automation schema changed; reprepare required");
-                            for (auto &event : events)
-                                if (event.slot == slotIndex)
-                                    check(slot.effect->getHostedParameter(event.index)->getParameterID() ==
-                                              slot.parameterIds[event.index],
-                                          "Hosted automation stable ID changed; reprepare required");
-                            // One bounded IPC request, one message-thread dispatch.
-                            // Preserve processor history and rebase MIDI for every slice.
-                            for (int at = 0; at < frames;)
+                            auto processAutomated = [&]
                             {
-                                int next = frames;
+                                std::fill(slot.activeThisBlock.begin(), slot.activeThisBlock.end(), 0);
                                 for (auto &event : events)
                                     if (event.slot == slotIndex)
+                                        slot.activeThisBlock[(size_t)event.index] = 1;
+                                for (int p = 0; p < slot.parameterIds.size(); ++p)
+                                    if (slot.overlayActive[(size_t)p] && !slot.activeThisBlock[(size_t)p])
                                     {
-                                        if (event.offset == at)
-                                            slot.effect->getParameters()[event.index]->setValueNotifyingHost(
-                                                event.value);
-                                        else if (event.offset > at)
-                                            next = std::min(next, event.offset);
+                                        slot.effect->getParameters()[p]->setValueNotifyingHost(
+                                            slot.manualValues[(size_t)p]);
+                                        slot.overlayActive[(size_t)p] = false;
                                     }
-                                AudioBuffer<float> slice(audio.getArrayOfWritePointers(), bus.size(), at,
-                                                         next - at);
-                                MidiBuffer sliceMidi;
-                                sliceMidi.addEvents(midi, at, next - at, -at);
-                                playhead.frame = e->projectFrame + at;
-                                slot.effect->processBlock(slice, sliceMidi);
-                                at = next;
-                            }
+                                check(slot.effect->getParameters().size() == slot.parameterIds.size(),
+                                      "Hosted automation schema changed; reprepare required");
+                                for (auto &event : events)
+                                    if (event.slot == slotIndex)
+                                        check(
+                                            slot.effect->getHostedParameter(event.index)->getParameterID() ==
+                                                slot.parameterIds[event.index],
+                                            "Hosted automation stable ID changed; reprepare required");
+                                // One bounded IPC request, one message-thread dispatch.
+                                // Preserve processor history and rebase MIDI for every slice.
+                                for (int at = 0; at < frames;)
+                                {
+                                    int next = frames;
+                                    for (auto &event : events)
+                                        if (event.slot == slotIndex)
+                                        {
+                                            if (event.offset == at)
+                                            {
+                                                slot.overlayValues[(size_t)event.index] = event.value;
+                                                slot.overlayActive[(size_t)event.index] = true;
+                                                slot.effect->getParameters()[event.index]
+                                                    ->setValueNotifyingHost(event.value);
+                                            }
+                                            else if (event.offset > at)
+                                                next = std::min(next, event.offset);
+                                        }
+                                    juce::AudioBuffer<float> slice(audio.getArrayOfWritePointers(),
+                                                                   bus.size(), at, next - at);
+                                    sliceMidi.clear();
+                                    sliceMidi.addEvents(midi, at, next - at, -at);
+                                    playhead.frame = e->projectFrame + at;
+                                    slot.effect->processBlock(slice, sliceMidi);
+                                    at = next;
+                                }
+                            };
+                            if (live)
+                                live->automationWrite(processAutomated);
+                            else
+                                processAutomated();
                         });
                 else if (live)
                 {
