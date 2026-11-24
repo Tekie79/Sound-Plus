@@ -1,8 +1,9 @@
 #include "AutomationMidi.h"
 namespace sp
 {
-bool AutomationMidiInput::open(const juce::String &identifier)
+bool AutomationMidiInput::open(const juce::String &identifier, bool notes)
 {
+    includeNotes = notes;
     input = juce::MidiInput::openDevice(identifier, this);
     if (!input)
         return false;
@@ -16,7 +17,8 @@ AutomationMidiInput::~AutomationMidiInput()
 }
 void AutomationMidiInput::handleIncomingMidiMessage(juce::MidiInput *, const juce::MidiMessage &m)
 {
-    if (!m.isController() || m.getControllerNumber() >= 120)
+    const bool note = includeNotes && m.isNoteOnOrOff();
+    if (!note && (!m.isController() || m.getControllerNumber() >= 120))
         return;
     auto w = write.load(std::memory_order_relaxed);
     if (w - read.load(std::memory_order_acquire) >= capacity)
@@ -24,7 +26,8 @@ void AutomationMidiInput::handleIncomingMidiMessage(juce::MidiInput *, const juc
         overflow = true;
         return;
     }
-    queue[w % capacity] = {m.getChannel(), m.getControllerNumber(), m.getControllerValue()};
+    queue[w % capacity] = {m.getChannel(), note ? m.getNoteNumber() : m.getControllerNumber(),
+                           note ? (m.isNoteOff() ? 0 : (int)m.getVelocity()) : m.getControllerValue(), note};
     write.store(w + 1, std::memory_order_release);
 }
 void AutomationMidiInput::drain(const std::function<void(CC)> &fn)

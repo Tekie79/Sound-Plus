@@ -12,8 +12,9 @@ class AutomationMidiInput final : private juce::MidiInputCallback
     struct CC
     {
         int channel = 0, number = 0, value = 0;
+        bool note = false;
     };
-    bool open(const juce::String &identifier);
+    bool open(const juce::String &identifier, bool includeNotes = false);
     ~AutomationMidiInput() override;
     void drain(const std::function<void(CC)> &);
     bool overflowed()
@@ -22,6 +23,7 @@ class AutomationMidiInput final : private juce::MidiInputCallback
     }
 
   private:
+    bool includeNotes = false;
     static constexpr unsigned capacity = 256;
     std::array<CC, capacity> queue{};
     std::atomic<unsigned> write{0}, read{0};

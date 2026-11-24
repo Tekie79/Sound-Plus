@@ -26,7 +26,7 @@ class PoolVoices
     };
     std::vector<Sound> sounds;
     bool schedule(size_t sound, const SourceVoiceEvent &);
-    void mix(juce::AudioBuffer<float> &base, int count, int64_t frame, float gain);
+    void mix(juce::AudioBuffer<float> &base, int count, int64_t frame, float gain, int64_t sourceEnd = -1);
     uint64_t steals() const
     {
         return stolen;

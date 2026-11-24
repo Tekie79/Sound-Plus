@@ -7,7 +7,6 @@ namespace sp
 {
 namespace
 {
-constexpr auto policy = "equal-power-fresh-source-v1";
 float inGain(int64_t elapsed, int length)
 {
     if (length <= 0 || elapsed >= length)
@@ -24,7 +23,10 @@ float outGain(int64_t elapsed, int length)
 bool hasSourcePerformance(const DesignDocument &d)
 {
     auto uses = [](auto &m)
-    { return std::any_of(m.layers.begin(), m.layers.end(), [](auto &l) { return l.pool && l.pool->live; }); };
+    {
+        return std::any_of(m.layers.begin(), m.layers.end(),
+                           [](auto &l) { return l.pool && (l.pool->live || l.pool->triggerMidi); });
+    };
     return uses(d.original) ||
            std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return uses(v.mix); }) ||
            std::any_of(d.takes.begin(), d.takes.end(),
@@ -198,7 +200,7 @@ void PoolVoices::start(const Event &e)
     }
     *at = {e.sound, e.frame, -1, sustain ? e.overlap : 0, 0, e.level, 1, sustain, ++order};
 }
-void PoolVoices::mix(juce::AudioBuffer<float> &base, int frames, int64_t frame, float gain)
+void PoolVoices::mix(juce::AudioBuffer<float> &base, int frames, int64_t frame, float gain, int64_t sourceEnd)
 {
     if (count == 0 && order == 0)
         return;
@@ -217,6 +219,8 @@ void PoolVoices::mix(juce::AudioBuffer<float> &base, int frames, int64_t frame, 
             for (int c = 0; c < base.getNumChannels(); ++c)
                 base.setSample(c, n, base.getSample(c, n) * g);
         }
+        if (sourceEnd >= 0 && t >= sourceEnd)
+            continue;
         for (auto &p : playing)
             if (p.sound >= 0)
             {

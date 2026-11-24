@@ -381,6 +381,17 @@ juce::var sourcePoolToJson(const SourcePool &p)
     put(v, "id", p.id);
     put(v, "selected", p.selected);
     put(v, "choiceLocked", p.choiceLocked);
+    if (p.triggerMidi)
+    {
+        auto &m = *p.triggerMidi;
+        auto mapping = obj();
+        put(mapping, "device", m.device);
+        put(mapping, "entry", m.entry);
+        put(mapping, "channel", m.channel);
+        put(mapping, "key", m.key);
+        put(mapping, "note", m.note);
+        put(v, "triggerMidi", mapping);
+    }
     if (p.live)
         put(v, "liveSources", "prepared-corner-v1");
     put(v, "policy", p.policy);
@@ -401,6 +412,15 @@ SourcePool sourcePoolFromJson(const juce::var &v)
     p.id = v["id"].toString();
     p.selected = v["selected"].toString();
     p.choiceLocked = (bool)v["choiceLocked"];
+    if (auto m = v["triggerMidi"]; m.isObject())
+    {
+        SourceTriggerMidi b{m["device"].toString(), m["entry"].toString(), (int)m["channel"], (int)m["key"],
+                            (bool)m["note"]};
+        if (b.device.isEmpty() || b.device.length() > 512 || b.entry.isEmpty() || b.channel < 1 ||
+            b.channel > 16 || b.key < 0 || b.key > (b.note ? 127 : 119))
+            throw std::runtime_error("Invalid MIDI source trigger binding");
+        p.triggerMidi = std::move(b);
+    }
     if (v.hasProperty("liveSources"))
     {
         if (v["liveSources"].toString() != "prepared-corner-v1")

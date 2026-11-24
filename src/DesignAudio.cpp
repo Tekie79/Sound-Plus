@@ -534,7 +534,7 @@ class Voice
         isolatedSource.clear();
         addBase(isolatedSource, 0, frames, frame, end);
         alternateVoices->mix(isolatedSource, frames, frame - latency() - alignmentFrames,
-                             float(layer.controlGain));
+                             float(layer.controlGain), end);
         for (int c = 0; c < destination.getNumChannels(); ++c)
             destination.addFrom(c, offset, isolatedSource, c, 0, frames);
     }

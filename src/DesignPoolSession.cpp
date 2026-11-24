@@ -1,3 +1,4 @@
+#include "PerformanceState.h"
 #include "DesignSession.h"
 namespace sp
 {
@@ -400,5 +401,149 @@ void DesignSession::generatePoolVariations(uint64_t seed)
                 };
             });
     notify();
+}
+} // namespace sp
+
+namespace sp
+{
+void DesignSession::learnSourceTrigger(const juce::String &layer, const juce::String &entry,
+                                       const juce::String &device)
+{
+    if (ownsPlayback() || takeBusy() || document.activeTake.isNotEmpty() || device.isEmpty())
+        return;
+    learningSource = LearningSource{juce::String((juce::int64)lifetime) + "/" + document.id + "/" +
+                                        document.activeVariation,
+                                    layer, entry, device};
+    nextSourceScan = 0;
+    message = "Play a MIDI note or move a controller";
+    notify();
+}
+void DesignSession::forgetSourceTrigger(const juce::String &id)
+{
+    learningSource.reset();
+    nextSourceScan = 0;
+    editMetadata("Forget source trigger",
+                 [&](auto &d)
+                 {
+                     for (auto &l : d.activeMix().layers)
+                         if (l.id == id && l.pool)
+                             l.pool->triggerMidi.reset();
+                 });
+}
+void DesignSession::pollSourceInputs()
+{
+    auto context = juce::String((juce::int64)lifetime) + "/" + document.id + "/" + document.activeVariation;
+    if (sourceInputContext != context || document.activeTake.isNotEmpty())
+    {
+        sourceInputs.clear();
+        heldSourceKeys.clear();
+        sourceInputContext = context;
+        nextSourceScan = 0;
+        if (learningSource && learningSource->context != context)
+            learningSource.reset();
+        if (document.activeTake.isNotEmpty())
+        {
+            learningSource.reset();
+            return;
+        }
+    }
+    auto &mix = document.activeMix();
+    if (sourceInputRevision != document.revision)
+    {
+        sourceInputRevision = document.revision;
+        nextSourceScan = 0;
+    }
+    if (services.now() >= nextSourceScan)
+    {
+        nextSourceScan = services.now() + 1500;
+        std::set<juce::String> wanted;
+        if (learningSource)
+            wanted.insert(learningSource->device);
+        for (auto &l : mix.layers)
+            if (l.pool && l.pool->live && l.pool->triggerMidi)
+                wanted.insert(l.pool->triggerMidi->device);
+        if (wanted.empty())
+        {
+            sourceInputs.clear();
+            heldSourceKeys.clear();
+            return;
+        }
+        auto devices = juce::MidiInput::getAvailableDevices();
+        std::erase_if(sourceInputs,
+                      [&](auto &v)
+                      {
+                          bool gone = !wanted.contains(v.first) ||
+                                      std::none_of(devices.begin(), devices.end(),
+                                                   [&](auto &d) { return d.identifier == v.first; });
+                          if (gone)
+                              std::erase_if(heldSourceKeys, [&](auto &key) { return key.first == v.first; });
+                          return gone;
+                      });
+        for (auto &d : devices)
+            if (wanted.contains(d.identifier) && !sourceInputs.contains(d.identifier))
+            {
+                auto p = std::make_unique<AutomationMidiInput>();
+                if (p->open(d.identifier, true))
+                    sourceInputs.emplace(d.identifier, std::move(p));
+            }
+    }
+    for (auto &[device, input] : sourceInputs)
+    {
+        if (input->overflowed())
+        {
+            input->drain([](auto) {});
+            heldSourceKeys.clear();
+            message = "MIDI trigger queue full";
+            continue;
+        }
+        input->drain(
+            [&](auto e)
+            {
+                auto key = std::make_pair(device, (e.channel * 2 + int(e.note)) * 128 + e.number);
+                if (e.value < (e.note ? 1 : 64))
+                {
+                    heldSourceKeys.erase(key);
+                    return;
+                }
+                if (!heldSourceKeys.insert(key).second)
+                    return;
+                if (learningSource && learningSource->device == device)
+                {
+                    auto learn = *learningSource;
+                    learningSource.reset();
+                    editMetadata("Learn source trigger",
+                                 [&](auto &d)
+                                 {
+                                     for (auto &l : d.activeMix().layers)
+                                         if (l.id == learn.layer && l.pool && l.pool->live)
+                                             l.pool->triggerMidi = SourceTriggerMidi{
+                                                 device, learn.entry, e.channel, e.number, e.note};
+                                 });
+                    message = "MIDI trigger learned";
+                    notify();
+                    return;
+                }
+                if (!canTriggerSource())
+                    return;
+                for (int pad = 0; pad <= int(mix.performancePads.size()); ++pad)
+                    for (int c = 0; c < 4; ++c)
+                    {
+                        auto &id = padState(mix, pad).assignments[(size_t)c].layer;
+                        for (auto &l : mix.layers)
+                            if (l.id == id && l.pool && l.pool->live && l.pool->triggerMidi)
+                            {
+                                auto &m = *l.pool->triggerMidi;
+                                if (m.device == device && m.channel == e.channel && m.note == e.note &&
+                                    m.key == e.number)
+                                {
+                                    auto db =
+                                        e.note ? juce::Decibels::gainToDecibels(e.value / 127., -60.) : 0.;
+                                    triggerSource(pad, c, m.entry, false, 0, db);
+                                    return;
+                                }
+                            }
+                    }
+            });
+    }
 }
 } // namespace sp

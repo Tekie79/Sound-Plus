@@ -2,6 +2,7 @@
 #include "DesignAudio.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
+#include "SourcePerformance.h"
 #include "DesignSession.h"
 #include "DesignLive.h"
 #include "AudioStream.h"
@@ -448,6 +449,110 @@ struct Harness
             ui();
     }
 };
+void voiceBounds()
+{
+    using namespace sp;
+    PoolVoices v;
+    juce::AudioBuffer<float> pcm(1, 32), output(1, 32);
+    pcm.clear();
+    output.clear();
+    for (int i = 0; i < 32; ++i)
+        pcm.setSample(0, i, 1.f);
+    v.sounds.push_back({{}, pcm});
+    for (int i = 0; i < 5; ++i)
+    {
+        SourceVoiceEvent e;
+        e.frame = i;
+        e.action = SourceVoiceAction::trigger;
+        e.levelDb = i == 0 ? -6. : 0.;
+        check(v.schedule(0, e), "Accept ordered voice");
+    }
+    v.mix(output, 32, 0, 1, 12);
+    check(v.steals() == 1 && output.getSample(0, 4) == 4 && output.getSample(0, 11) == 4 &&
+              output.getSample(0, 12) == 0 && output.getSample(0, 31) == 0,
+          "Oldest one-shot stolen and frozen body gates voice input before downstream tails");
+}
+void sourceController(const juce::File &dir, const sp::Asset &a, const sp::Asset &b)
+{
+    using namespace sp;
+    using namespace juce;
+    dir.createDirectory();
+    auto name = "SoundPlus source QA " + Uuid().toString();
+    auto out = MidiOutput::createNewDevice(name);
+    check(out != nullptr, "Create virtual trigger controller");
+    String uid;
+    for (int i = 0; i < 100 && uid.isEmpty(); ++i)
+    {
+        for (auto &port : MidiInput::getAvailableDevices())
+            if (port.name == name)
+                uid = port.identifier;
+        if (uid.isEmpty())
+            Thread::sleep(10);
+    }
+    check(uid.isNotEmpty(), "Observe virtual controller");
+    Harness h;
+    auto services = h.services();
+    double now = 1000;
+    services.now = [&] { return now; };
+    std::vector<var> packets;
+    services.squareTouchCommand = [&](var v)
+    {
+        packets.push_back(v);
+        auto r = sp::message("receipt");
+        r.getDynamicObject()->setProperty("id", v["eventId"]);
+        r.getDynamicObject()->setProperty("accepted", true);
+        h.state.getDynamicObject()->setProperty("sourceVoice", r);
+    };
+    DesignSession s(dir.getChildFile("library.sqlite"), services);
+    s.document = document(a);
+    makePool(s.document, {b});
+    auto &l = s.document.original.layers.front();
+    l.pool->live = true;
+    const auto id = l.id, entry = l.pool->entries[1].id;
+    assignBlendLayer(s.document.original, 0, id);
+    auto hash = freezeTake(s.document, "unbound").recipeHash;
+    s.learnSourceTrigger(id, entry, uid);
+    s.poll();
+    auto drain = [&]
+    {
+        for (int i = 0; i < 8; ++i)
+        {
+            Thread::sleep(5);
+            now += 5;
+            s.poll();
+        }
+    };
+    auto on = [&] { out->sendMessageNow(MidiMessage::noteOn(4, 60, (uint8)64)); };
+    auto off = [&] { out->sendMessageNow(MidiMessage::noteOff(4, 60)); };
+    on();
+    drain();
+    auto file = dir.getChildFile("mapped.soundplus");
+    saveDesignAtomic(file, s.document);
+    auto restored = loadDesign(file);
+    auto mapping = restored.original.layers[0].pool->triggerMidi;
+    check(mapping && mapping->note && mapping->channel == 4 && mapping->key == 60 && mapping->device == uid &&
+              mapping->entry == entry && freezeTake(restored, "bound").recipeHash == hash,
+          "Saved MIDI trigger mapping preserves original take identity");
+    off();
+    drain();
+    s.play();
+    h.drain();
+    s.poll();
+    on();
+    on();
+    drain();
+    check(packets.size() == 1 && packets[0]["entry"].toString() == entry &&
+              std::abs((double)packets[0]["levelDb"] - 20 * std::log10(64. / 127)) < .001,
+          "Held note issues one command with velocity");
+    off();
+    on();
+    drain();
+    check(packets.size() == 2, "Released note retriggers");
+    out.reset();
+    now += 2000;
+    drain();
+    check(packets.size() == 2, "Controller unplug synthesizes no new trigger");
+}
 juce::AudioBuffer<float> read(const sp::DesignDocument &d, int frames = 4096)
 {
     sp::DesignGraph graph(d);
@@ -985,6 +1090,8 @@ void runSourcePoolTests(const juce::File &parent, const juce::File &)
     root.createDirectory();
     auto a = fixture(root.getChildFile("a.wav")), b = fixture(root.getChildFile("b.wav"), 2, 44100, 44100),
          c = fixture(root.getChildFile("c.wav"), 1, 48000, 24000);
+    voiceBounds();
+    sourceController(root.getChildFile("trigger-midi"), a, b);
     recordedPoolService(root.getChildFile("pool-transport"), a, b);
     liveSourceOracle(root.getChildFile("live-performance"));
     determinism();

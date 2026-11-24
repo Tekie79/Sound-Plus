@@ -53,7 +53,7 @@ void PerformView::cornerActions(int c, const juce::String &id)
     juce::PopupMenu menu, trigger, switches, fade;
     menu.addItem(1, "Alternatives", !session.takeBusy());
     menu.addItem(2, "Prepare live sources", !session.ownsPlayback() && !session.takeBusy(), at->pool->live);
-    std::vector<juce::String> ids;
+    std::vector<juce::String> ids, devices;
     if (at->pool->live)
     {
         for (auto &e : at->pool->entries)
@@ -63,16 +63,27 @@ void PerformView::cornerActions(int c, const juce::String &id)
                 trigger.addItem(100 + (int)ids.size(), e.source.name);
                 switches.addItem(200 + (int)ids.size(), e.source.name);
             }
-        menu.addSubMenu("Trigger", trigger, session.canTriggerSource());
+        menu.addSubMenu("Trigger (4 voices)", trigger, session.canTriggerSource());
         menu.addSubMenu("Switch source", switches, session.canTriggerSource());
         for (int ms : {0, 10, 50, 100, 250, 500, 1000})
             fade.addItem(1000 + ms, juce::String(ms) + " ms", true, ms == crossfadeMs);
         menu.addSubMenu("Crossfade", fade);
+        juce::PopupMenu midi;
+        for (auto &dev : juce::MidiInput::getAvailableDevices())
+        {
+            devices.push_back(dev.identifier);
+            midi.addItem(3000 + int(devices.size()), dev.name);
+        }
+        menu.addSubMenu("Learn MIDI trigger", midi,
+                        !session.ownsPlayback() && !session.takeBusy() && !devices.empty());
+        if (at->pool->triggerMidi)
+            menu.addItem(3, "Forget MIDI trigger", !session.takeBusy());
     }
     juce::Component::SafePointer<PerformView> safe(this);
     menu.showMenuAsync(
         juce::PopupMenu::Options().withTargetComponent(cards[(size_t)c].get()),
-        [safe, context, id, c, pad, pool, ids = std::move(ids), prepared = at->pool->live](int result)
+        [safe, context, id, c, pad, pool, ids = std::move(ids), devices = std::move(devices),
+         selected = at->pool->selected, prepared = at->pool->live](int result)
         {
             if (!safe || !result || stateIdentity(safe->session) != context)
                 return;
@@ -86,6 +97,15 @@ void PerformView::cornerActions(int c, const juce::String &id)
             }
             else if (result == 2)
                 safe->session.prepareSourcePool(id, !prepared);
+            else if (result == 3)
+                safe->session.forgetSourceTrigger(id);
+            else if (result > 3000 && result <= 3000 + (int)devices.size())
+            {
+                auto remembered = safe->triggerEntries.find(pool);
+                safe->session.learnSourceTrigger(
+                    id, remembered == safe->triggerEntries.end() ? selected : remembered->second,
+                    devices[(size_t)(result - 3001)]);
+            }
             else if (result >= 1000)
                 safe->crossfadeMs = result - 1000;
             else

@@ -2001,6 +2001,7 @@ void DesignSession::timerCallback()
     pollSquareTouch(state);
     pollAutomationWrite(state);
     pollAutomationMidi(state);
+    pollSourceInputs();
     pollArmedWrites(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;

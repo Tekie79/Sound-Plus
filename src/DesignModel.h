@@ -135,11 +135,18 @@ struct SourcePoolEntry
     ChannelLayout reviewedBus;
     bool external = false, enabled = true, reviewed = false;
 };
+struct SourceTriggerMidi
+{
+    juce::String device, entry;
+    int channel = 1, key = 0;
+    bool note = true;
+};
 struct SourcePool
 {
     juce::String id = juce::Uuid().toString(), selected;
     std::vector<SourcePoolEntry> entries;
     bool choiceLocked = false, live = false;
+    std::optional<SourceTriggerMidi> triggerMidi;
     juce::String policy = "explicit-v1";
     uint64_t seed = 0, ordinal = 0;
 };

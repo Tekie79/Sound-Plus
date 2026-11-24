@@ -190,6 +190,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void play();
     void playAccurate();
     bool canTriggerSource() const;
+    void learnSourceTrigger(const juce::String &layer, const juce::String &entry, const juce::String &device);
+    void forgetSourceTrigger(const juce::String &layer);
     void triggerSource(int pad, int corner, const juce::String &entry, bool switchSource, int fadeMs = 100,
                        double db = 0);
     void prepareSourcePool(const juce::String &layer, bool enabled);
@@ -346,6 +348,17 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
+    struct LearningSource
+    {
+        juce::String context, layer, entry, device;
+    };
+    std::optional<LearningSource> learningSource;
+    std::map<juce::String, std::unique_ptr<AutomationMidiInput>> sourceInputs;
+    std::set<std::pair<juce::String, int>> heldSourceKeys;
+    juce::String sourceInputContext;
+    int64_t sourceInputRevision = -1;
+    double nextSourceScan = 0;
+    void pollSourceInputs();
     juce::String pendingSourceEvent;
     double sourceEventDeadline = 0;
     struct LearnTarget
