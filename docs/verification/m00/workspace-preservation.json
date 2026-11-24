@@ -1,0 +1,14 @@
+{
+  "expectedRevision": 4506,
+  "actualRevision": 4506,
+  "mediaFiles": 433,
+  "mediaUnchanged": true,
+  "retainedStateFiles": 197,
+  "latestPayloadUnchanged": true,
+  "catalogTables": 18,
+  "catalogColumnsChanged": [
+    "assets.seen"
+  ],
+  "scanBookkeepingRows": 43,
+  "workingSession": "Original SoundPlus process stayed open, with a separate bundle and catalog for QA."
+}

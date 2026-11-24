@@ -1,0 +1,27 @@
+Internal ctest changing into directory: build/m00-release
+UpdateCTestConfiguration  from :build/m00-release/DartConfiguration.tcl
+Parse Config file:build/m00-release/DartConfiguration.tcl
+UpdateCTestConfiguration  from :build/m00-release/DartConfiguration.tcl
+Parse Config file:build/m00-release/DartConfiguration.tcl
+Test project build/m00-release
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 3
+    Start 3: hosted_vendor_automation
+
+3: Test command: build/m00-release/SoundPlusTests_artefacts/Release/SoundPlusTests "--hosted-vendor-automation" "build/m00-release/hosted-vendor-automation" "build/m00-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+3: Working Directory: build/m00-release
+3: Test timeout computed to be: 120
+3: Installed hosted automation: 6 exact vendor/Apple parameter scheduling cases passed
+1/1 Test #3: hosted_vendor_automation .........   Passed    5.93 sec
+
+The following tests passed:
+	hosted_vendor_automation
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =   5.93 sec

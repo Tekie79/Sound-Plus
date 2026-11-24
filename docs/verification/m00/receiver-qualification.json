@@ -1,0 +1,724 @@
+{
+  "version": "21.1.2.10",
+  "bridgeSha256": "4dccf0efd96e496edee204e233ba4f070c8a90eba4f5f4156802fb5477ba3fcf",
+  "projects": [
+    {
+      "name": "SoundPlus M00 QA 1795493955566991000 24",
+      "projectId": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timelineId": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "placements": [
+        {
+          "ok": true,
+          "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+          "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+          "resolveVersion": "21.1.2.10",
+          "media": "58da2238-63b9-4601-b4de-d0164cfd9c8d",
+          "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "4a7c960c-41ec-4458-8bea-56aff98a41ab",
+          "item": "4a7c960c-41ec-4458-8bea-56aff98a41ab",
+          "recordFrame": 86455,
+          "endFrame": 86479.0,
+          "track": 1,
+          "timecode": "01:00:02:07",
+          "timelineRate": "24",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 2,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R"
+          ],
+          "trackSubtype": "stereo",
+          "sourceSubtype": "stereo",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 2,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2
+                ],
+                "mute": false,
+                "type": "stereo"
+              }
+            }
+          }
+        },
+        {
+          "ok": true,
+          "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+          "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+          "resolveVersion": "21.1.2.10",
+          "reusedMedia": true,
+          "media": "58da2238-63b9-4601-b4de-d0164cfd9c8d",
+          "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "c0da658e-12db-41ea-ae96-a9e9623cfa7f",
+          "item": "c0da658e-12db-41ea-ae96-a9e9623cfa7f",
+          "recordFrame": 86455,
+          "endFrame": 86479.0,
+          "track": 2,
+          "timecode": "01:00:02:07",
+          "timelineRate": "24",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 2,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R"
+          ],
+          "trackSubtype": "stereo",
+          "sourceSubtype": "stereo",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 2,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2
+                ],
+                "mute": false,
+                "type": "stereo"
+              }
+            }
+          }
+        },
+        {
+          "ok": true,
+          "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+          "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+          "resolveVersion": "21.1.2.10",
+          "media": "b497a437-d735-4e48-bde3-2abdb17f6097",
+          "mediaPath": "build/m00-evidence/fixtures/5p1_side_48000_role_pulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "8b1928cc-48fa-4179-93cf-d7a8c903f0cc",
+          "item": "8b1928cc-48fa-4179-93cf-d7a8c903f0cc",
+          "recordFrame": 86544,
+          "endFrame": 86568.0,
+          "track": 3,
+          "timecode": "01:00:06:00",
+          "timelineRate": "24",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 6,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R",
+            "C",
+            "LFE",
+            "Ls",
+            "Rs"
+          ],
+          "trackSubtype": "5.1",
+          "sourceSubtype": "5.1",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 6,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "mute": false,
+                "type": "5.1"
+              }
+            }
+          }
+        },
+        {
+          "ok": true,
+          "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+          "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+          "resolveVersion": "21.1.2.10",
+          "media": "64d37513-5c83-45c2-a576-debc6ef32550",
+          "mediaPath": "build/m00-evidence/fixtures/5p1_rear_48000_role_pulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "b3efe872-d1f9-4184-9ee8-6354abd901f8",
+          "item": "b3efe872-d1f9-4184-9ee8-6354abd901f8",
+          "recordFrame": 86616,
+          "endFrame": 86640.0,
+          "track": 3,
+          "timecode": "01:00:09:00",
+          "timelineRate": "24",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 6,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R",
+            "C",
+            "LFE",
+            "Lb",
+            "Rb"
+          ],
+          "trackSubtype": "5.1",
+          "sourceSubtype": "5.1",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 6,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2,
+                  3,
+                  4,
+                  5,
+                  6
+                ],
+                "mute": false,
+                "type": "5.1"
+              }
+            }
+          }
+        }
+      ],
+      "refusals": [
+        {
+          "status": "Refused",
+          "reason": "Resolve A1 is occupied. Choose a clear range or track.",
+          "priorItems": 2
+        },
+        {
+          "status": "Refused",
+          "reason": "Resolve A2 is locked or unavailable",
+          "priorItems": 2
+        }
+      ]
+    },
+    {
+      "name": "SoundPlus M00 QA 1795493958683081000 25",
+      "projectId": "095c2a8d-e57a-4508-bc23-3b184f8757c3",
+      "timelineId": "d8540d8c-bd62-4879-a19b-7c60d256fb4f",
+      "placements": [
+        {
+          "ok": true,
+          "project": "095c2a8d-e57a-4508-bc23-3b184f8757c3",
+          "timeline": "d8540d8c-bd62-4879-a19b-7c60d256fb4f",
+          "resolveVersion": "21.1.2.10",
+          "media": "5d23884d-1239-4a6e-9f3a-75d7b0a4f0ff",
+          "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "cce9b417-ec08-4d52-a84e-12f14c5021db",
+          "item": "cce9b417-ec08-4d52-a84e-12f14c5021db",
+          "recordFrame": 90057,
+          "endFrame": 90082.0,
+          "track": 1,
+          "timecode": "01:00:02:07",
+          "timelineRate": "25",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 2,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R"
+          ],
+          "trackSubtype": "stereo",
+          "sourceSubtype": "stereo",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 2,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2
+                ],
+                "mute": false,
+                "type": "stereo"
+              }
+            }
+          }
+        }
+      ],
+      "refusals": []
+    },
+    {
+      "name": "SoundPlus M00 QA 1795493960207239000 29.97",
+      "projectId": "6d378112-b0bb-4fa9-b4fc-3e401ea5de06",
+      "timelineId": "9b212ff1-85fc-42a6-8988-114383086e97",
+      "placements": [
+        {
+          "ok": true,
+          "project": "6d378112-b0bb-4fa9-b4fc-3e401ea5de06",
+          "timeline": "9b212ff1-85fc-42a6-8988-114383086e97",
+          "resolveVersion": "21.1.2.10",
+          "media": "1f0a63fe-e4bf-44f0-b3e4-e8a8da071f06",
+          "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "daf7ecf7-b590-4cb4-af92-4ae4e4590b7e",
+          "item": "daf7ecf7-b590-4cb4-af92-4ae4e4590b7e",
+          "recordFrame": 109694,
+          "endFrame": 109723.97002997003,
+          "track": 1,
+          "timecode": "01:01:00;04",
+          "timelineRate": "30000/1001",
+          "dropFrame": true,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 2,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R"
+          ],
+          "trackSubtype": "stereo",
+          "sourceSubtype": "stereo",
+          "mediaDuration": "00:00:00;29",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 2,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2
+                ],
+                "mute": false,
+                "type": "stereo"
+              }
+            }
+          }
+        }
+      ],
+      "refusals": []
+    },
+    {
+      "name": "SoundPlus M00 QA 1795493961792183000 30",
+      "projectId": "557d82ba-cc36-4be3-ad5c-7cd86529b601",
+      "timelineId": "286f3077-c5d7-4574-880f-d6ef3335624d",
+      "placements": [
+        {
+          "ok": true,
+          "project": "557d82ba-cc36-4be3-ad5c-7cd86529b601",
+          "timeline": "286f3077-c5d7-4574-880f-d6ef3335624d",
+          "resolveVersion": "21.1.2.10",
+          "media": "f767b985-3112-4d0a-a1fa-7c32beb6f09a",
+          "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+          "placementAttempted": true,
+          "destination": "explicit-audio-track",
+          "observedTimelineItem": "eb3795e0-8468-4f67-83ea-8f110c36e950",
+          "item": "eb3795e0-8468-4f67-83ea-8f110c36e950",
+          "recordFrame": 108067,
+          "endFrame": 108097.0,
+          "track": 1,
+          "timecode": "01:00:02:07",
+          "timelineRate": "30",
+          "dropFrame": false,
+          "durationRounding": "Resolve natural duration, verified within one record frame",
+          "channels": 2,
+          "sampleRate": 48000,
+          "roles": [
+            "L",
+            "R"
+          ],
+          "trackSubtype": "stereo",
+          "sourceSubtype": "stereo",
+          "mediaDuration": "00:00:01:00",
+          "online": true,
+          "audioMapping": {
+            "embedded_audio_channels": 2,
+            "linked_audio": {},
+            "track_mapping": {
+              "1": {
+                "channel_idx": [
+                  1,
+                  2
+                ],
+                "mute": false,
+                "type": "stereo"
+              }
+            }
+          }
+        }
+      ],
+      "refusals": []
+    }
+  ],
+  "buildCommit": "650dd5adb2b0fcf9b32f877acdeb971893ddd560",
+  "finalBridgeSha256": "a79f0369b694dbb3638620242d925d77bcacb6edd659b480cb067649c752b491",
+  "nativeClockPlacements": [
+    {
+      "ok": true,
+      "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "resolveVersion": "21.1.2.10",
+      "timelineSampleRate": 48000,
+      "insertDurationSamples": 48000,
+      "placementAttempted": true,
+      "observedTimelineItem": "a2d113d2-212e-4257-b7ef-15615de44b9e",
+      "destination": "active-audio-track",
+      "item": "a2d113d2-212e-4257-b7ef-15615de44b9e",
+      "recordFrame": 87216,
+      "endFrame": 87240.0,
+      "track": 2,
+      "timecode": "01:00:34:00",
+      "timelineRate": "24",
+      "dropFrame": false,
+      "durationRounding": "Resolve natural duration, verified within one record frame",
+      "channels": 1,
+      "sampleRate": 44100.0,
+      "roles": [
+        "C"
+      ],
+      "media": "5e056d5d-cacd-408a-b703-455692f0115d",
+      "mediaPath": "build/m00-evidence/fixtures/mono_44100_impulses.wav",
+      "trackSubtype": "stereo",
+      "sourceSubtype": "mono",
+      "mediaDuration": "00:00:01:00",
+      "online": true,
+      "audioMapping": {
+        "embedded_audio_channels": 1,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1
+            ],
+            "mute": false,
+            "type": "mono"
+          }
+        }
+      },
+      "sha256": "5c5a3e25ee735901427c3911e48f7e257fb33f64e2ed1bf87a709a4909a39453",
+      "receipt": "18fc793283aa4271850caaf3fc7f50d0.json"
+    },
+    {
+      "ok": true,
+      "project": "8173f545-fe5b-4928-87b8-37dea0b205da",
+      "timeline": "0c8e0954-4386-4a83-8830-fbfc7dcfab28",
+      "resolveVersion": "21.1.2.10",
+      "timelineSampleRate": 96000,
+      "insertDurationSamples": 96000,
+      "placementAttempted": true,
+      "observedTimelineItem": "0219ed31-72f2-4e91-b34c-59efd14c7927",
+      "destination": "active-audio-track",
+      "item": "0219ed31-72f2-4e91-b34c-59efd14c7927",
+      "recordFrame": 96,
+      "endFrame": 120.0,
+      "track": 1,
+      "timecode": "00:00:04:00",
+      "timelineRate": "24",
+      "dropFrame": false,
+      "durationRounding": "Resolve natural duration, verified within one record frame",
+      "channels": 1,
+      "sampleRate": 44100.0,
+      "roles": [
+        "C"
+      ],
+      "media": "09cea3b6-fcbd-4219-adc3-f52550c382f4",
+      "mediaPath": "build/m00-evidence/fixtures/mono_44100_impulses.wav",
+      "trackSubtype": "stereo",
+      "sourceSubtype": "mono",
+      "mediaDuration": "00:00:01:00",
+      "online": true,
+      "audioMapping": {
+        "embedded_audio_channels": 1,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1
+            ],
+            "mute": false,
+            "type": "mono"
+          }
+        }
+      },
+      "sha256": "5c5a3e25ee735901427c3911e48f7e257fb33f64e2ed1bf87a709a4909a39453",
+      "receipt": "244407e90aca41cd9ede056ec57af7a8.json"
+    },
+    {
+      "ok": true,
+      "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "resolveVersion": "21.1.2.10",
+      "timelineSampleRate": 48000,
+      "insertDurationSamples": 48000,
+      "placementAttempted": true,
+      "observedTimelineItem": "9438de6d-289c-4ada-b2c5-f97f39aa6875",
+      "destination": "active-audio-track",
+      "item": "9438de6d-289c-4ada-b2c5-f97f39aa6875",
+      "recordFrame": 87408,
+      "endFrame": 87432.0,
+      "track": 1,
+      "timecode": "01:00:42:00",
+      "timelineRate": "24",
+      "dropFrame": false,
+      "durationRounding": "Resolve natural duration, verified within one record frame",
+      "channels": 2,
+      "sampleRate": 48000.0,
+      "roles": [
+        "L",
+        "R"
+      ],
+      "media": "f967c1d2-51fe-4745-9a96-f35118049564",
+      "mediaPath": "build/m00-evidence/fixtures/stereo_48000_impulses.wav",
+      "trackSubtype": "stereo",
+      "sourceSubtype": "stereo",
+      "mediaDuration": "00:00:01:00",
+      "online": true,
+      "audioMapping": {
+        "embedded_audio_channels": 2,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1,
+              2
+            ],
+            "mute": false,
+            "type": "stereo"
+          }
+        }
+      },
+      "sha256": "f0d85fc01e6d1d4ed0b1de50576645303da4c602fe448743b2a7e411aceda7fd",
+      "receipt": "74a6498f071f4c15b199687d2fc32f7b.json"
+    },
+    {
+      "ok": true,
+      "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "resolveVersion": "21.1.2.10",
+      "timelineSampleRate": 48000,
+      "insertDurationSamples": 48000,
+      "placementAttempted": true,
+      "observedTimelineItem": "97f70024-9ac4-4d5b-b533-edbc6fab29f8",
+      "destination": "active-audio-track",
+      "item": "97f70024-9ac4-4d5b-b533-edbc6fab29f8",
+      "recordFrame": 87312,
+      "endFrame": 87336.0,
+      "track": 1,
+      "timecode": "01:00:38:00",
+      "timelineRate": "24",
+      "dropFrame": false,
+      "durationRounding": "Resolve natural duration, verified within one record frame",
+      "channels": 2,
+      "sampleRate": 96000.0,
+      "roles": [
+        "L",
+        "R"
+      ],
+      "media": "ad447b6f-077e-47b2-9e88-33fcc95888e2",
+      "mediaPath": "build/m00-evidence/fixtures/stereo_96000_impulses.wav",
+      "trackSubtype": "stereo",
+      "sourceSubtype": "stereo",
+      "mediaDuration": "00:00:01:00",
+      "online": true,
+      "audioMapping": {
+        "embedded_audio_channels": 2,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1,
+              2
+            ],
+            "mute": false,
+            "type": "stereo"
+          }
+        }
+      },
+      "sha256": "bdd5440917aa4deb66b533468a7495c77395a22a9f8592eaa53a701f4dae763a",
+      "receipt": "e33a34fe2bb0433398416ca07e261de3.json"
+    }
+  ],
+  "physicalPlacements": [
+    {
+      "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "item": "5c79ab3c-0d47-480c-85e6-0c2ba32cb278",
+      "track": 1,
+      "recordFrame": 87480,
+      "endFrame": 87504,
+      "media": "d09d9864-354d-45fb-8cb6-c884f555b6ae",
+      "file": "build/m00-evidence/fixtures/stereo_44100_impulses.wav",
+      "sampleRate": 44100,
+      "channels": 2,
+      "mapping": {
+        "embedded_audio_channels": 2,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1,
+              2
+            ],
+            "mute": false,
+            "type": "stereo"
+          }
+        }
+      },
+      "sha256": "911c91fd1b60b1a65a35c4658cb5bb3cd8789dfdf690d13bce20e0f206b3ae71",
+      "onlineAfterReopen": true,
+      "delivery": "User-operated native file drag"
+    },
+    {
+      "project": "bfbf34ea-d1b4-4aa6-911d-bc2aa8e75fc5",
+      "timeline": "272854a1-b06a-46c4-b4c4-310e15e23b8e",
+      "item": "71fb5053-2647-4518-b252-4ccd4746c0be",
+      "track": 2,
+      "recordFrame": 87576,
+      "endFrame": 87624,
+      "media": "e3f4879d-df7a-440b-a60b-1b27ab0741f1",
+      "file": "build/m00-evidence/native-renders/Stems-fc855b9f00f84c0a93f6e73dbf4c48ff/02 FX Return.wav",
+      "sampleRate": 48000,
+      "channels": 2,
+      "mapping": {
+        "embedded_audio_channels": 2,
+        "linked_audio": {},
+        "track_mapping": {
+          "1": {
+            "channel_idx": [
+              1,
+              2
+            ],
+            "mute": false,
+            "type": "stereo"
+          }
+        }
+      },
+      "sha256": "5c9b94217865b9cbc83ba9008bcbc4e586e56c10675b54f1394101290e9e5a11",
+      "onlineAfterReopen": true,
+      "delivery": "User-operated native file drag"
+    }
+  ],
+  "nativeDragTrace": [
+    {
+      "event": "mouse-down",
+      "time": "2026-11-23T23:49:13.987-05:00",
+      "control": "Drag prepared audio",
+      "distance": 0
+    },
+    {
+      "event": "mouse-drag",
+      "time": "2026-11-23T23:49:13.987-05:00",
+      "control": "Drag prepared audio",
+      "distance": 1098
+    },
+    {
+      "event": "native-started",
+      "time": "2026-11-23T23:49:13.990-05:00",
+      "control": "Drag prepared audio",
+      "distance": 1098
+    },
+    {
+      "event": "native-ended",
+      "time": "2026-11-23T23:49:47.629-05:00",
+      "control": "Drag prepared audio",
+      "distance": 0
+    },
+    {
+      "event": "mouse-down",
+      "time": "2026-11-23T23:54:15.694-05:00",
+      "control": "Drag prepared audio",
+      "distance": 0
+    },
+    {
+      "event": "mouse-drag",
+      "time": "2026-11-23T23:54:16.235-05:00",
+      "control": "Drag prepared audio",
+      "distance": 7
+    },
+    {
+      "event": "native-started",
+      "time": "2026-11-23T23:54:16.236-05:00",
+      "control": "Drag prepared audio",
+      "distance": 7
+    },
+    {
+      "event": "native-ended",
+      "time": "2026-11-23T23:54:24.467-05:00",
+      "control": "Drag prepared audio",
+      "distance": 0
+    },
+    {
+      "event": "mouse-down",
+      "time": "2026-11-24T00:02:52.672-05:00",
+      "control": "Drag verified export",
+      "distance": 0
+    },
+    {
+      "event": "mouse-drag",
+      "time": "2026-11-24T00:02:53.328-05:00",
+      "control": "Drag verified export",
+      "distance": 6
+    },
+    {
+      "event": "native-started",
+      "time": "2026-11-24T00:02:53.330-05:00",
+      "control": "Drag verified export",
+      "distance": 6
+    },
+    {
+      "event": "native-ended",
+      "time": "2026-11-24T00:03:07.528-05:00",
+      "control": "Drag verified export",
+      "distance": 0
+    },
+    {
+      "event": "mouse-down",
+      "time": "2026-11-24T00:03:24.199-05:00",
+      "control": "Drag verified export",
+      "distance": 0
+    },
+    {
+      "event": "mouse-drag",
+      "time": "2026-11-24T00:03:24.698-05:00",
+      "control": "Drag verified export",
+      "distance": 8
+    },
+    {
+      "event": "native-started",
+      "time": "2026-11-24T00:03:24.701-05:00",
+      "control": "Drag verified export",
+      "distance": 8
+    },
+    {
+      "event": "native-ended",
+      "time": "2026-11-24T00:03:26.830-05:00",
+      "control": "Drag verified export",
+      "distance": 0
+    }
+  ],
+  "automatedDragReceiverAccepted": false,
+  "physicalDropsBothReopenedOnline": true,
+  "restoredOriginalProjectAndTimeline": true,
+  "copiesMadeByResolve": false,
+  "clockRegressionBeforeFix": {
+    "sourceSampleRate": 44100,
+    "timelineSampleRate": 48000,
+    "timelineFrameRate": 24,
+    "expectedLengthFrames": 24,
+    "actualLengthFrames": 22.05
+  }
+}

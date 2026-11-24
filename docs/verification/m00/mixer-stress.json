@@ -1,0 +1,31 @@
+{
+  "stripCount": 24,
+  "designLayout": "5.1-side-v1",
+  "device": "MacBook Pro Speakers",
+  "sampleRate": 48000.0,
+  "audioCallbacks": 11268,
+  "producerFills": 11268,
+  "underruns": 0,
+  "producerP95UpperMs": 3.0,
+  "producerMaxMs": 6.355708360671997,
+  "helperRestarts": 0,
+  "acknowledgedEdits": 472,
+  "lastSubmittedEdit": 472,
+  "lastHeardEdit": 472,
+  "observedMaxEditLatencyMs": 69.78583329916,
+  "seconds": 120.202186959,
+  "monitorGain": 0,
+  "buildCommit": "650dd5adb2b0fcf9b32f877acdeb971893ddd560",
+  "bufferFrames": 512,
+  "resources": {
+    "sampleCount": 59,
+    "maxRssKiB": 66960,
+    "medianCpuPercent": 29.0,
+    "maxCpuPercent": 31.0
+  },
+  "sourceFixture": "Generated 128-second mono WAV, 48 kHz, 440 Hz",
+  "graph": "20 Audio Tracks, 2 Group Buses, 2 FX Returns, 5 native EQ inserts, Advanced Delay, Algorithmic Reverb",
+  "harnessSourceSha256": "6b7ad19cc64deff454565fd6e21606eaced26e732dd845ec2c7b0134770b5ced",
+  "harnessExecutableSha256": "828936cdac1764af94728bb3e3acd3d0fca62a81e06ec2a0a7e4feb4f6bf101f",
+  "scope": "Audio producer and device on built-in stereo, monitoring muted"
+}

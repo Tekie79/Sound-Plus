@@ -2,6 +2,8 @@
 
 **Release decision · No-Go for full cross-application qualification.** The native Send workflow, verified copy pipeline, and drag preparation passed the checks below. Five drag cases require physical mouse delivery into Resolve and subsequent receiver persistence. Six other cases have partial coverage.
 
+The M00 follow-up verified physical Resolve drops of one Library original and one finalized FX Return stem through save, quit and reopen. It also corrected the Fairlight active-track sample clock. The acceptance matrix below retains the earlier run. [Current M00 qualification](verification/m00/REPORT.md)
+
 ## Workflow
 
 - Use the **Resolve** icon to send directly from Library, Edit or Perform. Click **Prepare audio to drag** to prepare a file, then drag from the same icon when **Ready to drag** appears. The gear opens scope and destination options. Choose **Save a copy** and select its destination in the macOS folder picker. Deliver → **Transfer receipts** opens the receipt directory.

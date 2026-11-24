@@ -1,0 +1,31 @@
+{
+  "sourceSha256": "f0d85fc01e6d1d4ed0b1de50576645303da4c602fe448743b2a7e411aceda7fd",
+  "sourceFrames": 48000,
+  "rate": 48000,
+  "channels": 2,
+  "renderedFrames": 96000,
+  "trackDb": -6,
+  "sendDb": -12,
+  "masterDb": -6,
+  "postFader": false,
+  "outputs": [
+    {
+      "file": "01 stereo_48000_impulses.wav",
+      "sha256": "f775b727e64459b997b776f13fb7a50b09cd80c6dc594ac8347fbdfdbb52db15",
+      "maxSampleError": 5.969120144000417e-08,
+      "tailPeak": 0.0
+    },
+    {
+      "file": "02 FX Return.wav",
+      "sha256": "5c9b94217865b9cbc83ba9008bcbc4e586e56c10675b54f1394101290e9e5a11",
+      "maxSampleError": 6.020529207811931e-08,
+      "tailPeak": 0.0
+    },
+    {
+      "file": "Untitled design-r9-671be92b.wav",
+      "sha256": "ffbe5a2a05c7f1c45a6c5ec98a511809153048a22c9c27277152ee48d92aed23",
+      "maxSampleError": 6.299108687435329e-08,
+      "tailPeak": 0.0
+    }
+  ]
+}

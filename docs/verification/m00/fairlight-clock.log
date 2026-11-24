@@ -1,0 +1,8 @@
+test_active_track_uses_timeline_samples (test_resolve_transfer.FairlightDurationTests.test_active_track_uses_timeline_samples) ... ok
+test_fractional_conversion_covers_last_sample (test_resolve_transfer.FairlightDurationTests.test_fractional_conversion_covers_last_sample) ... ok
+test_missing_timeline_rate_is_refused (test_resolve_transfer.FairlightDurationTests.test_missing_timeline_rate_is_refused) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.003s
+
+OK

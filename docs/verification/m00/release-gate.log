@@ -1,0 +1,118 @@
+Internal ctest changing into directory: build/m00-release
+Test project build/m00-release
+      Start  1: mixer_graph
+ 1/56 Test  #1: mixer_graph .......................   Passed    0.44 sec
+      Start  2: mixer_stems
+ 2/56 Test  #2: mixer_stems .......................   Passed    0.04 sec
+      Start  3: hosted_vendor_automation
+ 3/56 Test  #3: hosted_vendor_automation ..........   Passed    0.01 sec
+      Start  4: surround_xy
+ 4/56 Test  #4: surround_xy .......................   Passed    0.09 sec
+      Start  5: surround_xy_device
+ 5/56 Test  #5: surround_xy_device ................   Passed    5.01 sec
+      Start  6: multi_pad
+ 6/56 Test  #6: multi_pad .........................   Passed    0.44 sec
+      Start  7: multi_pad_device
+ 7/56 Test  #7: multi_pad_device ..................   Passed    4.45 sec
+      Start  8: midi_responsiveness
+ 8/56 Test  #8: midi_responsiveness ...............   Passed   45.63 sec
+      Start  9: advanced_effects
+ 9/56 Test  #9: advanced_effects ..................   Passed    2.33 sec
+      Start 10: native_effects
+10/56 Test #10: native_effects ....................   Passed    0.66 sec
+      Start 11: library_collections
+11/56 Test #11: library_collections ...............   Passed    1.47 sec
+      Start 12: midi_sequencing
+12/56 Test #12: midi_sequencing ...................   Passed    0.12 sec
+      Start 13: audio_input_recording
+13/56 Test #13: audio_input_recording .............   Passed    0.49 sec
+      Start 14: multitrack_automation
+14/56 Test #14: multitrack_automation .............   Passed    0.90 sec
+      Start 15: pool_corrections
+15/56 Test #15: pool_corrections ..................   Passed    5.67 sec
+      Start 16: source_pools
+16/56 Test #16: source_pools ......................   Passed    0.36 sec
+      Start 17: library_playback_search
+17/56 Test #17: library_playback_search ...........   Passed    2.94 sec
+      Start 18: multichannel_corrections
+18/56 Test #18: multichannel_corrections ..........   Passed   13.26 sec
+      Start 19: multichannel
+19/56 Test #19: multichannel ......................   Passed    5.15 sec
+      Start 20: take_integrity
+20/56 Test #20: take_integrity ....................   Passed    3.98 sec
+      Start 21: capture_device_lifecycle
+21/56 Test #21: capture_device_lifecycle ..........   Passed    5.25 sec
+      Start 22: recorded_takes
+22/56 Test #22: recorded_takes ....................   Passed    8.54 sec
+      Start 23: library_stability
+23/56 Test #23: library_stability .................   Passed    1.39 sec
+      Start 24: waveform_scheduling
+24/56 Test #24: waveform_scheduling ...............   Passed    1.91 sec
+      Start 25: audio_health
+25/56 Test #25: audio_health ......................   Passed    7.57 sec
+      Start 26: waveform_previews
+26/56 Test #26: waveform_previews .................   Passed    0.47 sec
+      Start 27: performance_state
+27/56 Test #27: performance_state .................   Passed    3.53 sec
+      Start 28: designer_view_commands
+28/56 Test #28: designer_view_commands ............   Passed    0.37 sec
+      Start 29: icon_system
+29/56 Test #29: icon_system .......................   Passed    0.12 sec
+      Start 30: library_and_audio
+30/56 Test #30: library_and_audio .................   Passed    8.94 sec
+      Start 31: library_selection_audition
+31/56 Test #31: library_selection_audition ........   Passed    4.01 sec
+      Start 32: library_performance_regression
+32/56 Test #32: library_performance_regression ....   Passed    6.22 sec
+      Start 33: library_semantic_integrity
+33/56 Test #33: library_semantic_integrity ........   Passed    0.41 sec
+      Start 34: library_similar_integrity
+34/56 Test #34: library_similar_integrity .........   Passed    1.19 sec
+      Start 35: designer_transport
+35/56 Test #35: designer_transport ................   Passed   16.14 sec
+      Start 36: designer_canvas
+36/56 Test #36: designer_canvas ...................   Passed    0.21 sec
+      Start 37: designer_session
+37/56 Test #37: designer_session ..................   Passed    0.18 sec
+      Start 38: designer_workflow
+38/56 Test #38: designer_workflow .................   Passed    9.88 sec
+      Start 39: designer_fades
+39/56 Test #39: designer_fades ....................   Passed    2.43 sec
+      Start 40: hosted_touch_session
+40/56 Test #40: hosted_touch_session ..............   Passed    0.49 sec
+      Start 41: hosted_touch_device
+41/56 Test #41: hosted_touch_device ...............   Passed    6.26 sec
+      Start 42: hosted_automation
+42/56 Test #42: hosted_automation .................   Passed   43.63 sec
+      Start 43: hosted_automation_au
+43/56 Test #43: hosted_automation_au ..............   Passed   41.91 sec
+      Start 44: hosted_instrument_automation
+44/56 Test #44: hosted_instrument_automation ......   Passed   12.30 sec
+      Start 45: hosted_instrument_automation_au
+45/56 Test #45: hosted_instrument_automation_au ...   Passed   12.37 sec
+      Start 46: midi_instruments
+46/56 Test #46: midi_instruments ..................   Passed    5.12 sec
+      Start 47: beta_surround_workflow
+47/56 Test #47: beta_surround_workflow ............   Passed    2.90 sec
+      Start 48: plugin_processing
+48/56 Test #48: plugin_processing .................   Passed   60.16 sec
+      Start 49: plugin_correctness
+49/56 Test #49: plugin_correctness ................   Passed   10.77 sec
+      Start 50: plugin_gate_a
+50/56 Test #50: plugin_gate_a .....................   Passed   16.82 sec
+      Start 51: ordered_corrections
+51/56 Test #51: ordered_corrections ...............   Passed    0.12 sec
+      Start 52: plugin_takes
+52/56 Test #52: plugin_takes ......................   Passed   29.72 sec
+      Start 53: ordered_inserts
+53/56 Test #53: ordered_inserts ...................   Passed   33.46 sec
+      Start 54: native_view_scale
+54/56 Test #54: native_view_scale .................   Passed    0.01 sec
+      Start 55: plugin_live
+55/56 Test #55: plugin_live .......................   Passed   34.86 sec
+      Start 56: advanced_effects_asan
+56/56 Test #56: advanced_effects_asan .............   Passed    6.25 sec
+
+100% tests passed, 0 tests failed out of 56
+
+Total Test time (real) = 489.39 sec

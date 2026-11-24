@@ -1,0 +1,14 @@
+{
+  "sourceCommit": "650dd5adb2b0fcf9b32f877acdeb971893ddd560",
+  "baselineCommit": "6d6a2381c96740ee17c7fbebd377248517a8e9a7",
+  "reviewedCommit": "7268a31731ececde59a45363aca8b0231da1c016",
+  "sourceResourceScriptFiles": 406,
+  "bundleFiles": 26,
+  "releaseArtifacts": 67,
+  "matchedBeforeAfter": true,
+  "manifestSha256": "ceb56994c60af8142f3e577135b97d3912921676c3e75cd3cee0eea90c783d11",
+  "executableSha256": "74ea9f30c59108a9a3599e5727f4abf901dd87a21b1fb5edffcf9543fa3992a2",
+  "bundledResolveBridgeSha256": "a79f0369b694dbb3638620242d925d77bcacb6edd659b480cb067649c752b491",
+  "testExecutableSha256": "5829326f5d5afbe9f8fd93c03ee317c403d6b2f55602295167de665270dd94a3",
+  "platform": "Apple M5 Pro, arm64, macOS 26.3.2 (25D2150), macOS SDK 26.5, JUCE 8.0.6"
+}
