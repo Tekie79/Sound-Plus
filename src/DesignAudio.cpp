@@ -1387,7 +1387,15 @@ struct DesignGraph::Impl
                         for (auto &point : curve.points)
                             if (point.frame <= frame && point.frame > scheduled)
                                 scheduled = point.frame;
-                auto evaluated = evaluatePadAutomation(*padBase, scheduled);
+                auto *padWriter =
+                    writer && writer->owner == "master" && writer->target.instance.startsWith("perform:")
+                        ? &*writer
+                        : nullptr;
+                if (padWriter)
+                    for (auto edge : {padWriter->first, padWriter->last})
+                        if (edge > frame)
+                            n = (int)std::min<int64_t>(n, edge - frame);
+                auto evaluated = evaluatePadAutomation(*padBase, scheduled, padWriter, frame);
                 auto controls = mixControls(evaluated.activeMix());
                 if (!lastPadControls || *lastPadControls != controls)
                 {
@@ -1502,10 +1510,13 @@ bool DesignGraph::automationCommand(const juce::var &command)
     if(phase=="begin"){
         if(slot && slot->release<0)return false;
         auto registry=automationTargets(impl->document.activeMix(),owner);
-        auto found=std::find_if(registry.begin(),registry.end(),[&](auto &p){return p.target==target && p.writable && !p.hostedBinding;});
+        auto found = std::find_if(registry.begin(), registry.end(),
+                                  [&](auto &p) { return p.target == target && p.writable; });
         double v=command["value"];int64_t first=command["first"],last=command["last"];
         if(found==registry.end() || first<0 || last<=first || !std::isfinite(v) || v<found->minimum || v>found->maximum)return false;
         auto &w=slot.emplace();w.id=id;w.owner=owner;w.target=target;w.first=first;w.last=last;w.pending=v;
+        if (found->hostedBinding)
+            w.hosted = *found;
         w.minimum=found->minimum;w.maximum=found->maximum;w.step=found->discrete ? (found->normalizedStep>0?found->normalizedStep:1) : 0;
         w.epoch=(int64_t)command["graphEpoch"];w.generation=(int64_t)command["playGeneration"];w.prepare();
         return true;

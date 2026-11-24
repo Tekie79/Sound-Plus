@@ -13,6 +13,8 @@ juce::var AutomationWriter::result()
     o->setProperty("owner", owner);
     o->setProperty("instance", target.instance);
     o->setProperty("parameter", target.parameter);
+    if (hosted)
+        o->setProperty("binding", hostedBindingJson(*hosted->hostedBinding));
     o->setProperty("playGeneration", (juce::int64)generation);
     o->setProperty("graphEpoch", (juce::int64)epoch);
     o->setProperty("end", (juce::int64)release);
@@ -53,7 +55,12 @@ void retainAutomationWrite(DesignMix &mix, const juce::String &owner, const Auto
     juce::MemoryInputStream data(bytes.getData(), bytes.getDataSize(), false);
     const auto *prior = automationCurve(*lane, target);
     AutomationCurve initial = prior ? *prior : AutomationCurve{target, true, {}};
+    if (def->hostedBinding && (!receipt.hasProperty("binding") ||
+                               hostedBindingFromJson(receipt["binding"]) != *def->hostedBinding ||
+                               (initial.hostedBinding && initial.hostedBinding != def->hostedBinding)))
+        throw std::runtime_error("Plugin binding changed during the pass");
     auto next = initial;
+    next.hostedBinding = def->hostedBinding;
     initial.trims.clear(); // Base anchors are kept independent of relative offsets.
     next.read = true;
     auto insert = [&](int64_t t, double v, bool hold)

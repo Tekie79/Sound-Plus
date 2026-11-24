@@ -13,6 +13,7 @@ struct AutomationWriter
     };
     juce::String id, owner;
     AutomationTarget target;
+    std::optional<AutomationParameter> hosted;
     int64_t first = 0, last = INT64_MAX, release = -1, appliedThrough = -1;
     uint64_t generation = 0, epoch = 0;
     double held = 0, minimum = 0, maximum = 1, step = 0;

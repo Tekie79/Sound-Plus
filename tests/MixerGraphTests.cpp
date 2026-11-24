@@ -136,6 +136,17 @@ void runMixerGraphTests(const juce::File &root)
             compare(oracle,render(reopened,61),[](int n){
                 return std::pow(10.,(-18+std::min(n,3000)*.005+((n>=900&&n<1400)?3:0))/20.);
             },"Reopened gain trim passes independent PCM oracle");
+            auto followed = reopened;
+            auto *linked = automationCurve(*automationLane(followed.original, track), target);
+            linked->followClip = followed.original.layers[0].id;
+            followed.original.layers[0].placement += 20;
+            followAutomationClips(reopened.original, followed.original);
+            require(linked->points[0].frame == 20 && linked->trims[0].first == 920 &&
+                        designFromJson(designToJson(followed))
+                                .original.tracks[0]
+                                .automation.curves[0]
+                                .followClip == linked->followClip,
+                    "Explicit clip follow shifts underlying points and offsets together");
             auto take=freezeTake(reopened,"trim");
             require((int)takeToJson(take)["recipe"]["recipeVersion"]==12 &&
                 takeFromJson(takeToJson(take)).recipeHash==take.recipeHash,"Frozen relative trim round trip");

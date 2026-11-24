@@ -73,6 +73,30 @@ class StockRackView final : public juce::Component
         {
             auto target = dragging ? gestureOwner : owner;
             auto id = dragging ? gestureSlot : selectedSlot;
+            if (auto *effects = rack(target))
+            {
+                for (auto &effect : *effects)
+                    if (effect.id == id && effect.nativeVersion && i >= 0 && i < effectParameterCount(effect))
+                    {
+                        AutomationTarget parameter{id, effectParameterId(effect, i)};
+                        auto key = target.layer.isEmpty() ? juce::String("master") : target.layer;
+                        if (auto *clip = findClip(session.document.activeMix(), key))
+                            key = clip->trackId;
+                        auto *lane = automationLane(session.document.activeMix(), key);
+                        auto &options = session.laneWriteSettings(key);
+                        if (lane && lane->touch && lane->armed == parameter && options.armed &&
+                            options.mode != DesignSession::WriteMode::touch && session.automationFrame())
+                        {
+                            if (session.ownsAutomationWrite(key, parameter))
+                                session.moveAutomationWrite(key, parameter, value);
+                            else
+                                session.beginAutomationWrite(
+                                    key, parameter, value, options.mode == DesignSession::WriteMode::merge,
+                                    options.mode == DesignSession::WriteMode::preview);
+                            return;
+                        }
+                    }
+            }
             change(target, "Adjust native insert",
                    [&](auto &fx)
                    {

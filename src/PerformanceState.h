@@ -14,7 +14,9 @@ void addPerformancePad(DesignDocument &);
 juce::var padsToJson(const DesignMix &);
 void padsFromJson(DesignMix &, const juce::var &);
 void appendPadAutomationTargets(const DesignMix &, std::vector<AutomationParameter> &);
-DesignDocument evaluatePadAutomation(const DesignDocument &, int64_t);
+struct AutomationWriter;
+DesignDocument evaluatePadAutomation(const DesignDocument &, int64_t, AutomationWriter * = nullptr,
+                                     int64_t appliedFrame = -1);
 void disablePadAutomation(DesignMix &, int);
 void retainPadTake(DesignMix &, int, const PerformTake &);
 DesignDocument padRenderDocument(const DesignDocument &, int);

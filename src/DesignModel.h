@@ -205,6 +205,15 @@ struct AutomationPoint
     bool smooth = false;                   // Square XY only.
     double smoothStart = 0, smoothEnd = 1; // Retain the shape when a segment is cut.
 };
+struct AutomationMidiBinding
+{
+    juce::String device;
+    int channel = 1, cc = 0;
+    double low = 0, high = 1;
+    bool invert = false, pickup = true;
+    int hysteresis = 2;
+    bool operator==(const AutomationMidiBinding &) const = default;
+};
 struct AutomationTrim
 {
     int64_t first=0, last=0;
@@ -217,6 +226,8 @@ struct AutomationCurve
     std::vector<AutomationPoint> points;
     std::optional<HostedAutomationBinding> hostedBinding;
     std::vector<AutomationTrim> trims;
+    std::optional<AutomationMidiBinding> midi;
+    juce::String followClip;
 };
 struct AutomationLane
 {

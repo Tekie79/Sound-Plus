@@ -1,10 +1,9 @@
 # M05 automation
 
 ```text
-		✓  Capture applied scalar values on the compensated graph clock
-		✓  Verify native scalar Latch, armed Write and bounded Preview/Punch at graph and session boundaries
-		✓  Verify bounded relative Trim, curve thinning, saved and frozen playback
-		◉  Integrate MIDI Learn and qualified hosted writes
-		○  Verify saved/frozen playback and recovery
+		✓  Verify scalar Latch, deliberately armed Write and bounded Preview/Punch
+		✓  Verify bounded Trim, curve edits and saved/frozen playback
+		✓  Verify virtual CoreMIDI Learn, hosted writes and clip-follow policy
+		◉  Qualify transport start, stop and repeated punch boundaries
 		○  Continue M06–M08, then consolidate M09
 ```

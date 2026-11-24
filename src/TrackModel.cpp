@@ -79,6 +79,22 @@ juce::var laneJson(const AutomationLane &l)
         put(row, "read", c.read);
         if (c.hostedBinding && !c.points.empty())
             put(row, "hostedBinding", hostedBindingJson(*c.hostedBinding));
+        if (c.followClip.isNotEmpty())
+            put(row, "followClipV1", c.followClip);
+        if (c.midi)
+        {
+            auto v = obj();
+            auto &b = *c.midi;
+            put(v, "device", b.device);
+            put(v, "channel", b.channel);
+            put(v, "cc", b.cc);
+            put(v, "low", b.low);
+            put(v, "high", b.high);
+            put(v, "invert", b.invert);
+            put(v, "pickup", b.pickup);
+            put(v, "hysteresis", b.hysteresis);
+            put(row, "controllerV1", v);
+        }
         if(!c.trims.empty()){
             juce::Array<juce::var> trims;
             for(const auto &t:c.trims)
@@ -125,6 +141,23 @@ AutomationLane laneFrom(const juce::var &v)
         c.read = row["read"];
         if (row.hasProperty("hostedBinding"))
             c.hostedBinding = hostedBindingFromJson(row["hostedBinding"]);
+        if (row.hasProperty("followClipV1"))
+        {
+            require(row["followClipV1"].isString() && row["followClipV1"].toString().isNotEmpty(),
+                    "Invalid follow clip");
+            c.followClip = row["followClipV1"].toString();
+        }
+        if (row.hasProperty("controllerV1"))
+        {
+            auto b = row["controllerV1"];
+            require(b.isObject() && b["device"].isString() && b["channel"].isInt() && b["cc"].isInt() &&
+                        b["invert"].isBool() && b["pickup"].isBool() && b.hasProperty("low") &&
+                        b.hasProperty("high") && b["hysteresis"].isInt(),
+                    "Invalid MIDI Learn encoding");
+            c.midi = AutomationMidiBinding{b["device"].toString(), (int)b["channel"],   (int)b["cc"],
+                                           (double)b["low"],       (double)b["high"],   (bool)b["invert"],
+                                           (bool)b["pickup"],      (int)b["hysteresis"]};
+        }
         if(row.hasProperty("trimV1")){
             auto *trims=row["trimV1"].getArray();
             require(trims && !trims->isEmpty() && trims->size()<=64,"Invalid trim segment count");
@@ -237,6 +270,36 @@ void copyClip(DesignDocument &d, const juce::String &id, const juce::String &own
     attachClip(d, copy, owner);
     d.selectedLayer = copy.id;
     d.activeMix().layers.push_back(std::move(copy));
+}
+void followAutomationClips(const DesignMix &before, DesignMix &after)
+{
+    for (auto &track : after.tracks)
+        for (auto &curve : track.automation.curves)
+        {
+            if (curve.followClip.isEmpty())
+                continue;
+            auto *old = findClip(before, curve.followClip),
+                 *now = static_cast<const DesignLayer *>(findClip(after, curve.followClip));
+            if (!now || now->trackId != track.id)
+            {
+                curve.followClip.clear();
+                continue;
+            }
+            if (!old || old->placement == now->placement)
+                continue;
+            const auto delta = now->placement - old->placement;
+            for (auto &point : curve.points)
+            {
+                require(point.frame >= -delta, "Unlink automation before moving points before frame zero");
+                point.frame += delta;
+            }
+            for (auto &trim : curve.trims)
+            {
+                require(trim.first >= -delta, "Unlink automation before moving Trim before frame zero");
+                trim.first += delta;
+                trim.last += delta;
+            }
+        }
 }
 void rebaseAutomation(DesignMix &m, int64_t first)
 {
@@ -936,11 +999,16 @@ void thinAutomation(AutomationCurve &curve,const AutomationParameter &p,double t
 }
 bool hasAdvancedAutomation(const DesignMix &mix)
 {
-    auto advanced=[](const AutomationLane &lane){
-        return std::any_of(lane.curves.begin(),lane.curves.end(),[](const auto &c){
-            return !c.trims.empty() || (c.target!=surroundX && c.target!=surroundY &&
-                std::any_of(c.points.begin(),c.points.end(),[](auto &p){return p.smooth;}));
-        });
+    auto advanced = [](const AutomationLane &lane)
+    {
+        return std::any_of(
+            lane.curves.begin(), lane.curves.end(),
+            [](const auto &c)
+            {
+                return c.followClip.isNotEmpty() || c.midi.has_value() || !c.trims.empty() ||
+                       (c.target != surroundX && c.target != surroundY &&
+                        std::any_of(c.points.begin(), c.points.end(), [](auto &p) { return p.smooth; }));
+            });
     };
     if(advanced(mix.masterAutomation))return true;
     return std::any_of(mix.tracks.begin(),mix.tracks.end(),[&](const auto &t){return advanced(t.automation);});
@@ -1183,6 +1251,19 @@ void validateTracks(const DesignMix &m, double rate)
                         "Hosted binding target differs from curve");
             }
             auto definition=std::find_if(registry.begin(),registry.end(),[&](auto &p){return p.target==c.target;});
+            if (c.midi)
+            {
+                auto &b = *c.midi;
+                require(b.device.isNotEmpty() && b.device.length() <= 256 && b.channel >= 1 &&
+                            b.channel <= 16 && b.cc >= 0 && b.cc < 120 && b.low >= 0 && b.high <= 1 &&
+                            b.low < b.high && b.hysteresis >= 1 && b.hysteresis <= 16,
+                        "Invalid MIDI Learn mapping");
+            }
+            if (c.followClip.isNotEmpty())
+            {
+                auto *clip = findClip(m, c.followClip);
+                require(clip && clip->trackId == owner, "Follow clip missing from automation owner");
+            }
             int64_t priorEnd=0;
             require(c.trims.size()<=64,"Too many trim intervals");
             for(auto &t:c.trims){
@@ -1398,33 +1479,52 @@ std::vector<HostedParameterEvent> CompiledAutomation::hostedEvents(const HostedR
 {
     std::vector<HostedParameterEvent> result;
     for (size_t slot = 0; slot < rack.slots.size(); ++slot)
+    {
+        auto schedule = [&](const AutomationParameter &p, const AutomationCurve &curve, bool overlay)
+        {
+            for (int offset = 0; offset < frames;)
+            {
+                const auto raw = first + offset - latency;
+                const auto frame = std::max<int64_t>(0, raw);
+                auto phase = frame - frame % 32;
+                auto next = std::upper_bound(curve.points.begin(), curve.points.end(), frame,
+                                             [](auto t, auto &point) { return t < point.frame; });
+                if (next != curve.points.begin())
+                    phase = std::max(phase, std::prev(next)->frame);
+                auto value = automationValue(curve, p, phase);
+                if (overlay)
+                    value = writer->apply(p.target, frame, value);
+                result.push_back(
+                    {p.hostedToken, 1, frame, first + offset, offset, p.nativeIndex, (uint16_t)slot, 0,
+                     (float)value,
+                     (float)automationValue(curve, p, frame + (int64_t)std::llround(rate * .1))});
+                if (result.size() > hostedEventLimit)
+                    throw std::runtime_error("Hosted automation event capacity exceeded");
+                int n = std::min(frames - offset, 32 - (int)(frame % 32));
+                if (next != curve.points.end())
+                    n = (int)std::min<int64_t>(n, next->frame - frame);
+                if (overlay && writer->release < 0)
+                    for (auto edge : {writer->first, writer->last})
+                        if (edge > frame)
+                            n = (int)std::min<int64_t>(n, edge - frame);
+                if (raw < 0)
+                    n = (int)std::min<int64_t>(frames - offset, -raw);
+                offset += std::max(1, n);
+            }
+        };
+        bool covered = false;
+        bool active = writer && writer->hosted && writer->target.instance == rack.slots[slot].id;
         for (auto &b : bindings)
             if (b.parameter.hostedBinding && b.parameter.target.instance == rack.slots[slot].id &&
                 !b.curve.points.empty())
             {
-                auto token = b.parameter.hostedToken;
-                for (int offset = 0; offset < frames;)
-                {
-                    auto frame = std::max<int64_t>(0, first + offset - latency);
-                    auto phase = frame - frame % 32;
-                    auto next = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,
-                                                 [](auto f, auto &p) { return f < p.frame; });
-                    if (next != b.curve.points.begin())
-                        phase = std::max(phase, std::prev(next)->frame);
-                    result.push_back({token, 1, frame, first + offset, offset, b.parameter.nativeIndex,
-                                      (uint16_t)slot, 0, (float)automationValue(b.curve, b.parameter, phase),
-                                      (float)automationValue(b.curve, b.parameter,
-                                                             frame + (int64_t)std::llround(rate * .1))});
-                    if (result.size() > hostedEventLimit)
-                        throw std::runtime_error("Hosted automation event capacity exceeded");
-                    int n = std::min(frames - offset, 32 - (int)(frame % 32));
-                    if (next != b.curve.points.end())
-                        n = (int)std::min<int64_t>(n, next->frame - frame);
-                    if (first + offset - latency < 0)
-                        n = (int)std::min<int64_t>(frames - offset, latency - first - offset);
-                    offset += std::max(1, n);
-                }
+                const bool overlay = active && b.parameter.hostedBinding == writer->hosted->hostedBinding;
+                schedule(b.parameter, b.curve, overlay);
+                covered |= overlay;
             }
+        if (active && !covered)
+            schedule(*writer->hosted, {}, true);
+    }
     std::stable_sort(result.begin(), result.end(), [](auto &a, auto &b) { return a.offset < b.offset; });
     return result;
 }

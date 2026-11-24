@@ -48,8 +48,8 @@ bool DesignSession::beginAutomationWrite(const juce::String &owner, const Automa
     if (!lane || !lane->touch || lane->armed != target || target.instance == "square-surround-v1")
         return false;
     auto opts = automationTargets(mix, owner);
-    auto at = std::find_if(opts.begin(), opts.end(),
-                           [&](auto &p) { return p.target == target && p.writable && !p.hostedBinding; });
+    auto at =
+        std::find_if(opts.begin(), opts.end(), [&](auto &p) { return p.target == target && p.writable; });
     if (at == opts.end() || !std::isfinite(value) || value < at->minimum || value > at->maximum)
         return false;
     auto state = services.status();
@@ -100,12 +100,21 @@ void DesignSession::pollAutomationWrite(const juce::var &state)
     if (!writerPass)
         return;
     auto &p = *writerPass;
-    auto receipt = state["automationWrite"];
+    auto receipt = p.completedPreview.isObject() ? p.completedPreview : state["automationWrite"];
     bool match = receipt["pass"].toString() == p.id && receipt["owner"].toString() == p.owner &&
                  (uint64_t)(int64_t)receipt["playGeneration"] == p.generation &&
                  (int64_t)receipt["graphEpoch"] == p.epoch;
     bool valid = p.lifetime == lifetime && p.document == document.id &&
                  p.variation == document.activeVariation && document.activeTake.isEmpty() && !replacing;
+    if (match && valid && p.preview && !p.ending && active && (bool)state["playing"])
+    {
+        if (!p.completedPreview.isObject())
+        {
+            p.completedPreview = receipt.clone();
+            sendAutomationWrite("ack");
+        }
+        return;
+    }
     if (!match)
     {
         bool lost = !valid || !(bool)state["playing"] || (int64_t)state["helperPid"] != p.helper ||
@@ -133,5 +142,226 @@ void DesignSession::pollAutomationWrite(const juce::var &state)
         message = "Automation pass ended without an audio-engine receipt";
     if (auto next = std::exchange(afterWriter, {}))
         services.post(std::move(next));
+}
+} // namespace sp
+
+namespace sp
+{
+DesignSession::LaneWriteSettings &DesignSession::laneWriteSettings(const juce::String &owner)
+{
+    if (laneModesLifetime != lifetime || laneModesDocument != document.id ||
+        laneModesVariation != document.activeVariation)
+    {
+        laneModes.clear();
+        laneModesLifetime = lifetime;
+        laneModesDocument = document.id;
+        laneModesVariation = document.activeVariation;
+    }
+    return laneModes[owner];
+}
+void DesignSession::pollArmedWrites(const juce::var &state)
+{
+    if (writerPass || !active || previewWaiting || !(bool)state["playing"] ||
+        document.activeTake.isNotEmpty())
+        return;
+    if (laneModesLifetime != lifetime || laneModesDocument != document.id ||
+        laneModesVariation != document.activeVariation)
+        return;
+    for (auto &[owner, options] : laneModes)
+    {
+        if (!options.armed || options.started == expectedGeneration ||
+            (options.mode != WriteMode::replace && options.mode != WriteMode::merge))
+            continue;
+        auto *l = automationLane(document.activeMix(), owner);
+        if (!l || !l->touch)
+            continue;
+        auto all = automationTargets(document.activeMix(), owner);
+        auto p =
+            std::find_if(all.begin(), all.end(), [&](auto &d) { return d.target == l->armed && d.writable; });
+        if (p == all.end())
+            continue;
+        auto *c = automationCurve(*l, l->armed);
+        auto v = c && c->read ? automationValue(*c, *p, (int64_t)state["sourceSample"]) : p->base;
+        if (beginAutomationWrite(owner, l->armed, v, options.mode == WriteMode::merge, false))
+        {
+            options.started = expectedGeneration;
+            return;
+        }
+    }
+}
+void DesignSession::learnAutomationMidi(const juce::String &owner, const AutomationTarget &target,
+                                        AutomationMidiBinding settings)
+{
+    if (settings.device.isEmpty() || settings.low < 0 || settings.high > 1 ||
+        !(settings.low < settings.high) || settings.hysteresis < 1 || settings.hysteresis > 16 ||
+        document.activeTake.isNotEmpty())
+        return;
+    auto registry = automationTargets(document.activeMix(), owner);
+    if (std::none_of(registry.begin(), registry.end(),
+                     [&](const auto &p)
+                     {
+                         return p.target == target && p.writable && !p.hostedBinding &&
+                                p.target.instance != "square-surround-v1";
+                     }))
+        return;
+    learning =
+        LearnTarget{owner, document.id, document.activeVariation, target, std::move(settings), lifetime};
+    controlRevision = -1;
+    nextControlScan = 0;
+    message = "Move a controller";
+    notify();
+}
+void DesignSession::cancelMidiLearn()
+{
+    learning.reset();
+    controlRevision = -1;
+    nextControlScan = 0;
+}
+void DesignSession::pollAutomationMidi(const juce::var &state)
+{
+    const auto context = document.id + "/" + document.activeVariation + "/" + document.activeTake;
+    if (learning && (learning->lifetime != lifetime || learning->document != document.id ||
+                     learning->variation != document.activeVariation || document.activeTake.isNotEmpty()))
+        cancelMidiLearn();
+    if (controlContext != context || controlRevision != document.revision)
+    {
+        controlContext = context;
+        controlRevision = document.revision;
+        controlRoutes.clear();
+        nextControlScan = 0;
+        auto collect = [&](const juce::String &owner, const AutomationLane &lane)
+        {
+            if (!lane.touch || document.activeTake.isNotEmpty())
+                return;
+            auto *c = automationCurve(lane, lane.armed);
+            if (!c || !c->midi)
+                return;
+            auto registry = automationTargets(document.activeMix(), owner);
+            auto p = std::find_if(registry.begin(), registry.end(), [&](auto &v)
+                                  { return v.target == c->target && v.writable && !v.hostedBinding; });
+            if (p != registry.end())
+                controlRoutes.push_back(
+                    {{owner, document.id, document.activeVariation, c->target, *c->midi, lifetime}, *p, {}});
+        };
+        auto &m = document.activeMix();
+        collect("master", m.masterAutomation);
+        for (auto &t : m.tracks)
+            collect(t.id, t.automation);
+    }
+    if (controlRoutes.empty() && !learning)
+    {
+        controlInputs.clear();
+        return;
+    }
+    if (controlGeneration != (uint64_t)(int64_t)state["playGeneration"])
+    {
+        controlGeneration = (uint64_t)(int64_t)state["playGeneration"];
+        for (auto &r : controlRoutes)
+            r.pickup = {};
+    }
+    const auto now = services.now();
+    if (now >= nextControlScan)
+    {
+        nextControlScan = now + 1500;
+        std::set<juce::String> wanted;
+        for (auto &r : controlRoutes)
+            wanted.insert(r.destination.binding.device);
+        if (learning)
+            wanted.insert(learning->binding.device);
+        auto devices = juce::MidiInput::getAvailableDevices();
+        std::erase_if(controlInputs,
+                      [&](auto &entry)
+                      {
+                          bool gone = !wanted.contains(entry.first) ||
+                                      std::none_of(devices.begin(), devices.end(),
+                                                   [&](auto &d) { return d.identifier == entry.first; });
+                          if (gone)
+                              for (auto &r : controlRoutes)
+                                  if (r.destination.binding.device == entry.first)
+                                  {
+                                      r.pickup = {};
+                                      if (writerPass && writerPass->id == midiWriterId &&
+                                          ownsAutomationWrite(r.destination.owner, r.destination.target))
+                                          endAutomationWrite();
+                                  }
+                          return gone;
+                      });
+        for (auto &dev : devices)
+            if (wanted.contains(dev.identifier) && !controlInputs.contains(dev.identifier))
+            {
+                auto port = std::make_unique<AutomationMidiInput>();
+                if (port->open(dev.identifier))
+                    controlInputs.emplace(dev.identifier, std::move(port));
+            }
+    }
+    for (auto &[uid, port] : controlInputs)
+    {
+        if (port->overflowed())
+        {
+            port->drain([](auto) {});
+            if (writerPass && writerPass->id == midiWriterId)
+                endAutomationWrite();
+            for (auto &r : controlRoutes)
+                r.pickup = {};
+            message = "Controller queue full. Move the controller again.";
+            continue;
+        }
+        port->drain(
+            [&](auto e)
+            {
+                if (learning && learning->binding.device == uid)
+                {
+                    auto dst = *learning;
+                    cancelMidiLearn();
+                    dst.binding.channel = e.channel;
+                    dst.binding.cc = e.number;
+                    edit(
+                        "Learn MIDI controller",
+                        [&](auto &d)
+                        {
+                            if (auto *l = automationLane(d.activeMix(), dst.owner))
+                                automationCurve(*l, dst.target, true)->midi = dst.binding;
+                        },
+                        ChangeImpact::metadata);
+                    message = "Learned CC " + juce::String(e.number);
+                    return;
+                }
+                if (!active || previewWaiting || !(bool)state["playing"] || takeBusy() || inputBusy() ||
+                    midiBusy())
+                    return;
+                MidiControlRoute *match = nullptr;
+                for (auto &r : controlRoutes)
+                    if (r.destination.binding.device == uid && r.destination.binding.channel == e.channel &&
+                        r.destination.binding.cc == e.number)
+                    {
+                        if (match)
+                        {
+                            message = "Controller assigned to multiple armed targets";
+                            return;
+                        }
+                        match = &r;
+                    }
+                if (!match)
+                    return;
+                auto &dst = match->destination;
+                auto *lane = automationLane(document.activeMix(), dst.owner);
+                if (!lane || !lane->touch || lane->armed != dst.target)
+                    return;
+                auto *c = automationCurve(*lane, dst.target);
+                double base = c && c->read
+                                  ? automationValue(*c, match->parameter, (int64_t)state["sourceSample"])
+                                  : match->parameter.base;
+                auto value = match->pickup.move(dst.binding, match->parameter, e.value, base);
+                if (!value)
+                    return;
+                if (!writerPass)
+                {
+                    if (beginAutomationWrite(dst.owner, dst.target, *value, false, false))
+                        midiWriterId = writerPass->id;
+                }
+                else if (writerPass->id == midiWriterId)
+                    moveAutomationWrite(dst.owner, dst.target, *value);
+            });
+    }
 }
 } // namespace sp

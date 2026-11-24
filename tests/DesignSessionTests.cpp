@@ -334,12 +334,96 @@ void checkScalarPass(const juce::File &root)
         else check(!curve(),"Canceled or uncertified pass leaves no curve");
     }
 }
+void checkControllerLearning(const juce::File &root)
+{
+    using namespace sp;
+    using namespace juce;
+    const auto name = "SoundPlus Learn QA " + Uuid().toString().substring(0, 8);
+    auto virtualController = MidiOutput::createNewDevice(name);
+    check(virtualController != nullptr, "Create a private virtual CoreMIDI controller");
+    String uid;
+    for (int i = 0; i < 100 && uid.isEmpty(); ++i)
+    {
+        for (auto &d : MidiInput::getAvailableDevices())
+            if (d.name == name)
+                uid = d.identifier;
+        if (uid.isEmpty())
+            Thread::sleep(10);
+    }
+    check(uid.isNotEmpty(), "Find exact CoreMIDI test endpoint");
+    Harness h(root.getChildFile("cc"));
+    auto services = h.services();
+    std::vector<var> commands;
+    services.squareTouchCommand = [&](auto command) { commands.push_back(command); };
+    DesignSession session(h.directory.getChildFile("library.sqlite"), services);
+    session.document = recipe();
+    auto owner = addTrack(session.document.original, TrackKind::audio);
+    auto &layer = session.document.original.layers.front();
+    layer.trackId = owner;
+    initialiseRouting(layer, findTrack(session.document.original, owner)->layout);
+    AutomationTarget volume{{}, "volume"};
+    auto lane = [&] { return automationLane(session.document.activeMix(), owner); };
+    AutomationMidiBinding setup;
+    setup.device = uid;
+    setup.low = .25;
+    setup.high = .75;
+    setup.pickup = false;
+    session.learnAutomationMidi(owner, volume, setup);
+    session.poll();
+    auto send = [&](int cc, int value)
+    { virtualController->sendMessageNow(MidiMessage::controllerEvent(3, cc, value)); };
+    send(74, 16);
+    for (int i = 0; i < 50 && session.learningMidi(); ++i)
+    {
+        Thread::sleep(10);
+        session.poll();
+    }
+    auto *curve = automationCurve(*lane(), volume);
+    check(curve && curve->midi && curve->midi->cc == 74 && curve->midi->channel == 3 &&
+              curve->midi->device == uid && curve->points.empty(),
+          "Learn CC74 from real CoreMIDI without musical notes or points");
+    lane()->touch = true;
+    lane()->armed = volume;
+    ++session.document.revision;
+    session.play();
+    h.drain();
+    session.poll();
+    send(73, 127);
+    send(74, 127);
+    for (int i = 0; i < 50 && commands.empty(); ++i)
+    {
+        Thread::sleep(10);
+        session.poll();
+    }
+    check(!commands.empty() && commands[0]["phase"].toString() == "begin" &&
+              std::abs((double)commands[0]["value"] - (-4.5)) < 1e-5,
+          "Mapped control sends scaled gain through identified writer");
+    virtualController.reset();
+    h.now += 2200;
+    session.poll();
+    auto reopened = designFromJson(designToJson(session.document));
+    auto *recalled = automationCurve(*automationLane(reopened.original, owner), volume);
+    check(recalled && recalled->midi && recalled->midi == curve->midi && reopened.original.midiClips.empty(),
+          "Mapping reopens without a device or MIDI notes");
+    AutomationParameter p;
+    p.minimum = 0;
+    p.maximum = 1;
+    ControllerPickup pickup;
+    setup.low = 0;
+    setup.high = 1;
+    setup.invert = true;
+    setup.pickup = true;
+    check(!pickup.move(setup, p, 100, .5) && pickup.move(setup, p, 61, .5).has_value() &&
+              !pickup.move(setup, p, 62, .5),
+          "Inverted control waits for pickup and suppresses jitter");
+}
 } // namespace
 void runDesignSessionTests(const juce::File &parent)
 {
     juce::ScopedJuceInitialiser_GUI initialise;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
+    checkControllerLearning(root);
     checkScalarPass(root);
     checkSquareSelection(root);
     checkInterruptedSquareTouch(root);

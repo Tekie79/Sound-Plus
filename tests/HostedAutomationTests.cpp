@@ -1,4 +1,5 @@
 #include "HostedRack.h"
+#include "AutomationWriter.h"
 #include "HostedParameterIdentity.h"
 #include "PluginProcessing.h"
 #include "DesignAudio.h"

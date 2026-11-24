@@ -1,5 +1,6 @@
 #pragma once
 #include "DesignAudio.h"
+#include "AutomationMidi.h"
 #include "AudioIPC.h"
 #include "DesignRecovery.h"
 #include "SerialWorker.h"
@@ -193,6 +194,27 @@ class DesignSession final : public juce::Component, private juce::Timer
     void stop();
     bool ownsPlayback() const;
     std::optional<int64_t> automationFrame() const;
+    enum class WriteMode
+    {
+        touch,
+        latch,
+        replace,
+        merge,
+        preview
+    };
+    struct LaneWriteSettings
+    {
+        WriteMode mode = WriteMode::touch;
+        bool armed = false;
+        uint64_t started = 0;
+    };
+    LaneWriteSettings &laneWriteSettings(const juce::String &owner);
+    void learnAutomationMidi(const juce::String &, const AutomationTarget &, AutomationMidiBinding);
+    void cancelMidiLearn();
+    bool learningMidi() const
+    {
+        return learning.has_value();
+    }
     bool beginAutomationWrite(const juce::String &, const AutomationTarget &, double value, bool merge, bool preview);
     bool ownsAutomationWrite(const juce::String &, const AutomationTarget &) const;
     void moveAutomationWrite(const juce::String &, const AutomationTarget &, double);
@@ -318,9 +340,35 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
+    struct LearnTarget
+    {
+        juce::String owner, document, variation;
+        AutomationTarget target;
+        AutomationMidiBinding binding;
+        uint64_t lifetime = 0;
+    };
+    struct MidiControlRoute
+    {
+        LearnTarget destination;
+        AutomationParameter parameter;
+        ControllerPickup pickup;
+    };
+    std::map<juce::String, LaneWriteSettings> laneModes;
+    juce::String laneModesDocument, laneModesVariation;
+    uint64_t laneModesLifetime = 0;
+    void pollArmedWrites(const juce::var &);
+    std::optional<LearnTarget> learning;
+    std::vector<MidiControlRoute> controlRoutes;
+    std::map<juce::String, std::unique_ptr<AutomationMidiInput>> controlInputs;
+    juce::String controlContext, midiWriterId;
+    int64_t controlRevision = -1;
+    double nextControlScan = 0;
+    uint64_t controlGeneration = 0;
+    void pollAutomationMidi(const juce::var &);
     struct WriterPass
     {
         juce::String id, owner, document, variation, base;
+        juce::var completedPreview;
         AutomationTarget target;
         uint64_t lifetime = 0, generation = 0;
         int64_t epoch = 0, helper = 0, first = 0, last = 0;

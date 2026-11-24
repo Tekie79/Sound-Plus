@@ -22,6 +22,7 @@ DesignLayer *findClip(DesignMix &, const juce::String &);
 const DesignLayer *findClip(const DesignMix &, const juce::String &);
 InsertChain *ownerInserts(DesignMix &, const juce::String &);
 void attachClip(DesignDocument &, DesignLayer &, juce::String owner = {});
+void followAutomationClips(const DesignMix &before, DesignMix &after);
 void rebaseAutomation(DesignMix &, int64_t first);
 void splitClip(DesignDocument &, const juce::String &, int64_t);
 void copyClip(DesignDocument &, const juce::String &, const juce::String &, int64_t);

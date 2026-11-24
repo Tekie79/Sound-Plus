@@ -133,8 +133,8 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
         if (!lane())
             return;
         if (session.ownsAutomationWrite(owner, lane()->armed)) session.endAutomationWrite();
-        deliberateArm = !lane()->touch;
-        writtenGeneration = 0;
+        this->settings().armed = !lane()->touch;
+        this->settings().started = 0;
         session.edit("Arm automation",
                      [&](auto &d)
                      {
@@ -159,7 +159,6 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
     write.onDragEnd = [this] { endTouch(); };
     target.setTooltip("Choose the curve shown in this single lane. Hidden read curves keep playing.");
     refresh();
-    startTimerHz(24);
 }
 AutomationEditor::~AutomationEditor()
 {
@@ -169,10 +168,11 @@ void AutomationEditor::chooseMode()
 {
     if (!lane()) return;
     juce::PopupMenu menu;
-    const bool scalar = parameter.writable && !parameter.hostedBinding && parameter.target.instance != "square-surround-v1";
+    const bool scalar = parameter.writable && parameter.target.instance != "square-surround-v1";
     const char *names[] = {"Touch", "Latch", "Write (replace)", "Write (merge)", "Preview"};
-    for (int i=0; i<5; ++i) menu.addItem(i+1,names[i], i==0 || scalar, i==static_cast<int>(writeMode));
-    if (writeMode==WriteMode::preview && session.ownsAutomationWrite(owner,lane()->armed))
+    for (int i = 0; i < 5; ++i)
+        menu.addItem(i + 1, names[i], i == 0 || scalar, i == static_cast<int>(settings().mode));
+    if (settings().mode == WriteMode::preview && session.ownsAutomationWrite(owner, lane()->armed))
     {
         menu.addSeparator(); menu.addItem(6,"Punch preview"); menu.addItem(7,"Cancel preview");
     }
@@ -184,23 +184,15 @@ void AutomationEditor::chooseMode()
         if (self.session.ownsAutomationWrite(self.owner,self.lane()->armed)) self.session.endAutomationWrite(id==6);
         if (id>5) return;
         self.finishInteraction();
-        self.writeMode=static_cast<WriteMode>(id-1);
-        self.writtenGeneration=0;
-        self.deliberateArm=false;
+        self.settings().mode = static_cast<WriteMode>(id - 1);
+        self.settings().started = 0;
+        self.settings().armed = false;
         if (self.lane()->touch)
             self.session.edit("Disarm automation",[&](auto &d){automationLane(d.activeMix(),self.owner)->touch=false;});
         static constexpr const char *labels[]={"Touch","Latch","Write","Merge","Preview"};
         self.mode.setButtonText(labels[id-1]);
         self.refresh();
     });
-}
-void AutomationEditor::timerCallback()
-{
-    if ((writeMode!=WriteMode::replace && writeMode!=WriteMode::merge) || !deliberateArm ||
-        !lane() || !lane()->touch || !session.automationFrame()) return;
-    const auto generation=session.automationPlaybackGeneration();
-    if (writtenGeneration!=generation && session.beginAutomationWrite(owner,lane()->armed,write.getValue(),writeMode==WriteMode::merge,false))
-        writtenGeneration=generation;
 }
 bool AutomationEditor::contextValid() const
 {
@@ -237,6 +229,8 @@ void AutomationEditor::refresh()
     for (auto &p : targets)
         if (p.target == l->shown)
             parameter = p;
+    static constexpr const char *labels[] = {"Touch", "Latch", "Write", "Merge", "Preview"};
+    mode.setButtonText(labels[static_cast<int>(settings().mode)]);
     updating = true;
     target.setButtonText(parameter.name + (parameter.units.isNotEmpty()
                                                ? juce::String::fromUTF8(" · ") + parameter.units
@@ -530,12 +524,23 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
         m.addItem(9,"Trim range...",canTrimAutomation(parameter));
         m.addItem(10,"Thin curve (0.1%)",parameter.writable && !parameter.discrete && curve() && curve()->points.size()>2);
         m.addItem(11,"Snapshot at playhead",parameter.writable);
+        auto selectedClip = session.document.selectedLayer;
+        auto *clip = findClip(session.document.activeMix(), selectedClip);
+        bool linked = curve() && curve()->followClip.isNotEmpty();
+        m.addItem(15, linked ? "Unlink from clip" : "Follow selected clip",
+                  linked || (clip && clip->trackId == owner && parameter.writable));
+        m.addItem(12, "Learn MIDI controller...",
+                  parameter.writable && !parameter.hostedBinding &&
+                      parameter.target.instance != "square-surround-v1");
+        if (curve() && curve()->midi)
+            m.addItem(13, "Forget CC " + juce::String(curve()->midi->cc));
+        m.addItem(14, "Cancel MIDI Learn", session.learningMidi());
         m.addItem(4, "Copy", !selection.empty());
         m.addItem(5, "Paste at playhead", parameter.writable);
         m.addItem(6, "Delete", !selection.empty());
         juce::Component::SafePointer<AutomationEditor> safe(this);
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
-                        [safe, shown=lane()->shown](int n)
+                        [safe, shown = lane()->shown, selectedClip, linked](int n)
                         {
                             if (!safe || !safe->contextValid() || !safe->lane() || safe->lane()->shown!=shown)
                                 return;
@@ -557,7 +562,33 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
                                         }
                                     }
                                 });
-                            if(n==9)safe->trimDialog();
+                            if (n == 15)
+                                safe->session.edit(
+                                    "Link automation to clip",
+                                    [&](auto &d)
+                                    {
+                                        auto *clip = findClip(d.activeMix(), selectedClip);
+                                        if (linked || (clip && clip->trackId == safe->owner))
+                                            automationCurve(*automationLane(d.activeMix(), safe->owner),
+                                                            shown, true)
+                                                ->followClip = linked ? juce::String() : selectedClip;
+                                    });
+                            if (n == 12)
+                                safe->midiDialog();
+                            if (n == 13)
+                                safe->session.edit(
+                                    "Forget MIDI controller",
+                                    [&](auto &d)
+                                    {
+                                        if (auto *c = automationCurve(
+                                                *automationLane(d.activeMix(), safe->owner), shown))
+                                            c->midi.reset();
+                                    },
+                                    DesignSession::ChangeImpact::metadata);
+                            if (n == 14)
+                                safe->session.cancelMidiLearn();
+                            if(n==9)
+                                safe->trimDialog();
                             if (n == 7)
                                 safe->requestRepair();
                             if (n == 1)
@@ -777,6 +808,58 @@ void AutomationEditor::numericPoint(int64_t frame, double value)
         });
 }
 
+void AutomationEditor::midiDialog()
+{
+    const auto devices = juce::MidiInput::getAvailableDevices();
+    if (devices.isEmpty())
+    {
+        session.message = "Connect a MIDI controller";
+        return;
+    }
+    juce::StringArray names;
+    for (auto &d : devices)
+        names.add(d.name);
+    auto *box = new juce::AlertWindow("Learn controller", parameter.name, juce::MessageBoxIconType::NoIcon);
+    box->addComboBox("device", names, "MIDI input");
+    box->addTextEditor("low", "0", "Minimum (%)");
+    box->addTextEditor("high", "100", "Maximum (%)");
+    box->addComboBox("direction", {"Normal", "Inverted"}, "Direction");
+    box->addComboBox("pickup", {"Pick up current value", "Jump to controller"}, "Behavior");
+    box->addTextEditor("threshold", "2", "Hysteresis (CC units)");
+    box->addButton("Learn", 1, juce::KeyPress(juce::KeyPress::returnKey));
+    box->addButton("Cancel", 0, juce::KeyPress(juce::KeyPress::escapeKey));
+    juce::Component::SafePointer<AutomationEditor> safe(this);
+    auto target = parameter.target;
+    box->enterModalState(
+        true,
+        juce::ModalCallbackFunction::create(
+            [box, devices, safe, target](int ok)
+            {
+                if (!ok || !safe || !safe->lane() || safe->lane()->shown != target)
+                    return;
+                auto index = box->getComboBoxComponent("device")->getSelectedItemIndex();
+                if (!juce::isPositiveAndBelow(index, devices.size()))
+                    return;
+                AutomationMidiBinding b;
+                b.device = devices[index].identifier;
+                auto lo = box->getTextEditorContents("low").trim(),
+                     hi = box->getTextEditorContents("high").trim(),
+                     threshold = box->getTextEditorContents("threshold").trim();
+                if (lo.isEmpty() || hi.isEmpty() || threshold.isEmpty() || !lo.containsOnly("0123456789") ||
+                    !hi.containsOnly("0123456789") || !threshold.containsOnly("0123456789"))
+                {
+                    safe->session.message = "Enter whole percentages and CC units";
+                    return;
+                }
+                b.low = lo.getDoubleValue() / 100;
+                b.high = hi.getDoubleValue() / 100;
+                b.hysteresis = threshold.getIntValue();
+                b.invert = box->getComboBoxComponent("direction")->getSelectedItemIndex() == 1;
+                b.pickup = box->getComboBoxComponent("pickup")->getSelectedItemIndex() == 0;
+                safe->session.learnAutomationMidi(safe->owner, target, b);
+            }),
+        true);
+}
 void AutomationEditor::trimDialog()
 {
     if(!lane() || !canTrimAutomation(parameter))return;
@@ -916,12 +999,16 @@ void AutomationEditor::beginTouch()
     if (p == targets.end())
         return;
     capturedParameter = *p;
-    if (writeMode!=WriteMode::touch)
+    if (settings().mode != WriteMode::touch)
     {
-        if (!deliberateArm || p->hostedBinding) return;
-        touching=session.ownsAutomationWrite(owner,capturedTarget) ||
-            session.beginAutomationWrite(owner,capturedTarget,write.getValue(),writeMode==WriteMode::merge,writeMode==WriteMode::preview);
-        if(touching)writtenGeneration=session.automationPlaybackGeneration();
+        if (!settings().armed)
+            return;
+        touching = session.ownsAutomationWrite(owner, capturedTarget) ||
+                   session.beginAutomationWrite(owner, capturedTarget, write.getValue(),
+                                                settings().mode == WriteMode::merge,
+                                                settings().mode == WriteMode::preview);
+        if (touching)
+            settings().started = session.automationPlaybackGeneration();
         return;
     }
     if (p->hostedBinding)
@@ -943,7 +1030,7 @@ void AutomationEditor::touchValue(double value)
 {
     if (!touching || !lane())
         return;
-    if (writeMode!=WriteMode::touch)
+    if (settings().mode != WriteMode::touch)
     {
         session.moveAutomationWrite(owner,capturedTarget,snappedAutomation(value,capturedParameter));
         return;
@@ -988,7 +1075,12 @@ void AutomationEditor::endTouch()
         touching = false;
         return;
     }
-    if (touching && writeMode!=WriteMode::touch) { touching=false; refresh(); return; }
+    if (touching && settings().mode != WriteMode::touch)
+    {
+        touching = false;
+        refresh();
+        return;
+    }
     if (touching && hostedWriting)
     {
         session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 2);

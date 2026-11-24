@@ -28,7 +28,7 @@ juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAsset
 add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/StabilityAudio.cpp src/AudioTransform.cpp src/EventRefinement.cpp src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
-  src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp src/DesignAutomationSession.cpp
+  src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp src/DesignAutomationSession.cpp src/AutomationMidi.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp

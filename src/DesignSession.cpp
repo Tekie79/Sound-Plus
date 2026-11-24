@@ -826,6 +826,8 @@ void DesignSession::edit(const juce::String &label, const std::function<void(Des
     try
     {
         edit(document);
+        if (before.id == document.id && before.activeVariation == document.activeVariation)
+            followAutomationClips(before.activeMix(), document.activeMix());
         auto normalise = [](DesignMix &m)
         {
             normaliseInsertChain(m.inserts);
@@ -1917,6 +1919,8 @@ void DesignSession::timerCallback()
     pollTake(state);
     pollSquareTouch(state);
     pollAutomationWrite(state);
+    pollAutomationMidi(state);
+    pollArmedWrites(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;
     if (active && !previewWaiting && owned && !(bool)state["pendingPlayback"])

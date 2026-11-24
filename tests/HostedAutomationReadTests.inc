@@ -92,6 +92,43 @@ void runHostedReadTests(const juce::var &settings, const juce::File &root)
                 check(std::abs(pcm.getSample(0, n) - .50625) < 3e-6,
                       "Accurate seek rebuilds hosted Read and PDC from frame zero");
         }
+        {
+            DesignGraph graph(reopened);
+            auto command = obj();
+            auto [owner, slot] = targets.front();
+            put(command, "owner", owner);
+            put(command, "pass", Uuid().toString());
+            put(command, "phase", "begin");
+            put(command, "instance", slot);
+            put(command, "parameter", gain["stableId"]);
+            put(command, "value", .5);
+            put(command, "first", 13);
+            put(command, "last", 97);
+            check(graph.automationCommand(command), "Producer accepts qualified instance-specific writer");
+            AudioBuffer<float> pcm(1, 384);
+            pcm.clear();
+            for (int n = 0; n < 384; n += 61)
+                graph.render(pcm, n, std::min(61, 384 - n));
+            for (int n = 0; n < 384; ++n)
+            {
+                double scalar = n < 7 ? 1 : n < 61 ? .5 : n < 257 ? 1.5 : 1;
+                double wanted = .1 * std::pow(scalar, 3) * (n >= 13 && n < 97 ? 1. : scalar);
+                check(std::abs(pcm.getSample(0, n) - wanted) < 3e-6, "Independent hosted bounded-write PCM");
+            }
+            auto receipt = graph.automationReceipt(false);
+            check((int)receipt["end"] == 97 && receipt["binding"]["slot"].toString() == slot,
+                  "Hosted receipt retains exact slot");
+            auto captured = reopened;
+            retainAutomationWrite(captured.original, owner, {slot, gain["stableId"].toString()}, receipt,
+                                  false);
+            auto saved = designFromJson(designToJson(captured));
+            DesignGraph rendered(saved);
+            AudioBuffer<float> replay(1, 384);
+            rendered.render(replay, 0, 384);
+            for (int n = 0; n < 384; ++n)
+                check(std::abs(replay.getSample(0, n) - pcm.getSample(0, n)) < 3e-6,
+                      "Hosted saved write replays exact fixture");
+        }
         auto continuous = d;
         for (auto [id, slot] : targets)
             for (auto &point : automationCurve(*automationLane(continuous.original, id),

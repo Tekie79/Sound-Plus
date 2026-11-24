@@ -1,3 +1,4 @@
+#include "AutomationWriter.h"
 #include "PerformanceState.h"
 #include "TrackModel.h"
 #include <cmath>
@@ -154,7 +155,8 @@ void appendPadAutomationTargets(const DesignMix &m, std::vector<AutomationParame
                            true});
         }
 }
-DesignDocument evaluatePadAutomation(const DesignDocument &base, int64_t frame)
+DesignDocument evaluatePadAutomation(const DesignDocument &base, int64_t frame, AutomationWriter *writer,
+                                     int64_t appliedFrame)
 {
     auto d = base;
     auto &m = d.activeMix();
@@ -162,11 +164,23 @@ DesignDocument evaluatePadAutomation(const DesignDocument &base, int64_t frame)
     appendPadAutomationTargets(m, targets);
     for (int p = 0; p <= (int)m.performancePads.size(); ++p)
         for (int f = 0; f < 14; ++f)
-            if (auto *c = automationCurve(m.masterAutomation, {padIdentity(m, p), fields[f]}); c && c->read)
+        {
+            AutomationTarget t{padIdentity(m, p), fields[f]};
+            auto *c = automationCurve(m.masterAutomation, t);
+            const bool writing = writer && writer->target == t;
+            if ((c && c->read) || writing)
                 for (auto &parameter : targets)
-                    if (parameter.target == c->target)
-                        control(padState(m, p), f,
-                                automationValue(*c, parameter, std::max<int64_t>(0, frame)));
+                    if (parameter.target == t)
+                    {
+                        auto value = c && c->read
+                                         ? automationValue(*c, parameter, std::max<int64_t>(0, frame))
+                                         : parameter.base;
+                        if (writing)
+                            value = writer->apply(t, std::max<int64_t>(0, appliedFrame), value);
+                        control(padState(m, p), f, value);
+                        break;
+                    }
+        }
     return d;
 }
 void disablePadAutomation(DesignMix &m, int p)
