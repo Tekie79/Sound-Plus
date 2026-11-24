@@ -123,7 +123,7 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
             addAndMakeVisible(c);
         preview.setVisible(false);
         playPreview.setPrimary();
-        playPreview.setIconSize(15.f);
+        playPreview.setIconSize(20.f);
         label(heading, "Provider");
         label(model, juce::String::fromUTF8("ElevenLabs · Sound Effects v3"));
         label(descriptionHeading, "Sound description");
@@ -150,7 +150,7 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
         manageKey.setClickingTogglesState(true);
         manageKey.onClick = [this] { refreshGenerationLayout(); };
     }
-    setSize(transforming ? 574 : 604, transforming ? 578 : 500);
+    setSize(transforming ? 574 : 760, transforming ? 578 : 552);
     startTimerHz(6);
     timerCallback();
 }
@@ -255,25 +255,38 @@ void Panel::refreshGenerationLayout()
     cancel.setVisible(state.busy);
     manageKey.setButtonText(expanded ? "Hide key settings" : "Manage key");
     layoutGeneration();
-    const int height = sectionBounds.back().getBottom() + 12;
+    const int height = sectionBounds.back().getBottom() + 16;
     if (height != getHeight())
+    {
         setSize(getWidth(), height);
+        if (auto *window = findParentComponentOfClass<juce::DocumentWindow>(); window && window->isShowing())
+            if (auto *peer = window->getPeer())
+            {
+                const auto peerFrame = peer->getFrameSizeIfPresent();
+                const auto frame = peerFrame ? *peerFrame : juce::BorderSize<int>();
+                const auto bounds = frame.addedTo(window->getScreenBounds());
+                if (const auto *display = juce::Desktop::getInstance().getDisplays().getDisplayForRect(bounds))
+                    window->setTopLeftPosition(frame.subtractedFrom(bounds.constrainedWithin(display->userArea))
+                                                   .getPosition());
+            }
+    }
     repaint();
 }
 
 void Panel::layoutGeneration()
 {
     // Keep each section only as tall as its available actions.
-    int y = 12;
+    constexpr int margin = 16;
+    int y = margin;
     auto section = [&](size_t index, int height)
     {
-        sectionBounds[index] = {12, y, getWidth() - 24, height};
-        y += height + ui::gap;
-        return sectionBounds[index].reduced(12, 8);
+        sectionBounds[index] = {margin, y, getWidth() - 2 * margin, height};
+        y += height + 12;
+        return sectionBounds[index].reduced(16, 10);
     };
-    auto provider = section(0, manageKey.getToggleState() ? 80 : 42);
+    auto provider = section(0, manageKey.getToggleState() ? 84 : 48);
     auto row = provider.removeFromTop(26);
-    heading.setBounds(row.removeFromLeft(87));
+    heading.setBounds(row.removeFromLeft(98));
     manageKey.setBounds(row.removeFromRight(108));
     model.setBounds(row);
     if (manageKey.getToggleState())
@@ -286,60 +299,62 @@ void Panel::layoutGeneration()
         key.setBounds(row.withTrimmedRight(8));
     }
 
-    auto description = section(1, 101);
-    descriptionHeading.setBounds(description.removeFromTop(23));
-    description.removeFromTop(6);
+    auto description = section(1, 120);
+    descriptionHeading.setBounds(description.removeFromTop(24));
+    description.removeFromTop(8);
     prompt.setBounds(description);
 
     auto settings = section(2, 160);
     settingsHeading.setBounds(settings.removeFromTop(24));
-    settings.removeFromTop(3);
-    auto fields = settings.removeFromTop(47);
+    settings.removeFromTop(5);
+    auto fields = settings.removeFromTop(50);
     auto field = [&](juce::Label &caption, juce::Component &control, int width)
     {
         auto column = fields.removeFromLeft(width);
         caption.setBounds(column.removeFromTop(18));
         control.setBounds(column);
-        fields.removeFromLeft(10);
+        fields.removeFromLeft(16);
     };
-    field(durationLabel, duration, 84);
-    field(countLabel, count, 68);
-    field(outputLabel, format, 146);
+    field(durationLabel, duration, 102);
+    field(countLabel, count, 84);
+    field(outputLabel, format, 168);
     influenceLabel.setBounds(fields.removeFromTop(18));
     influence.setBounds(fields);
-    settings.removeFromTop(7);
-    row = settings.removeFromTop(31);
+    settings.removeFromTop(9);
+    row = settings.removeFromTop(32);
     loop.setBounds(row.removeFromLeft(70));
     generate.setBounds(row.removeFromRight(102));
     cancel.setBounds(row.removeFromRight(70));
     status.setBounds(settings);
 
-    auto results = section(3, 83 + (detail.isVisible() ? 32 : 0) + (collection.isVisible() ? 38 : 0)
-                                  + (edit.isVisible() ? 36 : 0));
-    historyHeading.setBounds(results.removeFromTop(27));
-    results.removeFromTop(5);
-    history.setBounds(results.removeFromTop(30));
+    auto results = section(3, 86 + (detail.isVisible() ? 48 : 0) + (collection.isVisible() ? 40 : 0)
+                                  + (edit.isVisible() ? 38 : 0));
+    historyHeading.setBounds(results.removeFromTop(24));
+    results.removeFromTop(8);
+    history.setBounds(results.removeFromTop(34));
     if (detail.isVisible())
     {
-        row = results.removeFromTop(32);
+        results.removeFromTop(8);
+        row = results.removeFromTop(40);
         if (playPreview.isVisible())
         {
-            playPreview.setBounds(row.removeFromLeft(118).reduced(0, 2));
-            row.removeFromLeft(9);
+            playPreview.setBounds(row.removeFromLeft(40));
+            row.removeFromLeft(12);
         }
         detail.setBounds(row);
     }
     if (collection.isVisible())
     {
-        row = results.removeFromTop(32);
-        destinationLabel.setBounds(row.removeFromLeft(70));
-        save.setBounds(row.removeFromRight(108));
-        collection.setBounds(row.withTrimmedRight(8));
+        results.removeFromTop(6);
+        row = results.removeFromTop(34);
+        destinationLabel.setBounds(row.removeFromLeft(78));
+        save.setBounds(row.removeFromRight(120));
+        collection.setBounds(row.withTrimmedRight(14));
     }
     if (edit.isVisible())
     {
-        results.removeFromTop(8);
-        row = results.removeFromTop(28);
+        results.removeFromTop(6);
+        row = results.removeFromTop(32);
         reveal.setBounds(row.removeFromLeft(110));
         edit.setBounds(row.removeFromLeft(100));
         perform.setBounds(row.removeFromLeft(105));
@@ -378,33 +393,45 @@ void Panel::timerCallback()
         status.setText(state.status, juce::dontSendNotification);
         updateControls();
     }
-    const bool playing = previewActive();
+    const bool playing = previewGeneration && previewActive(library.audioClient().status());
     if (transforming)
         preview.setButtonText(playing ? "Stop" : "Preview");
     else
     {
-        playPreview.setIcon(playing ? ActionIcon::stop : ActionIcon::play);
-        playPreview.setButtonText(playing ? "Stop preview" : "Play preview");
+        playPreview.setIcon(playing ? ActionIcon::pause : ActionIcon::play);
+        playPreview.setButtonText(playing                                     ? "Pause preview"
+                                  : !previewGeneration && previewPosition > 0 ? "Resume preview"
+                                                                               : "Play preview");
         const auto *candidate = current();
         playPreview.setEnabled(playing || (!state.busy && candidate && candidate->state == State::ready));
     }
 }
 
-bool Panel::previewActive() const
+bool Panel::previewActive(const juce::var &transport) const
 {
-    if (!previewGeneration || previewId != "sfx-" + selected)
-        return false;
-    auto transport = library.audioClient().status();
-    return transport["intentId"].toString() == previewId &&
+    return previewGeneration && previewId == "sfx-" + selected && transport["intentId"].toString() == previewId &&
+           (uint64_t)(juce::int64)transport["intentGeneration"] == previewGeneration &&
            ((bool)transport["playing"] || (bool)transport["pendingPlayback"]);
 }
 
 void Panel::togglePreview()
 {
-    if (previewActive())
-        stopPreview();
-    else
+    auto &audio = library.audioClient();
+    const auto transport = audio.status();
+    if (!previewActive(transport))
+    {
+        if (previewGeneration)
+            stopPreview();
         use(0);
+    }
+    else if (transforming)
+        stopPreview();
+    else if (audio.stopIfOwned(previewId, previewGeneration))
+    {
+        if (!(bool)transport["pendingPlayback"])
+            previewPosition = (juce::int64)transport["sourceSample"];
+        previewGeneration = 0;
+    }
 }
 
 void Panel::stopPreview()
@@ -412,6 +439,7 @@ void Panel::stopPreview()
     if (previewGeneration)
         library.audioClient().stopIfOwned(previewId, previewGeneration);
     previewGeneration = 0;
+    previewPosition = 0;
 }
 
 void Panel::updateControls()
@@ -425,7 +453,7 @@ void Panel::updateControls()
     generate.setEnabled(!state.busy && state.hasKey && prompt.getText().trim().isNotEmpty());
     cancel.setEnabled(state.busy);
     preview.setEnabled(ready);
-    playPreview.setEnabled(ready || previewActive());
+    playPreview.setEnabled(ready || (previewGeneration && previewActive(library.audioClient().status())));
     save.setEnabled(ready);
     edit.setEnabled(saved);
     perform.setEnabled(saved);
@@ -702,6 +730,7 @@ void Panel::use(int action, int slot, juce::File folder)
                         safe->library.parkPlayback();
                         safe->previewId = "sfx-" + candidate.id;
                         PlaybackRegion region;
+                        region.positionSample = safe->previewPosition < asset.samples ? safe->previewPosition : 0;
                         region.size = asset.size;
                         region.modified = asset.modified;
                         region.inode = asset.inode;

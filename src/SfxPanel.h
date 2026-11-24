@@ -24,7 +24,7 @@ class Panel final : public juce::Component, private juce::Timer
     juce::Label heading, model, historyHeading, status, detail, durationLabel, countLabel, influenceLabel;
     juce::Label descriptionHeading, settingsHeading, outputLabel, destinationLabel;
     ui::TextActionButton manageKey{"Manage key", true};
-    IconButton playPreview{"Play preview", ActionIcon::play, true};
+    IconButton playPreview{"Play preview", ActionIcon::play};
     std::array<juce::Rectangle<int>, 4> sectionBounds{};
     void layoutGeneration();
     void refreshGenerationLayout();
@@ -39,6 +39,7 @@ class Panel final : public juce::Component, private juce::Timer
     Snapshot state;
     uint64_t seen = UINT64_MAX, previewGeneration = 0;
     juce::String selected, previewId;
+    int64_t previewPosition = 0;
     std::vector<std::pair<juce::String, juce::String>> collections;
     void timerCallback() override;
     void updateControls();
@@ -51,7 +52,7 @@ class Panel final : public juce::Component, private juce::Timer
     ui::TextActionButton original{"Original"}, resume{"Resume result"}, alternative{"Add alternative"};
     void togglePreview();
     void stopPreview();
-    bool previewActive() const;
+    bool previewActive(const juce::var &transport) const;
     void previewOriginal();
     void approve();
     void chooseFolder();

@@ -1,9 +1,18 @@
 # Preview a generated sound before saving
 
-In Generate SFX, select a ready result and click **Play preview** below its title. The button shows **Stop preview** while that sound plays. Choosing another result stops the prior audition. **Save to Library** remains a separate action.
+In Generate SFX, select a ready result and click the circular play icon below its title. The control switches to pause during playback. Click play again to resume from the paused position. Choosing another result clears the prior audition. **Save to Library** is a separate action.
 
-![Play preview alongside the candidate details](play-preview.jpg)
+The dialog is 760 logical points wide. The prompt has more room for text, and the candidate selector, transport and publication actions have separate rows. The playback icon carries an accessible name and tooltip.
 
-I verified Play, Stop, changing candidates and playing the new selection on Apple Silicon macOS 26.3.2. Both candidates remained unpublished and the isolated catalog had zero assets after the checks. CTest passed 4/4 in 6.60 seconds across `sfx_generation`, `audio_transform_jobs`, `icon_system`, and `native_view_scale`. This is native transport and UI evidence.
+![Play icon under the selected candidate](roomy-preview.jpg)
 
-The follow-up starts at `6510c4eb914f19f5a49dc2ab0b1d2eda2e9747e7`. The tested arm64 Release executable SHA-256 is `d6f1286eb96f489283f995bfd254b43f5f324680b9807906f04dfb58d2ce76ea`. The Candidate B full-gate attempts used their own detached builds.
+## Native verification
+
+- Verified play, pause, resume, and return to the play icon on Apple Silicon macOS 26.3.2. A ten-second fixture was paused about 4.7 seconds after Play. After Resume it reached completion in 6.1 seconds of observed UI time.
+- Verified the 1040 × 680 QA workspace with both key settings and the published result actions visible. The largest observed dialog, including macOS title bar, measured 760 × 676 logical points.
+- Published one synthetic candidate in the isolated catalog and verified that the saved WAV matched the candidate SHA-256. The second sound remained available to audition before saving.
+- Release CTest passed 4/4 in 6.28 seconds across `sfx_generation`, `audio_transform_jobs`, `icon_system` and `native_view_scale`. Playback verification used a local fixture and native transport observations.
+
+Baseline `0a7f45f01887788662fae0af182673684694885f`. Tested arm64 Release executable SHA-256 `16cfc79699ddff925d1987c656fbcc83907614cb8cd05aa3380243a0a7463dec`.
+
+[Pause icon during playback](roomy-preview-playing.jpg) · [Expanded dialog after publication](roomy-preview-expanded.jpg)
