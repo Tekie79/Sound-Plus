@@ -1,5 +1,5 @@
 #pragma once
-#include "Catalog.h"
+#include "AudioTransform.h"
 #include "SerialWorker.h"
 #include <atomic>
 #include <functional>
@@ -15,6 +15,7 @@ struct Request
     double influence = 0.3;
     int candidates = 1;
     bool loop = false, wav = false, approved = false;
+    std::optional<AudioEdit> edit;
 };
 struct Capabilities
 {
@@ -34,11 +35,16 @@ class Provider
     virtual ~Provider() = default;
     virtual Capabilities capabilities() const = 0;
     virtual Response generate(const Request &, const juce::String &key, const std::atomic<bool> &) = 0;
+    virtual Response poll(const juce::String &, const juce::String &, const std::atomic<bool> &)
+    {
+        throw std::runtime_error("This provider has no remote job lookup");
+    }
     virtual bool testKey(const juce::String &, const std::atomic<bool> &) = 0;
 };
 using Http = std::function<Response(const juce::String &path, const juce::String &key,
                                     const juce::String &body, const std::atomic<bool> &)>;
 std::unique_ptr<Provider> elevenLabs(Http = {});
+std::unique_ptr<Provider> stability(juce::String base = "https://api.stability.ai");
 Response providerHttp(const juce::String &base, const juce::String &path, const juce::String &key,
                       const juce::String &body, const std::atomic<bool> &);
 class Credentials
@@ -49,7 +55,7 @@ class Credentials
     virtual void save(const juce::String &) = 0;
     virtual void erase() = 0;
 };
-std::unique_ptr<Credentials> keychain(juce::String account = "default");
+std::unique_ptr<Credentials> keychain(juce::String account = "default", bool stabilityKey = false);
 juce::String validate(const Request &, const Capabilities &);
 enum class State
 {
@@ -58,12 +64,14 @@ enum class State
     ready,
     cancelled,
     failed,
-    review
+    review,
+    polling
 };
 struct Candidate
 {
     juce::String id, batch, provider, model, prompt, format, approvedAt, startedAt, finishedAt, requestId,
         sha256, published, assetId, detail, fingerprint;
+    juce::String accountBinding, rawHash;
     Request options;
     State state = State::queued;
     int ordinal = 0, channels = 0, rate = 0;
@@ -90,6 +98,12 @@ class Generation
     }
     bool submit(Request);
     void cancel();
+    bool inspectInput(TransformInput, std::function<void(Asset)>);
+    bool resume(const juce::String &id);
+    Capabilities capabilities() const
+    {
+        return provider->capabilities();
+    }
     bool credential(juce::String action, juce::String key = {});
     using FileResult = std::function<void(juce::File, Candidate)>; // Runs on worker.
     using Index = std::function<Asset(const juce::File &, const std::atomic<bool> &)>;
@@ -99,6 +113,8 @@ class Generation
     struct Journal;
     bool schedule(std::function<void()>);
     void refresh();
+    void pollResult(Candidate &, const juce::String &);
+    void acceptResponse(const Response &, Candidate &);
     void report(juce::String);
     juce::File candidateFile(const juce::String &) const;
     juce::File folder;

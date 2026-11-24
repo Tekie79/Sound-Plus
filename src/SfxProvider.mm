@@ -11,16 +11,18 @@ namespace
 class Keychain final : public Credentials
 {
     juce::String account;
+    bool stabilityKey;
 
   public:
-    explicit Keychain(juce::String value) : account(std::move(value)) {}
+    Keychain(juce::String value, bool stability) : account(std::move(value)), stabilityKey(stability) {}
 
   private:
     NSDictionary *query()
     {
         return @{
             (id)kSecClass : (id)kSecClassGenericPassword,
-            (id)kSecAttrService : @"org.soundplus.sfx.elevenlabs",
+            (id)kSecAttrService :
+                (stabilityKey ? @"org.soundplus.audio.stability" : @"org.soundplus.sfx.elevenlabs"),
             (id)kSecAttrAccount : [NSString stringWithUTF8String:account.toRawUTF8()]
         };
     }
@@ -196,6 +198,15 @@ juce::String validate(const Request &r, const Capabilities &c)
 {
     if (!r.approved)
         return "Approve this billable batch first";
+    if (c.audioInput != r.edit.has_value())
+        return "This mode needs its own provider and input";
+    if (r.edit)
+    {
+        if (!r.wav)
+            return "Audio edits require WAV output";
+        if (auto issue = validateEdit(*r.edit); issue.isNotEmpty())
+            return issue;
+    }
     if (r.prompt.trim().isEmpty() || r.prompt.length() > 1000)
         return "Enter a prompt of 1–1000 characters";
     if (r.candidates < 1 || r.candidates > 4)
@@ -215,8 +226,8 @@ std::unique_ptr<Provider> elevenLabs(Http h)
         { return providerHttp("https://api.elevenlabs.io", path, key, body, stop); };
     return std::make_unique<Eleven>(std::move(h));
 }
-std::unique_ptr<Credentials> keychain(juce::String account)
+std::unique_ptr<Credentials> keychain(juce::String account, bool stabilityKey)
 {
-    return std::make_unique<Keychain>(std::move(account));
+    return std::make_unique<Keychain>(std::move(account), stabilityKey);
 }
 } // namespace sp::sfx

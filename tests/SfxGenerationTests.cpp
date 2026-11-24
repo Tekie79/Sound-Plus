@@ -200,3 +200,59 @@ void runSfxTests(const juce::File &dir, const juce::String &url, const juce::Str
     check(!idle(jobs).hasKey, "Key deletion");
     std::cout << "Provider, history, cancellation, catalog, identity, Edit/Pad Undo and reopen passed.\n";
 }
+
+void runTransformJobs(const juce::File &folder, const juce::String &endpoint, const juce::String &phase)
+{
+    using namespace sp;
+    using namespace sp::sfx;
+    auto keys = std::make_unique<Keys>();
+    keys->value = phase == "wrong" ? "qa-wrong" : "qa-transform";
+    Generation jobs(folder.getChildFile("jobs"), stability(endpoint), std::move(keys));
+    auto snapshot = idle(jobs);
+    if (phase == "resume" || phase == "wrong")
+    {
+        check(snapshot.history.size() == 1 && snapshot.history.front().state == State::polling,
+              "Restore async ID");
+        auto saved = snapshot.history.front();
+        check(saved.requestId == "abcd01", "Exact provider ID retained");
+        jobs.resume(saved.id);
+        auto c = idle(jobs).history.front();
+        if (phase == "wrong")
+        {
+            check(c.state == State::polling && c.detail.contains("original provider key"),
+                  "Do not poll with a replacement key");
+            return;
+        }
+        check(c.state == State::ready && c.frames == 264600 && c.channels == 1 && c.rawHash.length() == 64,
+              "Resume exact source-rate composite");
+        return;
+    }
+    TransferRequest input;
+    input.source = inspectDesignSource(folder.getChildFile("input.wav"));
+    auto original = freezeTransform(input, false, folder.getChildFile("prepared"), [] { return false; });
+    Request r;
+    r.prompt = phase;
+    r.wav = true;
+    r.edit = AudioEdit{original, true, 300, 600, 0};
+    check(!jobs.submit(r), "Never upload without authorization");
+    r.approved = true;
+    if (phase == "restyle")
+    {
+        r.edit->inpaint = false;
+        r.influence = .625;
+    }
+    check(jobs.submit(r), "Start one transform");
+    if (phase == "crash")
+    {
+        juce::Thread::sleep(30000);
+        throw std::runtime_error("Expected process termination");
+    }
+    auto row = idle(jobs).history.front();
+    if (phase == "restyle")
+        check(row.state == State::ready && row.channels == 2, "Restyle preserves returned layout");
+    if (phase == "corrupt")
+        check(row.state == State::review && row.detail.contains("audio"), "Reject malformed result");
+    if (phase == "expired")
+        check(row.state == State::review && row.detail.contains("expired"),
+              "Expired receipt requires review");
+}

@@ -58,6 +58,9 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     ~Workstation() override
     {
         stopTimer();
+        if (prepareToken) prepareToken->store(true);
+        transformWindow.reset();
+        transformer.reset();
         generatorWindow.reset();
         generation.reset();
         preferences.setValue("monitorVolume", library.audioClient().monitorGain());
@@ -167,6 +170,102 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         generatorWindow->setVisible(true);
         generatorWindow->toFront(true);
     }
+    std::unique_ptr<sp::sfx::Generation> transformer;
+    std::unique_ptr<GeneratorWindow> transformWindow;
+    std::shared_ptr<std::atomic<bool>> prepareToken;
+    juce::ThreadPool transformWorker{1};
+    sp::sfx::Panel *transformPanel()
+    {
+        if (!transformer)
+            transformer=std::make_unique<sp::sfx::Generation>(transferCatalog.getSiblingFile("Audio Transforms"),
+                sp::sfx::stability(),sp::sfx::keychain("default",true));
+        if (!transformWindow) transformWindow=std::make_unique<GeneratorWindow>();
+        transformWindow->setName("Transform Audio");
+        if (!transformWindow->getContentComponent())
+        {
+            auto *p=new sp::sfx::Panel(*transformer,library,designer,[this](int tab)
+            {
+                chooseWorkspace(static_cast<Workspace>(tab));
+                juce::Component::SafePointer<Workstation> safe(this);
+                juce::MessageManager::callAsync([safe]{ if (safe && safe->transformWindow) safe->transformWindow->closeButtonPressed(); });
+            });
+            transformWindow->setLookAndFeel(&shellLook);
+            transformWindow->setContentOwned(p,true);
+            transformWindow->centreAroundComponent(this,p->getWidth(),p->getHeight());
+        }
+        transformWindow->setVisible(true); transformWindow->toFront(true);
+        return static_cast<sp::sfx::Panel*>(transformWindow->getContentComponent());
+    }
+    void chooseTransform()
+    {
+        using S=sp::TransferScope;
+        std::vector<S> choices=workspace==Workspace::library ? std::vector<S>{S::sourceRange,S::original}
+            : workspace==Workspace::edit ? std::vector<S>{S::clip,S::track,S::trackRange,S::mixRange,S::mix}
+            : std::vector<S>{S::pad,S::padRange,S::allPads,S::take};
+        juce::PopupMenu menu;
+        for (auto scope:choices) menu.addItem((int)scope,sp::transferScopeName(scope),availableForTransfer(workspace,scope));
+        menu.addSeparator(); menu.addItem(100,"Transform history");
+        juce::Component::SafePointer<Workstation> safe(this);
+        menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&shell.transform),[safe,from=workspace](int choice)
+        {
+            if(!safe || !choice || safe->workspace!=from) return;
+            if(choice==100) {safe->transformPanel();return;}
+            safe->startTransform(static_cast<S>(choice));
+        });
+    }
+    void startTransform(sp::TransferScope scope)
+    {
+        if(!availableForTransfer(workspace,scope)) return;
+        if(prepareToken) prepareToken->store(true);
+        auto token=prepareToken=std::make_shared<std::atomic<bool>>(false);
+        juce::Component::SafePointer<sp::sfx::Panel> panel(transformPanel());
+        panel->setPreparationStatus("Preparing local input");
+        sp::TransferRequest r;
+        r.catalog=transferCatalog; r.scope=scope;
+        r.durableFolder=transferCatalog.getSiblingFile("Audio Transforms").getChildFile("Inputs");
+        if(sp::TransferPanel::projectRange(scope)) std::tie(r.first,r.last)=transferInterval();
+        juce::Component::SafePointer<Workstation> safe(this);
+        auto prepare=[safe,panel,token](sp::TransferRequest request,int channels)
+        {
+            auto execute=[safe,panel,token,request=std::move(request),channels](int confirmed)
+            {
+                if (!safe || !panel || token->load()) return;
+                if (!confirmed) { panel->setPreparationStatus("Input preparation cancelled"); return; }
+                safe->transformWorker.addJob([panel,token,r=request,channels]
+                {
+                    try
+                    {
+                        auto input=sp::sfx::freezeTransform(r,channels>2,r.durableFolder,[&]{return token->load();});
+                        juce::MessageManager::callAsync([panel,token,input]{ if(panel && !token->load()) panel->setInput(input); });
+                    }
+                    catch (const std::exception &e)
+                    {
+                        auto reason=juce::String::fromUTF8(e.what());
+                        juce::MessageManager::callAsync([panel,token,reason]{ if(panel && !token->load()) panel->setPreparationStatus(reason); });
+                    }
+                });
+            };
+            if (channels>2)
+                juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,"Prepare stereo downmix?",
+                    "This provider accepts mono or stereo audio. Prepare a local stereo derivative with the project downmix matrix?",
+                    "Downmix","Cancel",panel,juce::ModalCallbackFunction::create(execute));
+            else execute(1);
+        };
+        if(workspace==Workspace::library)
+        {
+            auto selection=library.transferSelection();
+            if(!selection) { panel->setPreparationStatus("Select an online source"); return; }
+            r.source=selection->asset;
+            if(scope==sp::TransferScope::sourceRange) {r.first=selection->first;r.last=selection->last;}
+            prepare(std::move(r),selection->asset.channels);
+        }
+        else designer.session.captureTransferSnapshot(
+            [prepare,r](auto doc) mutable {
+                const int channels=sp::designLayout(doc).size();
+                r.design=std::move(doc); prepare(std::move(r),channels);
+            },
+            [panel,token](auto reason){ if(panel && !token->load()) panel->setPreparationStatus(reason); });
+    }
     enum class Workspace { library, edit, perform, deliver };
     Workspace workspace = Workspace::library;
     bool browserOpen = true;
@@ -178,7 +277,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     {
         sp::ui::TextActionButton library{"Library", true}, edit{"Edit", true}, perform{"Perform", true},
             deliver{"Deliver", true};
-        sp::ui::TextActionButton generate{"Generate SFX"};
+        sp::ui::TextActionButton generate{"Generate SFX"}, transform{"Transform"};
         sp::IconButton search{"Search commands", sp::ActionIcon::similar};
         sp::IconButton settings{"Settings", sp::ActionIcon::settings};
         sp::IconButton save{"Save design", sp::ActionIcon::save};
@@ -196,7 +295,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
                 addAndMakeVisible(*tab);
             for (auto *button : {&save, &search, &settings})
                 addAndMakeVisible(*button);
-            addAndMakeVisible(generate);
+            addAndMakeVisible(generate); addAndMakeVisible(transform);
             addChildComponent(transfer);
             addChildComponent(resolveTransfer);
             resolveTransfer.setIconSize(24.f);
@@ -212,6 +311,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         {
             auto row = getLocalBounds().reduced(12, 6);
             generate.setBounds(105, 6, 104, row.getHeight());
+            transform.setBounds(209,6,84,row.getHeight());
             auto tools = row.removeFromRight(106);
             save.setBounds(tools.removeFromLeft(34));
             search.setBounds(tools.removeFromLeft(34));
@@ -246,6 +346,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         for (int i = 0; i < (int)shell.tabs.size(); ++i)
             shell.tabs[(size_t)i]->onClick = [this, i] { chooseWorkspace((Workspace)i); };
         shell.settings.onClick = [this] { showSettings(); };
+        shell.transform.onClick = [this]{chooseTransform();};
         shell.generate.onClick = [this]{ openGenerator(); };
         shell.search.onClick = [this] { showCommands(); };
         shell.save.onClick = [this] { designer.saveFromShell(); };
@@ -282,6 +383,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         preferences.setValue("workspace", index);
         preferences.setValue("designerActive", workspace != Workspace::library);
         const bool designing = workspace == Workspace::edit || workspace == Workspace::perform;
+        shell.transform.setVisible(workspace != Workspace::deliver);
         shell.generate.setVisible(workspace != Workspace::deliver);
         shell.transfer.setVisible(designing);
         shell.resolveTransfer.setVisible(designing);
@@ -554,6 +656,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         for (int i = 0; i < (int)shell.tabs.size(); ++i)
             commands.push_back({shell.tabs[(size_t)i]->getButtonText(),
                                 [safe, i] { if (safe) safe->chooseWorkspace((Workspace)i); }});
+        if (workspace!=Workspace::deliver) commands.push_back({"Transform Audio",[safe]{ if(safe) safe->chooseTransform(); }});
         commands.push_back({"Generate SFX", [safe] { if (safe) safe->openGenerator(); }});
         commands.push_back({"Find sounds", [safe]
             { if (safe) { safe->chooseWorkspace(Workspace::library); safe->library.focusSearch(); } }});

@@ -86,7 +86,42 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
     edit.onClick = [this] { use(2); };
     perform.onClick = [this] { padMenu(); };
     reveal.onClick = [this] { use(4); };
-    setSize(574, 526);
+    transforming = jobs.capabilities().audioInput;
+    if (transforming)
+    {
+        label(heading, "Transform Audio");
+        label(model, "Stability AI   /   Stable Audio 3");
+        label(historyHeading, "Transform history");
+        label(influenceLabel, "Strength");
+        generate.setButtonText("Transform");
+        key.setTitle("Stability AI API key");
+        key.setTextToShowWhenEmpty("Stability AI API key", ui::muted);
+        for (auto *c : std::initializer_list<juce::Component *>{&duration, &durationLabel, &loop, &format})
+            c->setVisible(false);
+        for (auto *c : std::initializer_list<juce::Component *>{&inputSummary, &editMode, &original, &resume,
+                                                                &alternative, &maskIn, &maskOut, &crossfade,
+                                                                &inLabel, &outLabel, &fadeLabel})
+            addAndMakeVisible(c);
+        inputSummary.setText("Prepare a source from a workspace to transform it", juce::dontSendNotification);
+        editMode.addItemList({"Restyle", "Inpaint mask"}, 1);
+        editMode.setSelectedId(1);
+        editMode.setTitle("Transform mode");
+        editMode.onChange = [this] { updateControls(); };
+        label(inLabel, "In");
+        label(outLabel, "Out");
+        label(fadeLabel, "Fade");
+        influence.setTitle("Restyle strength");
+        maskIn.setTitle("Mask start frame");
+        maskOut.setTitle("Exclusive mask end frame");
+        crossfade.setTitle("Crossfade in frames (inside mask)");
+        crossfade.setText("0");
+        for (auto *box : {&maskIn, &maskOut, &crossfade})
+            box->setInputRestrictions(12, "0123456789");
+        original.onClick = [this] { previewOriginal(); };
+        resume.onClick = [this] { jobs.resume(selected); };
+        alternative.onClick = [this] { use(5); };
+    }
+    setSize(574, transforming ? 578 : 526);
     startTimerHz(6);
     timerCallback();
 }
@@ -112,7 +147,21 @@ void Panel::resized()
     saveKey.setBounds(keys.removeFromRight(78));
     key.setBounds(keys);
     r.removeFromTop(10);
-    prompt.setBounds(r.removeFromTop(66));
+    if (transforming)
+    {
+        inputSummary.setBounds(r.removeFromTop(32));
+        auto mask = r.removeFromTop(28);
+        editMode.setBounds(mask.removeFromLeft(120));
+        mask.removeFromLeft(5);
+        inLabel.setBounds(mask.removeFromLeft(26));
+        maskIn.setBounds(mask.removeFromLeft(92));
+        outLabel.setBounds(mask.removeFromLeft(33));
+        maskOut.setBounds(mask.removeFromLeft(92));
+        fadeLabel.setBounds(mask.removeFromLeft(41));
+        crossfade.setBounds(mask);
+        r.removeFromTop(5);
+    }
+    prompt.setBounds(r.removeFromTop(transforming ? 48 : 66));
     r.removeFromTop(5);
     auto labels = r.removeFromTop(21);
     durationLabel.setBounds(labels.removeFromLeft(95));
@@ -127,7 +176,12 @@ void Panel::resized()
     influence.setBounds(opts);
     r.removeFromTop(8);
     auto run = r.removeFromTop(30);
-    format.setBounds(run.removeFromLeft(170));
+    if (transforming)
+    {
+        original.setBounds(run.removeFromLeft(85));
+        resume.setBounds(run.removeFromLeft(105));
+    }
+    format.setBounds(transforming ? juce::Rectangle<int>() : run.removeFromLeft(170));
     cancel.setBounds(run.removeFromRight(70));
     generate.setBounds(run.removeFromRight(100));
     status.setBounds(r.removeFromTop(41));
@@ -144,6 +198,8 @@ void Panel::resized()
     edit.setBounds(actions.removeFromLeft(125));
     perform.setBounds(actions.removeFromLeft(130));
     reveal.setBounds(actions.removeFromLeft(140));
+    if (transforming)
+        alternative.setBounds(actions);
 }
 const Candidate *Panel::current() const
 {
@@ -195,6 +251,23 @@ void Panel::updateControls()
     edit.setEnabled(saved);
     perform.setEnabled(saved);
     reveal.setEnabled(saved);
+    if (transforming)
+    {
+        const bool mask = editMode.getSelectedId() == 2;
+        for (auto *l : {&inLabel, &outLabel, &fadeLabel})
+            l->setVisible(mask);
+        maskIn.setVisible(mask);
+        maskOut.setVisible(mask);
+        crossfade.setVisible(mask);
+        maskIn.setTooltip("IN frame");
+        maskOut.setTooltip("OUT frame (exclusive)");
+        crossfade.setTooltip("Crossfade frames");
+        influence.setEnabled(!mask);
+        original.setEnabled(!state.busy && (input.has_value() || (c && c->options.edit)));
+        resume.setEnabled(!state.busy && c && c->state == State::polling && state.hasKey);
+        alternative.setEnabled(saved);
+        generate.setEnabled(generate.isEnabled() && input.has_value());
+    }
     if (c)
     {
         auto info = c->detail.isNotEmpty() ? c->detail
@@ -214,7 +287,16 @@ void Panel::approve()
     r.loop = loop.getToggleState();
     r.influence = influence.getValue();
     r.approved = true;
-    auto value = duration.getText().trim();
+    if (transforming)
+    {
+        if (!input)
+            return;
+        r.edit = AudioEdit{*input, editMode.getSelectedId() == 2, maskIn.getText().getLargeIntValue(),
+                           maskOut.getText().getLargeIntValue(), crossfade.getText().getLargeIntValue()};
+        r.wav = true;
+        r.loop = false;
+    }
+    auto value = transforming ? juce::String("Auto") : duration.getText().trim();
     if (!value.equalsIgnoreCase("Auto"))
     {
         if (!value.containsOnly("0123456789.") || value.indexOfChar('.') != value.lastIndexOfChar('.'))
@@ -224,13 +306,40 @@ void Panel::approve()
         }
         r.seconds = value.getDoubleValue();
     }
-    auto issue = validate(r, elevenLabs()->capabilities());
+    auto issue = validate(r, jobs.capabilities());
     if (issue.isNotEmpty())
     {
         status.setText(issue, juce::dontSendNotification);
         return;
     }
     juce::Component::SafePointer<Panel> safe(this);
+    if (transforming)
+    {
+        auto &e = *r.edit;
+        auto privacy =
+            "Upload " +
+            juce::File(e.input.sourcePath.isEmpty() ? e.input.path : e.input.sourcePath).getFileName() +
+            " (" + juce::File::descriptionOfSizeInBytes(e.input.bytes) + ", " +
+            juce::String(e.input.channels) + " ch) to Stability AI? " + e.input.scope + ", frames [" +
+            juce::String(e.input.first) + ", " + juce::String(e.input.last) + "). " +
+            (e.input.downmixed ? "Includes the stereo downmix. " : "") +
+            (e.inpaint
+                 ? "Inpaint frames [" + juce::String(e.maskStart) + ", " + juce::String(e.maskEnd) +
+                       "), crossfade " + juce::String(e.fade) + " frames. The entire input supplies context. "
+                 : juce::String()) +
+            "Confirm this audio is eligible under the provider upload terms. " + juce::String(r.candidates) +
+            " request(s), estimated " + juce::String(8 * r.candidates) +
+            " credits total. The provider may bill completed requests after cancellation.";
+        juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon, "Authorize audio upload?",
+                                           privacy, "Upload and transform", "Cancel", this,
+                                           juce::ModalCallbackFunction::create(
+                                               [safe, r](int yes)
+                                               {
+                                                   if (safe && yes)
+                                                       safe->jobs.submit(r);
+                                               }));
+        return;
+    }
     juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon, "Generate sound effects?",
                                        "Send this prompt to ElevenLabs and authorize " +
                                            juce::String(r.candidates) +
@@ -243,6 +352,50 @@ void Panel::approve()
                                                if (answer && safe)
                                                    safe->jobs.submit(r);
                                            }));
+}
+void Panel::setPreparationStatus(juce::String text)
+{
+    input.reset();
+    inputSummary.setText(text, juce::dontSendNotification);
+    updateControls();
+}
+void Panel::setInput(TransformInput i)
+{
+    input = std::move(i);
+    maskIn.setText("0");
+    maskOut.setText(juce::String(input->frames));
+    inputSummary.setText(input->scope + "   /   " + juce::String(input->frames) + " frames   /   " +
+                             juce::File::descriptionOfSizeInBytes(input->bytes) +
+                             (input->downmixed ? "   /   Stereo downmix" : ""),
+                         juce::dontSendNotification);
+    updateControls();
+}
+void Panel::previewOriginal()
+{
+    auto *c = current();
+    auto a = c && c->options.edit ? std::optional<TransformInput>(c->options.edit->input) : input;
+    if (!a)
+        return;
+    juce::Component::SafePointer<Panel> safe(this);
+    jobs.inspectInput(*a,
+                      [safe](Asset source)
+                      {
+                          juce::MessageManager::callAsync(
+                              [safe, source]
+                              {
+                                  if (!safe || safe->library.audioClient().captureBusy())
+                                      return;
+                                  safe->designer.session.stop();
+                                  safe->library.parkPlayback();
+                                  safe->previewId = "transform-original-" + source.id;
+                                  PlaybackRegion region;
+                                  region.size = source.size;
+                                  region.modified = source.modified;
+                                  region.inode = source.inode;
+                                  safe->previewGeneration = safe->library.audioClient().playRegion(
+                                      safe->previewId, juce::File(source.path), region);
+                              });
+                      });
 }
 void Panel::chooseFolder()
 {
@@ -293,7 +446,7 @@ void Panel::use(int action, int slot, juce::File folder)
         return;
     auto &session = designer.session;
     auto &doc = session.document;
-    if ((action == 2 || action == 3) &&
+    if ((action == 2 || action == 3 || action == 5) &&
         (session.transitionPending() || session.takeBusy() || session.inputBusy() || session.midiBusy() ||
          doc.activeTake.isNotEmpty()))
     {
@@ -351,7 +504,7 @@ void Panel::use(int action, int slot, juce::File folder)
                         safe->previewGeneration = safe->library.audioClient().playRegion(
                             safe->previewId, juce::File(asset.path), region);
                     }
-                    if (action == 2 || action == 3)
+                    if (action == 2 || action == 3 || action == 5)
                     {
                         if (s.document.id != id || s.document.revision != rev ||
                             s.document.performPad != pad || s.document.selectedTrack != track ||
@@ -359,6 +512,17 @@ void Panel::use(int action, int slot, juce::File folder)
                         {
                             safe->status.setText("Design changed. Select the destination again",
                                                  juce::dontSendNotification);
+                            return;
+                        }
+                        if (action == 5)
+                        {
+                            if (s.document.selectedLayer.isEmpty())
+                            {
+                                safe->status.setText("Select a clip for its source pool",
+                                                     juce::dontSendNotification);
+                                return;
+                            }
+                            s.addPoolSource(s.document.selectedLayer, asset, 0, asset.samples, false);
                             return;
                         }
                         s.add(asset, 0, asset.samples, false, 0, -1, true, action == 3 ? slot : -1);

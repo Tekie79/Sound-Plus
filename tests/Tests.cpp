@@ -112,6 +112,7 @@ void runAudioTransformTest(const juce::File &);
 void runRefinementTests(const juce::File &);
 void runMixerStemTests(const juce::File &);
 void runWorkspaceTransferTests(const juce::File &);
+void runTransformJobs(const juce::File &,const juce::String &,const juce::String &);
 void runSfxTests(const juce::File &, const juce::String &, const juce::String &);
 int main(int argc, char **argv)
 {
@@ -125,6 +126,11 @@ int main(int argc, char **argv)
         if (argc == 3 && juce::String(argv[1]) == "--refine")
         {
             runRefinementTests(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc == 5 && juce::String(argv[1]) == "--transform-jobs")
+        {
+            runTransformJobs(juce::File(argv[2]),argv[3],argv[4]);
             return 0;
         }
         if (argc == 5 && juce::String(argv[1]) == "--sfx")

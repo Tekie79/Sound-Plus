@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+    Start  1: sfx_generation
+1/7 Test  #1: sfx_generation ...................   Passed    1.75 sec
+    Start 17: source_pools
+2/7 Test #17: source_pools .....................   Passed    0.37 sec
+    Start 27: audio_transform_jobs
+3/7 Test #27: audio_transform_jobs .............   Passed    4.81 sec
+    Start 28: audio_transform_pcm
+4/7 Test #28: audio_transform_pcm ..............   Passed    0.18 sec
+    Start 29: event_refinement
+5/7 Test #29: event_refinement .................   Passed    0.20 sec
+    Start 32: designer_view_commands
+6/7 Test #32: designer_view_commands ...........   Passed    1.11 sec
+    Start 51: beta_surround_workflow
+7/7 Test #51: beta_surround_workflow ...........   Passed    3.41 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =  11.83 sec

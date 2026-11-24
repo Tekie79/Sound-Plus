@@ -26,42 +26,57 @@ juce::var fields(std::initializer_list<std::pair<juce::Identifier, juce::var>> l
 }
 juce::var optionsJson(const Request &r)
 {
-    return fields({{"prompt", r.prompt},
-                   {"duration", r.seconds ? juce::var(*r.seconds) : juce::var()},
-                   {"influence", r.influence},
-                   {"candidates", r.candidates},
-                   {"loop", r.loop},
-                   {"wav", r.wav}});
+    auto v = fields({{"prompt", r.prompt},
+                     {"duration", r.seconds ? juce::var(*r.seconds) : juce::var()},
+                     {"influence", r.influence},
+                     {"candidates", r.candidates},
+                     {"loop", r.loop},
+                     {"wav", r.wav}});
+    if (r.edit)
+    {
+        const auto &e = *r.edit;
+        v.getDynamicObject()->setProperty("audioEdit", fields({{"input", e.input.json()},
+                                                               {"inpaint", e.inpaint},
+                                                               {"maskStart", (juce::int64)e.maskStart},
+                                                               {"maskEnd", (juce::int64)e.maskEnd},
+                                                               {"fade", (juce::int64)e.fade}}));
+    }
+    return v;
 }
 juce::String encode(const Candidate &c)
 {
-    return juce::JSON::toString(fields({{"version", 1},
-                                        {"id", c.id},
-                                        {"batch", c.batch},
-                                        {"provider", c.provider},
-                                        {"model", c.model},
-                                        {"options", optionsJson(c.options)},
-                                        {"format", c.format},
-                                        {"approvedAt", c.approvedAt},
-                                        {"consent", "prompt and independent billable requests v1"},
-                                        {"estimate", "unavailable"},
-                                        {"startedAt", c.startedAt},
-                                        {"finishedAt", c.finishedAt},
-                                        {"requestId", c.requestId},
-                                        {"sha256", c.sha256},
-                                        {"path", c.published},
-                                        {"assetId", c.assetId},
-                                        {"detail", c.detail},
-                                        {"fingerprint", c.fingerprint},
-                                        {"state", (int)c.state},
-                                        {"ordinal", c.ordinal},
-                                        {"channels", c.channels},
-                                        {"rate", c.rate},
-                                        {"layout", c.channels == 2   ? "stereo"
-                                                   : c.channels == 1 ? "mono"
-                                                                     : ""},
-                                        {"frames", (juce::int64)c.frames}}),
-                                true);
+    return juce::JSON::toString(
+        fields({{"version", 1},
+                {"id", c.id},
+                {"batch", c.batch},
+                {"provider", c.provider},
+                {"model", c.model},
+                {"options", optionsJson(c.options)},
+                {"format", c.format},
+                {"approvedAt", c.approvedAt},
+                {"consent", c.options.edit
+                                ? "approved identified audio upload and independent billable requests v1"
+                                : "prompt and independent billable requests v1"},
+                {"estimate", "unavailable"},
+                {"startedAt", c.startedAt},
+                {"finishedAt", c.finishedAt},
+                {"requestId", c.requestId},
+                {"accountBinding", c.accountBinding},
+                {"rawHash", c.rawHash},
+                {"sha256", c.sha256},
+                {"path", c.published},
+                {"assetId", c.assetId},
+                {"detail", c.detail},
+                {"fingerprint", c.fingerprint},
+                {"state", (int)c.state},
+                {"ordinal", c.ordinal},
+                {"channels", c.channels},
+                {"rate", c.rate},
+                {"layout", c.channels == 2   ? "stereo"
+                           : c.channels == 1 ? "mono"
+                                             : ""},
+                {"frames", (juce::int64)c.frames}}),
+        true);
 }
 Candidate decode(const juce::String &json)
 {
@@ -81,6 +96,12 @@ Candidate decode(const juce::String &json)
     c.options.influence = r["influence"];
     if (!r["duration"].isVoid())
         c.options.seconds = (double)r["duration"];
+    if (auto e = r["audioEdit"]; e.isObject())
+        c.options.edit =
+            AudioEdit{TransformInput::fromJson(e["input"]), (bool)e["inpaint"], (juce::int64)e["maskStart"],
+                      (juce::int64)e["maskEnd"], (juce::int64)e["fade"]};
+    c.rawHash = v["rawHash"];
+    c.accountBinding = v["accountBinding"];
     c.format = v["format"];
     c.approvedAt = v["approvedAt"];
     c.startedAt = v["startedAt"];
@@ -146,7 +167,7 @@ void canonicalise(const Response &r, Candidate &c, const juce::File &target, con
 {
     auto n = r.bytes.getSize();
     auto p = static_cast<const uint8_t *>(r.bytes.getData());
-    require(n >= 12 && n <= 32 * 1024 * 1024, "Empty or oversized provider audio");
+    require(n >= 12 && n <= (c.options.edit ? 140u : 32u) * 1024 * 1024, "Empty or oversized provider audio");
     if (c.options.wav)
     {
         require(r.mime == "audio/wav" || r.mime == "audio/x-wav" || r.mime == "audio/wave" ||
@@ -178,7 +199,7 @@ void canonicalise(const Response &r, Candidate &c, const juce::File &target, con
     std::unique_ptr<juce::AudioFormatReader> reader(
         formats.createReaderFor(std::make_unique<juce::MemoryInputStream>(p, n, false)));
     require(reader && reader->sampleRate == 44100 && reader->numChannels >= 1 && reader->numChannels <= 2 &&
-                reader->lengthInSamples > 0 && reader->lengthInSamples <= 44100 * 31,
+                reader->lengthInSamples > 0 && reader->lengthInSamples <= 44100 * (c.options.edit ? 381 : 31),
             "Unexpected audio layout, rate or duration");
     c.rate = (int)reader->sampleRate;
     c.channels = (int)reader->numChannels;
@@ -244,6 +265,8 @@ juce::String stateName(State s)
         return "Ready";
     case State::cancelled:
         return "Cancelled";
+    case State::polling:
+        return "Awaiting provider";
     case State::review:
         return "Needs review";
     default:
@@ -325,7 +348,7 @@ Generation::Generation(juce::File dir, std::unique_ptr<Provider> p, std::unique_
             auto key = secrets->read();
             std::lock_guard l(mutex);
             view.hasKey = key.isNotEmpty();
-            view.status = view.hasKey ? "Ready" : "Add an ElevenLabs API key to generate";
+            view.status = view.hasKey ? "Ready" : "Add a " + provider->capabilities().provider + " API key";
         });
 }
 Generation::~Generation()
@@ -445,6 +468,8 @@ bool Generation::submit(Request request)
             auto options = juce::JSON::toString(optionsJson(request), true);
             auto input = cap.provider + cap.model + options;
             auto fingerprint = juce::SHA256(input.toRawUTF8(), input.getNumBytesAsUTF8()).toHexString();
+            if (request.edit)
+                verifyTransform(request.edit->input);
             auto approved = now();
             for (int i = 0; i < request.candidates; ++i)
             {
@@ -455,7 +480,7 @@ bool Generation::submit(Request request)
                 c.model = cap.model;
                 c.options = request;
                 c.prompt = request.prompt;
-                c.format = request.wav ? "wav_44100" : "mp3_44100_128";
+                c.format = request.edit ? "wav" : request.wav ? "wav_44100" : "mp3_44100_128";
                 c.approvedAt = approved;
                 c.ordinal = i + 1;
                 c.fingerprint = fingerprint;
@@ -483,7 +508,18 @@ bool Generation::submit(Request request)
                     {
                         auto r = provider->generate(request, key, stopped);
                         c.requestId = r.requestId;
-                        if (r.status != 200)
+                        if (r.status == 202 && request.edit && c.requestId.isNotEmpty())
+                        {
+                            auto binding = key + c.id;
+                            c.accountBinding =
+                                juce::SHA256(binding.toRawUTF8(), binding.getNumBytesAsUTF8()).toHexString();
+                            c.state = State::polling;
+                            journal->put(c);
+                            refresh();
+                            pollResult(c, key);
+                            halted = c.state != State::ready;
+                        }
+                        else if (r.status != 200)
                         {
                             c.state = r.status >= 500 ? State::review : State::failed;
                             c.detail = httpIssue(r.status);
@@ -491,19 +527,21 @@ bool Generation::submit(Request request)
                         }
                         else
                         {
-                            canonicalise(r, c, candidateFile(c.id), stopped);
-                            c.state = State::ready;
+                            require(!request.edit, "Provider did not return a recoverable job ID");
+                            acceptResponse(r, c);
                         }
                     }
                     catch (const std::exception &e)
                     {
-                        c.state = stopped ? State::cancelled : State::review;
+                        if (c.state != State::polling)
+                            c.state = stopped ? State::cancelled : State::review;
                         halted = true;
                         c.detail = stopped ? "Cancelled locally. The provider may still bill this request"
                                            : juce::String(e.what()) + ". Check billing before retrying";
                     }
                 }
-                c.finishedAt = now();
+                if (c.state != State::polling)
+                    c.finishedAt = now();
                 journal->put(c);
                 refresh();
                 if (c.detail.isNotEmpty() && c.startedAt.isNotEmpty())
@@ -511,6 +549,118 @@ bool Generation::submit(Request request)
             }
             if (!halted)
                 report(stopped ? "Batch cancelled" : "Candidates ready");
+        });
+}
+void Generation::acceptResponse(const Response &response, Candidate &c)
+{
+    c.rawHash = juce::SHA256(response.bytes.getData(), response.bytes.getSize()).toHexString();
+    const auto dest = candidateFile(c.id);
+    juce::TemporaryFile completed(dest);
+    if (c.options.edit && c.options.edit->inpaint)
+    {
+        juce::TemporaryFile decoded(".wav");
+        canonicalise(response, c, decoded.getFile(), stopped);
+        compositeTransform(*c.options.edit, decoded.getFile(), completed.getFile(),
+                           [this] { return stopped.load(); });
+        auto &input = c.options.edit->input;
+        c.sha256 = digest(completed.getFile());
+        c.rate = (int)input.rate;
+        c.frames = input.frames;
+        c.channels = input.channels;
+    }
+    else
+        canonicalise(response, c, completed.getFile(), stopped);
+    require(!stopped, "Cancelled");
+    if (dest.existsAsFile())
+        require(digest(dest) == c.sha256, "Previously written candidate differs from provider result");
+    else
+        promote(completed.getFile(), dest);
+    c.state = State::ready;
+    c.detail.clear();
+    c.finishedAt = now();
+}
+void Generation::pollResult(Candidate &c, const juce::String &key)
+{
+    auto binding = key + c.id;
+    require(c.accountBinding == juce::SHA256(binding.toRawUTF8(), binding.getNumBytesAsUTF8()).toHexString(),
+            "Use the original provider key to resume");
+    int delay = 0;
+    for (int attempt = 0; attempt < 18; ++attempt)
+    {
+        if (juce::Time::getCurrentTime() - juce::Time::fromISO8601(c.startedAt) >=
+            juce::RelativeTime::hours(24))
+        {
+            c.state = State::review;
+            c.detail = "Provider result expired";
+            return;
+        }
+        for (int i = 0; i < delay * 10 && !stopped; ++i)
+            std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        if (stopped)
+        {
+            c.detail = "Polling paused. Remote billing may continue";
+            return;
+        }
+        auto r = provider->poll(c.requestId, key, stopped);
+        if (r.status == 200)
+        {
+            try
+            {
+                acceptResponse(r, c);
+            }
+            catch (const std::exception &e)
+            {
+                if (!stopped)
+                    c.state = State::review;
+                c.detail = e.what();
+            }
+            return;
+        }
+        if (r.status == 404 || r.status == 410)
+        {
+            c.state = State::review;
+            c.detail = "Provider job unavailable or expired";
+            return;
+        }
+        if (r.status != 202 && r.status != 429 && r.status < 500)
+        {
+            c.detail = httpIssue(r.status);
+            return;
+        }
+        delay = r.status == 429 ? 60 : std::clamp(delay * 2, 10, 30);
+    }
+    c.detail = "Provider still processing. Resume to check this job";
+}
+bool Generation::inspectInput(TransformInput input, std::function<void(Asset)> done)
+{
+    return schedule(
+        [input = std::move(input), done = std::move(done)]
+        {
+            verifyTransform(input);
+            done(inspectDesignSource(juce::File(input.path)));
+        });
+}
+bool Generation::resume(const juce::String &id)
+{
+    return schedule(
+        [this, id]
+        {
+            require(journal != nullptr, "Generation history unavailable");
+            auto c = journal->get(id);
+            require(c.state == State::polling && c.options.edit && c.requestId.isNotEmpty(),
+                    "No pending job to resume");
+            try
+            {
+                pollResult(c, secrets->read());
+            }
+            catch (const std::exception &e)
+            {
+                c.detail = e.what();
+            }
+            if (c.state != State::polling)
+                c.finishedAt = now();
+            journal->put(c);
+            report(c.state == State::ready ? "Candidate ready" : c.detail);
         });
 }
 bool Generation::use(const juce::String &id, juce::File destination, FileResult done, Index index)

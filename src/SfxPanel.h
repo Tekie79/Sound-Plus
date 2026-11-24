@@ -10,6 +10,8 @@ class Panel final : public juce::Component, private juce::Timer
   public:
     Panel(Generation &, LibraryView &, DesignerView &, std::function<void(int)> selectWorkspace);
     ~Panel() override;
+    void setInput(TransformInput);
+    void setPreparationStatus(juce::String);
     void resized() override;
     void paint(juce::Graphics &) override;
 
@@ -34,6 +36,13 @@ class Panel final : public juce::Component, private juce::Timer
     void timerCallback() override;
     void updateControls();
     const Candidate *current() const;
+    bool transforming = false;
+    std::optional<TransformInput> input;
+    juce::TextEditor maskIn, maskOut, crossfade;
+    juce::ComboBox editMode;
+    juce::Label inputSummary, inLabel, outLabel, fadeLabel;
+    ui::TextActionButton original{"Original"}, resume{"Resume result"}, alternative{"Add alternative"};
+    void previewOriginal();
     void approve();
     void chooseFolder();
     void use(int action, int slot = -1, juce::File folder = {});

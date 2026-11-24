@@ -25,4 +25,4 @@ void verifyTransform(const TransformInput &);
 juce::String validateEdit(const AudioEdit &);
 void compositeTransform(const AudioEdit &, const juce::File &returned, const juce::File &output,
                         const std::function<bool()> &cancelled);
-}
+} // namespace sp::sfx
