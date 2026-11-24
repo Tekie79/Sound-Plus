@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+    Start 10: advanced_effects
+1/7 Test #10: advanced_effects .................   Passed    2.80 sec
+    Start 16: pool_corrections
+2/7 Test #16: pool_corrections .................   Passed    6.13 sec
+    Start 17: project_package
+3/7 Test #17: project_package ..................   Passed    0.05 sec
+    Start 18: source_pools
+4/7 Test #18: source_pools .....................   Passed    1.57 sec
+    Start 22: take_integrity
+5/7 Test #22: take_integrity ...................   Passed    4.06 sec
+    Start 51: midi_instruments
+6/7 Test #51: midi_instruments .................   Passed    5.43 sec
+    Start 61: advanced_effects_asan
+7/7 Test #61: advanced_effects_asan ............   Passed    6.33 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =  26.38 sec

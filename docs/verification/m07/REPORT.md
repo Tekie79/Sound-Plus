@@ -1,0 +1,9 @@
+# Portable project development evidence
+
+Open the project tools menu in Designer. **Collect project** reviews a fixed document revision and its audio dependencies. **Collect with selected render** also includes the selected finalized output. Review and approve the listed files before copying. The destination is a new directory. **Open collected project** opens an editable copy through the existing session-retention workflow.
+
+Manifest v1 uses relative SHA-256-addressed payloads. Source pools, takes, sample instruments and IR references are traversed in the saved document representation. Directory containment, file size, symlinks, hard links and checksums are checked on open. Collection reopens the staged package before exclusive publication. Referenced recording receipts use a scoped provenance record. Plug-in binaries stay external. Matching known plug-in bundles are resolved by fingerprint. Opaque third-party plug-in state remains subject to the rights of the owner. A previously placed Resolve clip continues to reference the path Resolve imported.
+
+Historical take recipe hashes include absolute paths and inode stamps. A collected copy records the original hash in collectedFromRecipe, computes a local recipe hash and keeps the original take ID and event hash. Reopening leaves the source document unchanged.
+
+The generated fixture contained distinct audio with identical basenames, an inactive alternative and a frozen take. After moving the package and taking the original root offline, the reopened take reproduced the original PCM within 1e-7. Tests covered rights, deduplication, repackaging, cancellation, overwrite refusal, changed bytes and symlink rejection. Seven Release regression suites passed in 26.38 s. Cross-Mac plug-in resolution, receiver reopening, external-disk exhaustion and operator rights review remain M09 cases. No source redistribution rights were inferred from successful hashing.

@@ -1,3 +1,4 @@
+#include "ProjectPackage.h"
 #include "SurroundTouch.h"
 #include "AdvancedIR.h"
 #include "DesignSession.h"
@@ -1089,9 +1090,18 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
                         replacement = store->read(file);
                     else
                     {
-                        replacement.document = loadDesign(file);
-                        replacement.savedFile = file;
-                        replacement.dirty = false;
+                        if (file.isDirectory())
+                        {
+                            replacement.document = openPackage(file);
+                            replacement.document.id = juce::Uuid().toString();
+                            replacement.dirty = true;
+                        }
+                        else
+                        {
+                            replacement.document = loadDesign(file);
+                            replacement.savedFile = file;
+                            replacement.dirty = false;
+                        }
                     }
                     resolve(replacement.document);
                     if (upgradeLiveSpatial(replacement.document))

@@ -1,3 +1,4 @@
+#include "ProjectPackage.h"
 #include "AudioPlaybackService.h"
 #include "DesignAudio.h"
 #include "PerformanceState.h"
@@ -1147,4 +1148,71 @@ void prepareSourcePoolUI(const juce::File &root)
     prefs.setValue("monitorVolume", .08);
     prefs.saveIfNeeded();
     std::cout << saved.getFullPathName() << "\n";
+}
+
+void runProjectPackageTests(const juce::File &parent)
+{
+    using namespace sp;
+    using namespace juce;
+    auto root = parent.getChildFile(Uuid().toString());
+    auto media = root.getChildFile("sources");
+    auto a = fixture(media.getChildFile("one/corner.wav"), 2, 48000, 24000);
+    auto b = fixture(media.getChildFile("two/corner.wav"), 1, 44100, 8000);
+    auto d = document(a);
+    makePool(d, {b});
+    auto take = freezeTake(d, "packaged take");
+    TakeCapture cap(take);
+    cap.phase = TakeCapture::recording;
+    cap.finish(4096, true, 4096);
+    take = cap.snapshot();
+    d.takes = {take};
+    d.activeTake = take.id;
+    auto expected = read(d);
+    auto plan = planPackage(d);
+    check(plan.files.size() == 2 && plan.uniqueBytes == a.size + b.size,
+          "Deduplicate active, frozen and inactive pool entries");
+    auto target = root.getChildFile("Pack");
+    rejects([&] { collectPackage(plan, {}, target); }, "No implicit rights to redistribute");
+    std::set<String> allowed;
+    for (auto &f : plan.files)
+        allowed.insert(f.original.getFullPathName());
+    bool cancelled = false;
+    rejects(
+        [&] {
+            collectPackage(
+                plan, allowed, target, [&] { return cancelled; }, [&](auto, auto) { cancelled = true; });
+        },
+        "Cancel after bytes copied");
+    check(!target.exists(), "Interrupted package unpublished");
+    collectPackage(plan, allowed, target);
+    rejects([&] { collectPackage(plan, allowed, target); }, "Never overwrite prior package");
+    check(!target.getChildFile("Project.soundplus").loadFileAsString().contains(root.getFullPathName()),
+          "Project contains no original absolute paths");
+    auto relocated = root.getChildFile("renamed project");
+    check(target.moveFileTo(relocated) && media.moveFileTo(root.getChildFile("offline")),
+          "Move package and take originals offline");
+    auto reopened = openPackage(relocated);
+    auto &frozen = reopened.takes.front();
+    check(frozen.eventHash == take.eventHash && frozen.collectedFromRecipe == take.recipeHash &&
+              frozen.id == take.id,
+          "Preserve immutable event timeline and original path-bound lineage");
+    verifyTakeSources(frozen);
+    check(difference(expected, read(reopened)) < 1e-7, "Offline reopened take PCM identical");
+    auto repack = planPackage(reopened);
+    check(repack.uniqueBytes == plan.uniqueBytes && repack.files.size() == 2,
+          "Repackage without media growth");
+    auto leaf = relocated.getChildFile(plan.files.front().relative);
+    auto safe = leaf.getSiblingFile("backup.wav");
+    check(leaf.moveFileTo(safe), "Move payload");
+    check(safe.createSymbolicLink(leaf, false), "Create link fixture");
+    rejects([&] { openPackage(relocated); }, "Reject symlink before audio access");
+    leaf.deleteFile();
+    check(safe.moveFileTo(leaf), "Restore member");
+    auto out = leaf.createOutputStream();
+    out->setPosition(0);
+    out->writeByte(42);
+    out.reset();
+    rejects([&] { openPackage(relocated); }, "Reject changed payload with intact manifest");
+    std::cout << "Portable project verified with offline source root, two same-name assets, frozen replay, "
+                 "cancellation, link and checksum rejection\n";
 }

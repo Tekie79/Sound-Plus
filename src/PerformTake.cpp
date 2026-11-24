@@ -270,6 +270,8 @@ juce::var takeToJson(const PerformTake &t)
     if (!t.sourcePerformance.events.empty())
         put(o, "sourceEvents", sourceEventsJson(t.sourcePerformance.events));
     put(o, "recipeHash", t.recipeHash);
+    if (t.collectedFromRecipe.isNotEmpty())
+        put(o, "collectedFromRecipe", t.collectedFromRecipe);
     put(o, "eventHash", t.eventHash);
     put(o, "bodyEnd", (juce::int64)t.bodyEnd);
     put(o, "outputFrames", (juce::int64)t.outputFrames);
@@ -366,6 +368,7 @@ PerformTake takeFromJson(const juce::var &o)
     t.sampleRate = (double)r["rate"];
     t.processing = r["processing"].toString();
     t.recipeHash = o["recipeHash"].toString();
+    t.collectedFromRecipe = o["collectedFromRecipe"].toString();
     t.eventHash = o["eventHash"].toString();
     t.bodyEnd = (int64_t)o["bodyEnd"];
     t.outputFrames = (int64_t)o["outputFrames"];

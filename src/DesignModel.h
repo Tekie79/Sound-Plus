@@ -480,6 +480,7 @@ struct PerformTake
     SourcePerformance sourcePerformance;
     std::vector<TakeSource> sources;
     juce::String checkpoint;
+    juce::String collectedFromRecipe; // Original path-bound recipe lineage for a portable working copy.
     juce::String correctedFrom, originalRecipeHash, originalEventHash;
     // Versioned provenance, outside the unchanged DSP recipe/event hash contract.
     juce::String poolOrigins; // Canonical JSON, immutable value semantics.

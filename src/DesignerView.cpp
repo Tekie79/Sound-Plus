@@ -1,3 +1,4 @@
+#include "PackagePanel.h"
 #include "DesignerView.h"
 #include "ChannelDetails.h"
 #include "DesignerCanvas.h"
@@ -1934,22 +1935,26 @@ void DesignerView::chooseFile(int kind)
     chooser = std::make_unique<juce::FileChooser>(kind == 1   ? "Open referenced SoundPlus design"
                                                   : kind == 4 ? "Permanent render folder"
                                                   : kind == 5 ? "Copy original to project media folder"
-                                                  : kind == 2 ? "Accept replacement source"
+                                                  : kind == 6 || kind == 8 ? "Collect project into folder"
+                                                  : kind == 7              ? "Open collected project folder"
+                                                  : kind == 2              ? "Accept replacement source"
                                                               : "Add external source without indexing",
                                                   folder, kind == 1 ? "*.soundplus" : "", true);
     juce::Component::SafePointer<DesignerView> safe(this);
     auto layer = session.document.selectedLayer;
     auto token = session.beginDialog();
     chooser->launchAsync(juce::FileBrowserComponent::openMode |
-                             ((kind == 4 || kind == 5) ? juce::FileBrowserComponent::canSelectDirectories
-                                                       : juce::FileBrowserComponent::canSelectFiles),
+                             ((kind >= 4) ? juce::FileBrowserComponent::canSelectDirectories
+                                          : juce::FileBrowserComponent::canSelectFiles),
                          [safe, kind, layer, token](const auto &picker)
                          {
                              if (!safe || !safe->session.accepts(token) || picker.getResult() == juce::File())
                                  return;
                              auto file = picker.getResult();
-                             if (kind == 1)
+                             if (kind == 1 || kind == 7)
                                  safe->session.open(file);
+                             else if (kind == 6 || kind == 8)
+                                 reviewCollection(safe->session, file, kind == 8, safe->projectTools);
                              else if (kind == 2)
                                  safe->session.replaceSource(layer, file);
                              else if (kind == 4)
@@ -2130,6 +2135,10 @@ void DesignerView::projectToolsMenu()
     menu.addItem(9, "Takes");
     menu.addItem(10, "Export settings");
     menu.addItem(11, "Import audio");
+    menu.addSeparator();
+    menu.addItem(12, "Collect project...");
+    menu.addItem(13, "Open collected project...");
+    menu.addItem(14, "Collect with selected render...", session.readyOutput() != juce::File());
     juce::Component::SafePointer<DesignerView> safe(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(projectTools), [safe](int action)
     {
@@ -2151,6 +2160,15 @@ void DesignerView::projectToolsMenu()
             juce::CallOutBox::launchAsynchronously(safe->makeRenderPanel(), safe->projectTools.getBounds(), safe);
             break;
         case 11: safe->chooseFile(0); break;
+        case 12:
+            safe->chooseFile(6);
+            break;
+        case 13:
+            safe->chooseFile(7);
+            break;
+        case 14:
+            safe->chooseFile(8);
+            break;
         default: break;
         }
     });
