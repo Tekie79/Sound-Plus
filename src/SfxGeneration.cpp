@@ -273,6 +273,15 @@ juce::String stateName(State s)
         return "Failed";
     }
 }
+juce::String Candidate::outputProvenance() const
+{
+    if (format == "mp3_44100_128")
+        return "WAV (decoded from MP3)";
+    if (format == "wav_44100" || format == "wav")
+        return "WAV (source WAV)";
+    return "WAV";
+}
+
 struct Generation::Journal
 {
     sqlite3 *db = nullptr;

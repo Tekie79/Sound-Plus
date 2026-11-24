@@ -129,6 +129,7 @@ void runSfxTests(const juce::File &dir, const juce::String &url, const juce::Str
     auto c = s.history.front();
     check(c.frames == 22050 && c.channels == 2 && c.rate == 44100 && c.requestId == "abc123",
           "Verified source metadata");
+    check(c.outputProvenance() == "WAV (source WAV)", "Provider WAV provenance");
     auto folder = dir.getChildFile("Published");
     folder.createDirectory();
     LibraryService library(dir.getChildFile("library.sqlite"));
@@ -182,6 +183,7 @@ void runSfxTests(const juce::File &dir, const juce::String &url, const juce::Str
     if (s.history.front().state != State::ready)
         throw std::runtime_error(("MP3: " + s.status).toStdString());
     check(s.history.front().format.startsWith("mp3") && s.history.front().frames > 20000, "MP3 receipt");
+    check(s.history.front().outputProvenance() == "WAV (decoded from MP3)", "Provider MP3 provenance");
     for (auto prompt :
          juce::StringArray{"401", "402", "403", "429", "500", "truncated", "empty", "mime", "disconnect"})
     {

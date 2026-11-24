@@ -426,7 +426,7 @@ void Panel::updateControls()
             if (c->detail.isEmpty() && c->rate > 0)
             {
                 juce::StringArray properties;
-                properties.add("WAV");
+                properties.add(c->outputProvenance());
                 properties.add(juce::String(c->frames / (double)c->rate, 2) + " s");
                 properties.add(juce::String(c->rate / 1000.0, c->rate % 1000 ? 1 : 0) + " kHz");
                 properties.add(c->channels == 1 ? "Mono" : c->channels == 2 ? "Stereo"

@@ -77,6 +77,7 @@ struct Candidate
     State state = State::queued;
     int ordinal = 0, channels = 0, rate = 0;
     int64_t frames = 0;
+    juce::String outputProvenance() const;
 };
 struct Snapshot
 {
