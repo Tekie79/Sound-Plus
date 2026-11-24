@@ -20,7 +20,7 @@ set(ORT_DIR "${CMAKE_SOURCE_DIR}/vendor/onnxruntime-1.22.1")
 if(NOT EXISTS "${ORT_DIR}/build/native/include/onnxruntime_cxx_api.h")
   message(FATAL_ERROR "Run python3 scripts/fetch_runtime.py to install the pinned native AI runtime")
 endif()
-juce_add_binary_data(NativePresets HEADER_NAME NativePresetsData.h NAMESPACE NativePresetData SOURCES resources/native-effects-presets.json resources/ucs-8.2.1.json)
+juce_add_binary_data(NativePresets HEADER_NAME NativePresetsData.h NAMESPACE NativePresetData SOURCES resources/native-effects-presets.json resources/ucs-8.2.1.json resources/acoustic-ucs-v1.json)
 juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resources/clap-model.json)
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
 juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES
@@ -30,7 +30,7 @@ add_library(soundplus_core STATIC
   src/StabilityAudio.cpp src/AudioTransform.cpp src/EventRefinement.cpp src/ProjectPackage.cpp src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
   src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp src/DesignAutomationSession.cpp src/AutomationMidi.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/SourcePerformance.cpp src/DesignPoolSession.cpp
-  src/MetadataFields.cpp src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
+  src/AcousticMetadata.cpp src/MetadataFields.cpp src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
   src/PerformanceState.cpp src/MultiPad.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/AutomationWriter.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/WorkspaceTransfer.cpp src/TransferFolder.mm src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
@@ -141,7 +141,8 @@ if(BUILD_TESTING)
   set_tests_properties(advanced_effects PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
   add_test(NAME native_effects COMMAND SoundPlusTests --native-effects "${CMAKE_BINARY_DIR}/native-effect-tests")
   set_tests_properties(native_effects PROPERTIES TIMEOUT 180 RUN_SERIAL TRUE)
-  target_sources(SoundPlusTests PRIVATE tests/CollectionTests.cpp tests/CollectionScaleTests.cpp tests/CatalogMetadataTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/CollectionTests.cpp tests/CollectionScaleTests.cpp tests/AcousticMetadataTests.cpp tests/CatalogMetadataTests.cpp)
+  add_test(NAME acoustic_metadata COMMAND SoundPlusTests --acoustic-metadata "${CMAKE_BINARY_DIR}/acoustic-tests")
   add_test(NAME catalog_metadata COMMAND SoundPlusTests --catalog-metadata "${CMAKE_BINARY_DIR}/metadata-tests")
   add_test(NAME library_collections COMMAND SoundPlusTests --collections "${CMAKE_BINARY_DIR}/collection-tests" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(library_collections PROPERTIES TIMEOUT 90 RUN_SERIAL TRUE)

@@ -273,6 +273,19 @@ void saveChanges(sqlite3 *db, const juce::Array<var> &rows)
     Statement limit(db, "DELETE FROM metadata_history WHERE seq<(SELECT MAX(seq)-31 FROM metadata_history)");
     limit.step();
 }
+void setDismissed(sqlite3 *db, const String &id, int64_t rev, const String &policy, const String &name,
+                  bool dismissed)
+{
+    Statement s(
+        db, dismissed
+                ? "INSERT OR IGNORE INTO acoustic_rejections VALUES(?,?,?,?)"
+                : "DELETE FROM acoustic_rejections WHERE asset=? AND revision=? AND policy=? AND category=?");
+    s.bind(1, id);
+    s.bind(2, rev);
+    s.bind(3, policy);
+    s.bind(4, name);
+    s.step();
+}
 var changeRow(const Asset &a, var before, var after)
 {
     auto r = metaObject();
@@ -322,6 +335,12 @@ void Catalog::editMetadata(const CollectionEdit &edit)
                 for (auto &r : *changes.getArray())
                 {
                     auto a = asset(r["id"]);
+                    if (r.hasProperty("acousticPolicy"))
+                    {
+                        metaRequire(a.revision == (int64_t)r["revision"], "Reviewed source revision changed");
+                        setDismissed(db, a.id, a.revision, r["acousticPolicy"], r["category"], !undo);
+                        continue;
+                    }
                     metaRequire(a.id.isNotEmpty() && metaJson(describeMetadata(a.id)["overrides"]) ==
                                                          metaJson(r[undo ? "after" : "before"]),
                                 "Metadata history conflict");
@@ -350,6 +369,26 @@ void Catalog::editMetadata(const CollectionEdit &edit)
                     continue;
                 ensureMeta(db, a.id);
                 auto m = describeMetadata(a.id);
+                if (edit.action == "meta-acoustic-apply" || edit.action == "meta-acoustic-reject")
+                {
+                    metaRequire(edit.parent == acousticPolicy() && edit.id == "category" &&
+                                    currentAcousticSource(item.asset, a) &&
+                                    !m["fields"].hasProperty("category"),
+                                "Source or category changed; reopen suggestions");
+                    auto rejected = dismissedAcoustic(a, edit.parent);
+                    metaRequire(!rejected.contains(edit.name), "Suggestion was dismissed");
+                    if (edit.action == "meta-acoustic-reject")
+                    {
+                        auto r = metaObject();
+                        setMeta(r, "id", a.id);
+                        setMeta(r, "revision", (juce::int64)a.revision);
+                        setMeta(r, "acousticPolicy", edit.parent);
+                        setMeta(r, "category", edit.name);
+                        rows.add(r);
+                        setDismissed(db, a.id, a.revision, edit.parent, edit.name, true);
+                        continue;
+                    }
+                }
                 auto before = m["overrides"];
                 auto after = before.clone();
                 if (edit.action == "meta-review")
@@ -458,4 +497,54 @@ void Catalog::importMetadata(const var &manifest)
         rollback();
         throw;
     }
+}
+
+std::vector<StoredRegion> Catalog::acousticWindows(const Asset &a, const String &model, const String &prep,
+                                                   const std::function<bool()> &cancel)
+{
+    std::vector<StoredRegion> out;
+    Statement job(db, "SELECT 1 FROM analysis_jobs WHERE asset_id=? AND revision=? AND model=? AND "
+                      "preprocessing=? AND state='complete'");
+    job.bind(1, a.id);
+    job.bind(2, a.revision);
+    job.bind(3, model);
+    job.bind(4, prep);
+    if (!job.step())
+        return out;
+    Statement q(db, "SELECT start_sample,end_sample,vector FROM embeddings WHERE asset_id=? AND revision=? "
+                    "AND model=? AND preprocessing=? AND start_sample<=? ORDER BY start_sample DESC LIMIT 1");
+    q.bind(1, a.id);
+    q.bind(2, a.revision);
+    q.bind(3, model);
+    q.bind(4, prep);
+    // Indexed seeks sample the entire recording and cap both allocations and work for long files.
+    for (int i = 0; i < 32 && !cancel(); ++i)
+    {
+        sqlite3_reset(q.s);
+        q.bind(5, (int64_t)((a.samples / 31) * i + ((a.samples % 31) * i) / 31));
+        if (!q.step() || sqlite3_column_bytes(q.s, 2) != 2048 ||
+            (!out.empty() && out.back().first == q.integer(0)))
+            continue;
+        if (q.integer(0) < 0 || q.integer(1) <= q.integer(0) || q.integer(1) > a.samples)
+            continue;
+        StoredRegion w;
+        w.asset = a.id;
+        w.revision = a.revision;
+        w.first = q.integer(0);
+        w.last = q.integer(1);
+        std::memcpy(w.vector.data(), sqlite3_column_blob(q.s, 2), sizeof(w.vector));
+        out.push_back(std::move(w));
+    }
+    return out;
+}
+juce::StringArray Catalog::dismissedAcoustic(const Asset &a, const String &policy)
+{
+    Statement q(db, "SELECT category FROM acoustic_rejections WHERE asset=? AND revision=? AND policy=?");
+    q.bind(1, a.id);
+    q.bind(2, a.revision);
+    q.bind(3, policy);
+    juce::StringArray result;
+    while (q.step())
+        result.add(q.str(0));
+    return result;
 }

@@ -1,5 +1,8 @@
 #include "LibraryView.h"
 #include "AudioStream.h"
+#include "AcousticMetadata.h"
+#include "ModelPack.h"
+#include <future>
 #include "DesignModel.h"
 #include "Performance.h"
 #include <iostream>
@@ -21,12 +24,12 @@ template <class F> void until(F predicate, const char *why, int ms = 12000)
         std::this_thread::sleep_for(std::chrono::milliseconds(2));
     check(predicate(), why);
 }
-void fixture(const juce::File &file, int samples = 5760)
+void fixture(const juce::File &file, int samples = 5760, bool tagged = true)
 {
     file.getParentDirectory().createDirectory();
     juce::WavAudioFormat format;
     juce::StringPairArray tags;
-    tags.set(juce::WavAudioFormat::riffInfoGenre, "Field recordings");
+    if (tagged) tags.set(juce::WavAudioFormat::riffInfoGenre, "Field recordings");
     std::unique_ptr<juce::AudioFormatWriter> writer(
         format.createWriterFor(file.createOutputStream().release(), 48000, 1, 24, tags, 0));
     juce::AudioBuffer<float> block(1, samples);
@@ -204,7 +207,7 @@ struct PlaybackSearchTestAccess
     {
         auto sounds = root.getChildFile("sounds");
         for (int i = 0; i < 23; ++i)
-            fixture(sounds.getChildFile("sound-" + juce::String(i).paddedLeft('0', 2) + ".wav"));
+            fixture(sounds.getChildFile("sound-" + juce::String(i).paddedLeft('0', 2) + ".wav"), 5760, i != 0);
         LibraryView v(root.getChildFile("catalog/library.sqlite"), app, false, {}, true);
         v.stopTimer();
         v.setSize(1040, 680);
@@ -293,6 +296,30 @@ struct PlaybackSearchTestAccess
         check((int64_t)v.audio.status()["startSample"] == 960 &&
                   (int64_t)v.audio.status()["endSample"] == 4800,
               "Repeat One retains the selected original range across wraps");
+        // Exercise the same read-only suggestion query during a real loop and an index rescan.
+        auto queryFile = v.library.catalogFile();
+        auto query = std::async(std::launch::async, [queryFile] {
+            Catalog writer(queryFile);
+            auto target = writer.search("sound-00", {}, 1).at(0);
+            AnalysisUpdate index;
+            index.asset = target;
+            index.model = modelId();
+            index.preprocessing = preprocessingId();
+            index.end = index.nextStart = target.samples;
+            index.done = true;
+            index.embedding.resize(512);
+            index.embedding.front() = 1;
+            if (!writer.commitAnalysis(index)) throw std::runtime_error("Concurrent index write failed");
+            return acousticSuggestions(queryFile, target, true, [] { return false; });
+        });
+        v.library.rescan();
+        until([&] { v.timerCallback(); return query.wait_for(std::chrono::seconds(0)) == std::future_status::ready; },
+              "Local category query finished during audition");
+        auto acoustic = query.get();
+        check(acoustic.status.startsWith("No suggestion") || acoustic.status.startsWith("Suggested from audio"),
+              "Concurrent query ranked the indexed audio");
+        check((bool)v.audio.status()["playing"] && (uint64_t)(int64_t)v.audio.status()["playGeneration"] == generation,
+              "Background category analysis leaves the active playback generation uninterrupted");
         v.repeatOne.onClick();
         check(!v.repeatOne.getToggleState() && !v.repeatAll.getToggleState(), "Second click restores Off");
         until(

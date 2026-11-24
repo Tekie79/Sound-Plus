@@ -1,4 +1,5 @@
 #include "MetadataFields.h"
+#include "AcousticMetadata.h"
 #include "LibraryView.h"
 #include "ChannelDetails.h"
 #include "LibraryLayout.h"
@@ -662,6 +663,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
 }
 LibraryView::~LibraryView()
 {
+    if (acousticCancel)
+        acousticCancel->store(true);
     cancelRefinement();
     library.setChangeCallback({});
     cancelPendingUpdate();
@@ -1402,6 +1405,10 @@ void LibraryView::selectedRowsChanged(int)
 }
 void LibraryView::updateSelection(bool explicitUserSelection)
 {
+    auto *next = selected();
+    if (acousticCancel && (!next || !selectedAsset || next->id != selectedAsset->id ||
+                           next->revision != selectedAsset->revision || next->path != selectedAsset->path))
+        acousticCancel->store(true);
     if (explicitUserSelection && navigationAuto && table.getLastRowSelected() != navigationToPlay)
         cancelNavigation();
     if (auto *a = selected())

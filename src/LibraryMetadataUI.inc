@@ -3,16 +3,26 @@ void LibraryView::metadataPanel(bool filter)
     using namespace juce;
     struct Panel : Component
     {
-        ComboBox keys, saved;
+        ComboBox keys, saved, ranked;
+        Label acousticStatus;
+        TextButton analyze{"Suggest from audio"}, use{"Apply"}, dismiss{"Reject"};
+        IconButton preview{"Preview matching moment", ActionIcon::play};
+        std::vector<AcousticChoice> choices;
+        std::shared_ptr<std::atomic<bool>> cancelled = std::make_shared<std::atomic<bool>>(false);
+        ~Panel() override
+        {
+            cancelled->store(true);
+        }
         TextEditor value, alias;
         Label summary;
         TextButton apply{"Apply"}, unlock{"Use source"}, save{"Save filter"}, suggest{"Apply suggestion"},
             reject{"Dismiss"}, undo{"Undo"}, redo{"Redo"}, exchange{"Manifest"}, aliasSave{"Set alias"};
         Panel()
         {
-            for (auto *c : std::initializer_list<Component *>{&keys, &saved, &value, &summary, &apply,
-                                                              &unlock, &save, &suggest, &reject, &undo, &redo,
-                                                              &exchange, &alias, &aliasSave})
+            for (auto *c : std::initializer_list<Component *>{
+                     &keys,    &saved,          &value,   &summary, &apply,    &unlock, &save,
+                     &suggest, &reject,         &undo,    &redo,    &exchange, &alias,  &aliasSave,
+                     &ranked,  &acousticStatus, &analyze, &use,     &dismiss,  &preview})
                 addAndMakeVisible(c);
         }
     };
@@ -219,5 +229,112 @@ void LibraryView::metadataPanel(bool filter)
         };
     }
     p->setSize(386, v->suggest.getWidth() ? 139 : 109);
+    if (!filter && items.size() == 1 && !info["fields"].hasProperty("category"))
+    {
+        auto asset = items.front().asset;
+        int y = p->getHeight() + 2;
+        p->setSize(386, y + 78);
+        v->analyze.setBounds(9, y, 139, 28);
+        v->acousticStatus.setBounds(148, y, 231, 28);
+        v->acousticStatus.setFont(Font(12.0f));
+        v->ranked.setBounds(10, y + 34, 206, 28);
+        v->preview.setBounds(218, y + 34, 32, 28);
+        v->use.setBounds(252, y + 34, 57, 28);
+        v->dismiss.setBounds(311, y + 34, 65, 28);
+        v->analyze.setComponentID("acoustic-query");
+        v->ranked.setComponentID("acoustic-ranked");
+        v->preview.setComponentID("acoustic-preview");
+        v->use.setComponentID("acoustic-apply");
+        v->dismiss.setComponentID("acoustic-reject");
+        v->ranked.setTooltip("Ranked by cosine similarity");
+        v->ranked.setTextWhenNothingSelected("No suggestions");
+        v->ranked.setEnabled(false);
+        v->use.setEnabled(false);
+        v->dismiss.setEnabled(false);
+        v->preview.setEnabled(false);
+        Component::SafePointer<Panel> panel(v);
+        auto current = [safe, asset]
+        {
+            return safe && safe->selectedAsset && safe->selectedAsset->id == asset.id &&
+                   safe->selectedAsset->path == asset.path && safe->selectedAsset->revision == asset.revision;
+        };
+        auto fill = [panel, current](AcousticResult result)
+        {
+            if (!panel)
+                return;
+            if (!current())
+                result = {"Selection changed", {}};
+            panel->choices = std::move(result.choices);
+            panel->ranked.clear(dontSendNotification);
+            for (auto &c : panel->choices)
+                panel->ranked.addItem(c.category + "  " + String(c.similarity, 2),
+                                      panel->ranked.getNumItems() + 1);
+            bool has = !panel->choices.empty();
+            if (has)
+                panel->ranked.setSelectedId(1, dontSendNotification);
+            for (auto *c : std::initializer_list<Component *>{&panel->ranked, &panel->use, &panel->preview,
+                                                              &panel->dismiss})
+                c->setEnabled(has);
+            panel->acousticStatus.setText(result.status, dontSendNotification);
+            panel->analyze.setEnabled(current());
+        };
+        v->analyze.onClick = [panel, safe, asset, current, fill]
+        {
+            if (!current() || !panel)
+                return;
+            fill({"Checking cached audio...", {}});
+            panel->cancelled->store(true);
+            auto stop = std::make_shared<std::atomic<bool>>(false);
+            panel->cancelled = stop;
+            auto db = safe->library.catalogFile();
+            bool ready = safe->snapshot.semantic.ready;
+            if (safe->acousticCancel && safe->acousticCancel != stop)
+                safe->acousticCancel->store(true);
+            safe->acousticCancel = stop;
+            safe->acousticWorker.removeAllJobs(false, 0);
+            safe->acousticWorker.addJob(
+                [stop, db, asset, ready, fill]
+                {
+                    auto result = acousticSuggestions(db, asset, ready, [&] { return stop->load(); });
+                    if (!stop->load())
+                        MessageManager::callAsync(
+                            [stop, result = std::move(result), fill]
+                            {
+                                if (!stop->load())
+                                    fill(result);
+                            });
+                });
+        };
+        auto choice = [panel, current]() -> std::optional<AcousticChoice>
+        {
+            if (!current() || !panel)
+                return {};
+            auto i = panel->ranked.getSelectedItemIndex();
+            if (!isPositiveAndBelow(i, (int)panel->choices.size()))
+                return {};
+            return panel->choices[(size_t)i];
+        };
+        v->preview.onClick = [safe, choice]
+        {
+            if (auto c = choice())
+                safe->playSelected(true, -1, SampleSpan{c->moment.startSample, c->moment.endSample});
+        };
+        auto review = [safe, panel, items, choice, fill](bool use)
+        {
+            if (auto c = choice())
+            {
+                CollectionEdit e;
+                e.action = use ? "meta-acoustic-apply" : "meta-acoustic-reject";
+                e.id = "category";
+                e.name = c->category;
+                e.parent = acousticPolicy();
+                e.items = items;
+                safe->submitCollectionEdit(std::move(e));
+                fill({"Review submitted", {}});
+            }
+        };
+        v->use.onClick = [review] { review(true); };
+        v->dismiss.onClick = [review] { review(false); };
+    }
     CallOutBox::launchAsynchronously(std::move(p), (filter ? filterMetadata : editTags).getBounds(), this);
 }

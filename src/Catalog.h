@@ -144,6 +144,9 @@ class Catalog
     CollectionState collections();
     bool bookmarkFavorite(const BookmarkRequest &);
     void editCollections(const CollectionEdit &);
+    std::vector<StoredRegion> acousticWindows(const Asset &, const juce::String &model,
+                                              const juce::String &prep, const std::function<bool()> &cancel);
+    juce::StringArray dismissedAcoustic(const Asset &, const juce::String &policy);
     void snapshotMetadata(const Asset &, const juce::var &embedded);
     void providerMetadata(const Asset &, const juce::var &verified);
     juce::var describeMetadata(const juce::String &id);

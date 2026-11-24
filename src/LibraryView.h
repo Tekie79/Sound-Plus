@@ -305,7 +305,8 @@ class LibraryView final : public juce::Component,
     juce::ToggleButton context{"+/-0.25 s context"};
     juce::ComboBox moments;
     juce::TextButton refine{"Refine"};
-    juce::ThreadPool refinementWorker{1};
+    juce::ThreadPool refinementWorker{1}, acousticWorker{1};
+    std::shared_ptr<std::atomic<bool>> acousticCancel;
     std::shared_ptr<std::atomic<bool>> refinementCancel;
     std::optional<EventSuggestions> suggestions;
     size_t suggestionIndex = 0;

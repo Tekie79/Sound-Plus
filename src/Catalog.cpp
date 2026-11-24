@@ -1,4 +1,5 @@
 #include "MetadataFields.h"
+#include "AcousticMetadata.h"
 #include <juce_cryptography/juce_cryptography.h>
 #include "Catalog.h"
 #include "RegionRanking.h"
@@ -154,7 +155,7 @@ Catalog::Catalog(const juce::File &file, bool readOnly, std::function<void()> be
             schemaVersion = version.integer(0);
         }
         metadataSchema = schemaVersion >= 8;
-        if (schemaVersion > 8)
+        if (schemaVersion > 9)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         if (readOnly)
         {
@@ -339,6 +340,12 @@ Catalog::Catalog(const juce::File &file, bool readOnly, std::function<void()> be
             CREATE INDEX IF NOT EXISTS metadata_audio_facets ON assets(channels,duration,root_id);
             PRAGMA user_version=8;COMMIT;)SQL");
             metadataSchema = true;
+        }
+        if (schemaVersion < 9)
+        {
+            exec(R"SQL(BEGIN IMMEDIATE;
+                 CREATE TABLE IF NOT EXISTS acoustic_rejections(asset TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,revision INTEGER NOT NULL,policy TEXT NOT NULL,category TEXT NOT NULL,PRIMARY KEY(asset,revision,policy,category));
+                 PRAGMA user_version=9;COMMIT;)SQL");
         }
     }
     catch (...)

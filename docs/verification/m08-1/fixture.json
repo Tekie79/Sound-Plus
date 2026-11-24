@@ -1,0 +1,599 @@
+{
+  "source": "ESC-50 evaluation subset",
+  "revision": "33c8ce9eb2cf0b1c2f8bcf322eb349b6be34dbb6",
+  "license": "ESC-50 compilation CC BY-NC 3.0; see evaluation/ESC50-LICENSE and source Freesound record",
+  "rows": [
+    {
+      "label": "crickets",
+      "sha256": "0e02985a93837d58cfaaf3da12e49bb0438bcd007afc22b46a8bb05002bcb849",
+      "file": "clip-001.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "VEGETATION",
+          "similarity": 0.450092554092407,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "chainsaw",
+      "sha256": "1199ff6d4f5040bf20f06a441276bcd6448b1e1de4f098ce3e47d856ee97ce33",
+      "file": "clip-002.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "TOOLS",
+          "similarity": 0.32571879029274,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "rain",
+      "sha256": "5f15ab2d8f6ef9932909b1b75c8ac254cbea46c93b4b2f0f3542abdf09b9abc0",
+      "file": "clip-003.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "RAIN",
+          "similarity": 0.380626648664474,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "can_opening",
+      "sha256": "a5e9ca3a735d31404f93194af687d2eca85e4a940ccda0675755b410342e8474",
+      "file": "clip-004.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOD & DRINK",
+          "similarity": 0.447523206472397,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "GUNS",
+          "similarity": 0.378359466791153,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "FIRE",
+          "similarity": 0.355030477046967,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "glass_breaking",
+      "sha256": "db6946133c37fbd4513fe932dbb71e0b077bf7d240beaed339eb6c88e48c903b",
+      "file": "clip-005.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "can_opening",
+      "sha256": "2d31544f7e5ba3eb21f20e115d7bf8dc1ad23508806625ed628436c8a77852ca",
+      "file": "clip-006.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "hand_saw",
+      "sha256": "578e665791e50b49fd105745ee79e3974b5fe323c7712aad4cd8bce67e21bf76",
+      "file": "clip-007.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "water_drops",
+      "sha256": "9e8ec2f92df6dc2f9673f4c701ac327dc5455e6cfa8e108e0f5443aeaa535a65",
+      "file": "clip-008.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "WATER",
+          "similarity": 0.457346469163895,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "LIQUID & MUD",
+          "similarity": 0.396219789981842,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "hand_saw",
+      "sha256": "f3597d925f71cc6a85f03cd08edeed6657b5433d70c229484d8f6cc0236e9df8",
+      "file": "clip-009.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "crackling_fire",
+      "sha256": "bf16e25363a2d5824c07e96dc05defcb87e1d9dcd47bfd241a9d25e01b411209",
+      "file": "clip-010.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "clock_alarm",
+      "sha256": "220c3d127df2f0d8979a2edde5318aaaa3aed19d8c5d3b4a40d529f979bba453",
+      "file": "clip-011.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "ALARMS",
+          "similarity": 0.49254298210144,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "CLOCKS",
+          "similarity": 0.445384204387665,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "pouring_water",
+      "sha256": "556d465ef6d44075c1c6f881202f001e088c20415e600be9a83714aa5d86ea07",
+      "file": "clip-012.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "rain",
+      "sha256": "d732acd2e0c7c40405968010f49f250740c86998fc416eff2ed5330fc8c89dea",
+      "file": "clip-013.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "RAIN",
+          "similarity": 0.376195520162582,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "WEATHER",
+          "similarity": 0.335324048995972,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "door_wood_creaks",
+      "sha256": "4cb5f7267a35b54ee111306445dd3cb1ee73dc4993c3d31ddb81ca9728fdc873",
+      "file": "clip-014.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "DOORS",
+          "similarity": 0.493713438510895,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "engine",
+      "sha256": "40f0ab8a2fa68cbdf814f10fc8b2c26916b3dc54c1b0e719d4697ba58c0bdb81",
+      "file": "clip-015.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "clock_tick",
+      "sha256": "8d26e40e0e382b0d2d7f6dafcb132cfe703ee3f7f32780e878fdb5a1aaffcc28",
+      "file": "clip-016.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "CLOCKS",
+          "similarity": 0.588260471820831,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "washing_machine",
+      "sha256": "1b4210c50a01cabab07065a112463fad4f82de60385ef9aaf6316afe7d4b976c",
+      "file": "clip-017.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "MACHINES",
+          "similarity": 0.637513399124146,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "clock_alarm",
+      "sha256": "2e28b25e14611723cdcc0becfa36468a8d0329a0c141e4f1d894bd6bb5773f34",
+      "file": "clip-018.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "door_wood_knock",
+      "sha256": "1c1d3e65b7a58658766180d2faeeb9bdd1fe7405119bf100d9cd2f671a6e2b11",
+      "file": "clip-019.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "brushing_teeth",
+      "sha256": "e33131d7061ffa8e8fa234083dfd5c95b7da7d233f4d5ffaf2c34758f936964e",
+      "file": "clip-020.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOD & DRINK",
+          "similarity": 0.41322273015976,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "HUMAN",
+          "similarity": 0.37848237156868,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "TOYS",
+          "similarity": 0.344593495130539,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "ANIMALS",
+          "similarity": 0.34248274564743,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "COMMUNICATIONS",
+          "similarity": 0.337321251630783,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "sea_waves",
+      "sha256": "806548ec876df9f91ced5503f76794a42dca6b8790324f87464de5ed780189cb",
+      "file": "clip-021.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "NATURAL DISASTER",
+          "similarity": 0.444326519966125,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "brushing_teeth",
+      "sha256": "cfdcb4cb00c9af6e3f5613993d0c2c2babe1c0ebe442f8aa97017c092fad17f1",
+      "file": "clip-022.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOD & DRINK",
+          "similarity": 0.446751147508621,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "HUMAN",
+          "similarity": 0.372526109218597,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "TOYS",
+          "similarity": 0.361247360706329,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "crickets",
+      "sha256": "2df85254c1ba9c2bcb8517c8d2b36caeaf60ab6197e2e3b7285680720ecd638c",
+      "file": "clip-023.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "glass_breaking",
+      "sha256": "79efba4c0c54acadc88783e83b428fc9c430db94515b25339a6b5598e2ade0c0",
+      "file": "clip-024.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "GLASS",
+          "similarity": 0.580907940864563,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "CERAMICS",
+          "similarity": 0.519412696361542,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "clock_tick",
+      "sha256": "4d7ad80cf2733e2d9260061afbbdb0bd3d64cfcbc3df5c8a0258639716a7329d",
+      "file": "clip-025.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "CLOCKS",
+          "similarity": 0.540251970291138,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "toilet_flush",
+      "sha256": "691ee5a062f2ef54b1ef77fd235a6800b847a7b256b7f08b18fc240e99916d0d",
+      "file": "clip-026.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "pouring_water",
+      "sha256": "267bc4a3836dfc673e404bd12d8655a1e00f01e07078cb9d404d2b82cbd3aa07",
+      "file": "clip-027.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "footsteps",
+      "sha256": "234358f787b98c5903fcf56f7fc4c97fda2b4f0ad5311bd35f9c6c6c9a4b2277",
+      "file": "clip-028.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOTSTEPS",
+          "similarity": 0.539012908935547,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "door_wood_creaks",
+      "sha256": "b38f246af1e037ac5abb6e3f68164bd95a2d98c8c93383b01fe811a8085d0be0",
+      "file": "clip-029.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "DOORS",
+          "similarity": 0.490832418203354,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "engine",
+      "sha256": "83eb3e6065246fd87d1acbbe414aa5bfb7c2081a57c188713cdc017819ffc38f",
+      "file": "clip-030.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "MACHINES",
+          "similarity": 0.384031057357788,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "MOTORS",
+          "similarity": 0.327259540557861,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "footsteps",
+      "sha256": "cb90f52c7fe7d0d994941b2e6de555cb36e898fb49b52cc31f08401ac464e7c6",
+      "file": "clip-031.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOTSTEPS",
+          "similarity": 0.56038373708725,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "water_drops",
+      "sha256": "d2dd3a33d3187b9b643a345e768c4286a12a36fc23a3a2c2aaa525d1ce6e8658",
+      "file": "clip-032.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "crackling_fire",
+      "sha256": "3d278bc2034dfb83881491a8eec97de6f1239f0a5b8a7c02be46b5aab0a51609",
+      "file": "clip-033.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FIRE",
+          "similarity": 0.634894073009491,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "sea_waves",
+      "sha256": "4d04b84d490c4d9ab28a52c4c96d1b14c2f8b132fc4be38166197ae814920742",
+      "file": "clip-034.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "NATURAL DISASTER",
+          "similarity": 0.433250248432159,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "door_wood_knock",
+      "sha256": "e738266e395e378102f74e0920b05ff5937543788420d5b2a6b8d3df8bdb3910",
+      "file": "clip-035.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "vacuum_cleaner",
+      "sha256": "acfdccbb58647655b9b63ab5574c178783b969f56e05933f115ae4dd1878a524",
+      "file": "clip-036.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "toilet_flush",
+      "sha256": "1c32cacfad33e87fdfc37b9ddbc047161827b86a72d6d0e9fcbef61bff804572",
+      "file": "clip-037.wav",
+      "status": "No suggestion (ambiguous audio)",
+      "choices": []
+    },
+    {
+      "label": "chainsaw",
+      "sha256": "02afa3102978b5fb16f9c6237d90231abb74318873309600f01caf4776746944",
+      "file": "clip-038.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "MOTORS",
+          "similarity": 0.393800467252731,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "TOOLS",
+          "similarity": 0.320213109254837,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "vacuum_cleaner",
+      "sha256": "f97e97b0fe0afce323d858503b6fa3ffd6c8cb1162c43cf3b24461300fb9abf6",
+      "file": "clip-039.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "TOOLS",
+          "similarity": 0.48038774728775,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "MACHINES",
+          "similarity": 0.442784041166306,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "washing_machine",
+      "sha256": "cbfd9239fcd7e10a936e6836bbcc8c5f391f89b6a1e12dfe159df717e2898657",
+      "file": "clip-040.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "MACHINES",
+          "similarity": 0.497069984674454,
+          "first": 0,
+          "last": 220500
+        },
+        {
+          "category": "TOOLS",
+          "similarity": 0.415977716445923,
+          "first": 0,
+          "last": 220500
+        }
+      ]
+    },
+    {
+      "label": "door_wood_creaks",
+      "sha256": "eaf8d4f8359261ed105946346fc8ad22fe86232aaad649204f51f383fa159b89",
+      "file": "clip-041.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "RAIN",
+          "similarity": 0.373657554388046,
+          "first": 0,
+          "last": 441000
+        },
+        {
+          "category": "WEATHER",
+          "similarity": 0.334815084934235,
+          "first": 0,
+          "last": 441000
+        }
+      ]
+    },
+    {
+      "label": "can_opening",
+      "sha256": "6209a15fcc3592f6b446876f7e8156816bf80a59023927dfbb95043fdc7d948f",
+      "file": "clip-042.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FOOTSTEPS",
+          "similarity": 0.560738384723663,
+          "first": 0,
+          "last": 441000
+        }
+      ]
+    },
+    {
+      "label": "glass_breaking",
+      "sha256": "5242dbb2c1f6942c6d1d1fb4d4c1d3e016390a00f82c746eee2f7667cdb5cb54",
+      "file": "clip-043.wav",
+      "status": "Suggested from audio (unverified)",
+      "choices": [
+        {
+          "category": "FIRE",
+          "similarity": 0.633660137653351,
+          "first": 0,
+          "last": 441000
+        }
+      ]
+    }
+  ]
+}

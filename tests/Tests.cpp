@@ -29,6 +29,8 @@
 #include <unistd.h>
 #include <sys/wait.h>
 void runPlaybackSearchTests(const juce::File &, const juce::File &);
+void testAcousticMetadata(const juce::File &);
+void inspectAcousticFixture(const juce::File &);
 void runCatalogMetadataTests(const juce::File &);
 void runProjectPackageTests(const juce::File &);
 void runSourcePoolTests(const juce::File &, const juce::File &);
@@ -309,6 +311,8 @@ int main(int argc, char **argv)
             prepareSourcePoolUI(juce::File(argv[2]));
             return 0;
         }
+        if(argc==3 && juce::String(argv[1])=="--acoustic-metadata"){testAcousticMetadata(juce::File(argv[2]));return 0;}
+        if(argc==3 && juce::String(argv[1])=="--inspect-acoustic-fixture"){inspectAcousticFixture(juce::File(argv[2]));return 0;}
         if (argc >= 3 && juce::String(argv[1]) == "--catalog-metadata")
         {
             runCatalogMetadataTests(juce::File(argv[2]));
