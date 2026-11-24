@@ -8,6 +8,7 @@
 #include "TransferControls.h"
 #include "PerformanceState.h"
 #include "TrackModel.h"
+#include "SfxPanel.h"
 class Workstation final : public juce::Component,public juce::DragAndDropContainer,private juce::Timer
 {
   public:
@@ -57,6 +58,8 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     ~Workstation() override
     {
         stopTimer();
+        generatorWindow.reset();
+        generation.reset();
         preferences.setValue("monitorVolume", library.audioClient().monitorGain());
         preferences.saveIfNeeded();
         shell.setLookAndFeel(nullptr);
@@ -136,6 +139,34 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         processWindow=std::make_unique<ProcessWindow>();processWindow->onClose=[safe]{juce::MessageManager::callAsync([safe]{if(safe)safe->processWindow.reset();});};
         processWindow->setContentOwned(panel.release(),true);processWindow->centreWithSize(700,650);processWindow->setVisible(true);processWindow->toFront(true);
     }
+    std::unique_ptr<sp::sfx::Generation> generation;
+    struct GeneratorWindow final : juce::DocumentWindow
+    {
+        GeneratorWindow() : DocumentWindow("Generate SFX", sp::ui::surface, closeButton) { setUsingNativeTitleBar(true); }
+        void closeButtonPressed() override { setVisible(false); clearContentComponent(); }
+    };
+    std::unique_ptr<GeneratorWindow> generatorWindow;
+    void openGenerator()
+    {
+        if (!generation)
+            generation = std::make_unique<sp::sfx::Generation>(transferCatalog.getSiblingFile("Generation"));
+        if (!generatorWindow)
+            generatorWindow = std::make_unique<GeneratorWindow>();
+        if (!generatorWindow->getContentComponent())
+        {
+            auto *panel = new sp::sfx::Panel(*generation, library, designer, [this](int tab)
+            {
+                chooseWorkspace(static_cast<Workspace>(tab));
+                juce::Component::SafePointer<Workstation> safe(this);
+                juce::MessageManager::callAsync([safe]{ if (safe && safe->generatorWindow) safe->generatorWindow->closeButtonPressed(); });
+            });
+            generatorWindow->setLookAndFeel(&shellLook);
+            generatorWindow->setContentOwned(panel,true);
+            generatorWindow->centreAroundComponent(this,panel->getWidth(),panel->getHeight());
+        }
+        generatorWindow->setVisible(true);
+        generatorWindow->toFront(true);
+    }
     enum class Workspace { library, edit, perform, deliver };
     Workspace workspace = Workspace::library;
     bool browserOpen = true;
@@ -147,6 +178,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     {
         sp::ui::TextActionButton library{"Library", true}, edit{"Edit", true}, perform{"Perform", true},
             deliver{"Deliver", true};
+        sp::ui::TextActionButton generate{"Generate SFX"};
         sp::IconButton search{"Search commands", sp::ActionIcon::similar};
         sp::IconButton settings{"Settings", sp::ActionIcon::settings};
         sp::IconButton save{"Save design", sp::ActionIcon::save};
@@ -164,6 +196,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
                 addAndMakeVisible(*tab);
             for (auto *button : {&save, &search, &settings})
                 addAndMakeVisible(*button);
+            addAndMakeVisible(generate);
             addChildComponent(transfer);
             addChildComponent(resolveTransfer);
             resolveTransfer.setIconSize(24.f);
@@ -178,6 +211,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         void resized() override
         {
             auto row = getLocalBounds().reduced(12, 6);
+            generate.setBounds(105, 6, 104, row.getHeight());
             auto tools = row.removeFromRight(106);
             save.setBounds(tools.removeFromLeft(34));
             search.setBounds(tools.removeFromLeft(34));
@@ -212,6 +246,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         for (int i = 0; i < (int)shell.tabs.size(); ++i)
             shell.tabs[(size_t)i]->onClick = [this, i] { chooseWorkspace((Workspace)i); };
         shell.settings.onClick = [this] { showSettings(); };
+        shell.generate.onClick = [this]{ openGenerator(); };
         shell.search.onClick = [this] { showCommands(); };
         shell.save.onClick = [this] { designer.saveFromShell(); };
         shell.transfer.onClick = [this] { runQuickTransfer(workspace, sp::TransferAction::drag); };
@@ -247,6 +282,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         preferences.setValue("workspace", index);
         preferences.setValue("designerActive", workspace != Workspace::library);
         const bool designing = workspace == Workspace::edit || workspace == Workspace::perform;
+        shell.generate.setVisible(workspace != Workspace::deliver);
         shell.transfer.setVisible(designing);
         shell.resolveTransfer.setVisible(designing);
         shell.transferOptions.setVisible(designing);
@@ -518,6 +554,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         for (int i = 0; i < (int)shell.tabs.size(); ++i)
             commands.push_back({shell.tabs[(size_t)i]->getButtonText(),
                                 [safe, i] { if (safe) safe->chooseWorkspace((Workspace)i); }});
+        commands.push_back({"Generate SFX", [safe] { if (safe) safe->openGenerator(); }});
         commands.push_back({"Find sounds", [safe]
             { if (safe) { safe->chooseWorkspace(Workspace::library); safe->library.focusSearch(); } }});
         commands.push_back({"Save design", [safe] { if (safe) safe->designer.saveFromShell(); }});

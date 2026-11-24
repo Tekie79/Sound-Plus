@@ -1678,6 +1678,16 @@ void LibraryView::listBoxItemClicked(int n, const juce::MouseEvent &e)
     }
     chooseNavigation(n);
 }
+void LibraryView::showGenerated(const Asset &asset)
+{
+    library.clearReference();
+    similarMode = false;
+    search.setText(asset.name, juce::dontSendNotification);
+    rootFilter = asset.rootId;
+    selectCollectionScope({});
+    selectedKey = asset.id;
+    preserveScopeSelection = true;
+}
 void LibraryView::requestSearch()
 {
     cancelNavigation();

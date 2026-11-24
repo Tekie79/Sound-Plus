@@ -8,4 +8,4 @@ Package baseline `7268a31731ececde59a45363aca8b0231da1c016`. Execution baseline 
 - ✓ Run the unchanged Release gate, independent PCM checks, native keyboard/confirmation checks and the 24-strip stress test.
 - ✓ Qualify scripted Resolve sends and physical drops of an original and a finalized stem through save, quit and reopen.
 - ✓ Reconcile all case IDs, retain the historical workbook and audit the working SoundPlus session and Resolve project.
-- ○ Complete the remaining native, physical-device and operator scenarios in the [qualification report](verification/m00/REPORT.md).
+- ○ M09 owns the remaining native, physical-device and operator scenarios in the [qualification report](verification/m00/REPORT.md). M00 is development-complete within the recorded scope.

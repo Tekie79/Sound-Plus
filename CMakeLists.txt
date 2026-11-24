@@ -27,7 +27,7 @@ juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAsset
   ${SOUNDPLUS_ICON_SVGS} resources/icons/custom/davinci_resolve.png)
 add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
-  src/InputRecording.cpp
+  src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
   src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
@@ -39,7 +39,7 @@ target_compile_definitions(soundplus_core PUBLIC
   JUCE_APPLICATION_NAME_STRING="SoundPlus" JUCE_APPLICATION_VERSION_STRING="${PROJECT_VERSION}")
 target_link_libraries(soundplus_core PUBLIC SQLite::SQLite3
   juce::juce_audio_utils juce::juce_gui_extra juce::juce_cryptography juce::juce_dsp ModelManifest SoundPlusIcons NativePresets
-  "-framework CoreServices" "-framework Foundation" "-framework AVFoundation")
+  "-lcurl" "-framework Security" "-framework CoreServices" "-framework Foundation" "-framework AVFoundation")
 target_compile_options(soundplus_core PRIVATE -Wall -Wextra -Wpedantic)
 juce_add_gui_app(SoundPlus PRODUCT_NAME "SoundPlus" COMPANY_NAME "SoundPlus"
   VERSION "${PROJECT_VERSION}" BUILD_VERSION "${SOUNDPLUS_BUILD_NUMBER}"
@@ -69,7 +69,7 @@ target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp src/MacAudioInput.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/TransferControls.cpp src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+target_sources(SoundPlus PRIVATE src/SfxPanel.cpp src/TransferControls.cpp src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI SoundPlusPlugin SoundPlusPluginEditor)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>" "$<TARGET_FILE:SoundPlusPlugin>")
@@ -111,7 +111,9 @@ include(CTest)
 if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp)
-  target_sources(SoundPlusTests PRIVATE tests/MixerGraphTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/SfxGenerationTests.cpp tests/MixerGraphTests.cpp)
+  add_test(NAME sfx_generation COMMAND /usr/bin/python3 "${CMAKE_SOURCE_DIR}/tests/sfx_http_fixture.py" "$<TARGET_FILE:SoundPlusTests>" "${CMAKE_BINARY_DIR}/sfx-tests")
+  set_tests_properties(sfx_generation PROPERTIES TIMEOUT 80 RUN_SERIAL TRUE)
   target_sources(SoundPlusTests PRIVATE tests/WorkspaceTransferTests.cpp)
   add_test(NAME mixer_graph COMMAND SoundPlusTests --mixer-graph "${CMAKE_BINARY_DIR}/mixer-graph")
   add_test(NAME mixer_stems COMMAND SoundPlusTests --mixer-stems "${CMAKE_BINARY_DIR}/mixer-stems")

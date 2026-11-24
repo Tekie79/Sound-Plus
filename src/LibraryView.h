@@ -54,6 +54,9 @@ class LibraryView final : public juce::Component,
     IconButton &sendTransferButton() { return sendTransfer; }
     ui::FileDragButton &dragTransferButton() { return dragTransfer; }
     IconButton &transferSettingsButton() { return transferOptions; }
+    LibraryService &catalogService() { return library; }
+    std::vector<std::pair<juce::String, juce::String>> generationCollections() const { return collectionChoices(); }
+    void showGenerated(const Asset &);
     void focusSearch()
     {
         search.grabKeyboardFocus();

@@ -1236,7 +1236,7 @@ void DesignSession::save(const juce::File &file)
 }
 
 void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool external, int pair,
-                        int64_t placement, bool tracksForNewDesign)
+                        int64_t placement, bool tracksForNewDesign, int blendSlot)
 {
     edit("Add layer",
          [&](auto &d)
@@ -1265,6 +1265,8 @@ void DesignSession::add(const Asset &source, int64_t first, int64_t last, bool e
              attachClip(d, layer);
              d.selectedLayer = layer.id;
              d.activeMix().layers.push_back(std::move(layer));
+             if (blendSlot >= 0)
+                 assignBlendLayer(d.activeMix(), blendSlot, d.selectedLayer, d.performPad);
          });
 }
 void DesignSession::chooseImpulse(const juce::String &owner, const juce::String &id, const juce::File &file,

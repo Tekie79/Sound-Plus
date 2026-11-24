@@ -129,6 +129,13 @@ struct LibraryService::Impl
         ChannelLayout layout;
     };
     std::vector<LayoutEdit> layoutEdits;
+    struct GeneratedImport
+    {
+        Asset verified;
+        juce::String collection;
+        std::promise<Asset> result;
+    };
+    std::deque<GeneratedImport> generatedImports;
     std::deque<CollectionEdit> collectionEdits;
     std::optional<std::pair<BookmarkRequest, juce::String>> bookmarkInspection;
     std::deque<Job> jobs;
@@ -1181,11 +1188,13 @@ struct LibraryService::Impl
                 std::vector<LayoutEdit> edits;
                 std::deque<Batch> ready;
                 std::deque<CollectionEdit> metadata;
+                std::deque<GeneratedImport> generated;
                 std::optional<std::pair<BookmarkRequest, juce::String>> inspection;
                 bool rescan = false;
                 {
                     std::lock_guard lock(mutex);
                     added.swap(additions);
+                    generated.swap(generatedImports);
                     edits.swap(layoutEdits);
                     metadata.swap(collectionEdits);
                     inspection = std::move(bookmarkInspection);
@@ -1250,6 +1259,66 @@ struct LibraryService::Impl
                         roots.push_back(state);
                     }
                     publish();
+                }
+                for (auto &job : generated)
+                {
+                    try
+                    {
+                        juce::File file(job.verified.path);
+                        FileStamp stamp;
+                        if (!fileStamp(file, stamp) || !same(stamp, stampOf(job.verified)))
+                            throw std::runtime_error("Generated WAV changed before indexing");
+                        std::shared_ptr<Runtime> owner;
+                        for (auto &r : roots)
+                            if (file.isAChildOf(juce::File(r->root.path)) &&
+                                (!owner || r->root.path.length() > owner->root.path.length()))
+                                owner = r;
+                        if (!owner)
+                        {
+                            owner = std::make_shared<Runtime>();
+                            owner->root = db.addRoot(file.getParentDirectory());
+                            roots.push_back(owner);
+                        }
+                        auto relative = file.getRelativePathFrom(juce::File(owner->root.path));
+                        auto a = db.existing(owner->root.id, relative);
+                        if (a.id.isEmpty() || !same(stamp, stampOf(a)) || a.state != "ready")
+                        {
+                            db.discover(owner->root, relative, stamp, juce::Time::currentTimeMillis(), false);
+                            a = db.existing(owner->root.id, relative);
+                            a.detectedChannels = job.verified.detectedChannels;
+                            a.layoutConfidence = job.verified.layoutConfidence;
+                            db.metadata(a, job.verified.duration, job.verified.channels, job.verified.sampleRate,
+                                        {}, job.verified.samples);
+                            a = db.asset(a.id);
+                        }
+                        CollectionEdit e;
+                        e.action = "member";
+                        e.id = job.collection;
+                        if (e.id.isEmpty())
+                        {
+                            for (const auto &c : db.collections().nodes)
+                                if (c.parent.isEmpty() && c.name.equalsIgnoreCase("AI Generated"))
+                                    e.id = c.id;
+                            if (e.id.isEmpty())
+                            {
+                                e.action = "create";
+                                e.name = "AI Generated";
+                            }
+                        }
+                        e.items.push_back({a});
+                        db.editCollections(e);
+                        auto organization = db.collections();
+                        {
+                            std::lock_guard lock(mutex);
+                            organization.version = current.organization.version + 1;
+                            current.organization = std::move(organization);
+                            ++membershipVersion; ++workToken; ++semanticInputVersion;
+                            notifyLocked();
+                        }
+                        publish();
+                        job.result.set_value(a);
+                    }
+                    catch (...) { job.result.set_exception(std::current_exception()); }
                 }
                 if (rescan)
                 {
@@ -1478,7 +1547,7 @@ struct LibraryService::Impl
                               [&]
                               {
                                   return stopping || !batches.empty() || !additions.empty() ||
-                                         !layoutEdits.empty() || !collectionEdits.empty() ||
+                                         !layoutEdits.empty() || !collectionEdits.empty() || !generatedImports.empty() ||
                                          bookmarkInspection.has_value() || requestedRescan;
                               });
             }
@@ -1859,6 +1928,7 @@ void LibraryService::publishControlledSemantic(uint64_t request, std::vector<Ass
     impl->wake.notify_all();
 }
 LibraryService::~LibraryService() = default;
+juce::File LibraryService::catalogFile() const { return impl->database; }
 void LibraryService::addFolder(const juce::File &f)
 {
     {
@@ -1873,6 +1943,17 @@ void LibraryService::setLayoutOverride(const Asset &asset, const ChannelLayout &
     if (impl->layoutEdits.size() < 64)
         impl->layoutEdits.push_back({asset.id, asset.revision, layout});
     impl->wake.notify_all();
+}
+std::future<Asset> LibraryService::indexGenerated(Asset asset, juce::String collection)
+{
+    Impl::GeneratedImport job{std::move(asset), std::move(collection), {}};
+    auto result = job.result.get_future();
+    std::lock_guard lock(impl->mutex);
+    if (impl->stopping || impl->generatedImports.size() >= 8)
+        throw std::runtime_error("Library index is unavailable");
+    impl->generatedImports.push_back(std::move(job));
+    impl->wake.notify_all();
+    return result;
 }
 void LibraryService::rescan()
 {

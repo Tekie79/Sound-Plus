@@ -1,6 +1,7 @@
 #pragma once
 #include "Catalog.h"
 #include <functional>
+#include <future>
 #include <memory>
 #include "ModelPack.h"
 #include "Reference.h"
@@ -59,6 +60,7 @@ class LibraryService
                             juce::File modelDirectory = {}, bool controlledSemantic = false);
     ~LibraryService();
     void addFolder(const juce::File &);
+    std::future<Asset> indexGenerated(Asset verified, juce::String collection = {});
     void rescan();
     void setLayoutOverride(const Asset &, const ChannelLayout &);
     void pause(bool);
@@ -72,6 +74,7 @@ class LibraryService
     LibrarySnapshot snapshot();
     juce::var queryDiagnostics(); // Explicit benchmark diagnostics, not a user query path.
     bool ready() const;
+    juce::File catalogFile() const;
     void installModel(const juce::File &offlinePack = {});
     void cancelModelInstall();
     void retryAnalysis();
