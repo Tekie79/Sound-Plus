@@ -108,6 +108,7 @@ void runRegistryWriter(const juce::File &, const juce::File &, const juce::File 
 void runPluginTakeTests(const juce::File &, const juce::File &, const juce::File &);
 void runOrderedCorrectionTests(const juce::File &, const juce::File &);
 void runMixerGraphTests(const juce::File &);
+void runAudioTransformTest(const juce::File &);
 void runRefinementTests(const juce::File &);
 void runMixerStemTests(const juce::File &);
 void runWorkspaceTransferTests(const juce::File &);
@@ -116,6 +117,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc == 3 && juce::String(argv[1]) == "--audio-transform")
+        {
+            runAudioTransformTest(juce::File(argv[2]));
+            return 0;
+        }
         if (argc == 3 && juce::String(argv[1]) == "--refine")
         {
             runRefinementTests(juce::File(argv[2]));
