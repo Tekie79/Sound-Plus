@@ -69,19 +69,14 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
     {
         auto i = history.getSelectedId() - 1;
         if (juce::isPositiveAndBelow(i, (int)state.history.size()))
+        {
+            if (!transforming && state.history[(size_t)i].id != selected)
+                stopPreview();
             selected = state.history[(size_t)i].id;
+        }
         updateControls();
     };
-    preview.onClick = [this]
-    {
-        if (preview.getButtonText() == "Stop")
-        {
-            library.audioClient().stopIfOwned(previewId, previewGeneration);
-            previewGeneration = 0;
-        }
-        else
-            use(0);
-    };
+    preview.onClick = playPreview.onClick = [this] { togglePreview(); };
     save.onClick = [this] { chooseFolder(); };
     edit.onClick = [this] { use(2); };
     perform.onClick = [this] { padMenu(); };
@@ -124,8 +119,11 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
     else
     {
         for (juce::Component *c : std::initializer_list<juce::Component *>{
-                 &descriptionHeading, &settingsHeading, &outputLabel, &destinationLabel, &manageKey})
+                 &descriptionHeading, &settingsHeading, &outputLabel, &destinationLabel, &manageKey, &playPreview})
             addAndMakeVisible(c);
+        preview.setVisible(false);
+        playPreview.setPrimary();
+        playPreview.setIconSize(15.f);
         label(heading, "Provider");
         label(model, juce::String::fromUTF8("ElevenLabs · Sound Effects v3"));
         label(descriptionHeading, "Sound description");
@@ -159,8 +157,7 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
 Panel::~Panel()
 {
     stopTimer();
-    if (previewGeneration)
-        library.audioClient().stopIfOwned(previewId, previewGeneration);
+    stopPreview();
 }
 void Panel::paint(juce::Graphics &g)
 {
@@ -248,9 +245,9 @@ void Panel::refreshGenerationLayout()
     const bool published = candidate && current()->assetId.isNotEmpty();
     for (auto *control : std::initializer_list<juce::Component *>{&key, &saveKey, &test, &erase})
         control->setVisible(expanded);
-    for (auto *control : std::initializer_list<juce::Component *>{&preview, &detail})
-        control->setVisible(candidate);
+    detail.setVisible(candidate);
     const bool canPublish = candidate && current()->state == State::ready;
+    playPreview.setVisible(canPublish);
     for (auto *control : std::initializer_list<juce::Component *>{&collection, &destinationLabel, &save})
         control->setVisible(canPublish);
     for (auto *control : {&edit, &perform, &reveal})
@@ -319,13 +316,19 @@ void Panel::layoutGeneration()
 
     auto results = section(3, 83 + (detail.isVisible() ? 32 : 0) + (collection.isVisible() ? 38 : 0)
                                   + (edit.isVisible() ? 36 : 0));
-    row = results.removeFromTop(27);
-    preview.setBounds(row.removeFromRight(78));
-    historyHeading.setBounds(row);
+    historyHeading.setBounds(results.removeFromTop(27));
     results.removeFromTop(5);
     history.setBounds(results.removeFromTop(30));
     if (detail.isVisible())
-        detail.setBounds(results.removeFromTop(32));
+    {
+        row = results.removeFromTop(32);
+        if (playPreview.isVisible())
+        {
+            playPreview.setBounds(row.removeFromLeft(118).reduced(0, 2));
+            row.removeFromLeft(9);
+        }
+        detail.setBounds(row);
+    }
     if (collection.isVisible())
     {
         row = results.removeFromTop(32);
@@ -375,13 +378,42 @@ void Panel::timerCallback()
         status.setText(state.status, juce::dontSendNotification);
         updateControls();
     }
-    auto transport = library.audioClient().status();
-    preview.setButtonText(previewGeneration && previewId == "sfx-" + selected &&
-                                  transport["intentId"].toString() == previewId &&
-                                  ((bool)transport["playing"] || (bool)transport["pendingPlayback"])
-                              ? "Stop"
-                              : "Preview");
+    const bool playing = previewActive();
+    if (transforming)
+        preview.setButtonText(playing ? "Stop" : "Preview");
+    else
+    {
+        playPreview.setIcon(playing ? ActionIcon::stop : ActionIcon::play);
+        playPreview.setButtonText(playing ? "Stop preview" : "Play preview");
+        const auto *candidate = current();
+        playPreview.setEnabled(playing || (!state.busy && candidate && candidate->state == State::ready));
+    }
 }
+
+bool Panel::previewActive() const
+{
+    if (!previewGeneration || previewId != "sfx-" + selected)
+        return false;
+    auto transport = library.audioClient().status();
+    return transport["intentId"].toString() == previewId &&
+           ((bool)transport["playing"] || (bool)transport["pendingPlayback"]);
+}
+
+void Panel::togglePreview()
+{
+    if (previewActive())
+        stopPreview();
+    else
+        use(0);
+}
+
+void Panel::stopPreview()
+{
+    if (previewGeneration)
+        library.audioClient().stopIfOwned(previewId, previewGeneration);
+    previewGeneration = 0;
+}
+
 void Panel::updateControls()
 {
     auto *c = current();
@@ -393,6 +425,7 @@ void Panel::updateControls()
     generate.setEnabled(!state.busy && state.hasKey && prompt.getText().trim().isNotEmpty());
     cancel.setEnabled(state.busy);
     preview.setEnabled(ready);
+    playPreview.setEnabled(ready || previewActive());
     save.setEnabled(ready);
     edit.setEnabled(saved);
     perform.setEnabled(saved);

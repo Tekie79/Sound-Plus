@@ -2,6 +2,7 @@
 #include "SfxGeneration.h"
 #include "DesignerView.h"
 #include "LibraryView.h"
+#include "IconButton.h"
 
 namespace sp::sfx
 {
@@ -23,6 +24,7 @@ class Panel final : public juce::Component, private juce::Timer
     juce::Label heading, model, historyHeading, status, detail, durationLabel, countLabel, influenceLabel;
     juce::Label descriptionHeading, settingsHeading, outputLabel, destinationLabel;
     ui::TextActionButton manageKey{"Manage key", true};
+    IconButton playPreview{"Play preview", ActionIcon::play, true};
     std::array<juce::Rectangle<int>, 4> sectionBounds{};
     void layoutGeneration();
     void refreshGenerationLayout();
@@ -47,6 +49,9 @@ class Panel final : public juce::Component, private juce::Timer
     juce::ComboBox editMode;
     juce::Label inputSummary, inLabel, outLabel, fadeLabel;
     ui::TextActionButton original{"Original"}, resume{"Resume result"}, alternative{"Add alternative"};
+    void togglePreview();
+    void stopPreview();
+    bool previewActive() const;
     void previewOriginal();
     void approve();
     void chooseFolder();
