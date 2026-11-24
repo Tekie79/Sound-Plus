@@ -272,6 +272,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                             &output,
                                                             &gain,
                                                             &summary,
+                                                            &sendTransfer,
+                                                            &transferOptions,
                                                             &columnsButton,
                                                             &detail,
                                                             &recordingDetails,
@@ -324,6 +326,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     columnsButton.setLabelVisible(true);
     columnsButton.setTooltip("Choose recording columns");
     columnsButton.onClick = [this] { showMetadataColumns(); };
+    sendTransfer.onClick = [this] { if (onTransfer) onTransfer(sendTransfer, true); };
+    transferOptions.onClick = [this] { if (onTransfer) onTransfer(transferOptions, false); };
     transport.setColour(juce::Label::textColourId, amber);
     transport.setVisible(false);
     lookAndFeelChanged();
@@ -962,6 +966,8 @@ void LibraryView::resized()
     addDesigner.setBounds(previewRight - 181, y, 30, 28);
     processPlugin.setBounds(previewRight - 217, y, 30, 28);
     moments.setBounds(previewLeft, y, std::min(286, selection.getWidth() - 230), 27);
+    sendTransfer.setBounds(moments.getRight() + 8, y, 112, 28);
+    transferOptions.setBounds(sendTransfer.getRight(), y, 30, 28);
     waveform.setBounds(layout.waveform);
     repeatOne.setBounds(centre - 221, controls + 6, 28, 28);
     repeatAll.setBounds(centre - 187, controls + 6, 28, 28);
@@ -1045,6 +1051,12 @@ void LibraryView::lookAndFeelChanged()
 {
     search.setTextToShowWhenEmpty(
         compact ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
+}
+std::optional<BookmarkRequest> LibraryView::transferSelection() const
+{
+    if (!selectedAsset || !sourceAvailable(*selectedAsset) || audio.captureBusy())
+        return {};
+    return BookmarkRequest{*selectedAsset, regionSelected ? regionStart : -1, regionSelected ? regionEnd : -1};
 }
 void LibraryView::bindPreferences(juce::PropertiesFile &prefs)
 {

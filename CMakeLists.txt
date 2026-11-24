@@ -31,7 +31,7 @@ add_library(soundplus_core STATIC
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
-  src/PerformanceState.cpp src/MultiPad.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
+  src/PerformanceState.cpp src/MultiPad.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/WorkspaceTransfer.cpp src/TransferFolder.mm src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)
 target_include_directories(soundplus_core PUBLIC src)
 target_compile_definitions(soundplus_core PUBLIC
   JUCE_WEB_BROWSER=0 JUCE_USE_CURL=0 JUCE_MODAL_LOOPS_PERMITTED=0
@@ -68,11 +68,12 @@ target_link_options(SoundPlusAI PRIVATE -mmacosx-version-min=13.3)
 set_target_properties(SoundPlusAI PROPERTIES BUILD_WITH_INSTALL_RPATH TRUE INSTALL_RPATH "@executable_path/../Frameworks")
 target_sources(SoundPlusAudio PRIVATE src/AudioMain.cpp src/AudioEngine.cpp src/MacAudioInput.cpp)
 target_link_libraries(SoundPlusAudio PRIVATE soundplus_core)
-target_sources(SoundPlus PRIVATE src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
+target_sources(SoundPlus PRIVATE src/TransferControls.cpp src/PluginProcessPanel.cpp src/Main.cpp src/LibraryView.cpp src/DesignerLayouts.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp src/Benchmark.cpp src/BenchmarkReliability.cpp)
 target_link_libraries(SoundPlus PRIVATE soundplus_core)
 add_dependencies(SoundPlus SoundPlusAudio SoundPlusAI SoundPlusPlugin SoundPlusPluginEditor)
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAudio>" "$<TARGET_FILE:SoundPlusPlugin>")
 set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "$<TARGET_FILE:SoundPlusAI>" "$<TARGET_FILE:SoundPlusPluginEditor>")
+set_property(TARGET SoundPlus APPEND PROPERTY LINK_DEPENDS "${CMAKE_SOURCE_DIR}/resources/resolve/transfer.py")
 add_custom_command(TARGET SoundPlus POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Helpers"
   COMMAND ${CMAKE_COMMAND} -E copy "$<TARGET_FILE:SoundPlusPlugin>"
@@ -88,6 +89,7 @@ add_custom_command(TARGET SoundPlus POST_BUILD
   COMMAND ${CMAKE_COMMAND} -E copy "${ORT_DIR}/runtimes/osx-arm64/native/libonnxruntime.dylib"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Frameworks/libonnxruntime.1.22.1.dylib"
   COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses"
+  COMMAND ${CMAKE_COMMAND} -E copy "${CMAKE_SOURCE_DIR}/resources/resolve/transfer.py" "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/resolve-transfer.py"
   COMMAND ${CMAKE_COMMAND} -E copy "${JUCE_DIR}/LICENSE.md"
     "$<TARGET_BUNDLE_DIR:SoundPlus>/Contents/Resources/Licenses/JUCE-8.0.6.txt"
   COMMAND ${CMAKE_COMMAND} -E copy "${SOUNDPLUS_VST3_SDK}/LICENSE.txt"
@@ -109,6 +111,7 @@ if(BUILD_TESTING)
   juce_add_console_app(SoundPlusTests PRODUCT_NAME "SoundPlusTests")
   target_sources(SoundPlusTests PRIVATE tests/Tests.cpp tests/MultitrackTests.cpp tests/PerformanceTests.cpp tests/SemanticTests.cpp tests/SimilarTests.cpp tests/DesignTests.cpp tests/DesignSessionTests.cpp tests/CanvasGestureTests.cpp tests/TransportInteractionTests.cpp tests/FadeTests.cpp src/DesignerCanvas.cpp src/AutomationEditor.cpp src/MultitrackEditor.cpp src/SurroundPanner.cpp src/MidiEditor.cpp)
   target_sources(SoundPlusTests PRIVATE tests/MixerGraphTests.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/WorkspaceTransferTests.cpp)
   add_test(NAME mixer_graph COMMAND SoundPlusTests --mixer-graph "${CMAKE_BINARY_DIR}/mixer-graph")
   add_test(NAME mixer_stems COMMAND SoundPlusTests --mixer-stems "${CMAKE_BINARY_DIR}/mixer-stems")
   target_sources(SoundPlusTests PRIVATE tests/MultiPadTests.cpp tests/HostedVendorAutomationTests.cpp tests/SurroundXYTests.cpp)

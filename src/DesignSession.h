@@ -229,6 +229,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     void endSeekGesture();
     void render(bool selection = false, int pad = -1);
     void renderStems(juce::StringArray owners);
+    void captureTransferSnapshot(std::function<void(DesignDocument)> ready,
+                                 std::function<void(juce::String)> failed);
     void copyOriginal(const juce::File &);
     void transferInsert(const juce::String &sourceOwner, InsertRef, const juce::String &targetOwner,
                         bool move);

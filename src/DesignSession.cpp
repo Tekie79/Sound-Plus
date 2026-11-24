@@ -2050,6 +2050,38 @@ void DesignSession::startOutput(DesignDocument snapshot, bool copy, const juce::
             }
         });
 }
+void DesignSession::captureTransferSnapshot(std::function<void(DesignDocument)> ready,
+                                            std::function<void(juce::String)> failed)
+{
+    auto current = document;
+    auto epoch = lifetime;
+    auto bind = [safe = juce::Component::SafePointer<DesignSession>(this), current = std::move(current),
+                 epoch, ready = std::move(ready), failed]
+    {
+        if (!safe || safe->lifetime != epoch || safe->replacing || safe->inputBusy() || safe->midiBusy() ||
+            safe->takeBusy() || safe->rendering)
+        {
+            failed("Transfer unavailable while recording, rendering or replacing the design");
+            return;
+        }
+        const auto &d = safe->document;
+        if (d.id != current.id || d.activeVariation != current.activeVariation || d.activeTake != current.activeTake ||
+            d.selectedTrack != current.selectedTrack || d.selectedLayer != current.selectedLayer ||
+            d.performPad != current.performPad)
+        {
+            failed("Transfer selection changed before capture");
+            return;
+        }
+        ready(d);
+    };
+    if (replacing || inputBusy() || midiBusy() || takeBusy() || rendering)
+    {
+        failed("Transfer unavailable while recording, rendering or replacing the design");
+        return;
+    }
+    if (!flushLive(bind, false, [failed] { failed("Live insert state could not be captured"); }))
+        bind();
+}
 void DesignSession::renderStems(juce::StringArray owners)
 {
     if (owners.isEmpty() || document.activeTake.isNotEmpty() || takeBusy() || rendering || replacing)

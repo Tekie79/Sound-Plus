@@ -4,6 +4,7 @@
 #include "Waveform.h"
 #include "WaveformPreview.h"
 #include "UIComponents.h"
+#include "DesignControls.h"
 #include "RecordingDetailsPanel.h"
 #include <juce_gui_extra/juce_gui_extra.h>
 #include <deque>
@@ -49,6 +50,8 @@ class LibraryView final : public juce::Component,
     void setCompact(bool);
     void bindPreferences(juce::PropertiesFile &);
     void parkPlayback();
+    std::optional<BookmarkRequest> transferSelection() const;
+    std::function<void(juce::Component &, bool)> onTransfer;
     void focusSearch()
     {
         search.grabKeyboardFocus();
@@ -61,6 +64,8 @@ class LibraryView final : public juce::Component,
 
   private:
     void lookAndFeelChanged() override;
+    ui::TextActionButton sendTransfer{"Send / Drag"};
+    IconButton transferOptions{"Transfer options", ActionIcon::settings};
     IconButton processPlugin{"Process selected source/range with Plug-in", ActionIcon::processing};
     friend struct CorrectionViewTestAccess;
     friend class Benchmark;

@@ -109,10 +109,16 @@ void runPluginTakeTests(const juce::File &, const juce::File &, const juce::File
 void runOrderedCorrectionTests(const juce::File &, const juce::File &);
 void runMixerGraphTests(const juce::File &);
 void runMixerStemTests(const juce::File &);
+void runWorkspaceTransferTests(const juce::File &);
 int main(int argc, char **argv)
 {
     try
     {
+        if (argc >= 3 && juce::String(argv[1]) == "--workspace-transfer")
+        {
+            runWorkspaceTransferTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc >= 4 && juce::String(argv[1]) == "--collection-scale")
         {
             runCollectionScale(juce::File(argv[2]), juce::File(argv[3]));
