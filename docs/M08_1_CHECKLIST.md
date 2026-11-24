@@ -5,6 +5,6 @@
 		✓  Protect the user's state and confirm the embedding contract
 		✓  Implement ranked local suggestions and explicit review
 		✓  Verify acoustic behavior and native layouts
-		◉  Bind M09 receipts, bundle identity and evidence
-		○  Freeze and verify the candidate and start an empty run
+		✓  Bind M09 receipts, bundle identity and evidence
+		◉  Freeze and verify the candidate and start an empty run
 ```

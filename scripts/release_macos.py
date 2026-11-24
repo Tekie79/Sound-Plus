@@ -46,7 +46,7 @@ PLIST_PATHS = [Path('Contents'), Path(EDITOR) / 'Contents']
 APP_FILES = {entry[1] for entry in SIGNING_ORDER} | {
     str(path / name) for path in PLIST_PATHS
     for name in ('Info.plist', 'PkgInfo', 'Resources/RecentFilesMenuTemplate.nib')
-} | {f'{NOTICE_DIR}/{name}' for name in NOTICES}
+} | {'Contents/Resources/resolve-transfer.py'} | {f'{NOTICE_DIR}/{name}' for name in NOTICES}
 SEALS = {str(p / '_CodeSignature/CodeResources') for p in PLIST_PATHS}
 APP_TICKET = 'Contents/CodeResources'
 SOURCE_INPUTS = ('CMakeLists.txt', 'cmake', 'src', 'resources', 'scripts', 'tests', 'README.md',

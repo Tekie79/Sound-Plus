@@ -22,16 +22,22 @@ Start with the unfinished P0/P1 cases and the seven `JRN` cases. Execute relevan
 1. Assign a release owner, DSP/Library QA, a provider account operator, a Resolve operator and a physical-device/listening operator. Record which person performed each actual check. Keep tokens, signing credentials, personal media and unsanitized vendor receipts outside Git.
 2. Freeze the commit, clean working tree, SDK, JUCE and dependency revisions. Record the candidate and nested-helper hashes, signing identities, entitlements and installer SHA-256. Keep both build logs and an identical post-test manifest. Close processes belonging to a bundle before rebuilding it. Use an isolated checkout and bundle.
 3. Use a new `--data-dir`, generated test media, throwaway receiving projects and fresh export destinations. Record SHA-256, channels, exact frames and extensible channel mask. Include stereo at 44.1/48/96 kHz and discrete role pulses for both 5.1 Side and Rear. For migration and recovery use consented copies. Capture the newest working revision, catalog references, autosaves, journals, source/IR hashes, take IDs/recipe hashes and finalized render hashes before/after.
-4. Initialize an empty receipt outside the user's project. The utility checks the previous matrix linkage, computes the candidate executable hash, and creates the run exclusively. Replace the example commit and binary with the frozen release candidate when testing a later build.
+4. Create a clean detached worktree at the chosen full SHA. Bootstrap the pinned dependencies in that worktree, or clone the verified vendor directories locally. The freeze command requires a fresh build directory and includes all helpers, plugin fixtures and the ASan target. It records the Git tree, dependency contents, code signatures, resource hashes, commands and both logs. A failed build or gate produces no qualified manifest. Keep failed attempts for diagnosis. Start subsequent attempts in a fresh checkout.
+5. Use the manifest digest printed by the freeze and retain it independently with the acceptance owner. Use the same checkout, executable and digest on every check.
 
 ```sh
-run_dir="$(mktemp -d)"
-binary="build/development-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
-python3 scripts/m09_acceptance.py --new-run "$run_dir/run.json" --commit "$(git rev-parse HEAD)" --binary "$binary"
-python3 scripts/m09_acceptance.py --check-run "$run_dir/run.json"
+cd "$candidate_checkout"
+commit="$(git rev-parse HEAD)"
+python3 scripts/m09_candidate.py --commit "$commit" --tools "$tools_directory"
+# Copy the printed manifestSha256 into manifest_sha.
+mkdir "$run_directory"
+python3 scripts/m09_acceptance.py --new-run "$run_directory/run.json" --commit "$commit" --manifest-sha256 "$manifest_sha"
+python3 scripts/m09_acceptance.py --check-run "$run_directory/run.json" --commit "$commit" --manifest-sha256 "$manifest_sha"
 ```
 
-Fill in platform and catalog for any attempted case. Attach logs, screenshots, PCM comparisons or operator receipts alongside the run and reference the files in `evidence`. Enter the observer, UTC timestamp, actual output and status. A Partial result lists the exercised and remaining steps. A Blocked result names the missing prerequisite. Not Applicable requires the owner's written scope decision. Validation checks references and completeness. The release owner reviews whether the evidence proves the oracle.
+Keep `run.identity.json` with its run and retain the original in source control or the QA evidence archive. Store sanitized attachments in that run's `evidence/` directory. To obtain an attachment record, add `--evidence evidence/FILE` to the check command **before** entering the new observation. Paste the resulting object into the case's evidence list. It includes the observed byte count and digest and identifies the run and candidate. UTC observations must fall between initialization and the time of validation. A Blocked entry describes the missing prerequisite. A Partial entry describes exercised and outstanding steps. A Not Applicable entry requires the owner's written scope decision. Validators establish file identity. The named release owner judges evidence sufficiency and approves any release.
+
+**M08-12 procedure supplement v1.1.** Use a locally indexed, licensed recording with an empty category. Request acoustic suggestions, preview the matched interval, reject one and reopen, then undo. Apply one, reopen and verify the overlay and unchanged source hash. Repeat on ambiguous, missing-model and offline examples. Retain scores, ranking, expert listening observations and data identity separately. This elaborates an existing case and preserves all 399 registry IDs.
 
 ## Execution order
 

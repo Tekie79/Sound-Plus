@@ -1,102 +1,153 @@
 #!/usr/bin/env python3
-"""Validate the consolidated case registry and create or inspect a candidate run."""
-
+"""Validate the historical registry, open a candidate run or check its observations."""
 import argparse
+from collections import Counter
+from datetime import datetime, timezone
 import hashlib
 import json
-import re
-from collections import Counter
 from pathlib import Path
+import re
+import uuid
+
+import m09_candidate as candidate
+from m09_candidate import exclusive, require
+from release_macos import digest, ReleaseError
 
 ROOT = Path(__file__).resolve().parents[1]
-REGISTRY = ROOT / "docs/acceptance/m09-cases.json"
-PRIOR = ROOT / "docs/verification/m00/case-results.json"
+PRIOR = Path("docs/verification/m00/case-results.json")
 STATUSES = {"Not Run", "Pass", "Fail", "Partial", "Blocked", "Not Applicable"}
-
-
-def require(condition, message):
-    if not condition:
-        raise ValueError(message)
+OBSERVATION = {"status": "Not Run", "actual": "", "owner": "", "runUtc": "", "evidence": []}
 
 
 def read(path):
-    return json.loads(path.read_text(encoding="utf-8"))
+    def unique(pairs):
+        result = dict(pairs)
+        require(len(result) == len(pairs), "Duplicate JSON key")
+        return result
+    return json.loads(path.read_text(encoding="utf-8"), object_pairs_hook=unique)
 
 
-def catalog():
-    registry = read(REGISTRY)
+def catalog(root):
+    registry_path = root / candidate.REGISTRY
+    registry = read(registry_path)
     rows = registry["cases"]
     cases = {r["id"]: r for r in rows}
-    require(registry["version"] == 1 and registry["defaultStatus"] == "Not Run", "Registry version or initial state")
+    require(registry["version"] == 1 and registry["defaultStatus"] == "Not Run", "Registry identity")
     require(len(cases) == len(rows) == 399, "Missing or duplicate case")
-    require(all(all(row.get(k) for k in ("steps", "expected", "owner", "method", "priority")) for row in rows), "Incomplete case")
-    old = read(PRIOR)
+    require(all(all(row.get(k) for k in ("steps", "expected", "owner", "method", "priority")) for row in rows),
+            "Incomplete case")
+    counts = Counter("Milestones" if re.fullmatch("M0[0-9]", r["scope"]) else r["scope"] for r in rows)
+    require(counts == {"Milestones": 153, "Mixer": 213, "Transfer": 26, "Integrated": 7}, "Family counts")
+    ids = "\n".join(sorted(cases)).encode()
+    require(hashlib.sha256(ids).hexdigest() == "b235d00e99d493632183f3add8fcc4d095bd5df35a565f9e343c6551ba7f4984", "Version 1 case IDs changed")
+    old = read(root / PRIOR)
     prior = {r["id"]: r["status"] for group in ("mixer", "transfer", "milestoneCases") for r in old[group]}
-    linked = {r["id"]: r["priorM00"]["status"] for r in rows if "priorM00" in r}
-    require(linked == prior, "Historical receipt mapping changed")
-    print(f"{len(cases)} cases, {len(prior)} historical links, {sum(v != 'Pass' for v in prior.values())} previously unfinished")
+    linked = {}
+    for r in rows:
+        if "priorM00" in r:
+            link = r["priorM00"]
+            require(link["id"] == r["id"] and (registry_path.parent / link["record"]).resolve() == root / PRIOR,
+                    f"{r['id']}: broken historical link")
+            linked[r["id"]] = link["status"]
+    require(linked == prior and len(prior) == 251 and list(prior.values()).count("Pass") == 65,
+            "Historical receipt mapping changed")
     return cases
 
 
-def new_run(path, cases, commit, binary):
-    require(re.fullmatch(r"[0-9a-f]{40}", commit or ""), "Provide a full candidate Git SHA")
-    require(binary and binary.is_file(), "Provide the installed candidate executable")
-    with binary.open("rb") as source:
-        digest = hashlib.file_digest(source, "sha256").hexdigest() if hasattr(hashlib, "file_digest") else stream_hash(source)
-    run = {
-        "version": 1, "registrySha256": hashlib.sha256(REGISTRY.read_bytes()).hexdigest(),
-        "buildCommit": commit, "binarySha256": digest, "platform": "", "catalog": "",
-        "results": {key: {"status": "Not Run", "actual": "", "owner": "", "runUtc": "", "evidence": []} for key in cases},
-    }
-    with path.open("x", encoding="utf-8") as out:
-        json.dump(run, out, ensure_ascii=False, indent=2)
-        out.write("\n")
+def utc(stamp):
+    require(isinstance(stamp, str) and re.fullmatch(r"\d{4}-\d\d-\d\dT\d\d:\d\d:\d\d(?:\.\d{1,6})?(?:Z|\+00:00)", stamp),
+            "Use an ISO 8601 UTC timestamp")
+    return datetime.fromisoformat(stamp.replace("Z", "+00:00"))
 
 
-def stream_hash(source):
-    digest = hashlib.sha256()
-    for block in iter(lambda: source.read(1024 * 1024), b""):
-        digest.update(block)
-    return digest.hexdigest()
+def evidence(directory, relative, anchor):
+    require(isinstance(relative, str), "Evidence path must be text")
+    rel = Path(relative)
+    require(rel.parts and rel.parts[0] == "evidence" and len(rel.parts) > 1 and ".." not in rel.parts
+            and str(rel) == relative, "Evidence must be a file under this run's evidence directory")
+    path = directory.resolve() / rel
+    require(path == path.resolve() and path.is_file() and path.stat().st_size > 0, f"Missing or redirected evidence {rel}")
+    return {"path": relative, "bytes": path.stat().st_size, "sha256": digest(path),
+            "runId": anchor["runId"], "candidateSha256": anchor["candidate"]["manifestSha256"]}
 
 
-def check_run(path, cases):
-    run = read(path)
-    require(run["version"] == 1 and run["registrySha256"] == hashlib.sha256(REGISTRY.read_bytes()).hexdigest(), "Registry identity mismatch")
-    require(re.fullmatch(r"[0-9a-f]{40}", run["buildCommit"]) and re.fullmatch(r"[0-9a-f]{64}", run["binarySha256"]), "Candidate identity mismatch")
-    require(set(run["results"]) == cases.keys(), "Run must include every registered case")
+def new_run(path, cases, identity):
+    require(path.name == "run.json" and path.resolve() == path.absolute(), "Use RUN_DIRECTORY/run.json")
+    require(not path.exists(), "Run already exists")
+    anchor = {"version": 2, "runId": str(uuid.uuid4()), "createdUtc": candidate.now(), "candidate": identity}
+    lock = path.with_name("run.identity.json")
+    exclusive(lock, anchor)
+    try:
+        exclusive(path, {**anchor, "platform": "", "catalog": "", "results": {key: OBSERVATION for key in cases}})
+    except Exception:
+        lock.unlink()
+        raise
+
+
+def check_run(path, cases, identity):
+    require(path.name == "run.json" and path.resolve() == path.absolute(), "Use the original local run")
+    anchor_path = path.with_name("run.identity.json")
+    require(anchor_path.resolve() == anchor_path.absolute(), "Redirected run identity")
+    run, anchor = read(path), read(anchor_path)
+    require(set(anchor) == {"version", "runId", "createdUtc", "candidate"} and anchor["version"] == 2
+            and uuid.UUID(anchor["runId"]).version == 4 and anchor["candidate"] == identity, "Run identity mismatch")
+    require(all(run[k] == v for k, v in anchor.items()) and set(run) == set(anchor) | {"results", "platform", "catalog"},
+            "Run differs from retained identity")
+    began = utc(run["createdUtc"])
+    end = datetime.now(timezone.utc)
+    require(began <= end and set(run["results"]) == set(cases), "Invalid run date or missing cases")
+    require(all(isinstance(run[k], str) for k in ("platform", "catalog")), "Invalid host or catalog")
     counts = Counter()
     for key, row in run["results"].items():
-        status = row.get("status")
+        require(isinstance(row, dict) and set(row) == set(OBSERVATION), f"{key}: invalid observation")
+        status = row["status"]
         require(status in STATUSES, f"{key}: unknown status")
         counts[status] += 1
         if status == "Not Run":
+            require(row == OBSERVATION, f"{key}: unattempted case contains an observation")
             continue
-        require(run.get("platform") and run.get("catalog"), f"{key}: identify the host and QA catalog")
-        require(all(row.get(k) for k in ("owner", "actual", "runUtc")), f"{key}: incomplete observation or blocker")
-        if status in {"Pass", "Fail", "Partial", "Not Applicable"}:
-            require(isinstance(row.get("evidence"), list) and row["evidence"], f"{key}: missing evidence or scope decision")
-            for ref in row["evidence"]:
-                require(isinstance(ref, str) and ref.strip() and (path.parent / ref).is_file(), f"{key}: missing local evidence {ref!r}")
-    print(", ".join(f"{status} {counts[status]}" for status in sorted(counts)))
+        require(run["platform"].strip() and run["catalog"].strip(), f"{key}: identify host and QA catalog")
+        require(all(isinstance(row[k], str) and row[k].strip() for k in ("actual", "owner"))
+                and began <= utc(row["runUtc"]) <= end, f"{key}: missing observation or invalid UTC")
+        attachments = row["evidence"]
+        require(isinstance(attachments, list) and (attachments or status == "Blocked"),
+                f"{key}: attach observations or scope decision")
+        seen = set()
+        for ref in attachments:
+            require(isinstance(ref, dict) and ref == evidence(path.parent, ref["path"], anchor),
+                    f"{key}: attachment identity changed")
+            require(ref["path"] not in seen, f"{key}: duplicate attachment")
+            seen.add(ref["path"])
+    return counts
 
 
 def main():
-    parser = argparse.ArgumentParser(description=__doc__)
-    group = parser.add_mutually_exclusive_group()
+    p = argparse.ArgumentParser(description=__doc__)
+    group = p.add_mutually_exclusive_group()
     group.add_argument("--new-run", type=Path)
     group.add_argument("--check-run", type=Path)
-    parser.add_argument("--commit")
-    parser.add_argument("--binary", type=Path)
-    args = parser.parse_args()
+    p.add_argument("--checkout", type=Path, default=ROOT)
+    p.add_argument("--commit")
+    p.add_argument("--binary", type=Path)
+    p.add_argument("--manifest-sha256", help="Trusted digest printed by the candidate freeze")
+    p.add_argument("--evidence", help="With --check-run, print the attachment record for evidence/FILE")
+    args = p.parse_args()
     try:
-        cases = catalog()
-        if args.new_run:
-            new_run(args.new_run, cases, args.commit, args.binary)
-        if args.check_run:
-            check_run(args.check_run, cases)
-    except (ValueError, KeyError, OSError) as exc:
-        parser.exit(1, f"{exc}\n")
+        root = args.checkout.resolve()
+        cases = catalog(root)
+        print("399 cases (153 milestone, 213 mixer, 26 transfer, 7 journeys); 251 historical links, 186 previously unfinished")
+        run = args.new_run or args.check_run
+        require(not args.evidence or args.check_run, "--evidence requires --check-run")
+        if run:
+            identity = candidate.verify(root, args.commit, args.binary or root / candidate.EXE)
+            require(args.manifest_sha256 == identity["manifestSha256"], "Supply the trusted freeze manifest SHA-256")
+            if args.new_run:
+                new_run(run, cases, identity)
+            print(dict(check_run(run, cases, identity)))
+            if args.evidence:
+                print(json.dumps(evidence(run.parent, args.evidence, read(run.with_name("run.identity.json"))), indent=2))
+    except (ValueError, KeyError, TypeError, OSError, ReleaseError) as exc:
+        p.exit(1, f"{exc}\n")
 
 
 if __name__ == "__main__":

@@ -3,6 +3,10 @@
 #include "Benchmark.h"
 #include "Performance.h"
 #include "Workstation.h"
+#ifdef SOUNDPLUS_CANDIDATE_SHA
+// Embedded in the linked Mach-O so the evidence tool can identify a stale executable.
+[[gnu::used]] static const char candidateSource[] = "SOUNDPLUS-CANDIDATE:" SOUNDPLUS_CANDIDATE_SHA;
+#endif
 class SoundPlusApplication final : public juce::JUCEApplication
 {
   public:
