@@ -108,6 +108,7 @@ void runRegistryWriter(const juce::File &, const juce::File &, const juce::File 
 void runPluginTakeTests(const juce::File &, const juce::File &, const juce::File &);
 void runOrderedCorrectionTests(const juce::File &, const juce::File &);
 void runMixerGraphTests(const juce::File &);
+void runRefinementTests(const juce::File &);
 void runMixerStemTests(const juce::File &);
 void runWorkspaceTransferTests(const juce::File &);
 void runSfxTests(const juce::File &, const juce::String &, const juce::String &);
@@ -115,6 +116,11 @@ int main(int argc, char **argv)
 {
     try
     {
+        if (argc == 3 && juce::String(argv[1]) == "--refine")
+        {
+            runRefinementTests(juce::File(argv[2]));
+            return 0;
+        }
         if (argc == 5 && juce::String(argv[1]) == "--sfx")
         {
             runSfxTests(juce::File(argv[2]), argv[3], argv[4]);

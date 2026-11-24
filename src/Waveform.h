@@ -47,6 +47,11 @@ class WaveformView final : public juce::Component, private juce::Timer
     {
         return rangeSelected;
     }
+    void setSuggestion(juce::Range<int64_t> range)
+    {
+        suggestion = range;
+        repaint();
+    }
     void setCursor(int64_t sample);
     void markAtCursor(bool markIn);
     void showWhole();
@@ -101,6 +106,7 @@ class WaveformView final : public juce::Component, private juce::Timer
     int detailBins = 0;
     int64_t first = 0, last = 0, viewFirst = 0, viewLast = 1, cursor = -1, anchor = 0;
     int dragMode = 0;
+    juce::Range<int64_t> suggestion;
     bool dragging = false;
     bool rangeSelected = false;
     IconButton zoom{"Zoom Range", ActionIcon::zoom}, all{"Show All", ActionIcon::fit};

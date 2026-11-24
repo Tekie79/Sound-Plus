@@ -1,0 +1,21 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+    Start  1: sfx_generation
+1/7 Test  #1: sfx_generation ...................   Passed    1.78 sec
+    Start 27: event_refinement
+2/7 Test #27: event_refinement .................   Passed    0.20 sec
+    Start 28: waveform_previews
+3/7 Test #28: waveform_previews ................   Passed    0.51 sec
+    Start 33: library_selection_audition
+4/7 Test #33: library_selection_audition .......   Passed    4.05 sec
+    Start 34: library_performance_regression
+5/7 Test #34: library_performance_regression ...   Passed    6.35 sec
+    Start 35: library_semantic_integrity
+6/7 Test #35: library_semantic_integrity .......   Passed    0.41 sec
+    Start 36: library_similar_integrity
+7/7 Test #36: library_similar_integrity ........   Passed    1.32 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) =  14.63 sec
+530a13eb3c0a264965f5e374d79267d9bf94109fa704d4d4b3008a9fcf7b75f7  build/development-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus

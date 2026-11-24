@@ -2,6 +2,7 @@
 #include "LibraryService.h"
 #include "AudioIPC.h"
 #include "Waveform.h"
+#include "EventRefinement.h"
 #include "WaveformPreview.h"
 #include "UIComponents.h"
 #include "DesignControls.h"
@@ -121,7 +122,12 @@ class LibraryView final : public juce::Component,
     void compactVisibility();
     void toggle();
     void playFromPlayhead();
-    void playSelected(bool useMatch, int64_t seekSample = -1);
+    void playSelected(bool useMatch, int64_t seekSample = -1, std::optional<SampleSpan> compare = {});
+    void cancelRefinement();
+    void refineSelection();
+    void showRefinementMenu();
+    void chooseRefinement(int);
+    void visibilityChanged() override;
     void setRegion(int64_t start, int64_t end, bool zoom = false, bool selected = true);
     void updateMomentsSelection();
     void updateRecordingHeaders(const std::vector<Asset> &visibleRows);
@@ -297,6 +303,11 @@ class LibraryView final : public juce::Component,
     bool navigationAuto = false, playingUseMatch = false;
     juce::ToggleButton context{"+/-0.25 s context"};
     juce::ComboBox moments;
+    juce::TextButton refine{"Refine"};
+    juce::ThreadPool refinementWorker{1};
+    std::shared_ptr<std::atomic<bool>> refinementCancel;
+    std::optional<EventSuggestions> suggestions;
+    size_t suggestionIndex = 0;
     juce::TextEditor rangeIn, rangeOut;
     juce::Component::SafePointer<juce::CallOutBox> rangeEditor;
     juce::Label aiStatusLabel, semanticCoverage, inLabel, outLabel;

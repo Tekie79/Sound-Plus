@@ -81,6 +81,30 @@ struct LibraryPreviewTestAccess
         check(view.detailOutline.isEmpty() && view.detailRequest == 0,
               "Changing sources cancels pending detail");
     }
+    static void checkEventCommands(const juce::File &root, const Asset &asset)
+    {
+        LibraryView view(root.getChildFile("view.sqlite"), {}, false);
+        view.stopTimer();
+        view.selectedAsset = asset;
+        view.rangeAssetId = asset.id;
+        view.rangeRevision = asset.revision;
+        view.suggestions = EventSuggestions{{100,47000}, {{30000,30241},{37200,37513}}, "Several possible events"};
+        view.pinnedReference.source.id = "reference-id";
+        view.chooseRefinement(101);
+        check(!view.regionSelected && view.waveform.suggestion.getStart() == 37200, "Proposals leave selection untouched");
+        view.chooseRefinement(3);
+        auto mark = view.currentBookmark();
+        auto transfer = view.transferSelection();
+        check(mark.first == 37200 && mark.last == 37513 && transfer && transfer->first == mark.first &&
+              transfer->last == mark.last, "Actual apply command maps exact samples to bookmark and delivery");
+        view.chooseRefinement(4);
+        check(view.regionStart == 100 && view.regionEnd == 47000 && view.pinnedReference.source.id == "reference-id",
+              "Full match command restores original interval and preserves pinned reference");
+        view.refinementCancel = std::make_shared<std::atomic<bool>>(false);
+        auto token = view.refinementCancel;
+        view.requestSearch();
+        check(token->load() && !view.suggestions, "Query change invalidates old work");
+    }
     static void checkPaging(const juce::File &root, const Asset &asset)
     {
         LibraryView view(root.getChildFile("paging/library.sqlite"), {}, false);
@@ -456,4 +480,67 @@ void runWaveformPreviewTests(const juce::File &parent)
     parent.getChildFile("latest.json").replaceWithText(juce::JSON::toString(record, true));
     std::cout << "PASS truthful compact waveform ranges, extrema, identity, worker scheduling and cards: "
               << checks << " checks\n";
+}
+
+void runRefinementTests(const juce::File &parent)
+{
+    using namespace sp;
+    juce::ScopedJuceInitialiser_GUI gui;
+    auto root = parent.getChildFile(juce::Uuid().toString());
+    check(root.createDirectory().wasOk(), "Isolated event fixture directory");
+    auto cache = root.getChildFile("cache");
+    auto noCancel = [] { return false; };
+    auto start = juce::Time::getMillisecondCounterHiRes();
+    std::optional<EventWindow> reference;
+    for (int rate : {48000, 44100, 96000})
+    {
+        int first = 5 * rate / 8, last = first + (int)std::round(.12 * rate);
+        auto a = fixture(root.getChildFile(juce::String(rate) + ".wav"), 6, rate, rate, [=](int ch, int i)
+        {
+            return ch == 5 && i >= first && i < last ? float(.8 * std::exp(-4. * (i-first)/(last-first))) : 0.f;
+        });
+        EventWindow input{a, {73, rate - 1}};
+        auto result = refineEvents(input, reference, cache, noCancel);
+        check(result.events == std::vector<SampleSpan>{{first,last}}, "Unresampled Rs onset and tail exact");
+        input.pair = 0;
+        check(refineEvents(input, {}, cache, noCancel).events.empty(), "Physical pair excludes rear events");
+        input.pair = -1;
+        check(refineEvents(input, reference, cache, noCancel).cacheHit, "Verified reopen of derived cache");
+        if (!reference) reference = input;
+    }
+    auto two = fixture(root.getChildFile("two.wav"), 2, 48000, 48000, [](int ch, int i)
+    {
+        return ((i >= 30000 && i < 30241) || (i >= 37200 && i < 37513)) ? (ch ? -.7f : .7f) : 0.f;
+    });
+    LibraryPreviewTestAccess::checkEventCommands(root, two);
+    EventWindow input{two, {20000,48000}};
+    auto result = refineEvents(input, reference, cache, noCancel);
+    std::sort(result.events.begin(), result.events.end(), [](auto a, auto b){return a.getStart() < b.getStart();});
+    check(result.events == std::vector<SampleSpan>{{30000,30241},{37200,37513}}, "Two distinct opposite-polarity events");
+    check(result.reason.contains("Several"), "Ambiguous event state");
+    for (auto f : cache.findChildFiles(juce::File::findFiles,false,"*.events"))
+        f.replaceWithText("corrupt cache");
+    auto rebuilt = refineEvents(input, reference, cache, noCancel);
+    check(!rebuilt.cacheHit && rebuilt.events.size() == 2, "Rebuild corrupt derived cache");
+    check(refineEvents(input, reference, cache, noCancel).cacheHit, "Rebuilt cache reusable");
+    auto ambience = fixture(root.getChildFile("ambience.wav"), 1, 24000, 48000, [](int, int i)
+    { return .15f * std::sin(i * .19f); });
+    check(refineEvents({ambience,{0,24000}}, {}, cache, noCancel).events.empty(), "Sustained sound retains coarse range");
+    auto quiet = fixture(root.getChildFile("quiet.wav"), 1, 24000, 48000, [](int, int i)
+    { return .0001f * std::sin(i * .031f); });
+    check(refineEvents({quiet,{0,24000}}, {}, cache, noCancel).events.empty(), "Low confidence retains coarse range");
+    int observations = 0;
+    try { refineEvents(input, reference, cache, [&] { return ++observations >= 2; }); check(false,"Cancelled work published"); }
+    catch (const QueryCancelled &) {}
+    input.source.modified++;
+    bool stale = false;
+    try { refineEvents(input, {}, cache, noCancel); } catch(const std::runtime_error &) { stale = true; }
+    check(stale, "Refuse stale revision even with a cache entry");
+    input.source.modified--;
+    check(juce::File(two.path).moveFileTo(root.getChildFile("offline.wav")), "Disconnect isolated fixture");
+    bool offline = false;
+    try { refineEvents(input, {}, cache, noCancel); } catch(const std::runtime_error &) { offline = true; }
+    check(offline, "Offline with warm cache requires review");
+    std::cout << "Refinement fixtures passed at 44.1/48/96 kHz, exact impulse bounds, channel policy, ambiguity, cancellation and cache repair in "
+              << juce::Time::getMillisecondCounterHiRes() - start << " ms\n";
 }

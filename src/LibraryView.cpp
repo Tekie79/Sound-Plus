@@ -339,6 +339,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     search.setIndents(12, 10);
     search.onTextChange = [this]
     {
+        cancelRefinement();
         similarMode = false;
         preserveScopeSelection = false;
         requestSearch();
@@ -465,6 +466,10 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
             }
         };
     }
+    waveform.addChildComponent(refine);
+    refine.setTitle("Refine event");
+    refine.setTooltip("Find event boundaries");
+    refine.onClick = [this] { if (suggestions) showRefinementMenu(); else refineSelection(); };
     moments.setTitle("Other matching moments");
     moments.setTextWhenNothingSelected("Matching moments");
     moments.onChange = [this]
@@ -657,6 +662,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     auditionChannels.setSelectedId(1, juce::dontSendNotification);
     auditionChannels.onChange = [this]
     {
+        cancelRefinement();
         auto state = audio.status();
         if (((bool)state["playing"] || (bool)state["pendingPlayback"]) &&
             state["intentId"].toString() == playingId && !audio.captureBusy() &&
@@ -757,6 +763,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
 }
 LibraryView::~LibraryView()
 {
+    cancelRefinement();
     library.setChangeCallback({});
     cancelPendingUpdate();
     stopTimer();
@@ -1588,6 +1595,7 @@ int LibraryView::restoreSelection(bool sameQuery)
         }
         selectionNotice = removed ? "Selected recording was removed" : "";
         selectedId.clear();
+        cancelRefinement();
         selectedAsset.reset();
         selectedAssetRow = -1;
         waveform.setData({});
@@ -1690,6 +1698,7 @@ void LibraryView::showGenerated(const Asset &asset)
 }
 void LibraryView::requestSearch()
 {
+    cancelRefinement();
     cancelNavigation();
     requestedPage = -1;
     dispatchedMs = monotonicMs();
@@ -1798,6 +1807,7 @@ void LibraryView::chooseFolder()
 }
 void LibraryView::setRegion(int64_t start, int64_t end, bool zoom, bool selected)
 {
+    cancelRefinement();
     if (!selectedAsset || selectedAsset->samples <= 0)
         return;
     parkedCandidateSeek = -1;
@@ -1811,6 +1821,109 @@ void LibraryView::setRegion(int64_t start, int64_t end, bool zoom, bool selected
     updateMomentsSelection();
     updatingRange = false;
     favoriteInspectionKey.clear();
+}
+void LibraryView::visibilityChanged()
+{
+    if (!isShowing()) cancelRefinement();
+}
+void LibraryView::cancelRefinement()
+{
+    if (!refinementCancel && !suggestions) return;
+    if (refinementCancel) refinementCancel->store(true);
+    refinementCancel.reset();
+    suggestions.reset();
+    suggestionIndex = 0;
+    waveform.setSuggestion({});
+    refine.setButtonText("Refine");
+    refine.setEnabled(true);
+}
+void LibraryView::refineSelection()
+{
+    if (!similarMode || !selectedAsset || selectedAsset->matches.empty() || rangeRequest != requested) return;
+    cancelRefinement();
+    int index = juce::jlimit(0, (int)selectedAsset->matches.size() - 1, moments.getSelectedId() - 1);
+    auto match = selectedAsset->matches[(size_t)index];
+    const int channel = auditionChannels.getSelectedId();
+    EventWindow input{*selectedAsset, {match.startSample, match.endSample}, channel == 100 ? -1 : channel - 2};
+    std::optional<EventWindow> reference;
+    if (pinnedReference.source.samples > 0)
+        reference = EventWindow{pinnedReference.source, {pinnedReference.startSample, pinnedReference.endSample}, -1};
+    auto cache = library.catalogFile().getSiblingFile("event-refinement");
+    auto token = refinementCancel = std::make_shared<std::atomic<bool>>(false);
+    auto safe = juce::Component::SafePointer<LibraryView>(this);
+    refine.setButtonText("Analyzing");
+    refine.setEnabled(false);
+    refinementWorker.removeAllJobs(false, 0);
+    refinementWorker.addJob([input, reference, cache, token, safe]
+    {
+        EventSuggestions result{input.range, {}, {}};
+        try { result = refineEvents(input, reference, cache, [&] { return token->load(); }); }
+        catch (const std::exception &e) { result.reason = juce::String::fromUTF8(e.what()); }
+        if (!token->load())
+            juce::MessageManager::callAsync([safe, token, result = std::move(result)]
+            {
+                if (token->load() || !safe || safe->refinementCancel != token) return;
+                safe->suggestions = result;
+                safe->refine.setButtonText(result.events.empty() ? "Full match" : "Review event");
+                safe->refine.setEnabled(true);
+                if (!result.events.empty()) safe->waveform.setSuggestion(result.events.front());
+                safe->showRefinementMenu();
+            });
+    });
+}
+void LibraryView::showRefinementMenu()
+{
+    if (!suggestions || !selectedAsset) return;
+    juce::PopupMenu menu;
+    menu.addSectionHeader(suggestions->reason);
+    for (size_t i = 0; i < suggestions->events.size(); ++i)
+    {
+        auto range = suggestions->events[i];
+        menu.addItem(100 + (int)i, juce::String(range.getStart() / selectedAsset->sampleRate, 3) + " - " +
+                     juce::String(range.getEnd() / selectedAsset->sampleRate, 3) + " s", true, i == suggestionIndex);
+    }
+    bool hasEvent = !suggestions->events.empty();
+    menu.addItem(1, "Audition suggested", hasEvent);
+    menu.addItem(2, "Audition original window");
+    menu.addItem(3, "Apply suggested range", hasEvent);
+    menu.addItem(4, "Use full match");
+    menu.addItem(5, "Analyze again");
+    auto safe = juce::Component::SafePointer<LibraryView>(this);
+    auto token = refinementCancel;
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&refine), [safe, token](int choice)
+    {
+        if (!safe || !safe->suggestions || safe->refinementCancel != token || !choice) return;
+        safe->chooseRefinement(choice);
+    });
+}
+void LibraryView::chooseRefinement(int choice)
+{
+    if (!suggestions) return;
+    auto &s = *suggestions;
+    if (choice >= 100 && (size_t)(choice - 100) < s.events.size())
+    {
+        suggestionIndex = (size_t)(choice - 100);
+        waveform.setSuggestion(s.events[suggestionIndex]);
+        return;
+    }
+    auto span = !s.events.empty() && (choice == 1 || choice == 3) ? s.events[suggestionIndex] : s.coarse;
+    if (choice == 1 || choice == 2) playSelected(true, -1, span);
+    if (choice == 3 || choice == 4)
+    {
+        auto comparison = std::move(suggestions);
+        auto index = suggestionIndex;
+        setRegion(span.getStart(), span.getEnd(), true);
+        matchMode = true;
+        rangeEdited = true;
+        if (choice == 3)
+        {
+            suggestions = std::move(comparison);
+            suggestionIndex = index;
+            refinementCancel = std::make_shared<std::atomic<bool>>(false);
+            refine.setButtonText("Review event");
+        }
+    }
+    if (choice == 5) refineSelection();
 }
 void LibraryView::updateMomentsSelection()
 {
@@ -2083,7 +2196,7 @@ void LibraryView::installModelMenu(juce::Component *anchor)
                            }
                        });
 }
-void LibraryView::playSelected(bool useMatch, int64_t seek)
+void LibraryView::playSelected(bool useMatch, int64_t seek, std::optional<SampleSpan> compare)
 {
     if (audio.captureBusy())
     {
@@ -2127,7 +2240,12 @@ void LibraryView::playSelected(bool useMatch, int64_t seek)
     region.modified = a->modified;
     region.inode = a->inode;
     region.revision = a->revision;
-    if (useMatch && a->samples > 0 && rangeAssetId == a->id && rangeRevision == a->revision &&
+    if (compare && !compare->isEmpty() && compare->getStart() >= 0 && compare->getEnd() <= a->samples)
+    {
+        region.startSample = compare->getStart();
+        region.endSample = compare->getEnd();
+    }
+    else if (useMatch && a->samples > 0 && rangeAssetId == a->id && rangeRevision == a->revision &&
         regionEnd > regionStart)
     {
         auto roll = context.getToggleState() ? (int64_t)std::llround(a->sampleRate * 0.25) : 0;
@@ -2179,6 +2297,8 @@ void LibraryView::toggle()
 }
 void LibraryView::timerCallback()
 {
+    refine.setVisible(similarMode && selectedAsset && !selectedAsset->matches.empty() && rangeRequest == requested);
+    refine.setBounds(std::min(84, waveform.getWidth() / 4), 1, std::clamp(waveform.getWidth()-152, 52, 120), 24);
     auto next = library.snapshot();
     if (next.organization.version != organizationVersion)
     {
@@ -2521,6 +2641,7 @@ void LibraryView::useSelectionAsReference()
 }
 void LibraryView::submitReference(const AudioReference &ref)
 {
+    cancelRefinement();
     if (!snapshot.semantic.enabled)
     {
         status.setText("Local analysis disabled", juce::dontSendNotification);

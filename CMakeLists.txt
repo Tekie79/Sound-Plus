@@ -27,7 +27,7 @@ juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAsset
   ${SOUNDPLUS_ICON_SVGS} resources/icons/custom/davinci_resolve.png)
 add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
-  src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
+  src/EventRefinement.cpp src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
   src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp
   src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
@@ -177,6 +177,7 @@ if(BUILD_TESTING)
   set_tests_properties(waveform_scheduling PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME audio_health COMMAND SoundPlusTests --audio-health "${CMAKE_BINARY_DIR}/audio-health-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(audio_health PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
+  add_test(NAME event_refinement COMMAND SoundPlusTests --refine "${CMAKE_BINARY_DIR}/event-refinement-tests")
   add_test(NAME waveform_previews COMMAND SoundPlusTests --waveform-previews "${CMAKE_BINARY_DIR}/waveform-preview-test-output")
   set_tests_properties(waveform_previews PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME performance_state COMMAND SoundPlusTests --performance-state "${CMAKE_BINARY_DIR}/performance-state-test-output" "$<TARGET_FILE:SoundPlus>")

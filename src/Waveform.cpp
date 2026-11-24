@@ -535,6 +535,16 @@ void WaveformView::paint(juce::Graphics &g)
         for (auto sample : {first, last})
             if (sample >= viewFirst && sample <= viewLast)
                 g.fillRect(xAt(sample) - 1, area.getY(), 2.0f, area.getHeight());
+    if (!suggestion.isEmpty())
+    {
+        auto bounds = area.withLeft(xAt(suggestion.getStart())).withRight(xAt(suggestion.getEnd())).getIntersection(area);
+        g.setColour(ui::accent.withAlpha(.16f));
+        g.fillRect(bounds);
+        g.setColour(ui::accent);
+        g.drawRect(bounds, 1.f);
+        g.setFont(juce::FontOptions(11.f));
+        g.drawText("Suggested", bounds.reduced(4, 2), juce::Justification::topLeft);
+    }
     if (cursor >= viewFirst && cursor <= viewLast)
     {
         g.setColour(ui::playhead);
