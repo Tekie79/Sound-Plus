@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release
+Test project /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release
+    Start 6: surround_xy_device
+    Test #6: surround_xy_device ...............   Passed    5.57 sec
+    Start 6: surround_xy_device
+    Test #6: surround_xy_device ...............   Passed    5.79 sec
+    Start 6: surround_xy_device
+    Test #6: surround_xy_device ...............   Passed    5.08 sec
+    Start 6: surround_xy_device
+    Test #6: surround_xy_device ...............   Passed    9.64 sec
+    Start 6: surround_xy_device
+1/1 Test #6: surround_xy_device ...............   Passed    5.89 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  31.98 sec

@@ -1,0 +1,20 @@
+Window: "Generate SFX", App: SoundPlus.
+0 standard window Generate SFX, Secondary Actions: Raise
+	1 text (settable) Provider ElevenLabs · Sound Effects v3
+	2 button (settable) Manage key, Value: Off
+	3 text (settable) Sound description
+	4 text entry area (settable) Sound description, Secondary Actions: Delete
+	5 text (settable) Generation settings Duration Candidates Output Prompt influence
+	6 pop up button (settable) Duration in seconds, Value: Auto
+	7 text entry area (settable) Auto
+	8 pop up button (settable) Number of candidates, Value: 1
+	9 pop up button (settable) Provider format, Value: MP3 to WAV
+	10 slider (settable) Prompt influence, Value: 0.30, Secondary Actions: Delete
+	11 toggle button (settable, boolean) Loop, Value: off
+	12 text (settable) Ready Generation history
+	13 pop up button (settable) Generation history
+	14 close button
+	15 zoom button (disabled)
+	16 text Generate SFX
+17 menu bar
+	18 SoundPlus

@@ -1,0 +1,15 @@
+{
+  "rows": 33,
+  "states": {
+    "4": 2,
+    "3": 28,
+    "5": 1,
+    "2": 2
+  },
+  "publication": {
+    "canonicalSha256": "133029fc7bef0fd2a0b21add8d093af7215b269d751210163e5b14619347efd9",
+    "verified": true,
+    "assetCount": 1
+  },
+  "stateChange": "Recovered interrupted synthetic row to Needs review"
+}

@@ -1,0 +1,110 @@
+{
+  "fullRunFailure": [
+    {
+      "gain": 0.315,
+      "nativeSequence": 3,
+      "gesture": 3,
+      "gestureActive": true,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.325,
+      "nativeSequence": 4,
+      "gesture": 3,
+      "gestureActive": true,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.335,
+      "nativeSequence": 5,
+      "gesture": 3,
+      "gestureActive": false,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.345,
+      "nativeSequence": 5,
+      "gesture": 4,
+      "gestureActive": true,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.355,
+      "nativeSequence": 7,
+      "gesture": 4,
+      "gestureActive": true,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.365,
+      "nativeSequence": 8,
+      "gesture": 4,
+      "gestureActive": false,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    }
+  ],
+  "focusedRepeatPass": [
+    {
+      "gain": 0.315,
+      "nativeSequence": 3,
+      "gesture": 3,
+      "gestureActive": true,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.325,
+      "nativeSequence": 4,
+      "gesture": 3,
+      "gestureActive": true,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.335,
+      "nativeSequence": 5,
+      "gesture": 3,
+      "gestureActive": false,
+      "modelSequence": 0,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.345,
+      "nativeSequence": 6,
+      "gesture": 4,
+      "gestureActive": true,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.355,
+      "nativeSequence": 7,
+      "gesture": 4,
+      "gestureActive": true,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.365,
+      "nativeSequence": 8,
+      "gesture": 4,
+      "gestureActive": false,
+      "modelSequence": 8,
+      "opaqueObservation": false
+    },
+    {
+      "gain": 0.365,
+      "nativeSequence": 8,
+      "gesture": 4,
+      "gestureActive": false,
+      "modelSequence": 13,
+      "opaqueObservation": false
+    }
+  ]
+}

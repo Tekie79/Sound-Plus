@@ -1,0 +1,3 @@
+RLIMIT_STACK soft/hard bytes: (8372224, 67092480)
+Command: /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests --multichannel /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/stack-3d7ioc7f/multichannel-test-output /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+Process return: -11

@@ -1,0 +1,5 @@
+Window: "Generate SFX", App: SoundPlus.
+0 standard window Generate SFX, Secondary Actions: Raise
+	1 text Generate SFX
+2 menu bar
+	3 SoundPlus

@@ -1,0 +1,20 @@
+Window: "Transform Audio", App: SoundPlus.
+0 standard window Transform Audio, Secondary Actions: Raise
+	1 text (settable) Transform Audio Stability AI   /   Stable Audio 3
+	2 text entry area (settable) Stability AI API key, Secondary Actions: Delete
+	3 text (settable) Selected clip   /   240000 frames   /   1.8 MB
+	4 pop up button (settable) Transform mode, Value: Restyle
+	5 text entry area (settable) Sound description, Secondary Actions: Delete
+	6 text (settable) Candidates Strength
+	7 pop up button (settable) Number of candidates, Value: 1
+	8 slider (settable) Restyle strength, Value: 0.30, Secondary Actions: Delete
+	9 button Original
+	10 text (settable) Add a Stability AI API key Transform history
+	11 pop up button (settable) Generation history
+	12 text (settable)
+	13 pop up button (settable) Destination collection, Value: AI Generated
+	14 close button
+	15 zoom button (disabled)
+	16 text Transform Audio
+17 menu bar
+	18 SoundPlus

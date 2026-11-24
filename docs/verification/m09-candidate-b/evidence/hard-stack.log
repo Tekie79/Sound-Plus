@@ -1,0 +1,4 @@
+RLIMIT_STACK soft/hard bytes: (67092480, 67092480)
+Command: /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests --multichannel /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/stack-b_iigayi/multichannel-test-output /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus
+PASS multichannel identity, processing, spatial takes, delivery: 890877 checks; native error 0
+Process return: 0

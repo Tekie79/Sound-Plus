@@ -1,0 +1,8 @@
+Internal ctest changing into directory: /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen-final/build/m09-release
+Test project /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen-final/build/m09-release
+    Start 53: hosted_instrument_automation_au
+1/1 Test #53: hosted_instrument_automation_au ...   Passed   12.55 sec
+
+100% tests passed, 0 tests failed out of 1
+
+Total Test time (real) =  12.55 sec

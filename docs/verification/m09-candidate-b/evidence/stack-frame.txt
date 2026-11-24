@@ -1,0 +1,23 @@
+(lldb) target create "build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests"
+Current executable set to '/Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests' (arm64).
+(lldb) disassemble -n "runMultichannelTests(juce::File const&, juce::File const&)" -c 18
+SoundPlusTests`runMultichannelTests:
+SoundPlusTests[0x10020fb48] <+0>:  stp    d11, d10, [sp, #-0x80]!
+SoundPlusTests[0x10020fb4c] <+4>:  stp    d9, d8, [sp, #0x10]
+SoundPlusTests[0x10020fb50] <+8>:  stp    x28, x27, [sp, #0x20]
+SoundPlusTests[0x10020fb54] <+12>: stp    x26, x25, [sp, #0x30]
+SoundPlusTests[0x10020fb58] <+16>: stp    x24, x23, [sp, #0x40]
+SoundPlusTests[0x10020fb5c] <+20>: stp    x22, x21, [sp, #0x50]
+SoundPlusTests[0x10020fb60] <+24>: stp    x20, x19, [sp, #0x60]
+SoundPlusTests[0x10020fb64] <+28>: stp    x29, x30, [sp, #0x70]
+SoundPlusTests[0x10020fb68] <+32>: add    x29, sp, #0x70
+SoundPlusTests[0x10020fb6c] <+36>: mov    w9, #0x33d0               ; =13264
+SoundPlusTests[0x10020fb70] <+40>: movk   w9, #0x81, lsl #16
+SoundPlusTests[0x10020fb74] <+44>: adrp   x16, 3149
+SoundPlusTests[0x10020fb78] <+48>: ldr    x16, [x16, #0xa40]
+SoundPlusTests[0x10020fb7c] <+52>: blr    x16
+SoundPlusTests[0x10020fb80] <+56>: sub    sp, sp, #0x813, lsl #12   ; =0x813000
+SoundPlusTests[0x10020fb84] <+60>: sub    sp, sp, #0x3d0
+SoundPlusTests[0x10020fb88] <+64>: mov    x22, x1
+SoundPlusTests[0x10020fb8c] <+68>: mov    x20, x0
+(lldb) quit

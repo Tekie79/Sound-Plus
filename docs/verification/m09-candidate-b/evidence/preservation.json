@@ -1,0 +1,68 @@
+{
+  "working": {
+    "files": {
+      "before": 1098,
+      "after": 1098,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "catalogTablesMatch": true,
+    "catalogTableCounts": {
+      "assets": 43,
+      "roots": 1,
+      "collections": 1,
+      "collection_members": 1,
+      "library_refs": 1
+    },
+    "activeBefore": {
+      "version": 1,
+      "id": "0403deec259f4169857b336246f201da"
+    },
+    "activeAfter": {
+      "version": 1,
+      "id": "0403deec259f4169857b336246f201da"
+    },
+    "referencedMedia": {
+      "before": 43,
+      "after": 43,
+      "added": 0,
+      "removed": 0,
+      "changed": 0
+    },
+    "offlineReferencesBefore": 0
+  },
+  "default": {
+    "files": {
+      "before": 37,
+      "after": 37,
+      "added": [],
+      "removed": [],
+      "changed": []
+    },
+    "catalogTablesMatch": true,
+    "catalogTableCounts": {
+      "assets": 35,
+      "roots": 2,
+      "collections": 0,
+      "collection_members": 0,
+      "library_refs": 0
+    },
+    "activeBefore": {
+      "version": 1,
+      "id": "222f5d20b8074954a6e1a5d5f631d49e"
+    },
+    "activeAfter": {
+      "version": 1,
+      "id": "222f5d20b8074954a6e1a5d5f631d49e"
+    },
+    "referencedMedia": {
+      "before": 35,
+      "after": 35,
+      "added": 0,
+      "removed": 0,
+      "changed": 0
+    },
+    "offlineReferencesBefore": 0
+  }
+}

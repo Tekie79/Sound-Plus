@@ -1,0 +1,117 @@
+Window: "SoundPlus", App: SoundPlus.
+0 standard window SoundPlus, Secondary Actions: Raise
+	1 container Workspaces
+	2 button Generate SFX
+	3 button Transform
+	4 button (settable) Library, Value: Off
+	5 button (settable) Edit, Value: On
+	6 button (settable) Perform, Value: Off
+	7 button (settable) Deliver, Value: Off
+	8 text (settable)
+	9 button Send to DaVinci Resolve
+	10 button Prepare audio to drag
+	11 button Transfer options
+	12 button Save design
+	13 button Search commands
+	14 button Settings
+	15 container
+	16 text entry area (settable) Help: Rename design, Value: Untitled design
+	17 button (settable) Browser, Help: Hide sound browser, Value: On
+	18 button New design, Help: New design (Command-N)
+	19 button Open design, Help: Open design (Command-O)
+	20 button Save design, Help: Save design (Command-S)
+	21 button Undo, Help: Undo (Command-Z)
+	22 button Add track
+	23 button Project tools
+	24 button (settable) Mixer, Value: Off
+	25 button Design · STEREO, Help: Convert the live mix deliberately; existing takes keep their frozen channel contract.
+	26 button (settable) Hide layer inspector, Value: On
+	27 text (settable) Unsaved changes
+	28 button Zoom out
+	29 button Zoom in (Command-wheel)
+	30 button Decrease track height
+	31 button Increase track height (Command-Option-wheel)
+	32 button Fit design
+	33 button Fit selected layers
+	34 button (settable) Enable snapping (Command temporarily bypasses), Value: On
+	35 button Snap targets and grid
+	36 button (settable) Audible forward-grain preview, Value: Off, Help: Audible forward preview grains while dragging the playhead: 120 ms window, 50 ms stock-state warmup, 5 ms ramps. This is not reverse-speed audio.
+	37 button (settable) Controls, Value: On
+	38 button (settable) Effects, Value: Off
+	39 button (settable) Routing, Value: Off
+	40 button (settable) Layer, Value: On
+	41 text entry area (settable) Help: Rename layer, Value: Synthetic stereo test tone - 00000000000000000000000000000020.wav
+	42 button Relink / replace source
+	43 text (settable) 2 ch · STEREO
+	44 button (settable) Alternatives, Help: Optional alternate sources for this layer. One source remains the default., Value: Off
+	45 button Add alternatives, Help: Choose alternate files or drag sounds/regions from Library here. Maximum 64 entries per layer, including the initial source.
+	46 button Routing / Spatial Panner, Help: Interpretation: 2 ch · STEREO · selected 2 of 2
+	47 button Per-channel waveforms
+	48 button (settable) Mute, Value: Off
+	49 button (settable) Solo, Value: Off
+	50 button (settable) Lock entire layer for variations, Value: Off
+	51 button (settable) Source, Value: Off
+	52 button (settable) Mix, Value: On
+	53 text (settable) Gain
+	54 slider (settable) Layer gain (dB), Value: 0.0, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	55 button (settable) Lock Gain for variations, Value: Off
+	56 text (settable) Pan / balance
+	57 slider (settable) Mono pan / stereo balance, Value: 0.00, Secondary Actions: Delete, Help: Effective parameter value. Editing unlinks this target from its macro; blend weighting remains separate.
+	58 button (settable) Lock Pan / balance for variations, Value: Off
+	59 text (settable) Rate / pitch linked
+	60 slider (settable) Linked rate (%); pitch follows rate, Value: 100.0, Secondary Actions: Delete
+	61 button (settable) Lock Rate / pitch linked for variations, Value: Off
+	62 text (settable)
+	63 toggle button (settable, boolean) Reverse, Value: off
+	64 button (settable) Lock Reverse for variations, Value: Off
+	65 scroll bar (settable) Value: 0, Secondary Actions: Delete
+	66 container Multitrack Edit timeline
+	67 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Synthetic stereo test tone - 00000000000000000000000000000020.wav
+	68 button Track colour
+	69 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	70 button (settable) Mute track, Value: Off
+	71 button (settable) Solo track, Value: Off
+	72 button (settable) Arm audio input: Synthetic stereo test tone - 00000000000000000000000000000020.wav, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
+	73 button Track options
+	74 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	75 text (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: Master
+	76 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	77 button Generate 5
+	78 button Variation bounds and enabled parameters
+	79 pop up button (settable) Original and variation candidates, Value: Original
+	80 button Drag Original, Help: Drag the complete unprocessed original file. The receiving app may reference its current location. Layer DSP is not applied.
+	81 button Copy Original to Project
+	82 text (settable) /Users/harvest/Music/SoundPlus/Renders
+	83 button Play design, Help: Play design (Space)
+	84 button Audio recording options
+	85 button Go to start (Home)
+	86 button Previous marker
+	87 button Next marker
+	88 button Go to end (End)
+	89 button Add marker (M)
+	90 button Accurate audition from playhead, Help: Accurate audition from playhead: rebuild the current recipe's effect history from the beginning. Preparation may take longer; Stop cancels. Use this after changing long delay or reverb tails.
+	91 button Monitor · Stereo downmix, Description: Pre-monitor master channels: L -100.0 dBFS; R -100.0 dBFS; , Help: Monitor routing
+	92 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
+	93 text (settable)
+	94 button New Collection, Help: Create a collection or subcollection
+	95 button Collection and selection actions
+	96 button Add existing sound folders, Help: Add Folder
+	97 text entry area (settable) Search library, Secondary Actions: Delete
+	98 button All Sounds, Help: Choose collection or source
+	99 outline
+		100 row Synthetic stereo test tone - 00000000000000000000000000000020.wav, 5.00 seconds, 2 channels, STEREO, 44100 Hz, ready, , /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/resolve-copy/Synthetic stereo test tone - 00000000000000000000000000000020.wav
+			101 row Synthetic stereo test tone - 00000000000000000000000000000020.wav, 5.00 seconds, 2 channels, STEREO, 44100 Hz, ready, , /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/resolve-copy/Synthetic stereo test tone - 00000000000000000000000000000020.wav
+	102 container Recording waveform. Click to seek, drag to mark, double-click to clear the range. I marks IN, O marks OUT. Right-click for exact range.
+	103 container Audition output peak, Description: Post-volume peak level and peak hold
+	104 button Per-channel source waveforms
+	105 button (settable) Repeat One, Help: Repeat current sound, Value: Off
+	106 button (settable) Repeat All, Help: Repeat search results, Value: Off
+	107 container Library sidebar divider
+	108 close button
+	109 full screen button Help: this button also has an action to zoom the window, Secondary Actions: zoom the window
+	110 minimize button
+	111 text SoundPlus
+112 menu bar
+	113 SoundPlus
+
+The focused UI element is 15 container

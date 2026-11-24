@@ -1,0 +1,14 @@
+Internal ctest changing into directory: /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen-retry/build/m09-release
+Test project /Users/harvest/SoundPlus-QA/candidate-b.5Xb6M9/frozen-retry/build/m09-release
+    Start  1: sfx_generation
+1/4 Test  #1: sfx_generation ...................   Passed    1.41 sec
+    Start 31: audio_transform_jobs
+2/4 Test #31: audio_transform_jobs .............   Passed    4.93 sec
+    Start 62: native_view_scale
+3/4 Test #62: native_view_scale ................   Passed    0.01 sec
+    Start 63: plugin_live
+4/4 Test #63: plugin_live ......................   Passed   36.49 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  42.84 sec

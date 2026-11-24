@@ -1,0 +1,30 @@
+Window: "Generate SFX", App: SoundPlus.
+0 standard window Generate SFX, Secondary Actions: Raise
+	1 text (settable) Provider ElevenLabs · Sound Effects v3
+	2 button (settable) Manage key, Value: Off
+	3 text (settable) Sound description
+	4 text entry area (settable) Sound description, Value: Synthetic fixture prompt for Candidate B, Secondary Actions: Delete
+	5 text (settable) Generation settings Duration Candidates Output Prompt influence
+	6 pop up button (settable) Duration in seconds, Value: Auto
+	7 text entry area (settable) Auto
+	8 pop up button (settable) Number of candidates, Value: 1
+	9 pop up button (settable) Provider format, Value: MP3 to WAV
+	10 slider (settable) Prompt influence, Value: 0.30, Secondary Actions: Delete
+	11 toggle button (settable, boolean) Loop, Value: off
+	12 button Generate
+	13 text (settable) Saved to Library Generation history
+	14 button Preview
+	15 pop up button (settable) Generation history, Description: Synthetic stereo test tone, Value: Synthetic stereo test tone  /  1  /  Ready
+	16 text (settable) WAV (source WAV)  ·  5.00 s  ·  44.1 kHz  ·  Stereo Collection
+	17 pop up button (settable) Destination collection, Value: AI Generated
+	18 button Save to Library
+	19 button Show in Library
+	20 button Insert in Edit
+	21 button Assign to Pad
+	22 close button
+	23 zoom button (disabled)
+	24 text Generate SFX
+25 menu bar
+	26 SoundPlus
+
+The focused UI element is 15 pop up button (settable) Generation history, Description: Synthetic stereo test tone, Value: Synthetic stereo test tone  /  1  /  Ready
