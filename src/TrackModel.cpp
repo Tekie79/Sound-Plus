@@ -381,11 +381,21 @@ void routeTrack(DesignMix &m, const juce::String &id, const juce::String &output
         throw;
     }
 }
-void deleteTrack(DesignMix &m, const juce::String &id)
+bool hasIncomingMixerSends(const DesignMix &m, const juce::String &id)
+{
+    return std::any_of(m.tracks.begin(), m.tracks.end(), [&](const auto &track)
+    {
+        return std::any_of(track.sends.begin(), track.sends.end(),
+                           [&](const auto &send) { return send.destination == id; });
+    });
+}
+void deleteTrack(DesignMix &m, const juce::String &id, bool removeIncomingSends)
 {
     const auto t = needed(m, id);
     for (auto &other : m.tracks)
         require(other.output != id, "Reroute incoming tracks before deleting a Group Bus");
+    require(removeIncomingSends || !hasIncomingMixerSends(m, id),
+            "Remove or reroute incoming sends before deleting this track");
     for (auto &other : m.tracks)
         std::erase_if(other.sends, [&](const MixerSend &send) { return send.destination == id; });
     for (auto &other : m.tracks)

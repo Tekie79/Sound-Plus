@@ -79,6 +79,7 @@ class MultitrackEditor final : public juce::Component,
     CanvasClipGeometry geometry(const DesignLayer &, const juce::String &) const;
     void showAddTrackMenu(const juce::PopupMenu::Options &);
     void trackMenu(const juce::String &, const juce::PopupMenu::Options &);
+    void requestDeleteTrack(const juce::String &);
     void fadeMenu(const juce::String &, bool);
     void updateRows();
     void dropOwner(float);

@@ -171,7 +171,11 @@ void runMixerGraphTests(const juce::File &root)
         auto recalled = takeFromJson(takeToJson(take));
         require(recalled.recipeHash == take.recipeHash && hasMixerRouting(recalled.recipe),
                 "Frozen mixer recipe authority survives decode");
-        deleteTrack(restored.original, aux);
+        const auto beforeDeletion = juce::JSON::toString(designToJson(restored), true);
+        reject([&] { deleteTrack(restored.original, aux); }, "Incoming sends require confirmed deletion");
+        require(juce::JSON::toString(designToJson(restored), true) == beforeDeletion,
+                "Refusing deletion preserves bus, sends and automation");
+        deleteTrack(restored.original, aux, true);
         require(findTrack(restored.original, track)->sends.empty() &&
                     automationCurve(findTrack(restored.original, track)->automation, {sendId, "send-level"}),
                 "Return deletion detaches routes and preserves orphan curve identity");

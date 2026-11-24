@@ -872,6 +872,11 @@ void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::
                 safe->session.monitorInputTrack(id, !safe->session.inputMonitored(id));
                 return;
             }
+            if (n == 3)
+            {
+                safe->requestDeleteTrack(id);
+                return;
+            }
             safe->session.edit(
                 "Track organization / routing",
                 [&](auto &d)
@@ -886,8 +891,6 @@ void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::
                         auto parent = track->parent;
                         reparentTrack(mix, id, parent, index + (n == 1 ? -1 : 1));
                     }
-                    if (n == 3)
-                        deleteTrack(mix, id);
                     if (n == 4)
                         track->spatial = !track->spatial;
                     if (n == 7)
@@ -904,6 +907,41 @@ void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::
                                                                         "5.1-rear-v1", "7.1-v1"}[n - 300]);
                 });
         });
+}
+void MultitrackEditor::requestDeleteTrack(const juce::String &id)
+{
+    const auto &doc = session.document;
+    const auto &mix = doc.activeMix();
+    const auto *track = findTrack(mix, id);
+    if (!track)
+        return;
+
+    auto erase = [id](DesignSession &s, bool removeIncomingSends)
+    {
+        s.edit("Delete track", [&](auto &d) { deleteTrack(d.activeMix(), id, removeIncomingSends); });
+    };
+    const auto hasRoutedTracks = std::any_of(mix.tracks.begin(), mix.tracks.end(),
+                                            [&](const auto &other) { return other.output == id; });
+    if (hasRoutedTracks || !hasIncomingMixerSends(mix, id))
+    {
+        erase(session, false);
+        return;
+    }
+
+    const auto incarnation = session.documentGeneration();
+    const auto document = doc.id, variation = doc.activeVariation;
+    const auto revision = doc.revision;
+    juce::Component::SafePointer<MultitrackEditor> safe(this);
+    juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,
+        "Delete " + track->name + "?", "Deleting this track removes its incoming sends. "
+        "Cancel to keep the routes or change their destinations.", "Delete track", "Cancel", this,
+        juce::ModalCallbackFunction::create([safe, erase, incarnation, document, variation, revision](int result)
+        {
+            if (result && safe && safe->session.documentGeneration() == incarnation &&
+                safe->session.document.id == document && safe->session.document.activeVariation == variation &&
+                safe->session.document.revision == revision)
+                erase(safe->session, true);
+        }));
 }
 void MultitrackEditor::openSurroundPanner(const juce::String &owner)
 {
@@ -1560,13 +1598,17 @@ bool MultitrackEditor::keyPressed(const juce::KeyPress &k)
         auto midi = session.document.selectedMidiClip;
         auto ids = session.selectedIds;
         auto selected = session.document.selectedTrack;
+        if (midi.isEmpty() && ids.empty() && selected != "master" &&
+            findTrack(session.document.activeMix(), selected))
+        {
+            requestDeleteTrack(selected);
+            return true;
+        }
         session.edit("Delete selection",
                      [&](auto &d)
                      {
                          if (midi.isNotEmpty())
                              std::erase_if(d.activeMix().midiClips, [&](auto &c) { return c.id == midi; });
-                         else if (ids.empty() && selected != "master" && findTrack(d.activeMix(), selected))
-                             deleteTrack(d.activeMix(), selected);
                          else
                              std::erase_if(d.activeMix().layers, [&](auto &l) { return ids.contains(l.id); });
                          d.selectedLayer.clear();

@@ -34,7 +34,8 @@ ChannelMatrix sendMatrix(const DesignTrack &, const MixerSend &, const ChannelLa
                          double azimuth, double width, std::optional<SurroundPosition>);
 void reparentTrack(DesignMix &, const juce::String &, const juce::String &, int position = -1);
 void routeTrack(DesignMix &, const juce::String &, const juce::String &);
-void deleteTrack(DesignMix &, const juce::String &); // Folders unwrap; nonempty routed buses reject.
+bool hasIncomingMixerSends(const DesignMix &, const juce::String &track);
+void deleteTrack(DesignMix &, const juce::String &, bool removeIncomingSends = false);
 std::vector<juce::String> visibleTracks(const DesignMix &);
 ChannelLayout trackOutputLayout(const DesignMix &, const DesignTrack &);
 inline const AutomationTarget surroundX{"square-surround-v1", "position-x"},
