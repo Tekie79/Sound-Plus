@@ -1,3 +1,4 @@
+#include "MetadataFields.h"
 #include "LibraryView.h"
 #include "ChannelDetails.h"
 #include "LibraryLayout.h"
@@ -55,112 +56,6 @@ juce::String recordingStatus(const Asset &asset)
     if (!asset.online) return "Offline";
     if (asset.state == "failed") return "Unreadable";
     return asset.state == "ready" ? "Ready" : "Reading header";
-}
-void addEmbeddedTag(juce::StringPairArray &tags, const juce::String &name,
-                    const juce::String &value, const juce::String &qualified)
-{
-    if (value.isEmpty())
-        return;
-    auto existing = tags.getValue(name, {});
-    if (existing.isEmpty())
-        tags.set(name, value);
-    else if (existing != value)
-    {
-        auto other = tags.getValue(qualified, {});
-        if (other != value)
-            tags.set(qualified, other.isEmpty() ? value : other + "\n" + value);
-    }
-}
-void addXmlTags(const juce::XmlElement &xml, const juce::String &path, juce::StringPairArray &tags, int depth)
-{
-    if (depth == 32)
-        return;
-    auto qualified = path + "." + xml.getTagName();
-    bool hasChildren = false;
-    for (auto *child : xml.getChildIterator())
-        if (!child->isTextElement())
-        {
-            hasChildren = true;
-            addXmlTags(*child, qualified, tags, depth + 1);
-        }
-    if (!hasChildren)
-        addEmbeddedTag(tags, xml.getTagName(), xml.getAllSubText().trim(), qualified);
-    for (int i = 0; i < xml.getNumAttributes(); ++i)
-    {
-        auto name = qualified + "@" + xml.getAttributeName(i);
-        addEmbeddedTag(tags, name, xml.getAttributeValue(i), name);
-    }
-}
-// The JUCE WAV reader recognizes standard tags and ASWG fields. Read other textual
-// RIFF INFO and iXML fields as well, skipping sample data and bounding text reads.
-void addWaveTags(const juce::File &file, juce::StringPairArray &tags)
-{
-    juce::FileInputStream in(file);
-    if (!in.openedOk() || in.getTotalLength() < 12)
-        return;
-    auto fourcc = [](const char *name) { return (uint32_t)juce::ByteOrder::littleEndianInt(name); };
-    auto container = (uint32_t)in.readInt();
-    in.skipNextBytes(4);
-    if ((container != fourcc("RIFF") && container != fourcc("RF64")) ||
-        (uint32_t)in.readInt() != fourcc("WAVE"))
-        return;
-    int64_t rf64DataSize = -1;
-    int textBudget = 1024 * 1024;
-    const auto readText = [&](int64_t size)
-    {
-        if (size <= 0 || size > textBudget)
-            return juce::String();
-        juce::MemoryBlock bytes;
-        const auto read = (int)in.readIntoMemoryBlock(bytes, (ssize_t)size);
-        textBudget -= read;
-        return read > 0 ? juce::String::fromUTF8(static_cast<const char *>(bytes.getData()), read).trim()
-                        : juce::String();
-    };
-    const auto fileEnd = in.getTotalLength();
-    while (in.getPosition() <= fileEnd - 8 && textBudget > 0)
-    {
-        auto type = (uint32_t)in.readInt();
-        int64_t size = (uint32_t)in.readInt();
-        const auto start = in.getPosition();
-        if (container == fourcc("RF64") && type == fourcc("data") && size == UINT32_MAX)
-            size = rf64DataSize;
-        if (size < 0 || size > fileEnd - start)
-            break;
-        const auto end = start + size;
-        if (type == fourcc("ds64") && size >= 16)
-        {
-            in.skipNextBytes(8);
-            rf64DataSize = in.readInt64();
-        }
-        else if (type == fourcc("iXML") || type == fourcc("axml") || type == fourcc("_PMX"))
-        {
-            auto xmlText = readText(size);
-            if (xmlText.isNotEmpty() && !xmlText.containsIgnoreCase("<!DOCTYPE"))
-                if (auto xml = juce::parseXML(xmlText))
-                    addXmlTags(*xml, "XML", tags, 0);
-        }
-        else if (type == fourcc("LIST") && size >= 4)
-        {
-            const auto kind = (uint32_t)in.readInt();
-            if (kind == fourcc("INFO") || kind == fourcc("info"))
-                while (in.getPosition() <= end - 8 && textBudget > 0)
-                {
-                    char name[5]{};
-                    if (in.read(name, 4) != 4)
-                        break;
-                    const int64_t length = (uint32_t)in.readInt();
-                    const auto next = in.getPosition() + length + (length & 1);
-                    if (next > end)
-                        break;
-                    auto key = juce::String::fromUTF8(name, 4).trim();
-                    addEmbeddedTag(tags, key, readText(length), "INFO." + key);
-                    if (!in.setPosition(next))
-                        break;
-                }
-        }
-        if (!in.setPosition(end + (size & 1)))
-            break;
-    }
 }
 juce::String duration(double seconds)
 {
@@ -279,6 +174,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                             &columnsButton,
                                                             &detail,
                                                             &recordingDetails,
+                                                            &editTags,
+                                                            &filterMetadata,
                                                             &transport,
                                                             &status,
                                                             &volumeLabel,
@@ -327,6 +224,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     detail.setFont(juce::FontOptions(16.0f, juce::Font::bold));
     columnsButton.setLabelVisible(true);
     columnsButton.setTooltip("Choose recording columns");
+    editTags.onClick = [this] { metadataPanel(false); };
+    filterMetadata.onClick = [this] { metadataPanel(true); };
     columnsButton.onClick = [this] { showMetadataColumns(); };
     sendTransfer.setIconSize(33.f);
     dragTransfer.setIcon(ActionIcon::drag);
@@ -939,7 +838,8 @@ void LibraryView::resized()
     externalReference.setBounds(right - 31, 49, 31, 34);
     rescan.setBounds(sidebar - 44, 54, 32, 28);
     summary.setBounds(left + 112, 15, std::max(0, listing.getWidth() - 114), 24);
-    search.setBounds(left, 49, std::max(88, listing.getWidth() - 172), 34);
+    search.setBounds(left, 49, std::max(88, listing.getWidth() - 206), 34);
+    filterMetadata.setBounds(right - 199, 49, 30, 34);
     columnsButton.setBounds(right - 164, 49, 94, 34);
     refresh.setBounds(right - 67, 49, 30, 34);
     semanticCoverage.setBounds(left, 84, listing.getWidth(), 18);
@@ -1012,6 +912,7 @@ void LibraryView::resized()
     const int previewLeft = selection.getX(), previewRight = selection.getRight();
     const int y = selection.getY(), controls = layout.controlsY, centre = selection.getCentreX();
     auto metadata = layout.details.reduced(12, 10).withTrimmedTop(28);
+    editTags.setBounds(layout.details.getRight() - 73, layout.details.getY() + 7, 30, 26);
     channelDetails.setBounds(layout.details.getRight() - 41, layout.details.getY() + 7, 30, 26);
     detail.setBounds(metadata.removeFromTop(26));
     recordingDetails.setBounds(metadata.withTrimmedTop(4));
@@ -1483,12 +1384,14 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         value = fileModified(a);
     if (column == categoryColumn || column == descriptionColumn || column == depthColumn)
         if (const auto *header = cachedRecordingHeader(a))
-            value = column == categoryColumn ? recordingCategory(header->tags)
-                    : column == descriptionColumn ? recordingDescription(header->tags)
-                                                  : header->depth;
+            value = column == categoryColumn ? header->value("category", recordingCategory(header->tags))
+                    : column == descriptionColumn
+                        ? header->value("description", recordingDescription(header->tags))
+                        : header->depth;
     if (auto tag = embeddedColumns.find(column); tag != embeddedColumns.end())
         if (const auto *header = cachedRecordingHeader(a))
-            value = header->tags.getValue(tag->second, {});
+            value = tag->second.startsWith("Catalog / ") ? header->value(tag->second.substring(10))
+                                                         : header->tags.getValue(tag->second, {});
     g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
 }
 void LibraryView::selectedRowsChanged(int)
@@ -1943,6 +1846,7 @@ void LibraryView::updateMomentsSelection()
                                                  : "Custom range");
     moments.setSelectedId(moment, juce::dontSendNotification);
 }
+#include "LibraryMetadataUI.inc"
 void LibraryView::showMetadataColumns()
 {
     juce::PopupMenu menu;
@@ -1952,7 +1856,8 @@ void LibraryView::showMetadataColumns()
                      [safe, id = column.id] { if (safe) safe->toggleMetadataColumn(id); });
     juce::StringArray tags;
     for (const auto &[id, tag] : embeddedColumns)
-        tags.add(tag);
+        if (!tag.startsWith("Catalog / "))
+            tags.add(tag);
     if (const auto *header = selectedAsset ? cachedRecordingHeader(*selectedAsset) : nullptr)
         for (int i = 0; i < header->tags.size(); ++i)
             if (header->tags.getAllValues()[i].isNotEmpty())
@@ -1970,6 +1875,22 @@ void LibraryView::showMetadataColumns()
     if (tags.isEmpty())
         embedded.addItem("Select a recording with embedded tags", false, false, [] {});
     menu.addSubMenu("Embedded tags", embedded);
+    juce::PopupMenu normalized;
+    for (auto key : editableMetadataKeys())
+    {
+        if (key == "category" || key == "description")
+            continue;
+        auto name = "Catalog / " + key;
+        auto it = std::find_if(embeddedColumns.begin(), embeddedColumns.end(),
+                               [&](const auto &entry) { return entry.second == name; });
+        normalized.addItem(key, true, it != embeddedColumns.end() && metadataColumns.contains(it->first),
+                           [safe, name]
+                           {
+                               if (safe)
+                                   safe->toggleMetadataColumn(safe->addEmbeddedColumn(name));
+                           });
+    }
+    menu.addSubMenu("Catalog fields", normalized);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&columnsButton).withParentComponent(this));
 }
 int LibraryView::addEmbeddedColumn(const juce::String &tag)
@@ -2002,7 +1923,7 @@ void LibraryView::toggleMetadataColumn(int id)
 }
 juce::String LibraryView::recordingHeaderKey(const Asset &a)
 {
-    return a.id + "\n" + juce::String(a.revision) + "\n" + a.path;
+    return a.id + "\n" + juce::String(a.revision) + "\n" + a.path + (a.online ? "\nonline" : "\noffline");
 }
 LibraryView::RecordingHeader LibraryView::readRecordingHeader(const Asset &a)
 {
@@ -2043,6 +1964,8 @@ void LibraryView::updateRecordingHeaders(const std::vector<Asset> &visibleRows)
         if (recordingHeaderJob.wait_for(std::chrono::seconds(0)) != std::future_status::ready)
             return;
         auto [key, header] = recordingHeaderJob.get();
+        if (headerJobVersion != tagsVersion)
+            return;
         if (recordingHeaderOrder.size() == 160)
         {
             recordingHeaders.erase(recordingHeaderOrder.front());
@@ -2057,10 +1980,7 @@ void LibraryView::updateRecordingHeaders(const std::vector<Asset> &visibleRows)
     if (compact)
         return;
     const auto needsHeader = [this](const Asset &a)
-    {
-        return a.online && a.state == "ready" && a.deliverable() && a.path.isNotEmpty() &&
-               cachedRecordingHeader(a) == nullptr;
-    };
+    { return a.id.isNotEmpty() && a.state != "pending" && cachedRecordingHeader(a) == nullptr; };
     const Asset *source = selectedAsset && needsHeader(*selectedAsset) ? &*selectedAsset : nullptr;
     const auto readsFile = [](int id)
     { return id == categoryColumn || id == descriptionColumn || id == depthColumn || id > modifiedColumn; };
@@ -2073,8 +1993,27 @@ void LibraryView::updateRecordingHeaders(const std::vector<Asset> &visibleRows)
     if (!source)
         return;
     using Job = std::packaged_task<std::pair<juce::String, RecordingHeader>()>;
-    auto job = std::make_shared<Job>([asset = *source]
-    { return std::make_pair(recordingHeaderKey(asset), readRecordingHeader(asset)); });
+    headerJobVersion = tagsVersion;
+    auto job = std::make_shared<Job>(
+        [asset = *source, db = library.catalogFile()]
+        {
+            RecordingHeader header;
+            try
+            {
+                if (asset.online && asset.deliverable())
+                    header = readRecordingHeader(asset);
+                auto record = Catalog(db, true).describeMetadata(asset.id);
+                header.catalogMetadata = record;
+                if (auto *raw = record["raw"].getDynamicObject())
+                    for (auto &tag : raw->getProperties())
+                        header.tags.set(tag.name.toString(), tag.value.toString());
+            }
+            catch (const std::exception &e)
+            {
+                header.error = juce::String::fromUTF8(e.what());
+            }
+            return std::make_pair(recordingHeaderKey(asset), std::move(header));
+        });
     recordingHeaderJob = job->get_future();
     recordingHeaderWorker.addJob([job] { (*job)(); });
 }
@@ -2100,8 +2039,25 @@ void LibraryView::updateRecordingDetails()
     };
     const auto *header = cachedRecordingHeader(a);
     group("Sound tags");
-    field("Category", header ? recordingCategory(header->tags) : juce::String());
-    field("Description", header ? recordingDescription(header->tags) : juce::String());
+    field("Category", header ? header->value("category", recordingCategory(header->tags)) : juce::String());
+    field("Description",
+          header ? header->value("description", recordingDescription(header->tags)) : juce::String());
+    if (header)
+    {
+        auto &m = header->catalogMetadata;
+        for (auto k : editableMetadataKeys())
+            if (k != "category" && k != "description")
+                field(k.substring(0, 1).toUpperCase() + k.substring(1),
+                      m["fields"][juce::Identifier(k)].toString());
+        if ((bool)m["review"])
+            field("Review", "Source revision changed");
+        if (m["provider"].hasProperty("provider"))
+        {
+            group((bool)m["providerCurrent"] ? "Generation" : "Generation (earlier revision)");
+            for (auto k : {"provider", "model", "prompt", "candidate"})
+                field(k, m["provider"][k].toString());
+        }
+    }
     group("Audio");
     field("Duration", a.duration > 0 ? juce::String(a.duration, 3) + " s" : juce::String());
     field("Sample rate", a.sampleRate > 0 ? juce::String(a.sampleRate) + " Hz" : juce::String());
@@ -2300,6 +2256,13 @@ void LibraryView::timerCallback()
     refine.setVisible(similarMode && selectedAsset && !selectedAsset->matches.empty() && rangeRequest == requested);
     refine.setBounds(std::min(84, waveform.getWidth() / 4), 1, std::clamp(waveform.getWidth()-152, 52, 120), 24);
     auto next = library.snapshot();
+    if (tagsVersion != next.metadataVersion)
+    {
+        tagsVersion = next.metadataVersion;
+        recordingHeaders.clear();
+        recordingHeaderOrder.clear();
+    }
+    editTags.setEnabled(selectedAsset.has_value());
     if (next.organization.version != organizationVersion)
     {
         organizationVersion = next.organization.version;

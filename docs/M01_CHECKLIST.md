@@ -6,7 +6,7 @@
 		✓  Connect candidate history, audition and workspace actions
 		✓  Verify M01 on an isolated Release build
 		✓  Verify M03, M02, M04 and M05 development stages
-		○  Implement and verify M06–M08
+		✓  Implement and verify M06–M08
 		○  Create the consolidated M09 acceptance program
 ```
 

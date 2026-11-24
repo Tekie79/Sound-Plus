@@ -144,6 +144,21 @@ class Catalog
     CollectionState collections();
     bool bookmarkFavorite(const BookmarkRequest &);
     void editCollections(const CollectionEdit &);
+    void snapshotMetadata(const Asset &, const juce::var &embedded);
+    void providerMetadata(const Asset &, const juce::var &verified);
+    juce::var describeMetadata(const juce::String &id);
+    void editMetadata(const CollectionEdit &);
+    juce::var metadataManifest(const std::vector<BookmarkRequest> &);
+    void importMetadata(const juce::var &);
+
+    void setSemanticFilter(juce::String q)
+    {
+        semanticFilter = std::move(q);
+    }
+    bool restrictedRanking() const
+    {
+        return activeScope.isNotEmpty() || semanticFilter.isNotEmpty();
+    }
     void setScope(const juce::String &value)
     {
         activeScope = value;
@@ -204,9 +219,12 @@ class Catalog
     void exec(const char *);
 
   private:
-    juce::String activeScope;
+    juce::String activeScope, semanticFilter;
     bool scopedBrowse = false;
     juce::String referenceWhere(const juce::String &, const juce::String &);
+    juce::String metadataWhere(const juce::String &, const juce::String &);
+    void indexMetadata(const Asset &);
+    bool metadataSchema = false;
     std::vector<Asset> scopedRows(const juce::String &, const juce::String &, int, int);
     void scopedMaterialize(const juce::String &, const juce::String &, bool);
     juce::String ensureReference(const BookmarkRequest &);

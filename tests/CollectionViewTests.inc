@@ -28,6 +28,27 @@ struct CollectionViewTestAccess
         v.selectedRowsChanged(0);
         auto source = *v.selectedAsset;
         v.setRegion(1000, 9000, false, true);
+        tick([&] { return v.cachedRecordingHeader(source) != nullptr; }, "Selected recording header ready");
+        v.editTags.onClick();
+        auto *tagEditor = dynamic_cast<juce::CallOutBox *>(juce::Component::getCurrentlyModalComponent());
+        auto *panel = tagEditor ? tagEditor->getChildComponent(0) : nullptr;
+        auto *value =
+            panel ? dynamic_cast<juce::TextEditor *>(panel->findChildWithID("metadata-value")) : nullptr;
+        auto *apply =
+            panel ? dynamic_cast<juce::Button *>(panel->findChildWithID("metadata-apply")) : nullptr;
+        check(value && apply, "Details editor exposes real value and Apply controls");
+        value->setText("Quiet rain over glass");
+        apply->onClick();
+        tick(
+            [&]
+            {
+                auto *header = v.cachedRecordingHeader(source);
+                return header && header->value("description") == "Quiet rain over glass";
+            },
+            "Worker edit updates actual Details cache");
+        check(v.regionStart == 1000 && v.regionEnd == 9000, "Metadata edit preserves marked audition range");
+        tagEditor->exitModalState(0);
+        tagEditor->setVisible(false);
         auto c = action("create");
         c.name = "Canvas Regions";
         v.submitCollectionEdit(c);

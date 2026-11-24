@@ -459,9 +459,16 @@ void Panel::use(int action, int slot, juce::File folder)
         collectionId = collections[(size_t)collection.getSelectedId() - 2].first;
     Generation::Index index;
     if (action == 1)
-        index = [&service, collectionId](auto &f, const auto &stop)
+        index = [&service, collectionId, candidate = *c](auto &f, const auto &stop)
         {
-            auto pending = service.indexGenerated(inspectDesignSource(f), collectionId);
+            auto *o = new juce::DynamicObject;
+            juce::var receipt(o);
+            o->setProperty("provider", candidate.provider);
+            o->setProperty("model", candidate.model);
+            o->setProperty("prompt", candidate.prompt);
+            o->setProperty("sha256", candidate.sha256);
+            o->setProperty("candidate", candidate.id);
+            auto pending = service.indexGenerated(inspectDesignSource(f), collectionId, receipt);
             auto deadline = std::chrono::steady_clock::now() + std::chrono::seconds(20);
             while (pending.wait_for(std::chrono::milliseconds(50)) != std::future_status::ready)
                 if (stop.load() || std::chrono::steady_clock::now() > deadline)

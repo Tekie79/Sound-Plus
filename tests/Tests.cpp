@@ -29,6 +29,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 void runPlaybackSearchTests(const juce::File &, const juce::File &);
+void runCatalogMetadataTests(const juce::File &);
 void runProjectPackageTests(const juce::File &);
 void runSourcePoolTests(const juce::File &, const juce::File &);
 void prepareSourcePoolUI(const juce::File &);
@@ -306,6 +307,11 @@ int main(int argc, char **argv)
         if (argc >= 3 && juce::String(argv[1]) == "--prepare-source-pool-ui")
         {
             prepareSourcePoolUI(juce::File(argv[2]));
+            return 0;
+        }
+        if (argc >= 3 && juce::String(argv[1]) == "--catalog-metadata")
+        {
+            runCatalogMetadataTests(juce::File(argv[2]));
             return 0;
         }
         if (argc >= 3 && juce::String(argv[1]) == "--project-package")

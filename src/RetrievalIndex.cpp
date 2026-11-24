@@ -434,7 +434,7 @@ std::vector<Asset> RetrievalIndex::search(Catalog &db, const std::vector<float> 
         return fallback();
     RetrievalMetrics measured;
     const auto ranges = db.scopeRanges(root);
-    const bool scoped = db.scope().isNotEmpty();
+    const bool scoped = db.restrictedRanking();
     std::vector<const Block *> eligible;
     for (auto &b : base->blocks)
         if ((root.isEmpty() || root == b.root) && b.asset != excluded && !delta.contains(b.asset) &&

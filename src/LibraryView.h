@@ -133,6 +133,7 @@ class LibraryView final : public juce::Component,
     void updateRecordingHeaders(const std::vector<Asset> &visibleRows);
     void updateRecordingDetails();
     void showMetadataColumns();
+    void metadataPanel(bool);
     void toggleMetadataColumn(int id);
     int addEmbeddedColumn(const juce::String &tag);
     void showRangeEditor(bool forReference = false);
@@ -318,6 +319,11 @@ class LibraryView final : public juce::Component,
     {
         juce::String format, depth, error;
         juce::StringPairArray tags;
+        juce::var catalogMetadata;
+        juce::String value(const juce::String &key, const juce::String &fallback = {}) const
+        {
+            return catalogMetadata["fields"].getProperty(juce::Identifier(key), fallback).toString();
+        }
     };
     static juce::String recordingHeaderKey(const Asset &);
     static RecordingHeader readRecordingHeader(const Asset &);
@@ -328,6 +334,9 @@ class LibraryView final : public juce::Component,
     std::future<std::pair<juce::String, RecordingHeader>> recordingHeaderJob;
     std::set<int> metadataColumns;
     std::map<int, juce::String> embeddedColumns;
+    IconButton editTags{"Edit catalog metadata", ActionIcon::rename},
+        filterMetadata{"Library filters", ActionIcon::processing};
+    uint64_t tagsVersion = 0, headerJobVersion = 0;
     IconButton columnsButton{"Columns", ActionIcon::settings};
     juce::String selectionNotice;
     juce::Label summary, detail, transport, status, volumeLabel;

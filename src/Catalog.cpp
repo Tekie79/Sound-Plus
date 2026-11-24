@@ -1,3 +1,5 @@
+#include "MetadataFields.h"
+#include <juce_cryptography/juce_cryptography.h>
 #include "Catalog.h"
 #include "RegionRanking.h"
 #include "MacSources.h"
@@ -151,7 +153,8 @@ Catalog::Catalog(const juce::File &file, bool readOnly, std::function<void()> be
             version.step();
             schemaVersion = version.integer(0);
         }
-        if (schemaVersion > 7)
+        metadataSchema = schemaVersion >= 8;
+        if (schemaVersion > 8)
             throw std::runtime_error("Catalog was created by a newer SoundPlus version");
         if (readOnly)
         {
@@ -317,6 +320,25 @@ Catalog::Catalog(const juce::File &file, bool readOnly, std::function<void()> be
             if (beforeMigrationCommit)
                 beforeMigrationCommit();
             exec("PRAGMA user_version=7;COMMIT;");
+        }
+        if (schemaVersion < 8)
+        {
+            exec(R"SQL(BEGIN IMMEDIATE;
+            CREATE TABLE IF NOT EXISTS metadata_assets(id TEXT PRIMARY KEY REFERENCES assets(id) ON DELETE CASCADE,revision INTEGER NOT NULL DEFAULT 0,
+             embedded TEXT NOT NULL DEFAULT '{}',derived TEXT NOT NULL DEFAULT '{}',overrides TEXT NOT NULL DEFAULT '{}',
+             provider TEXT NOT NULL DEFAULT '{}',review INTEGER NOT NULL DEFAULT 0,rejected TEXT NOT NULL DEFAULT '');
+            CREATE TABLE IF NOT EXISTS metadata_fields(asset TEXT NOT NULL REFERENCES assets(id) ON DELETE CASCADE,field TEXT NOT NULL,value TEXT NOT NULL COLLATE NOCASE,PRIMARY KEY(asset,field));
+            CREATE TABLE IF NOT EXISTS metadata_aliases(field TEXT NOT NULL,alias TEXT NOT NULL COLLATE NOCASE,value TEXT NOT NULL COLLATE NOCASE,PRIMARY KEY(field,alias));
+            CREATE INDEX IF NOT EXISTS metadata_facet ON metadata_fields(field,value,asset);
+            CREATE VIRTUAL TABLE IF NOT EXISTS metadata_fts USING fts5(terms,tokenize='unicode61',prefix='2 3 4');
+            CREATE TABLE IF NOT EXISTS metadata_backfill(id TEXT PRIMARY KEY,root TEXT NOT NULL);
+            CREATE INDEX IF NOT EXISTS metadata_backfill_root ON metadata_backfill(root,id);
+            INSERT OR IGNORE INTO metadata_backfill SELECT id,root_id FROM assets WHERE state='ready';
+            CREATE TABLE IF NOT EXISTS metadata_history(seq INTEGER PRIMARY KEY,rows TEXT NOT NULL,applied INTEGER NOT NULL);
+            CREATE TRIGGER IF NOT EXISTS metadata_asset_removed AFTER DELETE ON assets BEGIN DELETE FROM metadata_fts WHERE rowid=OLD.rowid; DELETE FROM metadata_backfill WHERE id=OLD.id;END;
+            CREATE INDEX IF NOT EXISTS metadata_audio_facets ON assets(channels,duration,root_id);
+            PRAGMA user_version=8;COMMIT;)SQL");
+            metadataSchema = true;
         }
     }
     catch (...)
@@ -630,6 +652,19 @@ bool uuidQuery(const juce::String &q)
 }
 } // namespace
 #include "CatalogCollections.inc"
+#include "CatalogMetadata.inc"
+namespace
+{
+juce::String extraMetadataRows(const juce::String &q, const juce::String &root)
+{
+    auto sql = " FROM metadata_fts JOIN assets a ON a.rowid=metadata_fts.rowid WHERE metadata_fts MATCH " +
+               quoted(matchText(q, {}));
+    if (root.isNotEmpty())
+        sql += " AND a.root_id=" + quoted(root);
+    return sql + " AND a.rowid NOT IN(SELECT rowid FROM names WHERE names MATCH " +
+           quoted(matchText(q, root)) + ")";
+}
+} // namespace
 void Catalog::cancelWhen(const std::atomic<uint64_t> *generation, uint64_t expected)
 {
     cancellation = generation;
@@ -654,6 +689,12 @@ int Catalog::countMatches(const juce::String &q, const juce::String &root)
         scoped.step();
         return (int)scoped.integer(0);
     }
+    if (metadataSchema && isMetadataQuery(q))
+    {
+        Statement s(db, ("SELECT count(*) FROM assets a WHERE " + metadataWhere(q, root)).toRawUTF8());
+        s.step();
+        return (int)s.integer(0);
+    }
     auto match = matchText(q, root);
     juce::String sql;
     if (uuidQuery(q))
@@ -675,7 +716,14 @@ int Catalog::countMatches(const juce::String &q, const juce::String &root)
     else if (root.isNotEmpty())
         s.bind(n++, root);
     s.step();
-    return (int)s.integer(0);
+    int count = (int)s.integer(0);
+    if (metadataSchema && match.isNotEmpty() && !uuidQuery(q))
+    {
+        Statement extra(db, ("SELECT count(*)" + extraMetadataRows(q, root)).toRawUTF8());
+        extra.step();
+        count += (int)extra.integer(0);
+    }
+    return count;
 }
 std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &root, int limit, int offset)
 {
@@ -690,6 +738,16 @@ std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &ro
     };
     const auto base =
         "SELECT " + juce::String(columns) + favoriteColumn + " FROM assets a JOIN roots r ON r.id=a.root_id ";
+    if (metadataSchema && isMetadataQuery(q))
+    {
+        Statement s(db, (base + " WHERE " + metadataWhere(q, root) +
+                         " ORDER BY a.name COLLATE NOCASE,a.id LIMIT ? OFFSET ?")
+                            .toRawUTF8());
+        s.bind(1, (int64_t)limit);
+        s.bind(2, (int64_t)offset);
+        collect(s);
+        return result;
+    }
     if (uuidQuery(q))
     {
         Statement s(
@@ -751,6 +809,23 @@ std::vector<Asset> Catalog::search(const juce::String &q, const juce::String &ro
         s.bind(4, (int64_t)std::max(0, offset - exact));
         collect(s);
     }
+    if (metadataSchema && (int)result.size() < limit)
+    {
+        int skip = 0;
+        if (offset > 0)
+        {
+            Statement count(db, "SELECT count(*) FROM names WHERE names MATCH ?");
+            count.bind(1, match);
+            count.step();
+            skip = std::max(0, offset - (int)count.integer(0));
+        }
+        Statement extra(db, (base + " WHERE a.id IN(SELECT a.id" + extraMetadataRows(q, root) +
+                             ") ORDER BY a.rowid LIMIT ? OFFSET ?")
+                                .toRawUTF8());
+        extra.bind(1, (int64_t)(limit - result.size()));
+        extra.bind(2, (int64_t)skip);
+        collect(extra);
+    }
     return result;
 }
 void Catalog::materialize(const juce::String &q, const juce::String &root, bool empty)
@@ -765,6 +840,13 @@ void Catalog::materialize(const juce::String &q, const juce::String &root, bool 
          "TEXT NOT NULL);");
     if (empty)
         return;
+    if (metadataSchema && isMetadataQuery(q))
+    {
+        exec(("INSERT INTO browse_ids(id) SELECT a.id FROM assets a WHERE " + metadataWhere(q, root) +
+              " ORDER BY a.name COLLATE NOCASE,a.id")
+                 .toRawUTF8());
+        return;
+    }
     auto match = matchText(q, root);
     juce::String sql;
     if (uuidQuery(q))
@@ -803,6 +885,9 @@ void Catalog::materialize(const juce::String &q, const juce::String &root, bool 
     else if (root.isNotEmpty())
         s.bind(n++, root);
     s.step();
+    if (metadataSchema && match.isNotEmpty() && !uuidQuery(q))
+        exec(("INSERT INTO browse_ids(id) SELECT a.id" + extraMetadataRows(q, root) + " ORDER BY a.rowid")
+                 .toRawUTF8());
 }
 std::vector<Asset> Catalog::page(int offset, int limit)
 {
@@ -881,10 +966,12 @@ std::vector<Asset> Catalog::inodeCandidates(const juce::String &root, int64_t in
 }
 std::vector<Asset> Catalog::pendingRoot(const juce::String &root, int limit)
 {
-    Statement s(db, ("SELECT " + juce::String(columns) +
-                     " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.root_id=? AND a.state='pending' "
-                     "AND a.online=1 LIMIT ?")
-                        .toRawUTF8());
+    Statement s(
+        db, ("SELECT " + juce::String(columns) +
+             " FROM assets a JOIN roots r ON r.id=a.root_id WHERE a.root_id=? AND (a.state='pending' " +
+             juce::String(metadataSchema ? " OR EXISTS(SELECT 1 FROM metadata_backfill WHERE id=a.id)" : "") +
+             ") AND a.online=1 LIMIT ?")
+                .toRawUTF8());
     s.bind(1, root);
     s.bind(2, (int64_t)limit);
     std::vector<Asset> rows;
@@ -1256,7 +1343,7 @@ std::vector<Asset> Catalog::semanticSearch(const std::vector<float> &query, cons
         if (sqlite3_column_bytes(rows.s, 4) != 2048)
             continue;
         auto found = eligible.find(rows.str(0));
-        if (activeScope.isNotEmpty() && found == eligible.end())
+        if (restrictedRanking() && found == eligible.end())
             continue;
         auto first = rows.integer(2), last = rows.integer(3);
         if (activeScope.isNotEmpty() &&

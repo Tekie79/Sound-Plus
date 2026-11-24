@@ -92,15 +92,22 @@ juce::String Catalog::referenceWhere(const juce::String &q, const juce::String &
             " UNION ALL SELECT c.id FROM collections c JOIN tree t ON c.parent=t.id) SELECT id FROM tree))";
     if (root.isNotEmpty())
         where += " AND COALESCE(a.root_id,lr.root)=" + quoted(root);
-    if (q.trim().isNotEmpty())
+    if (metadataSchema && isMetadataQuery(q))
+        where += " AND " + metadataWhere(q, {});
+    else if (q.trim().isNotEmpty())
     {
         if (uuidQuery(q))
             where += " AND lr.asset=" + quoted(q);
         else
-            where += " AND (a.rowid IN(SELECT rowid FROM names WHERE names MATCH " +
-                     quoted(matchText(q, {})) + ") OR (a.id IS NULL AND lower(lr.name) LIKE " +
-                     quoted("%" + q.toLowerCase().replace("%", "\\%").replace("_", "\\_") + "%") +
-                     " ESCAPE '\\'))";
+            where +=
+                " AND (a.rowid IN(SELECT rowid FROM names WHERE names MATCH " + quoted(matchText(q, {})) +
+                ")" +
+                (metadataSchema ? " OR a.rowid IN(SELECT rowid FROM metadata_fts WHERE metadata_fts MATCH " +
+                                      quoted(matchText(q, {})) + ")"
+                                : juce::String{}) +
+                " OR (a.id IS NULL AND lower(lr.name) LIKE " +
+                quoted("%" + q.toLowerCase().replace("%", "\\%").replace("_", "\\_") + "%") +
+                " ESCAPE '\\'))";
     }
     return where;
 }
@@ -164,10 +171,19 @@ ScopeRanges Catalog::scopeRanges(const juce::String &root)
 {
     ScopeRanges ranges;
     if (activeScope.isEmpty())
+    {
+        if (semanticFilter.isNotEmpty())
+        {
+            Statement s(
+                db, ("SELECT a.id FROM assets a WHERE " + metadataWhere(semanticFilter, root)).toRawUTF8());
+            while (s.step())
+                ranges[s.str(0)].push_back({0, INT64_MAX, 0, 1});
+        }
         return ranges;
+    }
     Statement s(
         db, ("SELECT lr.asset,lr.first,lr.last FROM library_refs lr JOIN assets a ON a.id=lr.asset WHERE " +
-             referenceWhere({}, root) +
+             referenceWhere(semanticFilter, root) +
              " AND a.state='ready' AND (lr.first<0 OR (lr.revision=a.revision AND lr.samples=a.samples AND "
              "lr.rate=a.sample_rate AND lr.last<=a.samples)) ORDER BY lr.asset,lr.first")
                 .toRawUTF8());

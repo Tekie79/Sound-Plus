@@ -22,7 +22,7 @@ struct LibrarySnapshot
     bool bookmarkFavorite = false;
     std::vector<Asset> results;
     juce::String error;
-    uint64_t request = 0, version = 0, pageSerial = 0;
+    uint64_t request = 0, version = 0, pageSerial = 0, metadataVersion = 0;
     int64_t headersRead = 0;
     int total = 0, offset = 0;
     bool newResultsAvailable = false;
@@ -60,7 +60,7 @@ class LibraryService
                             juce::File modelDirectory = {}, bool controlledSemantic = false);
     ~LibraryService();
     void addFolder(const juce::File &);
-    std::future<Asset> indexGenerated(Asset verified, juce::String collection = {});
+    std::future<Asset> indexGenerated(Asset verified, juce::String collection = {}, juce::var receipt = {});
     void rescan();
     void setLayoutOverride(const Asset &, const ChannelLayout &);
     void pause(bool);

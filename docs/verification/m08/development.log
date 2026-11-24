@@ -1,0 +1,11 @@
+1/7 Test  #1: sfx_generation ...................   Passed    1.68 sec
+12: 100000 catalog rows, 1000 hits, 100-row deep page + FTS count: p50 8.92667 ms, p95 12.8009 ms, process peak RSS 98.0312 MiB
+12: 500000 catalog rows, 5000 hits, 100-row deep page + FTS count: p50 23.2634 ms, p95 28.3393 ms, process peak RSS 156.453 MiB
+2/7 Test #12: catalog_metadata .................   Passed    5.91 sec
+3/7 Test #13: library_collections ..............   Passed    1.63 sec
+4/7 Test #18: project_package ..................   Passed    0.04 sec
+5/7 Test #26: library_stability ................   Passed    1.40 sec
+6/7 Test #39: library_semantic_integrity .......   Passed    0.41 sec
+7/7 Test #40: library_similar_integrity ........   Passed    1.21 sec
+100% tests passed, 0 tests failed out of 7
+Total Test time (real) =  12.27 sec

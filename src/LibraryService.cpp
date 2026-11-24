@@ -1,3 +1,4 @@
+#include "MetadataFields.h"
 #include "LibraryService.h"
 #include "RetrievalIndex.h"
 #include "MacSources.h"
@@ -70,6 +71,7 @@ struct LibraryService::Impl
         int channels = 0;
         ChannelLayout layout;
         juce::String confidence;
+        juce::var embedded;
         juce::String error;
         int64_t samples = 0;
     };
@@ -134,6 +136,7 @@ struct LibraryService::Impl
         Asset verified;
         juce::String collection;
         std::promise<Asset> result;
+        juce::var provenance;
     };
     std::deque<GeneratedImport> generatedImports;
     std::deque<CollectionEdit> collectionEdits;
@@ -141,7 +144,7 @@ struct LibraryService::Impl
     std::deque<Job> jobs;
     std::deque<Batch> batches;
     bool requestedRescan = false;
-    juce::String text, filter, collectionScope;
+    juce::String text, filter, collectionScope, exampleFacets;
     uint64_t request = 1;
     int desiredOffset = 0, desiredLimit = 20;
     bool pagePending = false, pinned = false;
@@ -261,6 +264,13 @@ struct LibraryService::Impl
         ++headerReads;
         ++performance.headers;
         std::unique_ptr<juce::AudioFormatReader> audio(formats.createReaderFor(file));
+        juce::StringPairArray tags;
+        if (audio)
+        {
+            tags = audio->metadataValues;
+            if (file.hasFileExtension("wav;bwf"))
+                addWaveTags(file, tags);
+        }
         if (!fileStamp(file, after) || !same(before, after))
         {
             events.push(file.getParentDirectory().getFullPathName());
@@ -268,6 +278,7 @@ struct LibraryService::Impl
         }
         Header h;
         h.relative = relative;
+        h.embedded = embeddedFields(tags);
         h.stamp = after;
         if (audio && audio->sampleRate > 0 && audio->lengthInSamples > 0 && audio->numChannels > 0)
         {
@@ -868,6 +879,7 @@ struct LibraryService::Impl
             while (!stopping)
             {
                 juce::String q, root, scope;
+                juce::String facets;
                 AudioReference example;
                 bool usingExample = false;
                 uint64_t id, input, token, corpus;
@@ -875,7 +887,10 @@ struct LibraryService::Impl
                     std::unique_lock lock(mutex);
                     input = semanticInputVersion;
                     corpus = analysisGeneration;
-                    if (!aiLoaded || (!exampleMode && text.trim().isEmpty()) ||
+                    if (!aiLoaded ||
+                        (!exampleMode &&
+                         (text.trim().isEmpty() ||
+                          (isMetadataQuery(text) && metadataTokens(text, false).isEmpty()))) ||
                         (input == lastInput &&
                          (corpus == lastAnalysis || monotonicMs() - lastCompleted < 500)) ||
                         monotonicMs() < semanticDue)
@@ -890,6 +905,9 @@ struct LibraryService::Impl
                     token = workToken;
                     usingExample = exampleMode;
                     example = reference;
+                    facets = usingExample ? exampleFacets : metadataTokens(q, true);
+                    if (!usingExample && facets.isNotEmpty())
+                        q = metadataTokens(q, false);
                 }
                 semanticWorkRequest = id;
                 semanticWorkPhase = 1;
@@ -1021,6 +1039,7 @@ struct LibraryService::Impl
                     auto retrievalBegan = monotonicMs();
                     semanticWorkPhase = 3;
                     read.setScope(scope);
+                    read.setSemanticFilter(facets);
                     result.candidates = index.search(read, vector, root, excluded, 100, &metrics,
                                                      [&] { return stopping || workToken != token; });
                     if (encoded)
@@ -1216,7 +1235,29 @@ struct LibraryService::Impl
                     juce::String error;
                     try
                     {
-                        db.editCollections(edit);
+                        if (edit.action == "meta-import")
+                        {
+                            juce::File f(edit.name);
+                            if (!f.existsAsFile() || f.getSize() > 16 * 1024 * 1024)
+                                throw std::runtime_error("Invalid metadata manifest");
+                            db.importMetadata(juce::JSON::parse(f));
+                        }
+                        else if (edit.action == "meta-export")
+                        {
+                            juce::File f(edit.name);
+                            if (f.exists())
+                                throw std::runtime_error("Choose a new metadata manifest name");
+                            auto payload = db.metadataManifest(edit.items);
+                            juce::TemporaryFile tmp(f);
+                            if (!tmp.getFile().replaceWithText(juce::JSON::toString(payload)) ||
+                                ::renamex_np(tmp.getFile().getFullPathName().toRawUTF8(),
+                                             f.getFullPathName().toRawUTF8(), RENAME_EXCL) != 0)
+                                throw std::runtime_error("Cannot publish metadata manifest");
+                        }
+                        else if (edit.action.startsWith("meta-"))
+                            db.editMetadata(edit);
+                        else
+                            db.editCollections(edit);
                     }
                     catch (const std::exception &e)
                     {
@@ -1230,6 +1271,12 @@ struct LibraryService::Impl
                     ++version;
                     if (edit.action == "used" && collectionScope == "recent" && pinned)
                         current.newResultsAvailable = true;
+                    if (edit.action.startsWith("meta-"))
+                    {
+                        ++current.metadataVersion;
+                        ++membershipVersion;
+                        ++workToken;
+                    }
                     if (collectionScope.isNotEmpty() &&
                         (edit.action != "used" || (collectionScope == "recent" && !pinned)))
                     {
@@ -1291,6 +1338,7 @@ struct LibraryService::Impl
                                         {}, job.verified.samples);
                             a = db.asset(a.id);
                         }
+                        db.providerMetadata(a, job.provenance);
                         CollectionEdit e;
                         e.action = "member";
                         e.id = job.collection;
@@ -1394,6 +1442,7 @@ struct LibraryService::Impl
                             a.detectedChannels = h.layout;
                             a.layoutConfidence = h.confidence;
                             db.metadata(a, h.seconds, h.channels, h.rate, h.error, h.samples);
+                            db.snapshotMetadata(a, h.embedded);
                             if (aiLoaded)
                                 db.seedAnalysis(modelId(), preprocessingId(), a.id);
                         }
@@ -1412,7 +1461,7 @@ struct LibraryService::Impl
                         if (!b.names.empty() && (!performance.expectedFiles ||
                                                  performance.discovered <= performance.expectedFiles))
                             performance.discoveryFinishedMs = monotonicMs();
-                        if (!b.names.empty())
+                        if (!b.names.empty() || !b.headers.empty())
                             ++membershipVersion;
                         publish();
                     }
@@ -1944,9 +1993,9 @@ void LibraryService::setLayoutOverride(const Asset &asset, const ChannelLayout &
         impl->layoutEdits.push_back({asset.id, asset.revision, layout});
     impl->wake.notify_all();
 }
-std::future<Asset> LibraryService::indexGenerated(Asset asset, juce::String collection)
+std::future<Asset> LibraryService::indexGenerated(Asset asset, juce::String collection, juce::var receipt)
 {
-    Impl::GeneratedImport job{std::move(asset), std::move(collection), {}};
+    Impl::GeneratedImport job{std::move(asset), std::move(collection), {}, receipt};
     auto result = job.result.get_future();
     std::lock_guard lock(impl->mutex);
     if (impl->stopping || impl->generatedImports.size() >= 8)
@@ -2123,6 +2172,8 @@ uint64_t LibraryService::findSimilar(const AudioReference &reference, const juce
         throw std::runtime_error("Minimum similarity must be between 0 and 1");
     std::lock_guard lock(impl->mutex);
     impl->reference = reference;
+    if (!impl->exampleMode)
+        impl->exampleFacets = metadataTokens(impl->text, true);
     impl->exampleMode = true;
     impl->current.exampleMode = true;
     impl->text.clear();
