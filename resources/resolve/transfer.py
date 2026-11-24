@@ -144,8 +144,51 @@ def same_target(expected):
     return resolve, project, timeline, identity
 
 
+def check_active_candidates(timeline, subtype, first, end):
+    tracks = []
+    for index in range(1, timeline.GetTrackCount("audio") + 1):
+        locked = timeline.GetIsTrackLocked("audio", index)
+        require(isinstance(locked, bool), "Resolve did not report reliable track locks")
+        if locked:
+            continue
+        try:
+            safe_track(timeline, index, subtype, first, end)
+        except RuntimeError as error:
+            raise RuntimeError(f"Active track cannot be preflighted (A{index}). {error} "
+                               "Set an explicit track in Transfer options.") from error
+        tracks.append(index)
+    require(tracks, "Select an unlocked audio track in Resolve Fairlight")
+    return tracks
+
+
+def verify_placement(timeline, response, item, index, first, length, path, request, roles, subtype,
+                     playhead, rate, drop):
+    uid = item.GetUniqueId()
+    response["observedTimelineItem"] = uid
+    target = item.GetTrackTypeAndIndex()
+    verify_item = next((clip for clip in track_items(timeline, index) if clip.GetUniqueId() == uid), None)
+    require(uid and verify_item and tuple(target or ()) == ("audio", index),
+            "Resolve did not verify the new audio-only timeline item")
+    start, end = verify_item.GetStart(True), verify_item.GetEnd(True)
+    require(start == first and end > start and abs((end - start) - float(length)) <= 1,
+            "Resolve item position or duration did not match the requested transfer")
+    linked = verify_item.GetMediaPoolItem()
+    require(linked and path.is_file(), "Resolve could not verify the placed item's online media identity")
+    info = verified_media(linked, path, len(roles), request["rate"])
+    media_id = response.get("media", linked.GetMediaId())
+    require(linked.GetMediaId() == media_id, "Resolve linked a different media item")
+    mapping = verify_mapping(verify_item.GetSourceAudioChannelMapping(), subtype, len(roles))
+    response.update({"ok": True, "item": uid, "recordFrame": first, "endFrame": end, "track": index,
+                     "timecode": playhead, "timelineRate": str(rate), "dropFrame": drop,
+                     "durationRounding": "Resolve natural duration, verified within one record frame",
+                     "channels": len(roles), "sampleRate": request["rate"], "roles": roles,
+                     "media": media_id, "mediaPath": str(path),
+                     "trackSubtype": subtype, "mediaDuration": info.get("Duration", ""),
+                     "online": True, "audioMapping": mapping})
+
+
 def place(request, response):
-    _, project, timeline, identity = same_target(request["target"])
+    resolve, project, timeline, identity = same_target(request["target"])
     response.update(identity)
     layout = request["layout"]["id"]
     roles = request["layout"]["roles"]
@@ -161,15 +204,28 @@ def place(request, response):
     frame_span = max(1, -(-length.numerator // length.denominator))
     count = timeline.GetTrackCount("audio")
     index = int(request.get("track", 0))
-    dedicated = "SoundPlus " + layout.removesuffix("-v1")
-    if index:
-        require(1 <= index <= count, "Chosen Resolve track does not exist")
-    else:
-        candidates = [i for i in range(1, count + 1) if timeline.GetTrackName("audio", i) == dedicated]
-        require(len(candidates) <= 1, "Ambiguous dedicated Resolve audio track. Choose a track number.")
-        index = candidates[0] if candidates else 0
-    if index:
-        safe_track(timeline, index, subtype, first, first + frame_span)
+    if not index:
+        require(resolve.GetCurrentPage() == "fairlight", "Select the active audio track in Resolve Fairlight")
+        # Resolve exposes an insert command, but no active-track getter. The command can
+        # overwrite clips. Preflight every unlocked track it could select.
+        tracks = check_active_candidates(timeline, subtype, first, first + frame_span)
+        previous = {item.GetUniqueId() for track in tracks for item in track_items(timeline, track)}
+        same_target(identity)
+        require(timeline.GetCurrentTimecode() == playhead, "Resolve playhead moved before transfer")
+        response["placementAttempted"] = True
+        placed = project.InsertAudioToCurrentTrackAtPlayhead(str(path), 0, int(request["samples"]))
+        fresh = [(track, item) for track in tracks for item in track_items(timeline, track)
+                 if item.GetUniqueId() not in previous]
+        if len(fresh) == 1:
+            response["observedTimelineItem"] = fresh[0][1].GetUniqueId()
+        require(placed and len(fresh) == 1, "Resolve did not confirm insertion on the active audio track")
+        index, item = fresh[0]
+        response["destination"] = "active-audio-track"
+        verify_placement(timeline, response, item, index, first, length, path, request, roles, subtype,
+                         playhead, rate, drop)
+        return
+    require(1 <= index <= count, "Chosen Resolve track does not exist")
+    safe_track(timeline, index, subtype, first, first + frame_span)
 
     pool = project.GetMediaPool()
     prior = pool.GetCurrentFolder()
@@ -191,44 +247,20 @@ def place(request, response):
         media = imported[0]
     response["media"] = media.GetMediaId()
     response["mediaPath"] = str(path)
-    info = verified_media(media, path, len(roles), request["rate"])
+    verified_media(media, path, len(roles), request["rate"])
     verify_mapping(media.GetAudioMapping(), subtype, len(roles))
 
     same_target(identity)
     require(timeline.GetCurrentTimecode() == playhead, "Resolve playhead moved during import. The media is retained.")
-    if not index:
-        require(timeline.GetTrackCount("audio") == count, "Resolve tracks changed during import")
-        require(timeline.AddTrack("audio", subtype), "Resolve could not add a compatible audio track")
-        index = count + 1
-        require(timeline.GetTrackCount("audio") == index and timeline.SetTrackName("audio", index, dedicated),
-                "Resolve did not confirm the dedicated audio track")
     safe_track(timeline, index, subtype, first, first + frame_span)
     previous = {i.GetUniqueId() for i in track_items(timeline, index)}
     response["placementAttempted"] = True
     placed = pool.AppendToTimeline([{"mediaPoolItem": media, "mediaType": 2, "trackIndex": index,
                                      "recordFrame": first}])
     require(placed and len(placed) == 1, "Resolve imported media but did not confirm placement")
-    item = placed[0]
-    uid = item.GetUniqueId()
-    response["observedTimelineItem"] = uid
-    target = item.GetTrackTypeAndIndex()
-    verify_item = next((clip for clip in track_items(timeline, index) if clip.GetUniqueId() == uid), None)
-    require(uid and uid not in previous and verify_item and tuple(target or ()) == ("audio", index),
-            "Resolve did not verify the new audio-only timeline item")
-    start, end = verify_item.GetStart(True), verify_item.GetEnd(True)
-    require(start == first and end > start and abs((end - start) - float(length)) <= 1,
-            "Resolve item position or duration did not match the requested transfer")
-    linked = verify_item.GetMediaPoolItem()
-    require(linked and linked.GetMediaId() == media.GetMediaId() and path.is_file(),
-            "Resolve could not verify the placed item's online media identity")
-    verified_media(linked, path, len(roles), request["rate"])
-    mapping = verify_mapping(verify_item.GetSourceAudioChannelMapping(), subtype, len(roles))
-    response.update({"ok": True, "item": uid, "recordFrame": first, "endFrame": end, "track": index,
-                     "timecode": playhead, "timelineRate": str(rate), "dropFrame": drop,
-                     "durationRounding": "Resolve natural duration, verified within one record frame",
-                     "channels": len(roles), "sampleRate": request["rate"], "roles": roles,
-                     "trackSubtype": subtype, "mediaDuration": info.get("Duration", ""),
-                     "online": True, "audioMapping": mapping})
+    require(placed[0].GetUniqueId() not in previous, "Resolve did not add a new audio item")
+    verify_placement(timeline, response, placed[0], index, first, length, path, request, roles, subtype,
+                     playhead, rate, drop)
 
 
 def main(source, destination):

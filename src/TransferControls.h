@@ -12,13 +12,13 @@ class TransferController
     {
         int workspace = -1;
         bool running = false, cancellable = false, canRetry = false;
-        juce::String status, error;
+        juce::String status, error, selectionKey;
         TransferArtifact artifact;
         juce::File receipt;
     };
     explicit TransferController(const juce::File &catalog);
     ~TransferController();
-    bool reserve(int workspace);
+    bool reserve(int workspace, const juce::String &selectionKey);
     void start(TransferRequest);
     void fail(const juce::String &);
     void cancel();

@@ -21,7 +21,7 @@ struct TransferRequest
     juce::File catalog, durableFolder;
     juce::String copyBookmark;
     bool saveCopy = false;
-    int resolveTrack = 0; // Zero selects a dedicated compatible track.
+    int resolveTrack = 0; // Zero uses Resolve's active Fairlight audio track.
 };
 struct TransferArtifact
 {

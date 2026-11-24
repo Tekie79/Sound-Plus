@@ -75,6 +75,8 @@ enum class ActionIcon
     nextMarker,
     record,
     microphone,
+    resolve,
+    copy,
     count
 };
 namespace icons

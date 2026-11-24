@@ -38,7 +38,7 @@ TransferController::State TransferController::snapshot() const
     std::lock_guard lock(mutex);
     return state;
 }
-bool TransferController::reserve(int workspace)
+bool TransferController::reserve(int workspace, const juce::String &selectionKey)
 {
     std::lock_guard lock(mutex);
     if (state.running)
@@ -47,6 +47,7 @@ bool TransferController::reserve(int workspace)
     retryRequest.reset();
     state = {};
     state.workspace = workspace;
+    state.selectionKey = selectionKey;
     state.running = state.cancellable = true;
     state.status = "Preparing";
     return true;
@@ -250,23 +251,23 @@ TransferPanel::TransferPanel(juce::PropertiesFile &p, TransferController &s, int
          &track, &copy, &folder, &submit, &cancelButton, &drag, &reveal, &retryButton})
         addAndMakeVisible(c);
     heading.setFont(juce::FontOptions(16.f, juce::Font::bold));
-    heading.setText(w == 3 ? "Transfer receipts" : "Send / Drag", juce::dontSendNotification);
+    heading.setText(w == 3 ? "Transfer receipts" : "Transfer options", juce::dontSendNotification);
     selected.setText(context, juce::dontSendNotification);
     selectionLabel.setText("Selection", juce::dontSendNotification);
     actionLabel.setText("Default action", juce::dontSendNotification);
     rangeLabel.setText("Project frames", juce::dontSendNotification);
-    trackLabel.setText("Resolve track", juce::dontSendNotification);
+    trackLabel.setText("Track override", juce::dontSendNotification);
     selection.setTitle("Transfer selection scope");
     action.setTitle("Default transfer action");
     first.setTitle("First project frame inclusive");
     last.setTitle("Last project frame exclusive");
-    track.setTitle("Resolve audio track number");
+    track.setTitle("Optional Resolve audio track number for this send");
     first.setText(juce::String(in));
     last.setText(juce::String(out));
     first.setInputRestrictions(14, "0123456789");
     last.setInputRestrictions(14, "0123456789");
     track.setInputRestrictions(3, "0123456789");
-    track.setTextToShowWhenEmpty("Dedicated SoundPlus track", ui::muted);
+    track.setTextToShowWhenEmpty("Active audio track (Fairlight)", ui::muted);
     if (prefs.getIntValue("transfer.track") > 0)
         track.setText(juce::String(prefs.getIntValue("transfer.track")));
     auto defaultChoice = preferredScope(prefs, w);

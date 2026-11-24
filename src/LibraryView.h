@@ -51,6 +51,7 @@ class LibraryView final : public juce::Component,
     void bindPreferences(juce::PropertiesFile &);
     void parkPlayback();
     std::optional<BookmarkRequest> transferSelection() const;
+    ui::FileDragButton &transferButton() { return sendTransfer; }
     std::function<void(juce::Component &, bool)> onTransfer;
     void focusSearch()
     {
@@ -64,7 +65,7 @@ class LibraryView final : public juce::Component,
 
   private:
     void lookAndFeelChanged() override;
-    ui::TextActionButton sendTransfer{"Send / Drag"};
+    ui::FileDragButton sendTransfer{"Prepare audio to drag"};
     IconButton transferOptions{"Transfer options", ActionIcon::settings};
     IconButton processPlugin{"Process selected source/range with Plug-in", ActionIcon::processing};
     friend struct CorrectionViewTestAccess;

@@ -966,7 +966,7 @@ void LibraryView::resized()
     addDesigner.setBounds(previewRight - 181, y, 30, 28);
     processPlugin.setBounds(previewRight - 217, y, 30, 28);
     moments.setBounds(previewLeft, y, std::min(286, selection.getWidth() - 230), 27);
-    sendTransfer.setBounds(moments.getRight() + 8, y, 112, 28);
+    sendTransfer.setBounds(moments.getRight() + 8, y, 30, 28);
     transferOptions.setBounds(sendTransfer.getRight(), y, 30, 28);
     waveform.setBounds(layout.waveform);
     repeatOne.setBounds(centre - 221, controls + 6, 28, 28);

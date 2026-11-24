@@ -4,13 +4,21 @@
 
 ## Workflow
 
-- Open **Send / Drag** in Library Preview, Edit, or Perform. The adjacent gear opens the workspace’s scope and destination options. The main button uses the saved action and eligible scope. Choose **Save a copy** and select its destination in the macOS folder picker. Deliver → **Transfers** opens the receipt directory.
+- Use the **Resolve** or **Copy** icon in Library Preview, Edit, or Perform. The icon runs the saved action directly. In Drag WAV mode, click to prepare the file and drag the same icon when **Ready to drag** appears. The adjacent gear opens the scope and destination options. Choose **Save a copy** and select its destination in the macOS folder picker. Deliver → **Transfer receipts** opens the receipt directory.
 - Library uses original source samples. The marked range is half-open, with IN included and OUT excluded. A full-file copy retains all original bytes. With Copy off, the full scope uses the verified source path and a range uses a finalized WAV in the catalog’s transfer-media folder.
 - Edit track and Group exports tap the selected owner after its processing and PDC, before downstream Group and Master processing. Full track stems retain the design’s padded timeline and configured tail. Selected clip isolates the clip, retains its source region, fades and inserts, and passes through the owning track. Project ranges warm up from frame zero and stop at the exclusive end. Full and ranged mixes include Group and Master processing. Render sample rate and layout use the existing export settings.
 - Perform selected pad isolates its owned sources, retains its motion and routing, and includes the common Master. Shared MIDI is excluded from an isolated pad and included in the combined mix. With nonlinear processing, summing isolated pads can differ from the combined output. Frozen transfers resolve the recorded recipe and include its recipe and event hashes in the receipt.
-- Resolve reads its current project, timeline and playhead and places audio-only on a compatible unlocked track at that record frame. Collision checking rounds audio duration up for the protected interval. Post-placement validation uses Resolve’s actual subframe end, allowing up to one record frame of duration difference. The confirmed item, media, audio mapping, frame, sample rate and online path are recorded. Retrying a known pre-placement failure reuses the verified file and keeps prior attempt data. Inspect the receiver after an ambiguous helper failure before sending again.
+- For quick sends, select an audio track in Resolve’s Fairlight page. Resolve inserts audio on its active track at its playhead. Its scripting API exposes the insert command but does not expose the active track number, so SoundPlus checks the interval and layout on every unlocked candidate. If another track blocks this check, use the gear’s **Track override** and send from there. An explicit track also supports the Resolve Edit page. Collision checking rounds duration up for the protected interval. Post-placement validation uses Resolve’s actual subframe end, allowing up to one record frame of duration difference. Retrying a known pre-placement failure reuses the verified file and keeps prior attempt data.
 
-## Build and verification identity
+### Quick-action follow-up
+
+- On Resolve Studio 21.1.2.10 at 24 fps, the native Library Resolve icon placed audio onto A2 at frame 384, then onto A1 at frame 480 after the active track changed. Both items, media IDs, frame intervals and online paths survived Save, Quit and Reopen.
+- An occupied A1 range failed before placement. The IDs and bounds of all existing timeline items on both tracks were identical afterward.
+- Clicking the Copy and Resolve icons kept the workspace visible. A gesture on the prepared Copy icon recorded actual macOS drag start and end. Cross-application drop acceptance remains open.
+- Six focused Release tests and the independent workspace-transfer PCM suite passed. The updated Release executable SHA-256 is `e9adca2b895ee8cfccd4865e715f2d18ed0c31f133fc636d5c3bb0610feaa5de`.
+- Working revision r4506 and 429 audited media files matched after reopening the updated build. Catalog tables and working state matched the protected snapshot. The original Resolve project and timeline were restored.
+
+## Original milestone build and verification identity
 
 | Item | Verified value |
 | --- | --- |
