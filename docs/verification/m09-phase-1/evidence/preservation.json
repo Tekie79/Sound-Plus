@@ -1,0 +1,32 @@
+{
+  "before": {
+    "activeId": "0403deec259f4169857b336246f201da",
+    "revision": 4506,
+    "schema": 7,
+    "assets": 43
+  },
+  "after": {
+    "activeId": "0403deec259f4169857b336246f201da",
+    "revision": 4506,
+    "schema": 7,
+    "assets": 43
+  },
+  "countBefore": 488,
+  "countAfter": 488,
+  "added": 0,
+  "removed": 0,
+  "changedFiles": [
+    "live-inserts/f7c6a102f3ca430bb822a519b3118fa2/54eec001b680b3eea1bbd8ce708e8c3766220e5bb9f1d40e6753c62792c64ba7/9ec94a4c25384871a69c379adf90393a/49813e9ff90c4207b395f81e85e642e4/checkpoint.json",
+    "live-inserts/f7c6a102f3ca430bb822a519b3118fa2/54eec001b680b3eea1bbd8ce708e8c3766220e5bb9f1d40e6753c62792c64ba7/9ec94a4c25384871a69c379adf90393a/49813e9ff90c4207b395f81e85e642e4/exchange",
+    "live-inserts/f7c6a102f3ca430bb822a519b3118fa2/54eec001b680b3eea1bbd8ce708e8c3766220e5bb9f1d40e6753c62792c64ba7/9ec94a4c25384871a69c379adf90393a/49813e9ff90c4207b395f81e85e642e4/state.json"
+  ],
+  "changedTables": [],
+  "tableHashes": {
+    "assets": "09ae8a057e29b3ae508423cf312ff8f65b74baeb20520c9da014a5a19099e302",
+    "collection_members": "1c4a1313a3ff9519055db17550155e7dd0a567d24216eb3746dc5dfb9bed97d3",
+    "collections": "2515aac10b0d677a0b74bc3bd42ac7f45c004bc4adbadb2d9000a1dd9b2d63e1",
+    "library_refs": "562f873ec3447bde0f39455fa4eaeb67831326705d91d9829098895d2cf3ed48",
+    "roots": "ffe4b540d89972fc2829424527ef9ec42c7dd6525af7be0f8992b32acc928dcc"
+  },
+  "stableCount": 485
+}

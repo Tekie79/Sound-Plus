@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:39:31.239607+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--mixer-stems', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/mixer-stems']
+Aligned pre-Master stems: exact impulse PCM, common tail, additive reference, Master isolation, receipt, cancellation and reopen
+exit 0 UTC 2026-11-24T16:39:31.315445+00:00

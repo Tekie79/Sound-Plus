@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:40:55.351356+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--similar-integrity', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/similar-integrity', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus']
+FAIL after 0 checks: Use isolated similar-test-output
+exit 1 UTC 2026-11-24T16:40:55.362154+00:00

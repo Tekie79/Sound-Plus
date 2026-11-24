@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:43:11.687432+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--midi-instruments', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/midi-instruments', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusMidiFixture_artefacts/Release/VST3/SoundPlus MIDI Oracle.vst3']
+MIDI instrument: 8905 checks passed; /Users/harvest/SoundPlus-QA/phase1.QgKS16/work/midi-instruments/7e8b04065a0d4f839cb6c3bf9de26eaa
+exit 0 UTC 2026-11-24T16:43:16.919937+00:00

@@ -1,0 +1,14 @@
+UTC 2026-11-24T16:43:17.846367+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--advanced-effects', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/advanced-effects']
+Delay reopen max error 7.02187e-16
+IR capture rate 44100 event 560 max error 1.86265e-09 produced 9476
+IR capture rate 44100 event 560 max error 2.79397e-09 produced 9476
+IR capture rate 44100 event 560 max error 2.79397e-09 produced 9476
+IR capture rate 48000 event 512 max error 2.79397e-09 produced 8704
+IR capture rate 48000 event 512 max error 1.86265e-09 produced 8704
+IR capture rate 48000 event 512 max error 2.09548e-09 produced 8704
+IR capture rate 96000 event 259 max error 1.86265e-09 produced 4355
+IR capture rate 96000 event 259 max error 1.86265e-09 produced 4355
+IR capture rate 96000 event 259 max error 2.79397e-09 produced 4355
+Advanced effects: 5670497 assertions passed
+exit 0 UTC 2026-11-24T16:43:20.367962+00:00

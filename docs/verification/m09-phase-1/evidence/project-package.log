@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:43:22.388647+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--project-package', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/project-package']
+Portable project verified with offline source root, two same-name assets, frozen replay, cancellation, link and checksum rejection
+exit 0 UTC 2026-11-24T16:43:22.426727+00:00

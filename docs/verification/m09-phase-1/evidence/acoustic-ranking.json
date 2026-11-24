@@ -1,0 +1,508 @@
+[
+  {
+    "file": "clip-001.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "VEGETATION",
+        "similarity": 0.450092554092407,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-002.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "TOOLS",
+        "similarity": 0.32571879029274,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-003.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "RAIN",
+        "similarity": 0.380626648664474,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-004.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOD & DRINK",
+        "similarity": 0.447523206472397,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "GUNS",
+        "similarity": 0.378359466791153,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "FIRE",
+        "similarity": 0.355030477046967,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-005.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-006.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-007.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-008.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "WATER",
+        "similarity": 0.457346469163895,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "LIQUID & MUD",
+        "similarity": 0.396219789981842,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-009.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-010.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-011.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "ALARMS",
+        "similarity": 0.49254298210144,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "CLOCKS",
+        "similarity": 0.445384204387665,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-012.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-013.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "RAIN",
+        "similarity": 0.376195520162582,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "WEATHER",
+        "similarity": 0.335324048995972,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-014.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "DOORS",
+        "similarity": 0.493713438510895,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-015.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-016.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "CLOCKS",
+        "similarity": 0.588260471820831,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-017.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "MACHINES",
+        "similarity": 0.637513399124146,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-018.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-019.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-020.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOD & DRINK",
+        "similarity": 0.41322273015976,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "HUMAN",
+        "similarity": 0.37848237156868,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "TOYS",
+        "similarity": 0.344593495130539,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "ANIMALS",
+        "similarity": 0.34248274564743,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "COMMUNICATIONS",
+        "similarity": 0.337321251630783,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-021.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "NATURAL DISASTER",
+        "similarity": 0.444326519966125,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-022.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOD & DRINK",
+        "similarity": 0.446751147508621,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "HUMAN",
+        "similarity": 0.372526109218597,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "TOYS",
+        "similarity": 0.361247360706329,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-023.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-024.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "GLASS",
+        "similarity": 0.580907940864563,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "CERAMICS",
+        "similarity": 0.519412696361542,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-025.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "CLOCKS",
+        "similarity": 0.540251970291138,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-026.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-027.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-028.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOTSTEPS",
+        "similarity": 0.539012908935547,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-029.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "DOORS",
+        "similarity": 0.490832418203354,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-030.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "MACHINES",
+        "similarity": 0.384031057357788,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "MOTORS",
+        "similarity": 0.327259540557861,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-031.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOTSTEPS",
+        "similarity": 0.56038373708725,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-032.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-033.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FIRE",
+        "similarity": 0.634894073009491,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-034.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "NATURAL DISASTER",
+        "similarity": 0.433250248432159,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-035.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-036.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-037.wav",
+    "status": "No suggestion (ambiguous audio)",
+    "choices": []
+  },
+  {
+    "file": "clip-038.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "MOTORS",
+        "similarity": 0.393800467252731,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "TOOLS",
+        "similarity": 0.320213109254837,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-039.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "TOOLS",
+        "similarity": 0.48038774728775,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "MACHINES",
+        "similarity": 0.442784041166306,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-040.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "MACHINES",
+        "similarity": 0.497069984674454,
+        "first": 0,
+        "last": 220500
+      },
+      {
+        "category": "TOOLS",
+        "similarity": 0.415977716445923,
+        "first": 0,
+        "last": 220500
+      }
+    ]
+  },
+  {
+    "file": "clip-041.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "RAIN",
+        "similarity": 0.373657554388046,
+        "first": 0,
+        "last": 441000
+      },
+      {
+        "category": "WEATHER",
+        "similarity": 0.334815084934235,
+        "first": 0,
+        "last": 441000
+      }
+    ]
+  },
+  {
+    "file": "clip-042.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FOOTSTEPS",
+        "similarity": 0.560738384723663,
+        "first": 0,
+        "last": 441000
+      }
+    ]
+  },
+  {
+    "file": "clip-043.wav",
+    "status": "Suggested from audio (unverified)",
+    "choices": [
+      {
+        "category": "FIRE",
+        "similarity": 0.633660137653351,
+        "first": 0,
+        "last": 441000
+      }
+    ]
+  }
+]

@@ -1,0 +1,2 @@
+PASS exact cached retrieval, live deltas, filters, exclusions, invalidation, log gap recovery, cache reuse/integrity, channels and reference windows
+acoustic-metadata 0

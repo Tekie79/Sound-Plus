@@ -1,0 +1,14 @@
+{
+  "sampleRate": 48000,
+  "channels": 6,
+  "frames": 48000,
+  "analysisRms": {
+    "front": 0.015435889340067,
+    "rear": 0.015435889340067,
+    "silence": 0.0,
+    "quiet": 6.044954772034345e-07
+  },
+  "frontRearCosine": 1.0000000050320021,
+  "rearSilenceCosine": 0.2355332263510071,
+  "quietSilenceCosine": 0.979067296166473
+}

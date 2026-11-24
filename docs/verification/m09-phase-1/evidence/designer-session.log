@@ -1,0 +1,5 @@
+UTC 2026-11-24T16:39:26.424504+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--designer-session', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/designer-session', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus']
+CoreMIDI error: 372 - ffffffce
+PASS Designer session lifetimes, recovery/retry, shutdown, folder history and transport ownership: 301 checks
+exit 0 UTC 2026-11-24T16:39:26.709444+00:00

@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:43:23.777657+00:00 
+argv ['/Library/Frameworks/Python.framework/Versions/3.14/bin/python3', '-B', '/Users/harvest/SoundPlus-QA/m09-3be7178/tests/audio_transform_http.py', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/audio-transform-jobs']
+PASS real multipart serialization, confirmed SHA-256, one POST across kill/reopen, account binding, expired/corrupt provider responses and 264600 composite oracle frames
+exit 0 UTC 2026-11-24T16:43:28.602439+00:00

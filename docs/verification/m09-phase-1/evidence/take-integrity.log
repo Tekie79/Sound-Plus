@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:39:26.709760+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--take-integrity', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/take-integrity', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus']
+PASS take integrity: 157 checks, native PCM error 0
+exit 0 UTC 2026-11-24T16:39:30.745164+00:00

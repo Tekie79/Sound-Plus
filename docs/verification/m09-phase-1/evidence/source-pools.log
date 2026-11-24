@@ -1,0 +1,9 @@
+UTC 2026-11-24T16:43:20.368202+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--source-pools', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/source-pools', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus']
+CoreMIDI error: 372 - ffffffce
+Prepared source overlap oracle 44100 Hz max error 8.78343e-08
+Prepared source overlap oracle 48000 Hz max error 8.45193e-08
+Prepared source overlap oracle 96000 Hz max error 8.78988e-08
+Pool six-channel capture/replay/offline maximum error 0
+Source pool model/session scenarios passed (49694 assertions)
+exit 0 UTC 2026-11-24T16:43:21.942856+00:00

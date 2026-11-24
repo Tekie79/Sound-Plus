@@ -1,0 +1,15 @@
+{
+  "configuredFiles": {
+    "JUCE-8.0.6": 4222,
+    "onnxruntime-1.22.1": 12
+  },
+  "dependencyDigest": "03ba048d409822584c0db0668b22d39ba53be51911c651fed98ae78fe38079ef",
+  "host": "ProductName:\t\tmacOS\nProductVersion:\t\t26.3.2\nBuildVersion:\t\t25D2150",
+  "architecture": "arm64",
+  "device": "Apple M5 Pro",
+  "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+  "sdk": "26.5",
+  "frozenStatus": "",
+  "harnessSha256": "24b86b109765fd40ce20a93c9e5ffc6b2d6bce823a27ec8f1304dce29c6abbf5",
+  "originalRunSha256": "bca6ab58e6a29fce9af2b12b9cad5126494faf0987279443870cb247dfbc81a9"
+}

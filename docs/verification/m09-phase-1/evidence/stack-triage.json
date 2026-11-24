@@ -1,0 +1,47 @@
+{
+  "initialExit": -11,
+  "exception": {
+    "codes": "0x0000000000000002, 0x000000016f16bff8",
+    "message": "Could not determine thread index for stack guard region",
+    "rawCodes": [
+      2,
+      6158729208
+    ],
+    "type": "EXC_BAD_ACCESS",
+    "signal": "SIGSEGV",
+    "subtype": "KERN_PROTECTION_FAILURE at 0x000000016f16bff8"
+  },
+  "region": "0x16f16bff8 is in 0x16b968000-0x16f16c000;  bytes after start: 58736632  bytes before end: 7\n      REGION TYPE                    START - END         [ VSIZE] PRT/MAX SHRMOD  REGION DETAIL\n      MALLOC metadata             132e00000-132e04000    [   16K] rw-/rwx SM=PRV  \n      GAP OF 0x38b64000 BYTES\n--->  Stack Guard                 16b968000-16f16c000    [ 56.0M] ---/rwx SM=NUL  \n      Stack                       16f16c000-16f764000    [ 6112K] rw-/rwx SM=ZER  ",
+  "threadFrames": [
+    {
+      "imageOffset": 7144,
+      "symbol": "___chkstk_darwin",
+      "symbolLocation": 60,
+      "imageIndex": 1
+    },
+    {
+      "imageOffset": 2161028,
+      "symbol": "runMultichannelTests(juce::File const&, juce::File const&)",
+      "symbolLocation": 56,
+      "imageIndex": 0
+    },
+    {
+      "imageOffset": 43944,
+      "symbol": "main",
+      "symbolLocation": 8508,
+      "imageIndex": 0
+    },
+    {
+      "imageOffset": 36180,
+      "symbol": "start",
+      "symbolLocation": 7184,
+      "imageIndex": 2
+    }
+  ],
+  "initialSoftStackKiB": 8176,
+  "retryStackKiB": 65520,
+  "retryExit": 0,
+  "checks": 882411,
+  "process": "SoundPlusTests",
+  "beforeFixtures": true
+}

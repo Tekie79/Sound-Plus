@@ -1,0 +1,5 @@
+UTC 2026-11-24T16:43:22.426983+00:00 
+argv ['/Library/Frameworks/Python.framework/Versions/3.14/bin/python3', '-B', '/Users/harvest/SoundPlus-QA/m09-3be7178/tests/sfx_http_fixture.py', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/sfx']
+Provider, history, cancellation, catalog, identity, Edit/Pad Undo and reopen passed.
+Independent oracle passed for 132300 canonical PCM samples, SHA-256, request counts and redaction.
+exit 0 UTC 2026-11-24T16:43:23.777253+00:00

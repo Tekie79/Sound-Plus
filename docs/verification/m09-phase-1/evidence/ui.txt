@@ -1,0 +1,85 @@
+2026-11-24T16:42:38.987Z
+After Reject, before closing the QA instance
+	10 button Suggest from audio
+	11 text (settable) No remaining suggestions
+
+2026-11-24T16:43:22.341Z
+Relaunched QA profile, requested suggestions again
+	10 button Suggest from audio
+	11 text (settable) No remaining suggestions
+
+2026-11-24T16:43:31.557Z
+After Undo
+	10 button Suggest from audio
+	11 text (settable) Suggested from audio (unverified)
+	12 pop up button (settable) Help: Ranked by cosine similarity, Value: RAIN  0.38
+	13 button Preview matching moment
+	15 button Reject
+
+2026-11-24T16:43:41.766Z
+Explicit Apply
+	11 text (settable) Review submitted
+
+2026-11-24T16:43:54.992Z
+Details after Apply
+	26 text (settable) Sound tags Category RAIN Audio Duration 5.000 s Sample rate 44100 Hz Channels 1 Format WAV file Bit depth (reader) 16-bit integer Frames 220500 Layout MONO Channel order C Layout confidence conventional File File size 430.7 KB Modified 17 Nov 2026 19:52 Status Ready Path /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+
+2026-11-24T16:43:55.934Z
+Find Similar from clip-003
+	13 text (settable) 2 results  ·  43 indexed  ·  43 ready
+	27 text (settable) Local AI ready REFERENCE  |  clip-003.wav  |  Indexed recording
+	34 pop up button (settable) Minimum similarity (cosine), Help: Minimum similarity, Value: Similarity ≥ 0.55
+		58 row clip-041.wav, 60.00 seconds, 1 channels, MONO, 44100 Hz, ready, Similarity 0.891, match 0.000 to 10.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-041.wav
+			59 row clip-041.wav, 60.00 seconds, 1 channels, MONO, 44100 Hz, ready, Similarity 0.891, match 0.000 to 10.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-041.wav
+		60 row clip-013.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Similarity 0.889, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-013.wav
+			61 row clip-013.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Similarity 0.889, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-013.wav
+
+2026-11-24T16:44:21.413Z
+After second relaunch
+	25 text (settable) Sound tags Category RAIN Audio Duration 5.000 s Sample rate 44100 Hz Channels 1 Format WAV file Bit depth (reader) 16-bit integer Frames 220500 Layout MONO Channel order C Layout confidence conventional File File size 430.7 KB Modified 17 Nov 2026 19:52 Status Ready Path /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+		38 row clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+			39 row clip-003.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, , /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-003.wav
+
+2026-11-24T16:45:07.724Z
+Created Audio Track, collapsed lane and Master disclosure
+	43 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	46 button (settable) Arm audio input: Audio, Value: Off, Help: Arm raw audio recording. Choose the device/channels and optional monitoring in Track options. Monitoring starts off.
+	48 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	50 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+
+2026-11-24T16:45:08.888Z
+Expanded Audio Track once
+	43 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: On
+	48 slider (settable) Track base volume, Help: Track base volume (dB); enabled Volume automation takes precedence., Value: 0.00, Secondary Actions: Delete
+	52 button Volume · dB, Help: Show curve: Volume / dB. Stable instance 
+	56 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	68 slider (settable) Monitor volume, excluded from render, Value: 0.70, Secondary Actions: Delete
+	107 container Audition output peak, Description: Post-volume peak level and peak hold
+
+2026-11-24T16:46:18.125Z
+Created MIDI track
+	43 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: On
+	61 text entry area (settable) Help: Double-click to rename. Drag empty header space to reorder., Value: MIDI
+	63 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+	66 button (settable) Arm MIDI Track, Help: MIDI arm. Choose device, channel and monitoring in Track options., Value: Off
+	70 button (settable) Automation disclosure, Help: Expand / collapse the single automation lane, Value: Off
+
+2026-11-24T16:46:28.767Z
+Native Perform after switching workspace
+	30 button (settable) Pad A, Help: Select pad, Value: On
+	39 pop up button (settable) Assign Top left blend layer, Help: Choose source
+	42 pop up button (settable) Assign Top right blend layer, Help: Choose source
+	44 slider (settable) Blend Y, zero top to one bottom, Value: 0.500, Secondary Actions: Delete
+	46 slider (settable) Blend X, zero left to one right, Value: 0.500, Secondary Actions: Delete
+	49 pop up button (settable) Assign Bottom left blend layer, Help: Choose source
+	52 pop up button (settable) Assign Bottom right blend layer, Help: Choose source
+
+2026-11-24T16:46:37.700Z
+Added Pad B
+	30 button (settable) Pad A, Help: Select pad, Value: Off
+	31 button (settable) Pad B, Help: Select pad, Value: On
+	40 pop up button (settable) Assign Top left blend layer, Help: Choose source
+	43 pop up button (settable) Assign Top right blend layer, Help: Choose source
+	50 pop up button (settable) Assign Bottom left blend layer, Help: Choose source
+	53 pop up button (settable) Assign Bottom right blend layer, Help: Choose source
+

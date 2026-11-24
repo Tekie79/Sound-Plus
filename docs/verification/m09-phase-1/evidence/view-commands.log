@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:43:11.295886+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--view-commands', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/view-commands', '/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus']
+PASS actual view comparison, model toggles and minimum geometry: 92 checks
+exit 0 UTC 2026-11-24T16:43:11.687094+00:00

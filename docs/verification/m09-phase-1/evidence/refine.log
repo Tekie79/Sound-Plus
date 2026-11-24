@@ -1,0 +1,4 @@
+UTC 2026-11-24T16:40:55.100471+00:00 
+argv ['/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests', '--refine', '/Users/harvest/SoundPlus-QA/phase1.QgKS16/work/refine']
+Refinement fixtures passed at 44.1/48/96 kHz, exact impulse bounds, channel policy, ambiguity, cancellation and cache repair in 204.273 ms
+exit 0 UTC 2026-11-24T16:40:55.350990+00:00

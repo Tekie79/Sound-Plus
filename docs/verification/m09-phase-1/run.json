@@ -1,0 +1,3254 @@
+{
+  "candidate": {
+    "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+    "binarySha256": "ca92909592d92c7e7ac09a0e0b48553e3167c63af84e07bdd25797711876b97f",
+    "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+    "manifestSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+    "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+    "tree": "4f701df30da740c426127255cacdd6594c89986c"
+  },
+  "catalog": "Dedicated native/library.sqlite from the licensed 43-recording QA fixture. Generated PCM, portable documents, provider loopback databases and mock keys isolated under work/.",
+  "createdUtc": "2026-11-24T16:38:15+00:00",
+  "platform": "Apple M5 Pro arm64, macOS 26.3.2 (25D2150). Release, Apple clang 21.0.0, SDK 26.5. Native Library output menu showed MacBook Pro Speakers. Physical monitoring unqualified.",
+  "results": {
+    "JRN-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-03": {
+      "actual": "Parallel dry and post/pre FX branches with return peak-limiter latency aligned within 2.4e-7 of predicted samples across block sizes 1/32/61/257/512 at three rates. A delay insert on that same FX Return remains open.",
+      "evidence": [
+        {
+          "bytes": 558,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/mixer-graph.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "4729432e3b46c7a10346f9220ffff0284ca6fd22eec085a1ee8a45f36d47ad87"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:39:31.239323+00:00",
+      "status": "Partial"
+    },
+    "M00-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-05": {
+      "actual": "Created a native Audio Track, expanded its single collapsed disclosure and verified Volume in dB. The frozen graph fixture rendered hidden Volume and filter together, then cleared both: the PCM differed by more than 0.01 FS; reopened partition difference below 1e-6. Independent toggles and live-versus-export measurement for each curve in the same document remain open.",
+      "evidence": [
+        {
+          "bytes": 6077,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ui.txt",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "37a381ac7ab351bca461c800d6c419d87154e136f221d2e50e1cdd7ccd445a57"
+        },
+        {
+          "bytes": 371,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/multitrack.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "57056a7070add9a8ac6396e8f2dabbe808d2d43a26505cf1d24dcb1fa37a8089"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:46:37.748183+00:00",
+      "status": "Partial"
+    },
+    "M00-06": {
+      "actual": "Exported same-named Group and FX Return plus Master at 48 kHz. Both strip IDs, paths and receipt hashes distinct; origin zero and 14,192 frames including 6,000 frames of tail. Linear Master and stem oracles agreed within 2.27242e-8 FS. Output list survived reopen.",
+      "evidence": [
+        {
+          "bytes": 405,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/mixer-stems.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "def5986c59d70630209c3fdb6bb3e3f5b4ab964f56e2078320e55c49ba3d1792"
+        },
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "M00-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-02": {
+      "actual": "Isolated random Keychain account started empty and supported save, replacement, read and deletion. Loopback test scanned all generated job artifacts for its fake HTTP credential. Did not force and inspect an OS crash report containing this specific workflow.",
+      "evidence": [
+        {
+          "bytes": 576,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/sfx.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "a012bb58540f3a08d5d5cbf97ffc96efdc7485a05ca0f8a3d17c4ab3d492d1cb"
+        },
+        {
+          "bytes": 8985,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/provider-jobs.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "d29f8bfe304b1e0fed06880075ee2e11736080f952ef0b6838deb9599033084b"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:59.815612+00:00",
+      "status": "Partial"
+    },
+    "M01-03": {
+      "actual": "Declined/missing-key paths produced no candidate. One approved three-candidate, half-second request produced three bounded POSTs and three history entries, each with the verified WAV digest. Independent oracle checked 132,300 scalar samples.",
+      "evidence": [
+        {
+          "bytes": 576,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/sfx.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "a012bb58540f3a08d5d5cbf97ffc96efdc7485a05ca0f8a3d17c4ab3d492d1cb"
+        },
+        {
+          "bytes": 8985,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/provider-jobs.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "d29f8bfe304b1e0fed06880075ee2e11736080f952ef0b6838deb9599033084b"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:59.815612+00:00",
+      "status": "Pass"
+    },
+    "M01-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-07": {
+      "actual": "Killed the test client after the loopback server received the submitted synchronous generation request. After restart there was exactly one POST and a NeedsReview record. A queryable provider job ID was unavailable for this synchronous endpoint.",
+      "evidence": [
+        {
+          "bytes": 576,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/sfx.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "a012bb58540f3a08d5d5cbf97ffc96efdc7485a05ca0f8a3d17c4ab3d492d1cb"
+        },
+        {
+          "bytes": 8985,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/provider-jobs.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "d29f8bfe304b1e0fed06880075ee2e11736080f952ef0b6838deb9599033084b"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:59.815612+00:00",
+      "status": "Partial"
+    },
+    "M01-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-15": {
+      "actual": "Three authentic v7 variants (track, variation, Master) retained their original recipe and event hashes across migration, save and reopen. Live and take PCM compared to earlier baseline WAVs within 1e-7. The separate take-integrity run reported native error 0.",
+      "evidence": [
+        {
+          "bytes": 498,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ordered-corrections.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "59dd8a95c5e0e6b49c4719616b2146f8cdbf1206aa59be325b2b4c2378e071bb"
+        },
+        {
+          "bytes": 462,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/take-integrity.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "2c5f90fac10fc55802d1a07bfef2f2aa6d04b2f4a2aa0d39f2611565f06d9026"
+        },
+        {
+          "bytes": 555,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/designer-session.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "cc407e23a25e2e6bfd1fd7c802bd20ad9547a7dac78eb830781d09b340ed1bd9"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:39:30.745257+00:00",
+      "status": "Pass"
+    },
+    "M02-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-06": {
+      "actual": "Loopback transform returned an asynchronous task ID. After process death and reopen, status polling reused that ID with one total submission. Included confirmation of source SHA, account binding and composite PCM checks.",
+      "evidence": [
+        {
+          "bytes": 583,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/audio-transform-jobs.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "7acee40e08f0d642072de731f885993ddd0a375d1974da391c3216a1545b5e1a"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:43:28.602514+00:00",
+      "status": "Pass"
+    },
+    "M02-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-06": {
+      "actual": "A 6-channel fixture with isolated right-surround impact produced exact original sample bounds at 44.1/48/96 kHz. Selecting only the physical front pair returned no event.",
+      "evidence": [
+        {
+          "bytes": 405,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/refine.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "04b29273a1676c86fac031f2db574ea68bfa80e735b608f4548430cd47a42a79"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:40:55.351041+00:00",
+      "status": "Pass"
+    },
+    "M03-07": {
+      "actual": "Opposite-polarity stereo returned the two distinct half-open events [30000,30241) and [37200,37513). Refinement also exercised quiet and sustained fallback and corrupt-cache rebuild.",
+      "evidence": [
+        {
+          "bytes": 405,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/refine.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "04b29273a1676c86fac031f2db574ea68bfa80e735b608f4548430cd47a42a79"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:40:55.351041+00:00",
+      "status": "Pass"
+    },
+    "M03-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-13": {
+      "actual": "Real Library returned two ranked neighbors for clip-003 (0.891, 0.889 at 0.55). In the view command fixture applying the second event gave [37200,37513) in bookmark and transfer and coarse restore gave [100,47000). The native preview command was invoked, but this run did not capture the output of both coarse and refined auditions for direct PCM comparison.",
+      "evidence": [
+        {
+          "bytes": 6077,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ui.txt",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "37a381ac7ab351bca461c800d6c419d87154e136f221d2e50e1cdd7ccd445a57"
+        },
+        {
+          "bytes": 169,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/similar-retry.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "2167ec059907ea319d6488dd5e738745752933554a614b613a483afabb6bca49"
+        },
+        {
+          "bytes": 405,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/refine.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "04b29273a1676c86fac031f2db574ea68bfa80e735b608f4548430cd47a42a79"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:46:37.748183+00:00",
+      "status": "Partial"
+    },
+    "M03-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-02": {
+      "actual": "Same seeded granular instance produced identical stereo PCM for block lengths 1,32,61,257,512 in the creative effects oracle. Different instance seed produced a measurable difference. The spectral freeze capture and release also ran.",
+      "evidence": [
+        {
+          "bytes": 977,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/advanced-effects.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "c265749637245d928df08186649212c6fea2229b7d3d3cbda28207eb7f568e22"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:43:20.368003+00:00",
+      "status": "Pass"
+    },
+    "M04-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-03": {
+      "actual": "Applied +3 dB over frames [900,1400) on a −18 to −3 dB slope. Checked all frames against analytic gain and preserved base point identity, PCM and relative trim after reopening.",
+      "evidence": [
+        {
+          "bytes": 558,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/mixer-graph.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "4729432e3b46c7a10346f9220ffff0284ca6fd22eec085a1ee8a45f36d47ad87"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:39:31.239323+00:00",
+      "status": "Pass"
+    },
+    "M05-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-07": {
+      "actual": "Controlled session rehearsed and punched its applied Preview receipt, then undid the compound edit. Graph checked the retained guard at 99 and restore at 1500, refused unheard lookahead, and matched bounded write to PCM after reopening.",
+      "evidence": [
+        {
+          "bytes": 555,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/designer-session.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "cc407e23a25e2e6bfd1fd7c802bd20ad9547a7dac78eb830781d09b340ed1bd9"
+        },
+        {
+          "bytes": 558,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/mixer-graph.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "4729432e3b46c7a10346f9220ffff0284ca6fd22eec085a1ee8a45f36d47ad87"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:39:31.239323+00:00",
+      "status": "Pass"
+    },
+    "M05-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-17": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-04": {
+      "actual": "Triggered a prepared source at frame 1200 and another event at 2000; serialized, reopened and compared frozen replay to consumed PCM at 44.1, 48 and 96 kHz. Threshold 2e-6 FS per sample; overlap law measured at most 8.79e-8. Separate six-channel capture/replay/offline comparison reported zero. Native Perform opened A/B with four cards.",
+      "evidence": [
+        {
+          "bytes": 741,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/source-pools.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "31ca63fb0801a3caa5905f88ea1a824379a9171a0f1ea02f89bc81211258852e"
+        },
+        {
+          "bytes": 490,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/multi-pad.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "110ab23e0eacdab260053e9fa5f436368acaaf9fcd7e87d6dd62f84bffedbe94"
+        },
+        {
+          "bytes": 6077,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ui.txt",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "37a381ac7ab351bca461c800d6c419d87154e136f221d2e50e1cdd7ccd445a57"
+        },
+        {
+          "bytes": 116469,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/perform.png",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "f18732e2e027a585c63d174201957dc3291e6be16dc1ca650fb1a07373864f66"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:46:37.798993+00:00",
+      "status": "Pass"
+    },
+    "M06-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-02": {
+      "actual": "Packaged two different corner.wav files with distinct hashes and paths. Reopened after relocating the package and moving the original directory offline, verified frozen source identities and compared take PCM.",
+      "evidence": [
+        {
+          "bytes": 415,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/project-package.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "cc12f5694df1ae02297e0c84e96fa6641ed82e6ad413825b4547341080c7f659"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:43:22.426789+00:00",
+      "status": "Pass"
+    },
+    "M07-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-04": {
+      "actual": "After planning with the verified two-tap mono IR, replaced only the disposable response.wav. Collection rejected the changed source and left no final directory. Previously published package retained verified IR and Media hashes.",
+      "evidence": [
+        {
+          "bytes": 860,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "7af5b3d7a9f9c702c553925093c2b4e4841d8c3cec2c13113c224d85ad24a973"
+        },
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 4484,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.cpp",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "98ab37ddf0e28eb7dd681a9806ed11cbc0b2e45a867c76795df676585d4287f6"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "M07-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-07": {
+      "actual": "Opened a consented package containing project, IR and source after renaming its only source root. Verified take/event and recipe lineage and rendered from package-relative content. Before/after WAV bytes identical. Independent 8,192-frame convolution oracle gave max error zero.",
+      "evidence": [
+        {
+          "bytes": 860,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "7af5b3d7a9f9c702c553925093c2b4e4841d8c3cec2c13113c224d85ad24a973"
+        },
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        },
+        {
+          "bytes": 415,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/project-package.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "cc12f5694df1ae02297e0c84e96fa6641ed82e6ad413825b4547341080c7f659"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "M07-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-12": {
+      "actual": "Native Reject on clip-003 suppressed RAIN across process reopen, Undo restored it, and Apply persisted the user category across another reopen. All 43 source bytesets matched their licensed manifest SHA-256s. Known wrong sea-waves guess and 16 abstentions recorded. Negative model/offline cases ran through the core. The native Reject interaction used the rain fixture, and expert review of the known-wrong recording is outstanding.",
+      "evidence": [
+        {
+          "bytes": 6077,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ui.txt",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "37a381ac7ab351bca461c800d6c419d87154e136f221d2e50e1cdd7ccd445a57"
+        },
+        {
+          "bytes": 11137,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/quality.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "2c26e641460b20a9abad28384369ed64096cbcea2da72262fe39db13575f1647"
+        },
+        {
+          "bytes": 10951,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/acoustic-ranking.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "dd987b57c8d278ab320cdfa645ae4cfb0db9db59eab64241cc50701852a1bdc4"
+        },
+        {
+          "bytes": 361,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/acoustic-metadata.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "4c7ddb8fce21c08b65410b6891e2be9b864761699e4de9103d88458e023cf5b1"
+        },
+        {
+          "bytes": 331,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/encoder.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "b350270d343d6b60c77d690e3d8a459d05fc0a4ce006ea5ab04fdd09de9dcad8"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:00.850561+00:00",
+      "status": "Partial"
+    },
+    "M08-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-01": {
+      "actual": "Launched the exact prior clean Release build after checking its commit, embedded marker, bundle, manifest, build and gate logs, and independently reading all 4,234 installed dependency files. A second bootstrap/build or distributable installer was outside this frozen-candidate session.",
+      "evidence": [
+        {
+          "bytes": 596,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/environment.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "f723eb1b6b55dad07588a0a91f3583ee5a3d80113eb0547ef4094977112acbd4"
+        },
+        {
+          "bytes": 6077,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/ui.txt",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "37a381ac7ab351bca461c800d6c419d87154e136f221d2e50e1cdd7ccd445a57"
+        },
+        {
+          "bytes": 103,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/dependencies.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "2af073ce4ccbcd09551b3ac9ee65245b616238469d63aeafedcaf86eae286847"
+        },
+        {
+          "bytes": 874,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/verify_dependencies.py",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "50ee7e01d9565998877b9e52c5c56ffb0bf45e829d62cd8c967ad72389447174"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:46:37.748183+00:00",
+      "status": "Partial"
+    },
+    "M09-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-015": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-016": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-017": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-018": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-019": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-020": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-021": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-022": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-023": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-024": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-025": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-026": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-027": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-028": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-029": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-030": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-002": {
+      "actual": "Group-routed stereo impulses, track and Master initially unity. Set track to −6 dB with inserts empty. Decoded all 8,192 stereo frames against 10^(-6/20). Unity error 0, attenuated maximum 2.27242e-8 FS.",
+      "evidence": [
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        },
+        {
+          "bytes": 3593,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/verify_pcm.py",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "0e807e9ee5bcd22497115aeb8650293ed884d2ec8c1e62f0d86f719ab18e34da"
+        },
+        {
+          "bytes": 4484,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.cpp",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "98ab37ddf0e28eb7dd681a9806ed11cbc0b2e45a867c76795df676585d4287f6"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "MX-FAD-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-006": {
+      "actual": "Muted the sending source with a pre-fader send enabled. Maximum magnitude across 4,096 frames was exactly zero at 44.1, 48 and 96 kHz. Isolation of the solo return and return mute was also exercised.",
+      "evidence": [
+        {
+          "bytes": 558,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/mixer-graph.log",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "4729432e3b46c7a10346f9220ffff0284ca6fd22eec085a1ee8a45f36d47ad87"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:39:31.239323+00:00",
+      "status": "Pass"
+    },
+    "MX-SND-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-015": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-016": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-017": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-018": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-019": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-020": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-001": {
+      "actual": "Six independent role pulses routed through matching Side Group and Master. Independently decoded all 24,576 samples and extensible mask 0x60f. Maximum absolute sample error 1.19210e-7 FS.",
+      "evidence": [
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        },
+        {
+          "bytes": 3593,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/verify_pcm.py",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "0e807e9ee5bcd22497115aeb8650293ed884d2ec8c1e62f0d86f719ab18e34da"
+        },
+        {
+          "bytes": 4484,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.cpp",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "98ab37ddf0e28eb7dd681a9806ed11cbc0b2e45a867c76795df676585d4287f6"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "MX-SPA-002": {
+      "actual": "Six role pulses through matching Rear Group and Master. Mask 0x3f; maximum absolute sample error 1.19210e-7 FS with last two pulses in Lb/Rb.",
+      "evidence": [
+        {
+          "bytes": 2875,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "179f07b1215d705eabf9015e8d81aa169c9115df2306a48bbd6d7b4225ce274b"
+        },
+        {
+          "bytes": 9476,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-wavs.zip",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "13abf24ab9eb2a876459a11af259874c29f3793c462bab20741c101011ad4f8b"
+        },
+        {
+          "bytes": 3593,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/verify_pcm.py",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "0e807e9ee5bcd22497115aeb8650293ed884d2ec8c1e62f0d86f719ab18e34da"
+        },
+        {
+          "bytes": 4484,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/portable.cpp",
+          "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+          "sha256": "98ab37ddf0e28eb7dd681a9806ed11cbc0b2e45a867c76795df676585d4287f6"
+        }
+      ],
+      "owner": "Codex, local acceptance automation",
+      "runUtc": "2026-11-24T16:52:43.979231+00:00",
+      "status": "Pass"
+    },
+    "MX-SPA-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    }
+  },
+  "runId": "272a0d51-e6d0-413d-9968-2d5850e631a6",
+  "version": 2
+}

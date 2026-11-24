@@ -1,0 +1,105 @@
+{
+  "unity": {
+    "file": "Untitled design-r1-20e1115d.wav",
+    "sha256": "f669b4ccd9c34e5a0b31262de15711efb1d7c469d9556b1e9b960e11625c79c7",
+    "frames": 8192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 0.0
+  },
+  "attenuated": {
+    "file": "Untitled design-r1-4bd10abc.wav",
+    "sha256": "848c1a3ca92e88ef1bf524cd010257992e9f949de5c8de19bcb0017c0ad02422",
+    "frames": 8192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 2.2724163384335583e-08
+  },
+  "5.1-side-v1": {
+    "file": "Untitled design-r1-2ff86951.wav",
+    "sha256": "a4a3d2f2e5b500c949117074a311a979b925ca37a87d5a35021b8a1e1abe7bad",
+    "frames": 4096,
+    "channels": 6,
+    "headerMask": 1551,
+    "maxAbsError": 1.1920928955078125e-07
+  },
+  "5.1-rear-v1": {
+    "file": "Untitled design-r1-2db6a8c3.wav",
+    "sha256": "5f869ea425053bdfdb5e1f9e20daeed73418d0cef3abde04903fdd7da607d2a7",
+    "frames": 4096,
+    "channels": 6,
+    "headerMask": 63,
+    "maxAbsError": 1.1920928955078125e-07
+  },
+  "01 Repeated name.wav": {
+    "file": "01 Repeated name.wav",
+    "sha256": "2946fe0afe78f03c9faa65b3e951a93d671cb780d22579b6fbf5ea1b2d95929f",
+    "frames": 14192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 0.0
+  },
+  "02 Repeated name.wav": {
+    "file": "02 Repeated name.wav",
+    "sha256": "311d682caafabd3a2be2e7dd0e7eda996171502bb5e51ef7a5e539281d0ff091",
+    "frames": 14192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 2.2724163384335583e-08
+  },
+  "linear stem sum": {
+    "file": "Untitled design-r1-881bd47f.wav",
+    "sha256": "7f0a8dd3c6efd76d945b337f4a8ccb0ace0a64a7caf656071a368b9fe735b1a0",
+    "frames": 14192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 2.2724163384335583e-08
+  },
+  "convolution": {
+    "sha256": "337e166afbdb6abc845378774b4bb9e807398cc1e153cf3e03077df14d0ad205",
+    "peak": 0.125,
+    "beforeAfterMaxError": 0,
+    "nontrivialSamples": [
+      [
+        900,
+        0,
+        0.125
+      ],
+      [
+        1029,
+        0,
+        0.0625
+      ],
+      [
+        1500,
+        1,
+        -0.0625
+      ],
+      [
+        1629,
+        1,
+        -0.03125
+      ]
+    ]
+  },
+  "restored echo": {
+    "file": "Convolution echo-take-r1-bfb65569.wav",
+    "sha256": "337e166afbdb6abc845378774b4bb9e807398cc1e153cf3e03077df14d0ad205",
+    "frames": 8192,
+    "channels": 2,
+    "headerMask": null,
+    "maxAbsError": 0.0
+  },
+  "portableFiles": [
+    {
+      "file": "IR/20/20d82200f79ac2ab800d00cb9d93e6005b25a0af9f48e6b2ca015ad2f4615718.wav",
+      "sha256": "20d82200f79ac2ab800d00cb9d93e6005b25a0af9f48e6b2ca015ad2f4615718",
+      "bytes": 1068
+    },
+    {
+      "file": "Media/2f/2fcc40c7064359b8789ce08367a6ae9d145fb359f5a8a9dc591f273e6db60916.wav",
+      "sha256": "2fcc40c7064359b8789ce08367a6ae9d145fb359f5a8a9dc591f273e6db60916",
+      "bytes": 32812
+    }
+  ]
+}
