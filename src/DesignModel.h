@@ -205,12 +205,18 @@ struct AutomationPoint
     bool smooth = false;                   // Square XY only.
     double smoothStart = 0, smoothEnd = 1; // Retain the shape when a segment is cut.
 };
+struct AutomationTrim
+{
+    int64_t first=0, last=0;
+    double amount=0; // Additive dB or octaves for a logarithmic frequency target.
+};
 struct AutomationCurve
 {
     AutomationTarget target;
     bool read = true;
     std::vector<AutomationPoint> points;
     std::optional<HostedAutomationBinding> hostedBinding;
+    std::vector<AutomationTrim> trims;
 };
 struct AutomationLane
 {

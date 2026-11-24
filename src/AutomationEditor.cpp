@@ -356,6 +356,13 @@ void AutomationEditor::paint(juce::Graphics &g)
             current = next;
         }
     path.lineTo((float)getWidth(), current.y);
+    if(c && (!c->trims.empty() || std::any_of(c->points.begin(),c->points.end(),[](auto &p){return p.smooth;}))){
+        path.clear();
+        for(int x=static_cast<int>(viewport.header);x<getWidth();++x){
+            auto t=frameAt(x,true);auto y=position({{},t,c->read?automationValue(*c,parameter,t):parameter.base}).y;
+            if(x==static_cast<int>(viewport.header))path.startNewSubPath((float)x,y);else path.lineTo((float)x,y);
+        }
+    }
     g.setColour(parameter.writable ? ui::accent : ui::muted);
     g.strokePath(path, juce::PathStrokeType(1.2f));
     if (c)
@@ -519,15 +526,38 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
                   parameter.writable && !selection.empty());
         m.addItem(2, "Linear", parameter.writable && !selection.empty());
         m.addItem(3, "Hold", parameter.writable && !selection.empty());
+        m.addItem(8,"Ease in/out",parameter.writable && !parameter.discrete && !selection.empty());
+        m.addItem(9,"Trim range...",canTrimAutomation(parameter));
+        m.addItem(10,"Thin curve (0.1%)",parameter.writable && !parameter.discrete && curve() && curve()->points.size()>2);
+        m.addItem(11,"Snapshot at playhead",parameter.writable);
         m.addItem(4, "Copy", !selection.empty());
         m.addItem(5, "Paste at playhead", parameter.writable);
         m.addItem(6, "Delete", !selection.empty());
         juce::Component::SafePointer<AutomationEditor> safe(this);
         m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(this),
-                        [safe](int n)
+                        [safe, shown=lane()->shown](int n)
                         {
-                            if (!safe || !safe->contextValid() || !safe->lane())
+                            if (!safe || !safe->contextValid() || !safe->lane() || safe->lane()->shown!=shown)
                                 return;
+                            if(n==8||n==10||n==11)
+                                safe->session.edit(n==8?"Ease automation":n==10?"Thin automation":"Snapshot automation",[&](auto &d){
+                                    auto &mix=d.activeMix();auto *l=automationLane(mix,safe->owner);
+                                    if(n==11){
+                                        for(auto &def:automationTargets(mix,safe->owner)){
+                                            auto *c=automationCurve(*l,def.target);
+                                            if(def.writable && (def.target==shown || (c && c->read))){
+                                                auto base=c?*c:AutomationCurve{};base.trims.clear();
+                                                addAutomationPoint(mix,safe->owner,def.target,d.playhead,automationValue(base,def,d.playhead),d.sampleRate);
+                                            }
+                                        }
+                                    }else if(auto *c=automationCurve(*l,shown)){
+                                        if(n==10)thinAutomation(*c,safe->parameter,.001);
+                                        else for(auto &p:c->points)if(safe->selection.contains(p.id)){
+                                            p.hold=false;p.smooth=true;p.smoothStart=0;p.smoothEnd=1;
+                                        }
+                                    }
+                                });
+                            if(n==9)safe->trimDialog();
                             if (n == 7)
                                 safe->requestRepair();
                             if (n == 1)
@@ -542,6 +572,11 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
                                 safe->deletePoints();
                         });
         return;
+    }
+    drawing=e.mods.isAltDown() && !parameter.discrete && parameter.writable;
+    if(drawing){
+        range=false;dragging=true;session.beginGesture();
+        insertPoint(frameAt(e.x,true),valueAt(e.y));return;
     }
     if (at >= 0)
     {
@@ -571,6 +606,7 @@ void AutomationEditor::mouseDrag(const juce::MouseEvent &e)
         dragging = false;
         return;
     }
+    if(drawing){insertPoint(frameAt(e.x,true),valueAt(e.y));return;}
     if (range)
     {
         auto *c = curve();
@@ -741,6 +777,31 @@ void AutomationEditor::numericPoint(int64_t frame, double value)
         });
 }
 
+void AutomationEditor::trimDialog()
+{
+    if(!lane() || !canTrimAutomation(parameter))return;
+    auto first=session.document.renderSettings.first, last=session.document.renderSettings.last;
+    if(last<0)last=mixDuration(session.document.activeMix(),session.document.sampleRate);
+    const auto captured=parameter;const auto shown=lane()->shown;
+    auto *box=new juce::AlertWindow("Trim automation",captured.name,juce::MessageBoxIconType::NoIcon);
+    box->addTextEditor("first",juce::String(first),"Start frame");
+    box->addTextEditor("last",juce::String(last),"End frame (exclusive)");
+    box->addTextEditor("amount","0",captured.logarithmic?"Octaves":"Gain (dB)");
+    box->addButton("Apply",1,juce::KeyPress(juce::KeyPress::returnKey));box->addButton("Cancel",0,juce::KeyPress(juce::KeyPress::escapeKey));
+    juce::Component::SafePointer<AutomationEditor> safe(this);
+    box->enterModalState(true,juce::ModalCallbackFunction::create([safe,shown,captured,box](int answer){
+        if(!safe || !safe->lane() || safe->lane()->shown!=shown || answer!=1)return;
+        auto f=box->getTextEditorContents("first").trim(),l=box->getTextEditorContents("last").trim();
+        auto a=box->getTextEditorContents("amount").trim().toStdString();
+        char *end=nullptr;auto v=std::strtod(a.c_str(),&end);
+        if(f.isEmpty()||l.isEmpty()||!f.containsOnly("0123456789")||!l.containsOnly("0123456789")||end==a.c_str()||*end){
+            safe->session.message="Enter frame numbers and a numeric adjustment";return;
+        }
+        safe->session.edit("Trim automation",[&](auto &d){
+            auto *c=automationCurve(*automationLane(d.activeMix(),safe->owner),shown,true);
+            setAutomationTrim(*c,captured,f.getLargeIntValue(),l.getLargeIntValue(),v);});
+    }),true);
+}
 void AutomationEditor::numericDialog()
 {
     auto *c = curve();

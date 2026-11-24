@@ -84,6 +84,11 @@ AutomationLane *automationLane(DesignMix &, const juce::String &);
 const AutomationLane *automationLane(const DesignMix &, const juce::String &);
 AutomationCurve *automationCurve(AutomationLane &, const AutomationTarget &, bool create = false);
 const AutomationCurve *automationCurve(const AutomationLane &, const AutomationTarget &);
+bool hasAdvancedAutomation(const DesignMix &);
+bool hasAdvancedAutomation(const DesignDocument &);
+void thinAutomation(AutomationCurve &, const AutomationParameter &, double normalizedError);
+bool canTrimAutomation(const AutomationParameter &);
+void setAutomationTrim(AutomationCurve &, const AutomationParameter &, int64_t first,int64_t last,double amount);
 double automationValue(const AutomationCurve &, const AutomationParameter &, int64_t frame);
 void addAutomationPoint(DesignMix &, const juce::String &, const AutomationTarget &, int64_t, double,
                         double rate);

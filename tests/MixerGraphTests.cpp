@@ -115,6 +115,45 @@ void runMixerGraphTests(const juce::File &root)
             retainAutomationWrite(frozen.original,track,{{},"volume"},receipt,false);
             require(original==juce::JSON::toString(designToJson(frozen),true),"Canceled preview cannot mutate saved state");
         }
+        {
+            auto edited=dry;
+            auto target=AutomationTarget{{},"volume"};
+            auto rack=automationTargets(edited.original,track);
+            auto gain=*std::find_if(rack.begin(),rack.end(),[&](auto &p){return p.target==target;});
+            auto *curve=automationCurve(*automationLane(edited.original,track),target,true);
+            curve->points={{juce::Uuid().toString(),0,-18},{juce::Uuid().toString(),3000,-3}};
+            auto &originalPoints=curve->points;
+            const auto firstId=originalPoints[0].id;
+            setAutomationTrim(*curve,gain,900,1400,3);
+            for(int n=0;n<4096;++n){
+                double expected=-18+std::min(n,3000)*.005+((n>=900&&n<1400)?3:0);
+                require(std::abs(automationValue(*curve,gain,n)-expected)<1e-10,"Gain Trim follows underlying slope");
+            }
+            require(curve->points[0].id==firstId && curve->points[0].value==-18,"Trim preserves editable base");
+            const auto json=designToJson(edited);
+            require((int)json["version"]==21,"Relative trim opts into manifest 21");
+            const auto reopened=designFromJson(json);
+            compare(oracle,render(reopened,61),[](int n){
+                return std::pow(10.,(-18+std::min(n,3000)*.005+((n>=900&&n<1400)?3:0))/20.);
+            },"Reopened gain trim passes independent PCM oracle");
+            auto take=freezeTake(reopened,"trim");
+            require((int)takeToJson(take)["recipe"]["recipeVersion"]==12 &&
+                takeFromJson(takeToJson(take)).recipeHash==take.recipeHash,"Frozen relative trim round trip");
+            auto downgraded=json.clone();downgraded.getDynamicObject()->setProperty("version",11);
+            downgraded.getDynamicObject()->setProperty("dsp","multitrack-automation-v1");
+            reject([&]{designFromJson(downgraded);},"Historical processing version cannot claim trim");
+            AutomationCurve freq; AutomationParameter hz;hz.minimum=20;hz.maximum=20000;hz.base=256;hz.logarithmic=true;hz.units="Hz";
+            setAutomationTrim(freq,hz,13,94,2);
+            require(automationValue(freq,hz,12)==256 && automationValue(freq,hz,13)==1024 &&
+                automationValue(freq,hz,94)==256,"Frequency trim in octaves");
+            hz.discrete=true;reject([&]{setAutomationTrim(freq,hz,0,1,.25);},"Discrete trim rejected");
+            AutomationCurve dense;
+            for(int n=0;n<=500;++n)dense.points.push_back({juce::Uuid().toString(),n,-30+n*.02+std::sin(n*.03)*.35});
+            auto original=dense;thinAutomation(dense,gain,.001);
+            require(dense.points.size()<30,"Curve thinning reduces redundant points");
+            for(int n=0;n<=500;++n)require(std::abs(automationValue(original,gain,n)-automationValue(dense,gain,n))<=.11400001,
+                "Thinning bounds all original frame errors");
+        }
         auto wet = dry;
         const auto group = addTrack(wet.original, TrackKind::groupBus);
         const auto aux = addTrack(wet.original, TrackKind::fxReturn);

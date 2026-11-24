@@ -79,6 +79,12 @@ juce::var laneJson(const AutomationLane &l)
         put(row, "read", c.read);
         if (c.hostedBinding && !c.points.empty())
             put(row, "hostedBinding", hostedBindingJson(*c.hostedBinding));
+        if(!c.trims.empty()){
+            juce::Array<juce::var> trims;
+            for(const auto &t:c.trims)
+                trims.add(juce::var(juce::Array<juce::var>{(juce::int64)t.first,(juce::int64)t.last,t.amount}));
+            put(row,"trimV1",trims);
+        }
         juce::Array<juce::var> points;
         for (auto &p : c.points)
         {
@@ -119,6 +125,15 @@ AutomationLane laneFrom(const juce::var &v)
         c.read = row["read"];
         if (row.hasProperty("hostedBinding"))
             c.hostedBinding = hostedBindingFromJson(row["hostedBinding"]);
+        if(row.hasProperty("trimV1")){
+            auto *trims=row["trimV1"].getArray();
+            require(trims && !trims->isEmpty() && trims->size()<=64,"Invalid trim segment count");
+            for(auto &t:*trims){
+                require(t.isArray()&&t.size()==3&&(t[0].isInt64()||t[0].isInt())&&(t[1].isInt64()||t[1].isInt())
+                    &&(t[2].isDouble()||t[2].isInt()||t[2].isInt64()),"Invalid trim encoding");
+                c.trims.push_back({(int64_t)t[0],(int64_t)t[1],(double)t[2]});
+            }
+        }
         require(row["points"].isArray() && row["points"].size() <= maxAutomationCurvePoints,
                 "Automation curve point bound");
         for (auto &p : *row["points"].getArray())
@@ -238,7 +253,11 @@ void rebaseAutomation(DesignMix &m, int64_t first)
             std::optional<double> start;
             if (p != targets.end())
             {
+                auto shifted=std::move(curve.trims);
                 start = automationValue(curve, *p, first);
+                std::erase_if(shifted,[&](auto &t){return t.last<=first;});
+                for(auto &t:shifted){t.first=std::max<int64_t>(0,t.first-first);t.last-=first;}
+                curve.trims=std::move(shifted);
                 if ((curve.target == surroundX || curve.target == surroundY) && !curve.points.empty())
                     splitSquareSegment(curve, first, p->base);
             }
@@ -840,7 +859,7 @@ bool hasHostedAutomation(const DesignDocument &d)
             return true;
     return false;
 }
-double automationValue(const AutomationCurve &curve, const AutomationParameter &p, int64_t frame)
+static double baseValue(const AutomationCurve &curve, const AutomationParameter &p, int64_t frame)
 {
     auto &points = curve.points;
     if (points.empty() || frame < points.front().frame)
@@ -862,6 +881,86 @@ double automationValue(const AutomationCurve &curve, const AutomationParameter &
         return std::exp(std::log(std::max(p.minimum, a.value)) * (1 - x) +
                         std::log(std::max(p.minimum, next->value)) * x);
     return a.value + (next->value - a.value) * x;
+}
+bool canTrimAutomation(const AutomationParameter &p)
+{
+    return p.writable && !p.discrete && !p.hostedBinding &&
+           (p.units=="dB" || (p.logarithmic && p.units=="Hz" && p.minimum>0));
+}
+void setAutomationTrim(AutomationCurve &c,const AutomationParameter &p,int64_t first,int64_t last,double amount)
+{
+    require(canTrimAutomation(p) && first>=0 && last>first && std::isfinite(amount) &&
+        std::abs(amount)<=(p.logarithmic?12.:114.),"Invalid automation trim range or amount");
+    std::vector<AutomationTrim> next;
+    for(auto t:c.trims){
+        if(t.last<=first || t.first>=last){next.push_back(t);continue;}
+        if(t.first<first)next.push_back({t.first,first,t.amount});
+        if(t.last>last)next.push_back({last,t.last,t.amount});
+    }
+    if(amount!=0)next.push_back({first,last,amount});
+    std::sort(next.begin(),next.end(),[](auto &a,auto &b){return a.first<b.first;});
+    require(next.size()<=64,"Trim segment limit reached");
+    c.trims=std::move(next);
+}
+void thinAutomation(AutomationCurve &curve,const AutomationParameter &p,double tolerance)
+{
+    require(std::isfinite(tolerance) && tolerance>=0 && tolerance<=0.05,"Invalid thinning tolerance");
+    if(curve.points.size()<3 || p.discrete || p.maximum<=p.minimum) return;
+    auto unit=[&](double v){return p.logarithmic?std::log(v/p.minimum)/std::log(p.maximum/p.minimum):(v-p.minimum)/(p.maximum-p.minimum);};
+    std::vector<bool> keep(curve.points.size());
+    std::vector<std::pair<size_t,size_t>> spans;
+    size_t start=0;
+    keep[0]=keep.back()=true;
+    for(size_t i=0;i+1<curve.points.size();++i)
+        if(curve.points[i].hold || curve.points[i].smooth){
+            keep[i]=keep[i+1]=true; spans.emplace_back(start,i); start=i+1;
+        }
+    spans.emplace_back(start,curve.points.size()-1);
+    while(!spans.empty()){
+        auto [a,b]=spans.back();spans.pop_back();
+        if(b<=a+1)continue;
+        auto &first=curve.points[a], &last=curve.points[b];
+        double worst=tolerance;
+        size_t pivot=a;
+        for(size_t i=a+1;i<b;++i){
+            auto &point=curve.points[i];
+            auto expected=std::lerp(unit(first.value),unit(last.value),double(point.frame-first.frame)/(last.frame-first.frame));
+            auto error=std::abs(expected-unit(point.value));
+            if(error>worst){worst=error;pivot=i;}
+        }
+        if(pivot!=a){keep[pivot]=true;spans.emplace_back(a,pivot);spans.emplace_back(pivot,b);}
+    }
+    std::vector<AutomationPoint> next;
+    for(size_t i=0;i<keep.size();++i) if(keep[i])next.push_back(curve.points[i]);
+    curve.points=std::move(next);
+}
+bool hasAdvancedAutomation(const DesignMix &mix)
+{
+    auto advanced=[](const AutomationLane &lane){
+        return std::any_of(lane.curves.begin(),lane.curves.end(),[](const auto &c){
+            return !c.trims.empty() || (c.target!=surroundX && c.target!=surroundY &&
+                std::any_of(c.points.begin(),c.points.end(),[](auto &p){return p.smooth;}));
+        });
+    };
+    if(advanced(mix.masterAutomation))return true;
+    return std::any_of(mix.tracks.begin(),mix.tracks.end(),[&](const auto &t){return advanced(t.automation);});
+}
+bool hasAdvancedAutomation(const DesignDocument &d)
+{
+    return hasAdvancedAutomation(d.original) ||
+        std::any_of(d.variations.begin(),d.variations.end(),[](auto &v){return hasAdvancedAutomation(v.mix);}) ||
+        std::any_of(d.takes.begin(),d.takes.end(),[](auto &t){return hasAdvancedAutomation(t.recipe);});
+}
+double automationValue(const AutomationCurve &curve,const AutomationParameter &p,int64_t frame)
+{
+    auto v=baseValue(curve,p,frame);
+    if(curve.trims.empty())return v;
+    auto next=std::upper_bound(curve.trims.begin(),curve.trims.end(),frame,[](auto f,const auto &t){return f<t.first;});
+    if(next!=curve.trims.begin()){
+        auto &t=*std::prev(next);
+        if(frame<t.last) v=std::clamp(p.logarithmic?v*std::exp2(t.amount):v+t.amount,p.minimum,p.maximum);
+    }
+    return v;
 }
 void addAutomationPoint(DesignMix &m, const juce::String &owner, const AutomationTarget &t, int64_t frame,
                         double value, double rate)
@@ -967,6 +1066,10 @@ int64_t CompiledAutomation::segmentFrame(int64_t frame) const
     {
         auto at = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,
                                    [](int64_t f, auto &p) { return f < p.frame; });
+        for(auto &trim:b.curve.trims){
+            if(trim.first<=frame)result=std::max(result,trim.first);
+            if(trim.last<=frame)result=std::max(result,trim.last);
+        }
         if (at != b.curve.points.begin())
             result = std::max(result, std::prev(at)->frame);
     }
@@ -983,6 +1086,9 @@ int CompiledAutomation::untilBoundary(int64_t frame, int maximum) const
     {
         auto at = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,
                                    [](int64_t f, auto &p) { return f < p.frame; });
+        for(auto &trim:b.curve.trims)
+            for(auto boundary:{trim.first,trim.last})
+                if(boundary>frame && boundary-frame<n)n=static_cast<int>(boundary-frame);
         if (at != b.curve.points.end() && at->frame - frame < n)
             n = (int)(at->frame - frame);
     }
@@ -1076,6 +1182,15 @@ void validateTracks(const DesignMix &m, double rate)
                 require(validated.slot == c.target.instance && validated.parameter == c.target.parameter,
                         "Hosted binding target differs from curve");
             }
+            auto definition=std::find_if(registry.begin(),registry.end(),[&](auto &p){return p.target==c.target;});
+            int64_t priorEnd=0;
+            require(c.trims.size()<=64,"Too many trim intervals");
+            for(auto &t:c.trims){
+                require(definition!=registry.end() && canTrimAutomation(*definition) && t.first>=priorEnd &&
+                    t.last>t.first && t.last<=rate*86400*7 && std::isfinite(t.amount) && t.amount!=0 &&
+                    std::abs(t.amount)<=(definition->logarithmic?12.:114.),"Invalid trim interval");
+                priorEnd=t.last;
+            }
             int64_t previous = -1;
             std::set<juce::String> points;
             for (auto &p : c.points)
@@ -1083,9 +1198,8 @@ void validateTracks(const DesignMix &m, double rate)
                 require(p.id.isNotEmpty() && points.insert(p.id).second && p.frame > previous &&
                             p.frame <= rate * 86400 * 7 && std::isfinite(p.value),
                         "Invalid automation point/time/value");
-                require(!p.smooth || (!p.hold && (c.target == surroundX || c.target == surroundY) &&
-                                      owner != "master"),
-                        "Smooth interpolation is only for Square XY");
+                require(!p.smooth || (!p.hold && definition!=registry.end() && !definition->discrete),
+                        "Continuous targets support smooth interpolation");
                 require(std::isfinite(p.smoothStart) && std::isfinite(p.smoothEnd) && p.smoothStart >= 0 &&
                             p.smoothEnd <= 1 && p.smoothStart < p.smoothEnd &&
                             (p.smooth || (p.smoothStart == 0 && p.smoothEnd == 1)),

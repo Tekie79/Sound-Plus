@@ -54,6 +54,7 @@ void retainAutomationWrite(DesignMix &mix, const juce::String &owner, const Auto
     const auto *prior = automationCurve(*lane, target);
     AutomationCurve initial = prior ? *prior : AutomationCurve{target, true, {}};
     auto next = initial;
+    initial.trims.clear(); // Base anchors are kept independent of relative offsets.
     next.read = true;
     auto insert = [&](int64_t t, double v, bool hold)
     {
@@ -79,6 +80,7 @@ void retainAutomationWrite(DesignMix &mix, const juce::String &owner, const Auto
             throw std::runtime_error("Invalid applied automation event");
         if (j == 0)
         {
+            if(!next.trims.empty())setAutomationTrim(next,*def,t,end,0);
             if (t > 0)
             {
                 auto &guard = splitSquareSegment(next, t - 1, def->base);

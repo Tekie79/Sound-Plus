@@ -56,6 +56,10 @@ juce::var recipeJson(const PerformTake &t)
             : t.trackRecipe                                    ? 4
             : t.pluginAware                                    ? 3
                                                                : 2);
+    if(hasAdvancedAutomation(t.recipe)){
+        put(o,"baseRecipeVersion",(int)o["recipeVersion"]);put(o,"recipeVersion",12);
+        put(o,"automationPolicy","bounded-relative-trim-v1");
+    }
     if (hasMixerRouting(t.recipe))
         put(o, "mixerPolicy", "track-sends-compensated-v1");
     if (hasSquareSurround(t.recipe))
@@ -301,7 +305,8 @@ PerformTake takeFromJson(const juce::var &o)
     t.session = o["session"].toString();
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
-    const auto version = (int)r["recipeVersion"];
+    const auto wireVersion=(int)r["recipeVersion"];
+    const auto version=wireVersion==12 ? (int)r["baseRecipeVersion"] : wireVersion;
     t.orderedRecipe = r.hasProperty("recipeVersion");
     if (t.orderedRecipe && (version < 2 || version > 11))
         throw std::runtime_error("Unsupported take insert recipe");
@@ -312,6 +317,9 @@ PerformTake takeFromJson(const juce::var &o)
     if (r["origin"].toString() != "frame-zero-fresh-history")
         throw std::runtime_error("Unsupported take history policy");
     t.recipe = designMixFromJson(r["mix"]);
+    if ((wireVersion==12)!=hasAdvancedAutomation(t.recipe) || (wireVersion==12 &&
+        (r["automationPolicy"].toString()!="bounded-relative-trim-v1" || version<4)))
+        throw std::runtime_error("Invalid take automation policy");
     const bool native = hasNativeEffects((const DesignMix &)t.recipe);
     const bool midi = hasMidi((const DesignMix &)t.recipe);
     bool advanced = hasAdvancedEffects((const DesignMix &)t.recipe);
@@ -327,17 +335,17 @@ PerformTake takeFromJson(const juce::var &o)
     if (multi != (version == 9 || ((square || mixer) && r.hasProperty("padPolicy"))) ||
         (multi && r["padPolicy"].toString() != "one-clock-independent-pad-curves-v1"))
         throw std::runtime_error("Unsupported multi-pad take policy");
-    if (hosted != ((int)r["recipeVersion"] == 8 ||
+    if (hosted != (version == 8 ||
                    ((multi || square || mixer) && r.hasProperty("hostedAutomationPolicy"))) ||
         (hosted && r["hostedAutomationPolicy"].toString() != "normalized-32frame-offset-overlay-v1"))
         throw std::runtime_error("Unsupported hosted automation take policy");
     if ((!hosted && !multi && !square && !mixer &&
-         (((int)r["recipeVersion"] == 7) != advanced ||
-          native != ((int)r["recipeVersion"] == 6 || (int)r["recipeVersion"] == 7))) ||
+         ((version == 7) != advanced ||
+          native != (version == 6 || version == 7))) ||
         (native && r["nativePolicy"].toString() !=
                        (advanced ? "advanced-effects-v1-tail-pdc" : "native-effects-v1-fixed-latency")))
         throw std::runtime_error("Unsupported native take policy/version");
-    if ((midi != ((int)r["recipeVersion"] == 5 ||
+    if ((midi != (version == 5 ||
                   ((native || hosted || multi || square || mixer) && r.hasProperty("midiPolicy")))) ||
         (midi && r["midiPolicy"].toString() != "constant-tempo-sample-offset-instruments-v1"))
         throw std::runtime_error("Unsupported MIDI take policy/version");

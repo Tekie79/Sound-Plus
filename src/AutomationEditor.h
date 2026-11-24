@@ -57,7 +57,7 @@ class AutomationEditor final : public juce::Component, private juce::Timer
     AutomationTarget capturedTarget;
     DesignDocument original;
     juce::Point<float> anchor;
-    bool dragging = false, range = false, touching = false, updating = false, hostedWriting = false;
+    bool drawing=false, dragging = false, range = false, touching = false, updating = false, hostedWriting = false;
     std::vector<AutomationPoint> touchPoints;
     int64_t firstTouch = 0;
     AutomationLane *lane();
@@ -66,6 +66,7 @@ class AutomationEditor final : public juce::Component, private juce::Timer
     double valueAt(float) const;
     int pointAt(juce::Point<float>) const;
     int64_t frameAt(float, bool bypass = false) const;
+    void trimDialog();
     void numericDialog();
     void requestRepair();
 };
