@@ -7,8 +7,8 @@ inline constexpr std::array<juce::uint32, 11> darkPalette{
     0xff0c1016, 0xff111821, 0xff161f2a, 0xff263340, 0xffe8eef4, 0xff92a0af,
     0xff83aee0, 0xffa5b3c1, 0xfff2f7fb, 0xff637180, 0xffbed3eb};
 inline constexpr std::array<juce::uint32, 11> lightPalette{
-    0xffe9eff6, 0xfff7f9fc, 0xffe1eaf4, 0xffbccbdc, 0xff14243a, 0xff52647a,
-    0xff2b629f, 0xff405774, 0xff132d4d, 0xff687b91, 0xff2b629f};
+    0xffbccad4, 0xffcad6df, 0xffd7e1e8, 0xff8a9eb0, 0xff14243a, 0xff405366,
+    0xff204a75, 0xff344b60, 0xff1c3750, 0xff607386, 0xff326798};
 inline juce::Colour background{darkPalette[0]}, surface{darkPalette[1]}, raised{darkPalette[2]},
     line{darkPalette[3]}, text{darkPalette[4]}, muted{darkPalette[5]}, accent{darkPalette[6]};
 inline bool lightAppearance = false;

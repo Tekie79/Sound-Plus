@@ -38,7 +38,7 @@
     "render": "file-output",
     "drag": "custom:audio_file_drag",
     "keep": "star",
-    "settings": "settings-2",
+    "settings": "settings",
     "layers": "layers",
     "browser": "panel-left",
     "chevron": "chevron-right",
@@ -225,9 +225,9 @@
       "path": "resources/icons/lucide/lucide_search.svg",
       "sha256": "283d371c2e433817bb9c0c8310caa6c77fa4177c0f4f1168d9c83b97af7389dc"
     },
-    "settings-2": {
-      "path": "resources/icons/lucide/lucide_settings_2.svg",
-      "sha256": "06d06c191bd7eb28afaf9d40acb5c49ef69448fdeda91801d9823d7c440a4e10"
+    "settings": {
+      "path": "resources/icons/lucide/lucide_settings.svg",
+      "sha256": "0ae27fd0f81999229e3127ac96c5b32edfea448e291d509e76212b917551d66b"
     },
     "skip-back": {
       "path": "resources/icons/lucide/lucide_skip_back.svg",

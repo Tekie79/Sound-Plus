@@ -326,7 +326,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     columnsButton.onClick = [this] { showMetadataColumns(); };
     transport.setColour(juce::Label::textColourId, amber);
     transport.setVisible(false);
-    search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
+    lookAndFeelChanged();
     search.setTitle("Search library");
     search.setFont(juce::FontOptions(17.0f));
     search.setIndents(12, 10);
@@ -1038,9 +1038,13 @@ void LibraryView::setCompact(bool value)
     }
     table.setHeaderHeight(value ? 0 : 34);
     table.setRowHeight(58);
-    search.setTextToShowWhenEmpty(
-        value ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
+    lookAndFeelChanged();
     resized();
+}
+void LibraryView::lookAndFeelChanged()
+{
+    search.setTextToShowWhenEmpty(
+        compact ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
 }
 void LibraryView::bindPreferences(juce::PropertiesFile &prefs)
 {

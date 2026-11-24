@@ -100,7 +100,7 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     std::array<std::unique_ptr<ui::TextActionButton>, 4> padTabs;
     ui::TextActionButton addPad{"+"};
     IconButton padMute{"Mute pad", ActionIcon::mute}, padSolo{"Solo pad", ActionIcon::solo},
-        padActions{"Pad automation and rendering", ActionIcon::more};
+        padActions{"Pad automation and rendering", ActionIcon::settings};
     juce::Slider padLevel;
     std::optional<PerformanceState> observedPad;
     juce::String observedPadContext;

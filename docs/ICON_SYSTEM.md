@@ -38,7 +38,7 @@ Transport Stop/Play, indexing Pause/Resume and model-installed state are selecte
 | Drag Output | Audio document with drag pointer |
 | Duplicate | Lucide copy-plus |
 | Fit Design / Fit Selection | Lucide scan corners / focus target |
-| Inspector / processing settings | Lucide panel-right / sliders |
+| Inspector / settings / processing | Lucide panel-right / gear / sliders |
 
 All icon controls retain accurate accessible names and tooltips. Existing document, undo/redo, duplicate, delete, transport, mark and zoom shortcuts appear in the corresponding tooltips. App-rendered combo-box disclosure arrows and palette selection checks use the same registry.
 

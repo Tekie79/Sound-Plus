@@ -37,7 +37,7 @@ class SurroundPanner final : public juce::Component, public juce::SettableToolti
     ui::TextActionButton enable{"Enable XY", true}, touch{"Touch", true};
     IconButton add{"Add motion point at playhead", ActionIcon::marker},
         remove{"Delete selected motion points", ActionIcon::trash},
-        options{"Motion options", ActionIcon::more};
+        options{"Motion options", ActionIcon::settings};
     std::vector<SurroundNode> nodes, dragStartNodes;
     std::optional<int64_t> pathRevision;
     std::set<int64_t> selected, selectionAtDown;

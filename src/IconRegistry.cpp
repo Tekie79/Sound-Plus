@@ -41,7 +41,7 @@ constexpr const char *resources[]{
     "lucide_file_output_svg",                 // render
     "audio_file_drag_svg",                    // drag
     "lucide_star_svg",                        // keep
-    "lucide_settings_2_svg",                  // settings
+    "lucide_settings_svg",                    // settings
     "lucide_layers_svg",                      // layers
     "lucide_panel_left_svg",                  // browser
     "lucide_chevron_right_svg",               // chevron

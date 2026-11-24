@@ -60,6 +60,7 @@ class LibraryView final : public juce::Component,
     std::function<void(const Asset &, int64_t, int64_t, bool, int)> onAddToDesigner;
 
   private:
+    void lookAndFeelChanged() override;
     IconButton processPlugin{"Process selected source/range with Plug-in", ActionIcon::processing};
     friend struct CorrectionViewTestAccess;
     friend class Benchmark;
@@ -294,7 +295,7 @@ class LibraryView final : public juce::Component,
     std::future<std::pair<juce::String, RecordingHeader>> recordingHeaderJob;
     std::set<int> metadataColumns;
     std::map<int, juce::String> embeddedColumns;
-    IconButton columnsButton{"Columns", ActionIcon::more};
+    IconButton columnsButton{"Columns", ActionIcon::settings};
     juce::String selectionNotice;
     juce::Label summary, detail, transport, status, volumeLabel;
     RecordingDetailsPanel recordingDetails;

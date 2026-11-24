@@ -93,7 +93,7 @@ class OrderedInsertList final : public juce::Component
         InsertRef dragged;
         Move dragMove;
         IconButton bypass{"Effect enabled", ActionIcon::effectEnabled},
-            editor{"Open live editor", ActionIcon::processing};
+            editor{"Open live editor", ActionIcon::settings};
 
       public:
         Row(OrderedInsertList &owner, int n) : list(owner), index(n)

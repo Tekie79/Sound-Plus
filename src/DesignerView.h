@@ -82,11 +82,11 @@ class DesignerView final : public juce::Component,
     void showSnapOptions();
     void showInputRecordingOptions();
     IconButton recordAudio{"Record armed Audio Tracks (R)", ActionIcon::record},
-        inputOptions{"Audio recording options", ActionIcon::more};
+        inputOptions{"Audio recording options", ActionIcon::settings};
     IconButton zoomIn{"Zoom in (Command-wheel)", ActionIcon::zoom}, zoomOut{"Zoom out", ActionIcon::zoomOut},
         fitAll{"Fit design", ActionIcon::fit}, fitSelected{"Fit selected layers", ActionIcon::fitSelection},
         snap{"Enable snapping (Command temporarily bypasses)", ActionIcon::snap},
-        snapOptions{"Snap targets and grid", ActionIcon::chevron},
+        snapOptions{"Snap targets and grid", ActionIcon::settings},
         scrub{"Audible forward-grain preview", ActionIcon::scrub},
         verticalIn{"Increase track height (Command-Option-wheel)", ActionIcon::verticalIn},
         verticalOut{"Decrease track height", ActionIcon::verticalOut};
@@ -126,7 +126,7 @@ class DesignerView final : public juce::Component,
     juce::ComboBox takeContext;
     ui::TextActionButton recordTake{"Record"}, renderTake{"Render Take"};
     IconButton stopTake{"Stop take", ActionIcon::stop}, keepTake{"Keep / rename take", ActionIcon::rename},
-        takeOptions{"Take options", ActionIcon::chevron};
+        takeOptions{"Take options", ActionIcon::settings};
     juce::Label takeStatus;
     void nameTakeDialog();
     void takePopup();
