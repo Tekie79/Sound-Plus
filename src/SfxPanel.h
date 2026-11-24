@@ -21,6 +21,11 @@ class Panel final : public juce::Component, private juce::Timer
     DesignerView &designer;
     std::function<void(int)> navigate;
     juce::Label heading, model, historyHeading, status, detail, durationLabel, countLabel, influenceLabel;
+    juce::Label descriptionHeading, settingsHeading, outputLabel, destinationLabel;
+    ui::TextActionButton manageKey{"Manage key", true};
+    std::array<juce::Rectangle<int>, 4> sectionBounds{};
+    void layoutGeneration();
+    void refreshGenerationLayout();
     juce::TextEditor prompt, key;
     juce::ComboBox duration, count, format, history, collection;
     juce::Slider influence;

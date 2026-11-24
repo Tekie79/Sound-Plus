@@ -15,8 +15,11 @@ void check(bool ok, const char *why)
 struct Keys : Credentials
 {
     juce::String value;
+    std::atomic<int> secretReads{0};
+    bool contains() override { return value.isNotEmpty(); }
     juce::String read() override
     {
+        ++secretReads;
         return value;
     }
     void save(const juce::String &s) override
@@ -46,10 +49,12 @@ void runSfxTests(const juce::File &dir, const juce::String &url, const juce::Str
     using namespace sp::sfx;
     juce::ScopedJuceInitialiser_GUI gui;
     auto keys = std::make_unique<Keys>();
+    auto *observedKeys = keys.get();
     auto provider = elevenLabs([url](auto &path, auto &key, auto &body, auto &stop)
                                { return providerHttp(url, path, key, body, stop); });
     Generation jobs(dir.getChildFile("jobs"), std::move(provider), std::move(keys));
     auto start = idle(jobs);
+    check(observedKeys->secretReads == 0, "Opening history must not request the secret");
     if (mode == "recover")
     {
         bool recovered = false;
@@ -79,12 +84,12 @@ void runSfxTests(const juce::File &dir, const juce::String &url, const juce::Str
                 }
             }
         } cleanup{*secure};
-        check(secure->read().isEmpty(), "Isolated Keychain account");
+        check(!secure->contains() && secure->read().isEmpty(), "Isolated Keychain account");
         secure->save("fixture-first");
         secure->save("fixture-replacement");
-        check(secure->read() == "fixture-replacement", "Native Keychain replacement");
+        check(secure->contains() && secure->read() == "fixture-replacement", "Native Keychain replacement");
         secure->erase();
-        check(secure->read().isEmpty(), "Native Keychain deletion");
+        check(!secure->contains() && secure->read().isEmpty(), "Native Keychain deletion");
     }
     Request r;
     r.prompt = "tone";

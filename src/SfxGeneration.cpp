@@ -345,9 +345,9 @@ Generation::Generation(juce::File dir, std::unique_ptr<Provider> p, std::unique_
                     journal->put(c);
                     candidateFile(c.id).deleteFile();
                 }
-            auto key = secrets->read();
+            const bool hasKey = secrets->contains();
             std::lock_guard l(mutex);
-            view.hasKey = key.isNotEmpty();
+            view.hasKey = hasKey;
             view.status = view.hasKey ? "Ready" : "Add a " + provider->capabilities().provider + " API key";
         });
 }

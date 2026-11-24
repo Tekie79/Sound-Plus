@@ -28,6 +28,19 @@ class Keychain final : public Credentials
     }
 
   public:
+    bool contains() override
+    {
+        @autoreleasepool
+        {
+            // An existence-only query lets local history open before the user needs the secret.
+            auto status = SecItemCopyMatching((CFDictionaryRef)query(), nullptr);
+            if (status == errSecItemNotFound)
+                return false;
+            if (status != errSecSuccess)
+                throw std::runtime_error("Keychain access unavailable");
+            return true;
+        }
+    }
     juce::String read() override
     {
         @autoreleasepool

@@ -51,6 +51,7 @@ class Credentials
 {
   public:
     virtual ~Credentials() = default;
+    virtual bool contains() { return read().isNotEmpty(); }
     virtual juce::String read() = 0;
     virtual void save(const juce::String &) = 0;
     virtual void erase() = 0;

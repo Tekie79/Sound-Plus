@@ -121,7 +121,38 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
         resume.onClick = [this] { jobs.resume(selected); };
         alternative.onClick = [this] { use(5); };
     }
-    setSize(574, transforming ? 578 : 526);
+    else
+    {
+        for (juce::Component *c : std::initializer_list<juce::Component *>{
+                 &descriptionHeading, &settingsHeading, &outputLabel, &destinationLabel, &manageKey})
+            addAndMakeVisible(c);
+        label(heading, "Provider");
+        label(model, juce::String::fromUTF8("ElevenLabs · Sound Effects v3"));
+        label(descriptionHeading, "Sound description");
+        label(settingsHeading, "Generation settings");
+        label(historyHeading, "Generation history");
+        label(outputLabel, "Output");
+        label(destinationLabel, "Collection");
+        for (auto *section : {&heading, &descriptionHeading, &settingsHeading, &historyHeading})
+            section->setFont(juce::FontOptions(15.f, juce::Font::bold));
+        for (auto *secondary : {&model, &durationLabel, &countLabel, &influenceLabel, &outputLabel,
+                                &destinationLabel, &status, &detail})
+        {
+            secondary->setFont(juce::FontOptions(12.5f));
+            secondary->setColour(juce::Label::textColourId, ui::muted);
+        }
+        for (auto *field : {&prompt, &key})
+        {
+            field->setColour(juce::TextEditor::backgroundColourId, ui::background);
+            field->setColour(juce::TextEditor::outlineColourId, ui::line);
+            field->setColour(juce::TextEditor::focusedOutlineColourId, ui::accent);
+            field->setIndents(9, 6);
+        }
+        prompt.setTextToShowWhenEmpty("Describe a sound", ui::muted);
+        manageKey.setClickingTogglesState(true);
+        manageKey.onClick = [this] { refreshGenerationLayout(); };
+    }
+    setSize(transforming ? 574 : 604, transforming ? 578 : 500);
     startTimerHz(6);
     timerCallback();
 }
@@ -133,10 +164,27 @@ Panel::~Panel()
 }
 void Panel::paint(juce::Graphics &g)
 {
-    g.fillAll(ui::surface);
+    g.fillAll(transforming ? ui::surface : ui::background);
+    if (transforming)
+        return;
+    for (auto card : sectionBounds)
+    {
+        const auto bounds = card.toFloat().reduced(.5f);
+        g.setColour(ui::surface);
+        g.fillRoundedRectangle(bounds, ui::radius);
+        g.setColour(ui::line);
+        g.drawRoundedRectangle(bounds, ui::radius, 1.f);
+    }
+    g.setColour(generate.isEnabled() ? ui::accent.withAlpha(.25f) : ui::raised);
+    g.fillRoundedRectangle(generate.getBounds().toFloat(), ui::radius);
 }
 void Panel::resized()
 {
+    if (!transforming)
+    {
+        layoutGeneration();
+        return;
+    }
     auto r = getLocalBounds().reduced(16, 10);
     auto title = r.removeFromTop(34);
     heading.setBounds(title.removeFromLeft(175));
@@ -147,21 +195,18 @@ void Panel::resized()
     saveKey.setBounds(keys.removeFromRight(78));
     key.setBounds(keys);
     r.removeFromTop(10);
-    if (transforming)
-    {
-        inputSummary.setBounds(r.removeFromTop(32));
-        auto mask = r.removeFromTop(28);
-        editMode.setBounds(mask.removeFromLeft(120));
-        mask.removeFromLeft(5);
-        inLabel.setBounds(mask.removeFromLeft(26));
-        maskIn.setBounds(mask.removeFromLeft(92));
-        outLabel.setBounds(mask.removeFromLeft(33));
-        maskOut.setBounds(mask.removeFromLeft(92));
-        fadeLabel.setBounds(mask.removeFromLeft(41));
-        crossfade.setBounds(mask);
-        r.removeFromTop(5);
-    }
-    prompt.setBounds(r.removeFromTop(transforming ? 48 : 66));
+    inputSummary.setBounds(r.removeFromTop(32));
+    auto mask = r.removeFromTop(28);
+    editMode.setBounds(mask.removeFromLeft(120));
+    mask.removeFromLeft(5);
+    inLabel.setBounds(mask.removeFromLeft(26));
+    maskIn.setBounds(mask.removeFromLeft(92));
+    outLabel.setBounds(mask.removeFromLeft(33));
+    maskOut.setBounds(mask.removeFromLeft(92));
+    fadeLabel.setBounds(mask.removeFromLeft(41));
+    crossfade.setBounds(mask);
+    r.removeFromTop(5);
+    prompt.setBounds(r.removeFromTop(48));
     r.removeFromTop(5);
     auto labels = r.removeFromTop(21);
     durationLabel.setBounds(labels.removeFromLeft(95));
@@ -176,12 +221,8 @@ void Panel::resized()
     influence.setBounds(opts);
     r.removeFromTop(8);
     auto run = r.removeFromTop(30);
-    if (transforming)
-    {
-        original.setBounds(run.removeFromLeft(85));
-        resume.setBounds(run.removeFromLeft(105));
-    }
-    format.setBounds(transforming ? juce::Rectangle<int>() : run.removeFromLeft(170));
+    original.setBounds(run.removeFromLeft(85));
+    resume.setBounds(run.removeFromLeft(105));
     cancel.setBounds(run.removeFromRight(70));
     generate.setBounds(run.removeFromRight(100));
     status.setBounds(r.removeFromTop(41));
@@ -198,9 +239,110 @@ void Panel::resized()
     edit.setBounds(actions.removeFromLeft(125));
     perform.setBounds(actions.removeFromLeft(130));
     reveal.setBounds(actions.removeFromLeft(140));
-    if (transforming)
-        alternative.setBounds(actions);
+    alternative.setBounds(actions);
 }
+void Panel::refreshGenerationLayout()
+{
+    const bool expanded = manageKey.getToggleState();
+    const bool candidate = current() != nullptr;
+    const bool published = candidate && current()->assetId.isNotEmpty();
+    for (auto *control : std::initializer_list<juce::Component *>{&key, &saveKey, &test, &erase})
+        control->setVisible(expanded);
+    for (auto *control : std::initializer_list<juce::Component *>{&preview, &detail})
+        control->setVisible(candidate);
+    const bool canPublish = candidate && current()->state == State::ready;
+    for (auto *control : std::initializer_list<juce::Component *>{&collection, &destinationLabel, &save})
+        control->setVisible(canPublish);
+    for (auto *control : {&edit, &perform, &reveal})
+        control->setVisible(published);
+    cancel.setVisible(state.busy);
+    manageKey.setButtonText(expanded ? "Hide key settings" : "Manage key");
+    layoutGeneration();
+    const int height = sectionBounds.back().getBottom() + 12;
+    if (height != getHeight())
+        setSize(getWidth(), height);
+    repaint();
+}
+
+void Panel::layoutGeneration()
+{
+    // Keep each section only as tall as its available actions.
+    int y = 12;
+    auto section = [&](size_t index, int height)
+    {
+        sectionBounds[index] = {12, y, getWidth() - 24, height};
+        y += height + ui::gap;
+        return sectionBounds[index].reduced(12, 8);
+    };
+    auto provider = section(0, manageKey.getToggleState() ? 80 : 42);
+    auto row = provider.removeFromTop(26);
+    heading.setBounds(row.removeFromLeft(87));
+    manageKey.setBounds(row.removeFromRight(108));
+    model.setBounds(row);
+    if (manageKey.getToggleState())
+    {
+        provider.removeFromTop(6);
+        row = provider.removeFromTop(30);
+        erase.setBounds(row.removeFromRight(76));
+        test.setBounds(row.removeFromRight(65));
+        saveKey.setBounds(row.removeFromRight(70));
+        key.setBounds(row.withTrimmedRight(8));
+    }
+
+    auto description = section(1, 101);
+    descriptionHeading.setBounds(description.removeFromTop(23));
+    description.removeFromTop(6);
+    prompt.setBounds(description);
+
+    auto settings = section(2, 160);
+    settingsHeading.setBounds(settings.removeFromTop(24));
+    settings.removeFromTop(3);
+    auto fields = settings.removeFromTop(47);
+    auto field = [&](juce::Label &caption, juce::Component &control, int width)
+    {
+        auto column = fields.removeFromLeft(width);
+        caption.setBounds(column.removeFromTop(18));
+        control.setBounds(column);
+        fields.removeFromLeft(10);
+    };
+    field(durationLabel, duration, 84);
+    field(countLabel, count, 68);
+    field(outputLabel, format, 146);
+    influenceLabel.setBounds(fields.removeFromTop(18));
+    influence.setBounds(fields);
+    settings.removeFromTop(7);
+    row = settings.removeFromTop(31);
+    loop.setBounds(row.removeFromLeft(70));
+    generate.setBounds(row.removeFromRight(102));
+    cancel.setBounds(row.removeFromRight(70));
+    status.setBounds(settings);
+
+    auto results = section(3, 83 + (detail.isVisible() ? 32 : 0) + (collection.isVisible() ? 38 : 0)
+                                  + (edit.isVisible() ? 36 : 0));
+    row = results.removeFromTop(27);
+    preview.setBounds(row.removeFromRight(78));
+    historyHeading.setBounds(row);
+    results.removeFromTop(5);
+    history.setBounds(results.removeFromTop(30));
+    if (detail.isVisible())
+        detail.setBounds(results.removeFromTop(32));
+    if (collection.isVisible())
+    {
+        row = results.removeFromTop(32);
+        destinationLabel.setBounds(row.removeFromLeft(70));
+        save.setBounds(row.removeFromRight(108));
+        collection.setBounds(row.withTrimmedRight(8));
+    }
+    if (edit.isVisible())
+    {
+        results.removeFromTop(8);
+        row = results.removeFromTop(28);
+        reveal.setBounds(row.removeFromLeft(110));
+        edit.setBounds(row.removeFromLeft(100));
+        perform.setBounds(row.removeFromLeft(105));
+    }
+}
+
 const Candidate *Panel::current() const
 {
     for (auto &c : state.history)
@@ -212,7 +354,11 @@ void Panel::timerCallback()
 {
     if (jobs.version() != seen)
     {
+        const bool initial = seen == UINT64_MAX;
+        const bool previouslyHadKey = state.hasKey;
         state = jobs.snapshot();
+        if (!transforming && (initial || previouslyHadKey != state.hasKey))
+            manageKey.setToggleState(!state.hasKey, juce::dontSendNotification);
         seen = state.version;
         history.clear(juce::dontSendNotification);
         if (!current() && !state.history.empty())
@@ -273,10 +419,28 @@ void Panel::updateControls()
         auto info = c->detail.isNotEmpty() ? c->detail
                                            : c->format + "   /   " + juce::String(c->rate) + " Hz   /   " +
                                                  juce::String(c->channels) + " ch";
-        detail.setText(c->prompt.substring(0, 100) + "\n" + info, juce::dontSendNotification);
+        if (transforming)
+            detail.setText(c->prompt.substring(0, 100) + "\n" + info, juce::dontSendNotification);
+        else
+        {
+            if (c->detail.isEmpty() && c->rate > 0)
+            {
+                juce::StringArray properties;
+                properties.add("WAV");
+                properties.add(juce::String(c->frames / (double)c->rate, 2) + " s");
+                properties.add(juce::String(c->rate / 1000.0, c->rate % 1000 ? 1 : 0) + " kHz");
+                properties.add(c->channels == 1 ? "Mono" : c->channels == 2 ? "Stereo"
+                                                                          : juce::String(c->channels) + " ch");
+                info = properties.joinIntoString(juce::String::fromUTF8("  ·  "));
+            }
+            detail.setText(c->detail.isEmpty() && c->rate == 0 ? juce::String() : info, juce::dontSendNotification);
+            history.setDescription(c->prompt);
+        }
     }
     else
         detail.setText({}, juce::dontSendNotification);
+    if (!transforming)
+        refreshGenerationLayout();
 }
 void Panel::approve()
 {
