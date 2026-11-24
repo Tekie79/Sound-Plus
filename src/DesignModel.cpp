@@ -4,6 +4,7 @@
 #include "AdvancedIR.h"
 #include "PerformanceState.h"
 #include "SourcePools.h"
+#include "SourcePerformance.h"
 #include "TrackModel.h"
 #include <juce_audio_formats/juce_audio_formats.h>
 #include <juce_cryptography/juce_cryptography.h>
@@ -789,28 +790,30 @@ juce::var designToJson(const DesignDocument &d)
         std::any_of(d.variations.begin(), d.variations.end(), [&](auto &v) { return hasInput(v.mix); }) ||
         std::any_of(d.takes.begin(), d.takes.end(), [&](auto &t) { return hasInput(t.recipe); });
     put(o, "version",
-        hasAdvancedAutomation(d)  ? 21
-        : hasMixerRouting(d)      ? 20
+        hasSourcePerformance(d)    ? 22
+        : hasAdvancedAutomation(d) ? 21
+        : hasMixerRouting(d)       ? 20
         : hasSquareSurround(d)     ? 19
-        : hasMultiPad(d)         ? 18
-        : hasHostedAutomation(d) ? 17
-        : hasAdvancedEffects(d)  ? 16
-        : hasNativeEffects(d)    ? 15
-        : hasMidi(d)             ? 14
-        : inputs                 ? 13
-        : continuations          ? 12
-        : tracks                 ? 11
-        : plugins                ? 10
-        : ordered                ? 9
-        : hasHostedInserts(d)    ? 8
-        : hasSourcePools(d)      ? 7
-                                 : performanceFormat(d));
+        : hasMultiPad(d)           ? 18
+        : hasHostedAutomation(d)   ? 17
+        : hasAdvancedEffects(d)    ? 16
+        : hasNativeEffects(d)      ? 15
+        : hasMidi(d)               ? 14
+        : inputs                   ? 13
+        : continuations            ? 12
+        : tracks                   ? 11
+        : plugins                  ? 10
+        : ordered                  ? 9
+        : hasHostedInserts(d)      ? 8
+        : hasSourcePools(d)        ? 7
+                                   : performanceFormat(d));
     if (hasSourcePools(d))
         put(o, "sourcePoolMetadataVersion", 1);
     put(o, "dsp",
-        hasAdvancedAutomation(d)    ? "automation-overlay-v1"
+        hasSourcePerformance(d)     ? "live-source-events-v1"
+        : hasAdvancedAutomation(d)  ? "automation-overlay-v1"
         : hasMixerRouting(d)        ? "track-mixer-v1"
-        : hasSquareSurround(d)        ? "square-surround-v1"
+        : hasSquareSurround(d)      ? "square-surround-v1"
         : hasMultiPad(d)            ? "multi-pad-perform-v1"
         : hasHostedAutomation(d)    ? "hosted-automation-v1"
         : hasAdvancedEffects(d)     ? "advanced-effects-v1"
@@ -938,9 +941,10 @@ DesignDocument designFromJson(const juce::var &o)
 {
     int version = (int)o["version"];
     auto dsp = o["dsp"].toString();
-    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 21) ||
-        (version == 21 ? dsp != "automation-overlay-v1"
-         : version == 20   ? dsp != "track-mixer-v1"
+    if (o["format"].toString() != "SoundPlus referenced design" || (version < 1 || version > 22) ||
+        (version == 22   ? dsp != "live-source-events-v1"
+         : version == 21 ? dsp != "automation-overlay-v1"
+         : version == 20 ? dsp != "track-mixer-v1"
          : version == 19 ? dsp != "square-surround-v1"
          : version == 18 ? dsp != "multi-pad-perform-v1"
          : version == 17 ? dsp != "hosted-automation-v1"
@@ -1070,7 +1074,10 @@ DesignDocument designFromJson(const juce::var &o)
                std::any_of(m.layers.begin(), m.layers.end(),
                            [](auto &l) { return !l.recordingOrigin.isVoid(); });
     };
-    if((version==21)!=hasAdvancedAutomation(d)) throw std::runtime_error("Invalid automation policy");
+    if ((version == 22) != hasSourcePerformance(d))
+        throw std::runtime_error("Invalid live source policy");
+    if (version < 22 && (version == 21) != hasAdvancedAutomation(d))
+        throw std::runtime_error("Invalid automation policy");
     if (version <21 && (version == 20) != hasMixerRouting(d))
         throw std::runtime_error("Mixer routing requires its explicit design version");
     if (version < 20 && (version == 19) != hasSquareSurround(d))

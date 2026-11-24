@@ -189,6 +189,10 @@ class DesignSession final : public juce::Component, private juce::Timer
     void relinkPoolEntry(const juce::String &layer, const juce::String &entry, const juce::File &);
     void play();
     void playAccurate();
+    bool canTriggerSource() const;
+    void triggerSource(int pad, int corner, const juce::String &entry, bool switchSource, int fadeMs = 100,
+                       double db = 0);
+    void prepareSourcePool(const juce::String &layer, bool enabled);
     void seek(int64_t);
     void addMarker(int64_t frame = -1);
     void navigateMarker(int direction);
@@ -342,6 +346,8 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
+    juce::String pendingSourceEvent;
+    double sourceEventDeadline = 0;
     struct LearnTarget
     {
         juce::String owner, document, variation;

@@ -17,6 +17,7 @@ class DesignGraph
     void updateParameters(const juce::var &);
     bool automationCommand(const juce::var &);
     juce::var automationReceipt(bool close, int64_t consumedEnd = INT64_MAX);
+    juce::var sourceVoice(const juce::var &, TakeCapture *);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t injectMidi(const juce::String &, MidiPacket);
@@ -53,6 +54,7 @@ class DesignReader
     int64_t producedFrame() const;
     bool automationCommand(const juce::var &);
     juce::var automationReceipt(bool close, int64_t consumedEnd = INT64_MAX);
+    juce::var sourceVoice(const juce::var &, TakeCapture *);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t endFrame() const;

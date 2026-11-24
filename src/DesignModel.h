@@ -139,11 +139,37 @@ struct SourcePool
 {
     juce::String id = juce::Uuid().toString(), selected;
     std::vector<SourcePoolEntry> entries;
-    bool choiceLocked = false;
+    bool choiceLocked = false, live = false;
     juce::String policy = "explicit-v1";
     uint64_t seed = 0, ordinal = 0;
 };
 constexpr size_t maxPoolEntries = 64;
+struct SourceVoiceBinding
+{
+    juce::String pad, layer, pool;
+    int corner = 0;
+    SourcePoolEntry entry;
+};
+enum class SourceVoiceAction
+{
+    trigger,
+    switchSource
+};
+struct SourceVoiceEvent
+{
+    juce::String id;
+    int binding = 0;
+    SourceVoiceAction action = SourceVoiceAction::trigger;
+    int64_t frame = 0;
+    uint64_t sequence = 0;
+    int overlap = 0;
+    double levelDb = 0;
+};
+struct SourcePerformance
+{
+    std::vector<SourceVoiceBinding> bindings;
+    std::vector<SourceVoiceEvent> events;
+};
 struct SourceTiming
 {
     int64_t first = 0, last = 0, placement = 0, fadeIn = 0, fadeOut = 0;
@@ -444,6 +470,7 @@ struct PerformTake
     uint64_t generation = 0;
     bool complete = false, kept = false;
     TakeEventList events;
+    SourcePerformance sourcePerformance;
     std::vector<TakeSource> sources;
     juce::String checkpoint;
     juce::String correctedFrom, originalRecipeHash, originalEventHash;

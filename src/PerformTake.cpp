@@ -4,6 +4,7 @@
 #include "AdvancedEffects.h"
 #include "AdvancedIR.h"
 #include "SourcePools.h"
+#include "SourcePerformance.h"
 #include "PerformanceState.h"
 #include "PluginProcessing.h"
 #include <juce_cryptography/juce_cryptography.h>
@@ -43,6 +44,11 @@ juce::var eventJson(const PerformTake &t)
 juce::var recipeJson(const PerformTake &t)
 {
     auto o = obj();
+    if (!t.sourcePerformance.events.empty())
+    {
+        put(o, "sourcePolicy", "prepared-corner-equal-power-v1");
+        put(o, "triggerSources", sourceBindingsJson(t.sourcePerformance.bindings));
+    }
     put(o, "mix", designMixToJson(t.recipe, !t.orderedRecipe));
     if (t.orderedRecipe)
         put(o, "recipeVersion",
@@ -261,6 +267,8 @@ juce::var takeToJson(const PerformTake &t)
     put(o, "generation", (juce::int64)t.generation);
     put(o, "recipe", recipeJson(t));
     put(o, "events", eventJson(t));
+    if (!t.sourcePerformance.events.empty())
+        put(o, "sourceEvents", sourceEventsJson(t.sourcePerformance.events));
     put(o, "recipeHash", t.recipeHash);
     put(o, "eventHash", t.eventHash);
     put(o, "bodyEnd", (juce::int64)t.bodyEnd);
@@ -305,6 +313,12 @@ PerformTake takeFromJson(const juce::var &o)
     t.session = o["session"].toString();
     t.generation = (uint64_t)(int64_t)o["generation"];
     auto r = o["recipe"];
+    if (r.hasProperty("sourcePolicy") || r.hasProperty("triggerSources") || o.hasProperty("sourceEvents"))
+    {
+        if (r["sourcePolicy"].toString() != "prepared-corner-equal-power-v1")
+            throw std::runtime_error("Unsupported source event policy");
+        t.sourcePerformance = readSourcePerformance(r["triggerSources"], o["sourceEvents"]);
+    }
     const auto wireVersion=(int)r["recipeVersion"];
     const auto version=wireVersion==12 ? (int)r["baseRecipeVersion"] : wireVersion;
     t.orderedRecipe = r.hasProperty("recipeVersion");
@@ -399,6 +413,8 @@ void hashTake(PerformTake &t)
     t.recipeHash = hash(recipeJson(t));
     auto timeline = obj();
     put(timeline, "events", eventJson(t));
+    if (!t.sourcePerformance.events.empty())
+        put(timeline, "sourceEvents", sourceEventsJson(t.sourcePerformance.events));
     put(timeline, "bodyEnd", (juce::int64)t.bodyEnd);
     put(timeline, "outputFrames", (juce::int64)t.outputFrames);
     put(timeline, "captureRate", t.captureRate);
@@ -406,6 +422,7 @@ void hashTake(PerformTake &t)
 }
 void validateTake(const PerformTake &t)
 {
+    validateSourcePerformance(t);
     const bool native = hasNativeEffects((const DesignMix &)t.recipe);
     const bool hosted = hasHostedAutomation((const DesignMix &)t.recipe);
     const bool multi = hasMultiPad((const DesignMix &)t.recipe);

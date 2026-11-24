@@ -29,7 +29,7 @@ add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/StabilityAudio.cpp src/AudioTransform.cpp src/EventRefinement.cpp src/InputRecording.cpp src/SfxGeneration.cpp src/SfxProvider.mm
   src/DesignInputSession.cpp src/DesignMidiSession.cpp src/DesignHostedTouch.cpp src/DesignAutomationSession.cpp src/AutomationMidi.cpp
-  src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/DesignPoolSession.cpp
+  src/HostedRack.cpp src/PluginProcessing.cpp src/PluginSession.cpp src/SourcePools.cpp src/SourcePerformance.cpp src/DesignPoolSession.cpp
   src/ChannelDetails.cpp src/ChannelLayout.cpp src/SurroundXY.cpp src/LayoutDesign.cpp src/Catalog.cpp src/LibraryService.cpp src/MacSources.mm src/AudioStream.cpp src/AudioIPC.cpp
   src/ModelPack.cpp src/AIProcess.cpp src/Waveform.cpp src/WaveformPreview.cpp src/Reference.cpp src/RetrievalIndex.cpp
   src/PerformanceState.cpp src/MultiPad.cpp src/InsertChain.cpp src/DesignModel.cpp src/TrackModel.cpp src/AutomationWriter.cpp src/PerformTake.cpp src/TakeCapture.cpp src/DesignAudio.cpp src/DesignSession.cpp src/LiveInsertSession.cpp src/DesignTakeSession.cpp src/DesignRecovery.cpp src/DesignLive.cpp src/WorkspaceTransfer.cpp src/TransferFolder.mm src/AudioPlaybackService.cpp src/CanvasEditing.cpp src/IconRegistry.cpp)

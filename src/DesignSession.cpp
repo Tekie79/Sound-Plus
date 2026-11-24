@@ -1804,6 +1804,54 @@ void DesignSession::play()
     schedulePreview();
     notify();
 }
+bool DesignSession::canTriggerSource() const
+{
+    if (!services.squareTouchCommand || previewWaiting || replacing || document.activeTake.isNotEmpty() ||
+        midiBusy() || inputBusy())
+        return false;
+    auto state = services.status();
+    return (bool)state["playing"] && state["id"].toString() == "design:" + document.id &&
+           (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration && pendingSourceEvent.isEmpty();
+}
+void DesignSession::triggerSource(int pad, int corner, const juce::String &entry, bool switchSource,
+                                  int fadeMs, double db)
+{
+    auto &mix = document.activeMix();
+    if (!canTriggerSource() || pad < 0 || pad > int(mix.performancePads.size()) || corner < 0 || corner >= 4)
+        return;
+    auto &assignment = padState(mix, pad).assignments[(size_t)corner];
+    auto state = services.status();
+    auto command = sp::message("source_voice");
+    auto *o = command.getDynamicObject();
+    pendingSourceEvent = juce::Uuid().toString();
+    sourceEventDeadline = services.now() + 2000;
+    o->setProperty("eventId", pendingSourceEvent);
+    o->setProperty("id", "design:" + document.id);
+    o->setProperty("graphEpoch", state["graphEpoch"]);
+    o->setProperty("playGeneration", (juce::int64)expectedGeneration);
+    o->setProperty("pad", padIdentity(mix, pad));
+    o->setProperty("corner", corner);
+    o->setProperty("layer", assignment.layer);
+    o->setProperty("entry", entry);
+    o->setProperty("action", switchSource ? "switch" : "trigger");
+    o->setProperty("levelDb", db);
+    o->setProperty("overlap",
+                   switchSource ? int(std::llround(document.sampleRate * std::clamp(fadeMs, 0, 2000) / 1000.))
+                                : 0);
+    services.squareTouchCommand(std::move(command));
+}
+void DesignSession::prepareSourcePool(const juce::String &layer, bool enabled)
+{
+    if (ownsPlayback() || takeBusy() || document.activeTake.isNotEmpty())
+        return;
+    edit("Prepare source pool",
+         [&](auto &d)
+         {
+             for (auto &l : d.activeMix().layers)
+                 if (l.id == layer && l.pool)
+                     l.pool->live = enabled;
+         });
+}
 void DesignSession::playAccurate()
 {
     if (takeBusy() || inputBusy() || midiBusy())
@@ -1931,6 +1979,22 @@ void DesignSession::timerCallback()
     }
     auto state = services.status();
     auto now = services.now();
+    if (pendingSourceEvent.isNotEmpty())
+    {
+        auto r = state["sourceVoice"];
+        if (r["id"].toString() == pendingSourceEvent)
+        {
+            pendingSourceEvent.clear();
+            message = (bool)r["accepted"] ? "Source played" : r["error"].toString();
+            notify();
+        }
+        else if (now >= sourceEventDeadline)
+        {
+            pendingSourceEvent.clear();
+            message = "Source request was not acknowledged";
+            notify();
+        }
+    }
     pollMidi(state);
     pollInput(state);
     pollTake(state);

@@ -8,6 +8,7 @@
 #include "TrackModel.h"
 #include "MixerMeters.h"
 #include "SourcePools.h"
+#include "SourcePerformance.h"
 #include "ProcessorBusContract.h"
 #include "DesignLive.h"
 #include "PluginProcessing.h"
@@ -230,6 +231,9 @@ class StockProcessor final : public EffectProcessor
 class Voice
 {
     DesignLayer layer;
+    std::unique_ptr<PoolVoices> alternateVoices;
+    juce::AudioBuffer<float> isolatedSource;
+    std::map<juce::String, juce::String> unavailable;
     bool continuation = false, ownsTail = true;
     int64_t gateFirst = 0, gateLast = 0;
     juce::AudioBuffer<float> gated;
@@ -439,8 +443,103 @@ class Voice
         gainTargets(true);
         buildCoefficients();
     }
-    void add(juce::AudioBuffer<float> &destination, int destinationOffset, int frames, int64_t frame,
-             int64_t inputEnd = -1)
+    void prepareAlternate(SourceVoiceBinding binding, const ChannelLayout &layout, size_t &budget,
+                          bool immutable, const std::function<bool()> &cancelled, const MidiTiming &timing)
+    {
+        try
+        {
+            auto &e = binding.entry;
+            verifyPoolEntry(e, false, cancelled);
+            auto source = layer;
+            source.source = e.source;
+            source.region = e.region;
+            source.routing = e.routing;
+            source.external = e.external;
+            source.placement = 0;
+            source.controlGain = 1;
+            source.splitHistory.reset();
+            source.pool.reset();
+            auto frames = layerDuration(source, designRate);
+            const bool wet = !source.inserts.stock.empty() || !source.inserts.hosted.slots.empty();
+            const int tail = wet ? int(std::ceil(designRate * 2)) : 0;
+            frames += tail;
+            const int channels = layout.id.isEmpty() ? 2 : layout.size();
+            if (frames <= 0 || frames > int64_t(budget / (sizeof(float) * channels)))
+                throw std::runtime_error("Live source exceeds the remaining 128 MiB pool budget");
+            Voice fresh(source, designRate, true, layout, routingVersion, true, cancelled, timing);
+            juce::AudioBuffer<float> pcm(channels, (int)frames), work(channels, 512);
+            const int delay = fresh.latency();
+            for (int64_t t = 0; t < frames + delay; t += 512)
+            {
+                if (cancelled())
+                    throw QueryCancelled();
+                const int n = int(std::min<int64_t>(512, frames + delay - t));
+                work.clear();
+                fresh.addBase(work, 0, n, t, -1);
+                const int skip = int(std::clamp<int64_t>(delay - t, 0, n));
+                if (skip < n)
+                    for (int c = 0; c < channels; ++c)
+                        pcm.copyFrom(c, int(t + skip - delay), work, c, skip, n - skip);
+            }
+            if (tail)
+                pcm.applyGainRamp((int)frames - int(designRate * .01), int(designRate * .01), 1, 0);
+            verifyPoolEntry(e, false, cancelled);
+            if (!alternateVoices)
+            {
+                alternateVoices = std::make_unique<PoolVoices>();
+                isolatedSource.setSize(channels, 512);
+            }
+            budget -= size_t(frames) * channels * sizeof(float);
+            alternateVoices->sounds.push_back(
+                {std::make_shared<const SourceVoiceBinding>(std::move(binding)), std::move(pcm)});
+        }
+        catch (const QueryCancelled &)
+        {
+            throw;
+        }
+        catch (const std::exception &error)
+        {
+            if (immutable)
+                throw;
+            unavailable[binding.entry.id] = error.what();
+        }
+    }
+    std::shared_ptr<const SourceVoiceBinding> scheduleSource(const SourceVoiceEvent &event,
+                                                             const juce::String &pad, int corner,
+                                                             const juce::String &entry, bool verify)
+    {
+        if (auto failed = unavailable.find(entry); failed != unavailable.end())
+            throw std::runtime_error(failed->second.toStdString());
+        if (alternateVoices)
+            for (size_t i = 0; i < alternateVoices->sounds.size(); ++i)
+            {
+                auto &b = alternateVoices->sounds[i].binding;
+                if (b->entry.id != entry || b->pad != pad || b->corner != corner)
+                    continue;
+                if (verify)
+                    sourceUnchanged(b->entry.source);
+                if (!alternateVoices->schedule(i, event))
+                    throw std::runtime_error("Live source scheduling queue full");
+                return b;
+            }
+        throw std::runtime_error("Source is not prepared on this corner");
+    }
+    void add(juce::AudioBuffer<float> &destination, int offset, int frames, int64_t frame, int64_t end = -1)
+    {
+        if (!alternateVoices)
+        {
+            addBase(destination, offset, frames, frame, end);
+            return;
+        }
+        isolatedSource.clear();
+        addBase(isolatedSource, 0, frames, frame, end);
+        alternateVoices->mix(isolatedSource, frames, frame - latency() - alignmentFrames,
+                             float(layer.controlGain));
+        for (int c = 0; c < destination.getNumChannels(); ++c)
+            destination.addFrom(c, offset, isolatedSource, c, 0, frames);
+    }
+    void addBase(juce::AudioBuffer<float> &destination, int destinationOffset, int frames, int64_t frame,
+                 int64_t inputEnd = -1)
     {
         auto &output = continuation ? gated : destination;
         int offset = continuation ? 0 : destinationOffset;
@@ -647,6 +746,8 @@ struct DesignGraph::Impl
     std::optional<PerformControls> lastPadControls;
     std::optional<SquareTouchPass> squareTouch;
     std::optional<AutomationWriter> writer;
+    SourcePerformance frozenSources;
+    size_t nextSource = 0;
     void applyControlPacket(const juce::var &p)
     {
         applyDesignParameters(document, p);
@@ -1318,6 +1419,24 @@ struct DesignGraph::Impl
                     l, sampleRate, invariant || mix.trackSchema || !layout.id.isEmpty(), layout,
                     document.activeMix().routingVersion, invariant, cancelled, mix.midiTiming));
             }
+        if (auto *take = selectedTake(d))
+            frozenSources = take->sourcePerformance;
+        auto bindings = selectedTake(d) ? frozenSources.bindings : liveSourceBindings(d.activeMix());
+        size_t poolBudget = poolPcmBudget;
+        for (auto &binding : bindings)
+        {
+            auto v = std::find_if(voices.begin(), voices.end(),
+                                  [&](auto &voice) { return voice->id() == binding.layer; });
+            if (v == voices.end())
+                continue;
+            auto source = std::find_if(mix.layers.begin(), mix.layers.end(),
+                                       [&](auto &l) { return l.id == binding.layer; });
+            auto layout = mix.layout;
+            if (mix.trackSchema && layout.id.isNotEmpty())
+                layout = findTrack(mix, source->trackId)->layout;
+            (*v)->prepareAlternate(binding, layout, poolBudget, selectedTake(d) != nullptr, cancelled,
+                                   mix.midiTiming);
+        }
         int longest = 0;
         for (auto &voice : voices)
             longest = std::max(longest, voice->latency());
@@ -1366,6 +1485,17 @@ struct DesignGraph::Impl
     {
         for (int done = 0; done < count;)
         {
+            while (nextSource < frozenSources.events.size() &&
+                   frozenSources.events[nextSource].frame == cursor)
+            {
+                auto &e = frozenSources.events[nextSource++];
+                auto &b = frozenSources.bindings[(size_t)e.binding];
+                auto v = std::find_if(voices.begin(), voices.end(),
+                                      [&](auto &voice) { return voice->id() == b.layer; });
+                if (v == voices.end())
+                    throw std::runtime_error("Frozen live source owner is unavailable");
+                (*v)->scheduleSource(e, b.pad, b.corner, b.entry.id, false);
+            }
             while (nextEvent < events.size() && events[nextEvent].frame == cursor)
             {
                 applyMixControls(takeBase.activeMix(), events[nextEvent++].controls);
@@ -1409,6 +1539,8 @@ struct DesignGraph::Impl
                             if (point.frame > frame)
                                 n = (int)std::min<int64_t>(n, point.frame - frame);
             }
+            if (nextSource < frozenSources.events.size())
+                n = (int)std::min<int64_t>(n, frozenSources.events[nextSource].frame - cursor);
             if (nextEvent < events.size())
                 n = (int)std::min<int64_t>(n, events[nextEvent].frame - cursor);
             block.clear();
@@ -1551,6 +1683,52 @@ juce::var DesignGraph::automationReceipt(bool close, int64_t consumedEnd)
     }
     return impl->writer->result();
 }
+juce::var DesignGraph::sourceVoice(const juce::var &command, TakeCapture *capture)
+{
+    juce::var receipt(new juce::DynamicObject());
+    auto *o = receipt.getDynamicObject();
+    o->setProperty("id", command["eventId"]);
+    try
+    {
+        if (impl->inputEnd >= 0)
+            throw std::runtime_error("A frozen take is read-only");
+        auto action = command["action"].toString();
+        if (action != "trigger" && action != "switch")
+            throw std::runtime_error("Unsupported source action");
+        const auto id = command["eventId"].toString();
+        double gain = command["levelDb"];
+        int overlap = command["overlap"];
+        if (id.length() != 32 || !std::isfinite(gain) || gain < -60 || gain > 6 || overlap < 0 ||
+            overlap > int(rate() * 2) || (action == "trigger" && overlap != 0))
+            throw std::runtime_error("Invalid source voice request");
+        if (capture && !capture->canAppendSource())
+            throw std::runtime_error("Take event limit reached");
+        auto at = std::find_if(impl->voices.begin(), impl->voices.end(),
+                               [&](auto &v) { return v->id() == command["layer"].toString(); });
+        if (at == impl->voices.end())
+            throw std::runtime_error("Source voice is unavailable");
+        // The source-stage input for this block has not been produced. All downstream
+        // compensation is applied on the same project clock during capture and replay.
+        SourceVoiceEvent e{id,
+                           0,
+                           action == "trigger" ? SourceVoiceAction::trigger : SourceVoiceAction::switchSource,
+                           impl->cursor,
+                           0,
+                           overlap,
+                           gain};
+        auto binding = (*at)->scheduleSource(e, command["pad"].toString(), (int)command["corner"],
+                                             command["entry"].toString(), true);
+        if (capture && !capture->appendSource(e, binding))
+            throw std::runtime_error("Source event capture failed");
+        o->setProperty("frame", (juce::int64)e.frame);
+        o->setProperty("accepted", true);
+    }
+    catch (const std::exception &error)
+    {
+        o->setProperty("error", juce::String(error.what()));
+    }
+    return receipt;
+}
 bool DesignGraph::squareTouch(const juce::var &command)
 {
     if (impl->inputEnd >= 0)
@@ -1613,7 +1791,7 @@ void DesignGraph::seek(int64_t frame, const std::function<bool()> &cancelled, in
 {
     // A short effect warmup cannot recreate held MIDI voices, sampler positions or sustain.
     // Prepare this score's complete history on the cancellable graph worker.
-    if (hasMidi(impl->document))
+    if (hasMidi(impl->document) || !impl->frozenSources.events.empty())
         warmup = -1;
     impl->prime(warmup >= 0 ? std::max<int64_t>(0, frame - warmup) : 0, cancelled);
     frame += impl->pipelineLatency;
@@ -1767,6 +1945,10 @@ bool DesignReader::automationCommand(const juce::var &command){return !impl->imm
 juce::var DesignReader::automationReceipt(bool close, int64_t consumedEnd)
 {
     return impl->graph.automationReceipt(close, consumedEnd);
+}
+juce::var DesignReader::sourceVoice(const juce::var &command, TakeCapture *capture)
+{
+    return impl->graph.sourceVoice(command, capture);
 }
 bool DesignReader::squareTouch(const juce::var &command)
 {

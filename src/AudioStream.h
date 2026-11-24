@@ -29,6 +29,10 @@ class PcmStream
     {
         return designReader ? designReader->automationReceipt(close, consumedEnd) : juce::var();
     }
+    juce::var sourceVoice(const juce::var &cmd)
+    {
+        return designReader ? designReader->sourceVoice(cmd, takeCapture.get()) : juce::var();
+    }
     bool squareTouch(const juce::var &command)
     {
         if(!designReader || takeCapture || previewGrain)return false;

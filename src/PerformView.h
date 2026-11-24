@@ -62,6 +62,10 @@ class PerformView final : public juce::Component, public juce::DragAndDropTarget
     std::array<juce::ComboBox, 4> assignments;
     std::array<juce::Label, 4> assignmentNames, macroNames, macroFeedback;
     std::array<std::unique_ptr<SourceCard>, 4> cards;
+    std::map<juce::String, juce::String> triggerEntries;
+    int crossfadeMs = 100;
+    void cornerActions(int, const juce::String &);
+    bool triggerCorner(int);
     std::array<juce::Slider, 4> macros;
     std::array<std::unique_ptr<IconButton>, 4> macroEnable, macroReset, macroMap;
     struct VerticalAxis : juce::Slider

@@ -20,6 +20,7 @@ class SourceCard final : public juce::Component, public juce::SettableTooltipCli
     bool keyPressed(const juce::KeyPress &) override;
     std::function<void(const juce::String &)> onSelect, onEdit;
     std::function<void(const juce::String &)> onAlternatives;
+    std::function<bool()> onTrigger;
     juce::var dragPayload;
     juce::String stateText() const
     {

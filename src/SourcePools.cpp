@@ -381,6 +381,8 @@ juce::var sourcePoolToJson(const SourcePool &p)
     put(v, "id", p.id);
     put(v, "selected", p.selected);
     put(v, "choiceLocked", p.choiceLocked);
+    if (p.live)
+        put(v, "liveSources", "prepared-corner-v1");
     put(v, "policy", p.policy);
     put(v, "seed", juce::String(p.seed));
     put(v, "ordinal", juce::String(p.ordinal));
@@ -399,6 +401,12 @@ SourcePool sourcePoolFromJson(const juce::var &v)
     p.id = v["id"].toString();
     p.selected = v["selected"].toString();
     p.choiceLocked = (bool)v["choiceLocked"];
+    if (v.hasProperty("liveSources"))
+    {
+        if (v["liveSources"].toString() != "prepared-corner-v1")
+            throw std::runtime_error("Unsupported live pool policy");
+        p.live = true;
+    }
     p.policy = v["policy"].toString();
     p.seed = unsignedField(v["seed"]);
     p.ordinal = unsignedField(v["ordinal"]);

@@ -18,6 +18,87 @@ void label(juce::Label &l, const juce::String &name)
     l.setColour(juce::Label::textColourId, ui::muted);
 }
 } // namespace
+bool PerformView::triggerCorner(int corner)
+{
+    if (!session.canTriggerSource())
+        return false;
+    auto &d = session.document;
+    const auto &slot = padState(d.activeMix(), d.performPad).assignments[(size_t)corner];
+    for (auto &l : d.activeMix().layers)
+        if (l.id == slot.layer && l.pool && l.pool->live)
+        {
+            auto saved = triggerEntries.find(l.pool->id);
+            session.triggerSource(d.performPad, corner,
+                                  saved == triggerEntries.end() ? l.pool->selected : saved->second, false);
+            return true;
+        }
+    return false;
+}
+void PerformView::cornerActions(int c, const juce::String &id)
+{
+    auto &d = session.document;
+    auto &mix = d.activeMix();
+    auto at = std::find_if(mix.layers.begin(), mix.layers.end(), [&](auto &l) { return l.id == id; });
+    if (at == mix.layers.end() || !at->pool)
+    {
+        if (onAlternatives)
+            onAlternatives(id);
+        return;
+    }
+    if (d.activeTake.isNotEmpty())
+        return;
+    const auto pad = d.performPad;
+    const auto pool = at->pool->id;
+    const auto context = stateIdentity(session);
+    juce::PopupMenu menu, trigger, switches, fade;
+    menu.addItem(1, "Alternatives", !session.takeBusy());
+    menu.addItem(2, "Prepare live sources", !session.ownsPlayback() && !session.takeBusy(), at->pool->live);
+    std::vector<juce::String> ids;
+    if (at->pool->live)
+    {
+        for (auto &e : at->pool->entries)
+            if (e.reviewed && e.enabled)
+            {
+                ids.push_back(e.id);
+                trigger.addItem(100 + (int)ids.size(), e.source.name);
+                switches.addItem(200 + (int)ids.size(), e.source.name);
+            }
+        menu.addSubMenu("Trigger", trigger, session.canTriggerSource());
+        menu.addSubMenu("Switch source", switches, session.canTriggerSource());
+        for (int ms : {0, 10, 50, 100, 250, 500, 1000})
+            fade.addItem(1000 + ms, juce::String(ms) + " ms", true, ms == crossfadeMs);
+        menu.addSubMenu("Crossfade", fade);
+    }
+    juce::Component::SafePointer<PerformView> safe(this);
+    menu.showMenuAsync(
+        juce::PopupMenu::Options().withTargetComponent(cards[(size_t)c].get()),
+        [safe, context, id, c, pad, pool, ids = std::move(ids), prepared = at->pool->live](int result)
+        {
+            if (!safe || !result || stateIdentity(safe->session) != context)
+                return;
+            auto &mix = safe->session.document.activeMix();
+            if (padState(mix, pad).assignments[(size_t)c].layer != id)
+                return;
+            if (result == 1)
+            {
+                if (safe->onAlternatives)
+                    safe->onAlternatives(id);
+            }
+            else if (result == 2)
+                safe->session.prepareSourcePool(id, !prepared);
+            else if (result >= 1000)
+                safe->crossfadeMs = result - 1000;
+            else
+            {
+                const bool replace = result > 200;
+                const int index = result - (replace ? 201 : 101);
+                if (index < 0 || index >= (int)ids.size())
+                    return;
+                safe->triggerEntries[pool] = ids[(size_t)index];
+                safe->session.triggerSource(pad, c, ids[(size_t)index], replace, safe->crossfadeMs);
+            }
+        });
+}
 PerformView::Pad::Pad(PerformView &o) : owner(o)
 {
     setWantsKeyboardFocus(true);
@@ -252,11 +333,8 @@ PerformView::PerformView(DesignSession &s, std::shared_ptr<WaveformPool> pool)
         blendContent.addAndMakeVisible(*cards[n]);
         cards[n]->setCompact(true);
         cards[n]->onSelect = [this](const juce::String &id) { session.selectLayer(id); };
-        cards[n]->onAlternatives = [this](const auto &id)
-        {
-            if (onAlternatives)
-                onAlternatives(id);
-        };
+        cards[n]->onAlternatives = [this, i](const auto &id) { cornerActions(i, id); };
+        cards[n]->onTrigger = [this, i] { return triggerCorner(i); };
         cards[n]->onEdit = [this](const juce::String &id)
         {
             session.selectLayer(id);

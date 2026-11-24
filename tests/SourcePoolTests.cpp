@@ -1,3 +1,6 @@
+#include "AudioPlaybackService.h"
+#include "DesignAudio.h"
+#include "PerformanceState.h"
 #include "SourcePools.h"
 #include "DesignSession.h"
 #include "DesignLive.h"
@@ -145,6 +148,243 @@ void makePool(sp::DesignDocument &d, const std::vector<sp::Asset> &assets)
     l.pool = std::move(p);
     sp::syncPoolSelection(d.original);
     sp::validateDesign(d);
+}
+void liveSourceOracle(const juce::File &root)
+{
+    using namespace sp;
+    using namespace juce;
+    root.createDirectory();
+    for (int rate : {44100, 48000, 96000})
+    {
+        constexpr int length = 12000;
+        auto media = [&](const String &name, float left, float right)
+        {
+            auto file = root.getChildFile(name + String(rate) + ".wav");
+            WavAudioFormat format;
+            std::unique_ptr<AudioFormatWriter> writer(
+                format.createWriterFor(file.createOutputStream().release(), rate, 2, 24, {}, 0));
+            AudioBuffer<float> pcm(2, length);
+            for (int n = 0; n < length; n++)
+            {
+                pcm.setSample(0, n, left);
+                pcm.setSample(1, n, right);
+            }
+            check(writer && writer->writeFromAudioSampleBuffer(pcm, 0, length),
+                  "Write two distinct source-role constants");
+            writer.reset();
+            return inspectDesignSource(file);
+        };
+        auto base = media("bed", .125f, -.25f), alternate = media("alt", -.375f, .0625f);
+        auto d = document(base);
+        d.sampleRate = rate;
+        d.original.layers[0].fadeIn = d.original.layers[0].fadeOut = 0;
+        makePool(d, {alternate});
+        auto &l = d.original.layers[0];
+        addPerformancePad(d);
+        assignBlendLayer(d.original, 1, l.id, 1);
+        auto legacy = freezeTake(d, "legacy");
+        l.pool->live = true;
+        check((int)designToJson(d)["version"] == 22, "New manifest only for opt-in live bank");
+        auto draft = freezeTake(d, "source events");
+        check(draft.recipeHash == legacy.recipeHash,
+              "Arming without an applied event preserves original recipe hash");
+        TakeCapture cap(draft);
+        cap.phase = TakeCapture::recording;
+        DesignGraph graph(d);
+        graph.seek(0);
+        AudioBuffer<float> live(2, length);
+        const auto entry = l.pool->entries[1].id;
+        auto issue = [&](String op, int overlap, String id)
+        {
+            auto *o = new DynamicObject();
+            var v(o);
+            o->setProperty("eventId", Uuid().toString());
+            o->setProperty("action", op);
+            o->setProperty("layer", l.id);
+            o->setProperty("pad", padIdentity(d.original, 1));
+            o->setProperty("corner", 1);
+            o->setProperty("entry", id);
+            o->setProperty("overlap", overlap);
+            o->setProperty("levelDb", 0.);
+            return graph.sourceVoice(v, &cap);
+        };
+        graph.render(live, 0, 1200);
+        auto unknown = issue("trigger", 0, "absent");
+        check(!(bool)unknown["accepted"] && cap.eventCount() == 0,
+              "Unprepared alternate rejects without changing audio or capture");
+        auto trigger = issue("trigger", 0, entry);
+        check((bool)trigger["accepted"] && (int)trigger["frame"] == 1200,
+              "Applied trigger stamped at source clock");
+        graph.render(live, 1200, 800);
+        auto fade = rate / 10;
+        auto sw = issue("switch", fade, entry);
+        check((bool)sw["accepted"] && (int)sw["frame"] == 2000,
+              "Applied source switch stamped independently of UI");
+        graph.render(live, 2000, length - 2000);
+        double maxError = 0;
+        for (int n = 0; n < length; n++)
+            for (int c = 0; c < 2; c++)
+            {
+                double original = c ? -.25 : .125, other = c ? .0625 : -.375;
+                double phase = std::clamp(double(n - 2000) / fade, 0., 1.) * MathConstants<double>::halfPi;
+                double expected =
+                    original * std::cos(phase) + (n >= 1200 ? other : 0.) + other * std::sin(phase);
+                maxError = std::max(maxError, std::abs(expected - live.getSample(c, n)));
+            }
+        std::cout << "Prepared source overlap oracle " << rate << " Hz max error " << maxError << "\n";
+        check(maxError < 2e-5,
+              "Every independently predicted role sample including crossfade and one-shot overlap");
+        cap.finish(length, true, length);
+        auto take = cap.snapshot();
+        check(take.sourcePerformance.bindings.size() == 1 && take.sourcePerformance.events.size() == 2 &&
+                  take.recipeHash != legacy.recipeHash,
+              "Frozen typed events deduplicate resolved source and opt into new identity");
+        d.takes = {take};
+        d.activeTake = take.id;
+        auto save = root.getChildFile("live-" + String(rate) + ".soundplus");
+        saveDesignAtomic(save, d);
+        auto reopened = loadDesign(save);
+        check(reopened.takes[0].eventHash == take.eventHash, "Saved take retains immutable typed event hash");
+        DesignReader replay(reopened, rate, 0, length, 0);
+        AudioBuffer<float> block(2, 257);
+        for (int n = 0; n < length;)
+        {
+            int got = replay.read(block, std::min(257, length - n));
+            check(got > 0, "Replay progressed");
+            for (int c = 0; c < 2; c++)
+                for (int k = 0; k < got; k++)
+                    if (std::abs(block.getSample(c, k) - live.getSample(c, n + k)) > 2e-6)
+                        throw std::runtime_error("Frozen source replay mismatch at " + std::to_string(n + k));
+            n += got;
+        }
+        DesignReader seek(reopened, rate, 2777, 3400, 0);
+        seek.read(block, 127);
+        check(std::abs(block.getSample(0, 49) - live.getSample(0, 2826)) < 2e-6,
+              "Accurate seek rebuilds both source voices within crossfade");
+        auto altered = take;
+        altered.sourcePerformance.events[0].frame++;
+        bool rejected = false;
+        try
+        {
+            validateTake(altered);
+        }
+        catch (...)
+        {
+            rejected = true;
+        }
+        check(rejected, "Changed event cannot inherit existing take checksum");
+    }
+}
+void recordedPoolService(const juce::File &root, const sp::Asset &a, const sp::Asset &b)
+{
+    using namespace sp;
+    using namespace juce;
+    root.createDirectory();
+    auto d = document(a);
+    makePool(d, {b});
+    auto &l = d.original.layers[0];
+    l.pool->live = true;
+    assignBlendLayer(d.original, 0, l.id);
+    auto t = freezeTake(d, "helper pool checkpoint");
+    t.checkpoint = root.getChildFile("checkpoint.soundplus").getFullPathName();
+    d.takes = {t};
+    auto file = root.getChildFile("draft.soundplus");
+    saveDesignAtomic(file, d);
+    auto capFile = root.getChildFile("producer.f32");
+    {
+        AudioPlaybackService helper;
+        auto args = sp::message("play_design");
+        auto *o = args.getDynamicObject();
+        o->setProperty("path", file.getFullPathName());
+        o->setProperty("id", "design:" + d.id);
+        o->setProperty("mode", "record");
+        o->setProperty("playGeneration", 17);
+        o->setProperty("positionSample", 0);
+        o->setProperty("capture", capFile.getFullPathName());
+        helper.request(args, d.sampleRate);
+        auto wait = [&](auto ready)
+        {
+            for (int i = 0; i < 4000; i++)
+            {
+                auto s = helper.status();
+                if (ready(s))
+                    return s;
+                if (s["error"].toString().isNotEmpty())
+                    throw std::runtime_error(s["error"].toString().toStdString());
+                Thread::sleep(2);
+            }
+            throw std::runtime_error("Timed out waiting for helper source event");
+        };
+        auto running = wait([](auto &s) { return (bool)s["playing"]; });
+        auto event = sp::message("source_voice");
+        auto *e = event.getDynamicObject();
+        e->setProperty("id", "design:" + d.id);
+        e->setProperty("eventId", Uuid().toString());
+        e->setProperty("graphEpoch", running["graphEpoch"]);
+        e->setProperty("playGeneration", 17);
+        e->setProperty("layer", l.id);
+        e->setProperty("pad", padIdentity(d.original, 0));
+        e->setProperty("corner", 0);
+        e->setProperty("entry", l.pool->entries[1].id);
+        e->setProperty("action", "switch");
+        e->setProperty("overlap", 480);
+        helper.squareTouch(event);
+        auto applied = wait([&](auto &s) { return s["sourceVoice"]["id"] == event["eventId"]; });
+        check((bool)applied["sourceVoice"]["accepted"],
+              "Helper acknowledges applied source event during take recording");
+        AudioBuffer<float> output(2, 128);
+        for (int i = 0; i < 70; i++)
+        {
+            helper.render(output.getArrayOfWritePointers(), 2, 128);
+            Thread::sleep(3);
+        }
+        helper.finishCapture(17);
+        auto done = wait([](auto &s)
+                         { return (bool)s["checkpointReady"] || (int)s["takePhase"] == TakeCapture::ready; });
+        (void)done;
+    }
+    auto saved = loadDesign(File(t.checkpoint));
+    saved.activeTake = saved.takes[0].id;
+    auto &take = saved.takes[0];
+    check(take.complete && take.sourcePerformance.events.size() == 1,
+          "Helper durably checkpoints only the consumed source performance");
+    MemoryBlock produced;
+    check(capFile.loadFileAsData(produced) &&
+              produced.getSize() >= size_t(take.outputFrames) * 2 * sizeof(float),
+          "Saved pre-monitor PCM covers every consumed frame");
+    DesignReader reader(saved, d.sampleRate, 0, take.bodyEnd, 0);
+    AudioBuffer<float> block(2, 127);
+    const auto *samples = static_cast<const float *>(produced.getData());
+    for (int n = 0; n < take.outputFrames;)
+    {
+        const int got = reader.read(block, std::min<int64_t>(127, take.outputFrames - n));
+        check(got > 0, "Checkpoint replay progressed");
+        for (int i = 0; i < got; i++)
+            for (int c = 0; c < 2; c++)
+                if (std::abs(samples[(n + i) * 2 + c] - block.getSample(c, i)) > 2e-6)
+                    throw std::runtime_error("Checkpoint differs from consumed live source PCM");
+        n += got;
+    }
+    auto expired = root.getChildFile("changed.wav");
+    check(File(b.path).copyFileTo(expired), "Isolate alternate to change");
+    auto changedDoc = document(a);
+    makePool(changedDoc, {inspectDesignSource(expired)});
+    auto &layer = changedDoc.original.layers[0];
+    layer.pool->live = true;
+    assignBlendLayer(changedDoc.original, 0, layer.id);
+    DesignGraph old(changedDoc);
+    check(expired.appendText("changed"), "Change isolated fixture after preparation");
+    auto cmd = sp::message("source_voice");
+    auto *o = cmd.getDynamicObject();
+    o->setProperty("eventId", Uuid().toString());
+    o->setProperty("layer", layer.id);
+    o->setProperty("pad", "perform:a");
+    o->setProperty("corner", 0);
+    o->setProperty("entry", layer.pool->entries[1].id);
+    o->setProperty("action", "trigger");
+    auto refused = old.sourceVoice(cmd, nullptr);
+    check(!(bool)refused["accepted"] && refused["error"].toString().containsIgnoreCase("changed"),
+          "Changed alternate refused before trigger");
 }
 struct Harness
 {
@@ -745,6 +985,8 @@ void runSourcePoolTests(const juce::File &parent, const juce::File &)
     root.createDirectory();
     auto a = fixture(root.getChildFile("a.wav")), b = fixture(root.getChildFile("b.wav"), 2, 44100, 44100),
          c = fixture(root.getChildFile("c.wav"), 1, 48000, 24000);
+    recordedPoolService(root.getChildFile("pool-transport"), a, b);
+    liveSourceOracle(root.getChildFile("live-performance"));
     determinism();
     model(root, a, b);
     multichannel(root.getChildFile("multichannel"), a);

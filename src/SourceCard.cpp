@@ -221,6 +221,9 @@ void SourceCard::mouseDoubleClick(const juce::MouseEvent &)
 }
 bool SourceCard::keyPressed(const juce::KeyPress &k)
 {
+    if (k.getModifiers().isCommandDown() == false &&
+        juce::CharacterFunctions::toLowerCase(k.getTextCharacter()) == 't' && onTrigger)
+        return onTrigger();
     if (k.isKeyCode(juce::KeyPress::returnKey) && k.getModifiers().isShiftDown() && layer && onAlternatives)
     {
         onAlternatives(layer->id);

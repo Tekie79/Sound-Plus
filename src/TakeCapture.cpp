@@ -29,7 +29,7 @@ bool TakeCapture::append(int64_t frame, const PerformControls &c)
     if (c == previous)
         return true;
     auto at = count.load(std::memory_order_relaxed);
-    if (at >= limit)
+    if (at + sourceCount.load() >= limit)
     {
         overflow = true;
         phase = incomplete;
@@ -38,7 +38,21 @@ bool TakeCapture::append(int64_t frame, const PerformControls &c)
     (*slots)[at] = {frame, at + 1, frozen.generation, c};
     previous = c;
     count.store(at + 1, std::memory_order_release);
-    peakBacklog = std::max(peakBacklog.load(), at + 1 - checkpointCount.load());
+    peakBacklog =
+        std::max(peakBacklog.load(), (at + 1 + sourceCount.load()) -
+                                         std::min(at + 1 + sourceCount.load(), checkpointCount.load()));
+    return true;
+}
+bool TakeCapture::appendSource(SourceVoiceEvent event, std::shared_ptr<const SourceVoiceBinding> binding)
+{
+    const auto i = sourceCount.load(std::memory_order_relaxed);
+    if (i + count.load() >= limit || !binding)
+        return false;
+    if (!sourceSlots)
+        sourceSlots = std::make_unique<SourceSlot[]>(limit); // Graph producer, outside device callback.
+    event.sequence = i + 1;
+    sourceSlots[i] = {std::move(event), std::move(binding)};
+    sourceCount.store(i + 1, std::memory_order_release);
     return true;
 }
 void TakeCapture::finish(int64_t end, bool success, int64_t outputFrames)
@@ -58,6 +72,22 @@ PerformTake TakeCapture::snapshot() const
     for (size_t i = 0; i < n; ++i)
         if ((*slots)[i].frame < end)
             t.events.push_back((*slots)[i]);
+    const auto ns = sourceCount.load(std::memory_order_acquire);
+    auto &performance = t.sourcePerformance;
+    for (size_t i = 0; i < ns; ++i)
+    {
+        auto &slot = sourceSlots[i];
+        if (slot.event.frame >= end)
+            break;
+        auto &b = *slot.binding;
+        auto at = std::find_if(performance.bindings.begin(), performance.bindings.end(),
+                               [&](auto &v) { return v.layer == b.layer && v.entry.id == b.entry.id; });
+        auto event = slot.event;
+        event.binding = int(at - performance.bindings.begin());
+        if (at == performance.bindings.end())
+            performance.bindings.push_back(b);
+        performance.events.push_back(event);
+    }
     t.bodyEnd = end;
     t.outputFrames = acceptedOutputFrames.load();
     t.complete = (state == finalizing || state == ready) && !failureCode;

@@ -173,7 +173,17 @@ void AudioPlaybackService::prepare()
                         result.capture->deviceFailure(deviceLifecycle.diagnostic(request.deviceTicket));
                         throw std::runtime_error(result.capture->deviceDiagnostic().toStdString());
                     }
+                    auto liveRecipe = document.activeMix();
                     document.original = t.recipe;
+                    // The durable draft freezes the active layer. Keep explicitly prepared
+                    // alternate pools only on the helper projection for this performance.
+                    for (auto &l : document.original.layers)
+                    {
+                        auto original = std::find_if(liveRecipe.layers.begin(), liveRecipe.layers.end(),
+                                                     [&](auto &v) { return v.id == l.id; });
+                        if (original != liveRecipe.layers.end() && original->pool && original->pool->live)
+                            l.pool = original->pool;
+                    }
                     document.activeVariation.clear();
                     document.activeTake.clear();
                     document.takes.clear();
@@ -293,7 +303,7 @@ void AudioPlaybackService::produce()
     int64_t revision = 0;
     juce::String id, error, structure, context;
     bool immutableReplay = false;
-    juce::var latestControls, lastSquareReceipt;
+    juce::var latestControls, lastSquareReceipt, lastSourceReceipt;
     juce::String lastSquarePass;
     double squareReceiptExpiry = 0;
     juce::var writeReceipt;
@@ -503,9 +513,25 @@ void AudioPlaybackService::produce()
                                           (double)latestControls["eventMs"]);
                 lastEdit = (uint64_t)(int64_t)latestControls["sequence"];
             }
+            for (auto &command : incomingSquare)
+                if (command["command"].toString() == "source_voice")
+                {
+                    if (!immutableReplay && core.designPlaying() && activeEpoch == epoch.load() &&
+                        core.producerStream() && command["id"].toString() == id &&
+                        (uint64_t)(int64_t)command["graphEpoch"] == activeEpoch &&
+                        (uint64_t)(int64_t)command["playGeneration"] == generation)
+                        lastSourceReceipt = core.producerStream()->sourceVoice(command);
+                    else
+                    {
+                        lastSourceReceipt = juce::var(new juce::DynamicObject());
+                        lastSourceReceipt.getDynamicObject()->setProperty("id", command["eventId"]);
+                        lastSourceReceipt.getDynamicObject()->setProperty(
+                            "error", "Playback changed before the trigger");
+                    }
+                }
             if (!immutableReplay && !core.capture() && core.designPlaying() && activeEpoch == epoch.load())
                 for (const auto &command : incomingSquare)
-                    if (command["id"].toString() == id &&
+                    if (command["command"].toString() != "source_voice" && command["id"].toString() == id &&
                         (uint64_t)(int64_t)command["playGeneration"] == generation &&
                         command["graphEpoch"] == juce::var((juce::int64)activeEpoch))
                         if (auto *stream = core.producerStream())
@@ -552,6 +578,8 @@ void AudioPlaybackService::produce()
         auto state = message("status");
         auto *object = state.getDynamicObject();
         if(writeReceipt.isObject()) object->setProperty("automationWrite",writeReceipt);
+        if (lastSourceReceipt.isObject())
+            object->setProperty("sourceVoice", lastSourceReceipt);
         if (lastSquareReceipt.isObject())
             object->setProperty("squareTouch", lastSquareReceipt);
         object->setProperty("id", id);
@@ -620,7 +648,7 @@ void AudioPlaybackService::produce()
                 object->setProperty("takeId", c->frozen.id);
                 object->setProperty("takePhase", (int)c->phase.load());
                 object->setProperty("takeEnd", (juce::int64)c->acceptedEnd.load());
-                object->setProperty("takeEvents", (int)c->count.load());
+                object->setProperty("takeEvents", (int)c->eventCount());
                 object->setProperty("takeCheckpoint", c->frozen.checkpoint);
                 object->setProperty("takeCheckpointReady", c->checkpointReady.load());
                 object->setProperty("takePeakBacklog", (int)c->peakBacklog.load());
@@ -655,11 +683,12 @@ void AudioPlaybackService::checkpoints()
             c = retainedCapture;
         }
         if (c && c->phase != TakeCapture::cancelled &&
-            (previous != c->frozen.id || count != c->count || end != c->acceptedEnd || phase != c->phase))
+            (previous != c->frozen.id || count != c->eventCount() || end != c->acceptedEnd ||
+             phase != c->phase))
         {
             try
             {
-                auto n = c->count.load();
+                auto n = c->eventCount();
                 auto p = c->phase.load();
                 auto t = c->snapshot();
                 if (t.complete && t.pluginAware)
@@ -686,7 +715,7 @@ void AudioPlaybackService::checkpoints()
                 count = n;
                 end = t.bodyEnd;
                 phase = p;
-                c->checkpointCount = t.events.size();
+                c->checkpointCount = t.events.size() + t.sourcePerformance.events.size();
                 if (t.complete && c->phase == TakeCapture::finalizing)
                 {
                     if (beforeCheckpointCommit)
