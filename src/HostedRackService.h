@@ -319,6 +319,8 @@ var serveRack(const var &job, AudioPluginFormatManager &formats)
                         {
                             auto processAutomated = [&]
                             {
+                                if (live)
+                                    live->observeProgram(slotIndex);
                                 const auto sourceFirst = std::max<int64_t>(
                                     0, e->automationInputFrame - (rack.instrument ? 0 : slot.latency));
                                 if (live)

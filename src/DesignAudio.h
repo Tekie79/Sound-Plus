@@ -16,7 +16,7 @@ class DesignGraph
     seek(int64_t frame, const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1);
     void updateParameters(const juce::var &);
     bool automationCommand(const juce::var &);
-    juce::var automationReceipt(bool close);
+    juce::var automationReceipt(bool close, int64_t consumedEnd = INT64_MAX);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t injectMidi(const juce::String &, MidiPacket);
@@ -41,7 +41,7 @@ class DesignReader
     DesignReader(
         const DesignDocument &, double outputRate, int64_t first = 0, int64_t last = -1,
         double tailSeconds = 0, const std::function<bool()> &cancelled = [] { return false; },
-        int64_t warmup = -1);
+        int64_t warmup = -1, const juce::var &initialWriter = {});
     ~DesignReader();
     int read(
         juce::AudioBuffer<float> &, int frames,
@@ -52,7 +52,7 @@ class DesignReader
     int64_t consumed() const;
     int64_t producedFrame() const;
     bool automationCommand(const juce::var &);
-    juce::var automationReceipt(bool close);
+    juce::var automationReceipt(bool close, int64_t consumedEnd = INT64_MAX);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t endFrame() const;
@@ -67,7 +67,7 @@ class DesignReader
                                      const std::function<bool()> &, const std::function<void(double)> &);
     // Only rendering can supply an already verified immutable input snapshot.
     DesignReader(const DesignDocument &, double, int64_t, int64_t, double, const std::function<bool()> &,
-                 int64_t, const DesignDocument *effectiveInput);
+                 int64_t, const DesignDocument *effectiveInput, const juce::var &initialWriter = {});
     struct Impl;
     std::unique_ptr<Impl> impl;
 };

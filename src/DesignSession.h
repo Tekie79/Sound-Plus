@@ -24,6 +24,7 @@ struct DesignSessionServices
     std::function<void(DesignDocument &)> resolve;
     std::function<juce::var()> status;
     std::function<uint64_t(const juce::String &, const juce::File &, int64_t, const juce::String &)> play;
+    std::function<uint64_t(const juce::String &, const juce::File &, int64_t, const juce::var &)> playArmed;
     std::function<void(const DesignDocument &, uint64_t, double)> parameters;
     std::function<void()> stop;
     std::function<void(bool)> finishTake;
@@ -205,10 +206,11 @@ class DesignSession final : public juce::Component, private juce::Timer
     struct LaneWriteSettings
     {
         WriteMode mode = WriteMode::touch;
-        bool armed = false;
+        bool armed = false, loopPunch = false;
         uint64_t started = 0;
     };
     LaneWriteSettings &laneWriteSettings(const juce::String &owner);
+    bool armLaneWrite(const juce::String &owner, bool arm);
     void learnAutomationMidi(const juce::String &, const AutomationTarget &, AutomationMidiBinding);
     void cancelMidiLearn();
     bool learningMidi() const
@@ -372,11 +374,14 @@ class DesignSession final : public juce::Component, private juce::Timer
         AutomationTarget target;
         uint64_t lifetime = 0, generation = 0;
         int64_t epoch = 0, helper = 0, first = 0, last = 0;
-        bool merge = false, preview = false, ending = false, commit = false;
+        bool merge = false, preview = false, ending = false, commit = false, loop = false;
         double deadline = 0;
     };
     std::optional<WriterPass> writerPass;
     std::function<void()> afterWriter;
+    juce::var automationWriteCommand(const char *, double) const;
+    bool reserveAutomationWrite(const juce::String &, const AutomationTarget &, double, bool, bool, int64_t);
+    juce::var prepareArmedWrite(int64_t);
     void sendAutomationWrite(const char *, double = 0);
     void pollAutomationWrite(const juce::var &);
     struct SquarePass

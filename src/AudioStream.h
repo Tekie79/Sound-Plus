@@ -22,10 +22,13 @@ class PcmStream
     PcmStream(
         const DesignDocument &, double outputRate, int64_t first, const juce::File &capture = {},
         const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1, int64_t last = -1,
-        bool grain = false);
+        bool grain = false, const juce::var &initialWriter = {});
     void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
-    juce::var automationReceipt(bool close) {return designReader?designReader->automationReceipt(close):juce::var();}
+    juce::var automationReceipt(bool close, int64_t consumedEnd = INT64_MAX)
+    {
+        return designReader ? designReader->automationReceipt(close, consumedEnd) : juce::var();
+    }
     bool squareTouch(const juce::var &command)
     {
         if(!designReader || takeCapture || previewGrain)return false;

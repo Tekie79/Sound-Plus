@@ -82,6 +82,8 @@ DesignSessionServices nativeServices(AudioClient &audio)
     services.status = [&audio] { return audio.status(); };
     services.play = [&audio](const auto &id, const auto &file, int64_t frame, const auto &mode)
     { return audio.playDesign(id, file, frame, {}, mode); };
+    services.playArmed = [&audio](const auto &id, const auto &file, int64_t frame, const auto &command)
+    { return audio.playDesign(id, file, frame, {}, "play", command); };
     services.parameters = [&audio](const auto &document, uint64_t generation, double event)
     { audio.updateDesign(document, generation, event); };
     services.stop = [&audio] { audio.stop(); };
@@ -1742,7 +1744,22 @@ void DesignSession::schedulePreview(const juce::String &mode)
             {
                 if (!safe || designPlaybackContext(snapshot) != designPlaybackContext(safe->document))
                     return;
-                safe->expectedGeneration = safe->services.play("design:" + snapshot.id, file, position, mode);
+                auto initial = mode == "play" ? safe->prepareArmedWrite(position) : juce::var();
+                if (initial.isObject())
+                {
+                    safe->expectedGeneration =
+                        safe->services.playArmed("design:" + snapshot.id, file, position, initial);
+                    if (safe->expectedGeneration)
+                    {
+                        safe->writerPass->generation = safe->expectedGeneration;
+                        safe->laneWriteSettings(safe->writerPass->owner).started = safe->expectedGeneration;
+                    }
+                    else
+                        safe->writerPass.reset();
+                }
+                else
+                    safe->expectedGeneration =
+                        safe->services.play("design:" + snapshot.id, file, position, mode);
                 safe->publishedStructure = designStructure(snapshot);
                 safe->previewWaiting = false;
                 // Edits made while the snapshot/seek was preparing belong to

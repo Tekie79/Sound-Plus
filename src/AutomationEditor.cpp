@@ -133,8 +133,8 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
         if (!lane())
             return;
         if (session.ownsAutomationWrite(owner, lane()->armed)) session.endAutomationWrite();
-        this->settings().armed = !lane()->touch;
-        this->settings().started = 0;
+        if (!session.armLaneWrite(owner, !lane()->touch))
+            return;
         session.edit("Arm automation",
                      [&](auto &d)
                      {
@@ -176,11 +176,20 @@ void AutomationEditor::chooseMode()
     {
         menu.addSeparator(); menu.addItem(6,"Punch preview"); menu.addItem(7,"Cancel preview");
     }
+    if (settings().mode == WriteMode::merge || settings().mode == WriteMode::replace)
+        menu.addItem(8, "Repeat punch range",
+                     session.document.renderSettings.last > session.document.renderSettings.first,
+                     settings().loopPunch);
     juce::Component::SafePointer<AutomationEditor> safe(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&mode),[safe](int id)
     {
         if (!safe || !id || !safe->lane()) return;
         auto &self=*safe;
+        if (id == 8)
+        {
+            self.settings().loopPunch = !self.settings().loopPunch;
+            return;
+        }
         if (self.session.ownsAutomationWrite(self.owner,self.lane()->armed)) self.session.endAutomationWrite(id==6);
         if (id>5) return;
         self.finishInteraction();

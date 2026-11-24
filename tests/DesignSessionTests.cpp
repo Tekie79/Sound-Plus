@@ -334,6 +334,94 @@ void checkScalarPass(const juce::File &root)
         else check(!curve(),"Canceled or uncertified pass leaves no curve");
     }
 }
+void checkLoopWrites(const juce::File &root)
+{
+    using namespace sp;
+    for (bool merge : {false, true})
+    {
+        Harness h(root.getChildFile(merge ? "repeat-merge" : "repeat-replace"));
+        auto svc = h.services();
+        auto play = svc.play;
+        juce::var cmd;
+        int passes = 0;
+        svc.playArmed = [&](auto &id, auto &file, int64_t frame, auto &begin)
+        {
+            cmd = begin.clone();
+            ++passes;
+            return play(id, file, frame, "play");
+        };
+        svc.squareTouchCommand = [](auto) {};
+        DesignSession session(h.directory.getChildFile("library.sqlite"), svc);
+        session.document = recipe();
+        auto owner = addTrack(session.document.original, TrackKind::audio);
+        auto &clip = session.document.original.layers.front();
+        clip.trackId = owner;
+        initialiseRouting(clip, findTrack(session.document.original, owner)->layout);
+        AutomationTarget target{{}, "volume"};
+        auto &mix = session.document.original;
+        addAutomationPoint(mix, owner, target, 350, -3, 48000);
+        auto *lane = automationLane(mix, owner);
+        lane->touch = true;
+        lane->armed = target;
+        auto before = juce::JSON::toString(automationLaneJson(*lane), true);
+        session.document.renderSettings.first = 100;
+        session.document.renderSettings.last = 600;
+        auto &options = session.laneWriteSettings(owner);
+        options.armed = true;
+        options.loopPunch = true;
+        options.mode = merge ? DesignSession::WriteMode::merge : DesignSession::WriteMode::replace;
+        session.play();
+        h.drain();
+        for (int pass = 1; pass <= 2; ++pass)
+        {
+            check(passes == pass && (bool)cmd["loopPunch"] && (int)cmd["first"] == 100 &&
+                      (int)cmd["last"] == 600,
+                  "Prearm exact loop bounds before preparation");
+            if (pass == 2)
+            {
+                check(h.lastPlay == 100, "Restart at punch-in");
+                options.loopPunch = false;
+            }
+            auto state = h.state.getDynamicObject();
+            state->setProperty("graphEpoch", 10 + pass);
+            state->setProperty("helperPid", 98);
+            session.poll();
+            AutomationWriter w;
+            w.id = cmd["pass"].toString();
+            w.owner = owner;
+            w.target = target;
+            w.first = 100;
+            w.last = 600;
+            w.generation = h.generation;
+            w.epoch = 10 + pass;
+            w.pending = -double(pass) * 6;
+            w.apply(target, 100, 0);
+            w.apply(target, 600, 0);
+            state->setProperty("sourceSample", 600);
+            state->setProperty("automationWrite", w.result());
+            state->setProperty("playing", false);
+            session.poll();
+            h.drain();
+        }
+        auto points = [&]() -> const auto &
+        { return automationCurve(*automationLane(session.document.original, owner), target)->points; };
+        auto value = [&](int f)
+        {
+            for (auto &p : points())
+                if (p.frame == f)
+                    return p.value;
+            return 999.;
+        };
+        check(passes == 2 && value(100) == -12 && (value(350) == -3) == merge,
+              "Repeat retains last colliding value and honors merge policy");
+        session.undo();
+        check(value(100) == -6, "One undo per completed pass");
+        session.undo();
+        check(juce::JSON::toString(automationLaneJson(*automationLane(session.document.original, owner)),
+                                   true) == before,
+              "Second Undo restores original stable points");
+    }
+}
 void checkControllerLearning(const juce::File &root)
 {
     using namespace sp;
@@ -423,6 +511,7 @@ void runDesignSessionTests(const juce::File &parent)
     juce::ScopedJuceInitialiser_GUI initialise;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
+    checkLoopWrites(root);
     checkControllerLearning(root);
     checkScalarPass(root);
     checkSquareSelection(root);

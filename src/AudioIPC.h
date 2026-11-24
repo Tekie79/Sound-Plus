@@ -37,7 +37,8 @@ class AudioClient
     void play(const juce::String &id, const juce::File &);
     uint64_t playRegion(const juce::String &id, const juce::File &, const PlaybackRegion &);
     uint64_t playDesign(const juce::String &id, const juce::File &snapshot, int64_t position = 0,
-                        const juce::File &capture = {}, const juce::String &mode = "play");
+                        const juce::File &capture = {}, const juce::String &mode = "play",
+                        const juce::var &initialWriter = {});
     uint64_t updateDesign(const DesignDocument &, uint64_t generation, double eventMs);
     void liveInsertRoot(const juce::File &root)
     {

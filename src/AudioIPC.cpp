@@ -214,7 +214,8 @@ bool AudioClient::stopIfOwned(const juce::String &id, uint64_t generation)
     return true;
 }
 uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snapshot, int64_t position,
-                                 const juce::File &capture, const juce::String &mode)
+                                 const juce::File &capture, const juce::String &mode,
+                                 const juce::var &initialWriter)
 {
     if (inputOwned || midiOwned || captureOwned || (captureReserved && mode != "record"))
         return 0;
@@ -235,6 +236,8 @@ uint64_t AudioClient::playDesign(const juce::String &id, const juce::File &snaps
     o->setProperty("capture", capturePath);
     o->setProperty("playGeneration", (juce::int64)generation);
     o->setProperty("mode", mode);
+    if (initialWriter.isObject())
+        o->setProperty("initialWriter", initialWriter);
     if (liveRoot != juce::File())
         o->setProperty("liveRoot", liveRoot.getFullPathName());
     o->setProperty("deviceFaultEpoch", status()["deviceFaultEpoch"]);

@@ -1,0 +1,20 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+    Start  2: mixer_graph
+1/7 Test  #2: mixer_graph ......................   Passed    0.76 sec
+    Start  7: multi_pad
+2/7 Test  #7: multi_pad ........................   Passed    0.43 sec
+    Start  8: multi_pad_device
+3/7 Test  #8: multi_pad_device .................   Passed    4.69 sec
+    Start 15: multitrack_automation
+4/7 Test #15: multitrack_automation ............   Passed    0.87 sec
+    Start 41: designer_session
+5/7 Test #41: designer_session .................   Passed    0.23 sec
+    Start 46: hosted_automation
+6/7 Test #46: hosted_automation ................   Passed   51.28 sec
+    Start 47: hosted_automation_au
+7/7 Test #47: hosted_automation_au .............   Passed   48.66 sec
+
+100% tests passed, 0 tests failed out of 7
+
+Total Test time (real) = 106.93 sec

@@ -1531,9 +1531,24 @@ bool DesignGraph::automationCommand(const juce::var &command)
     }else return false;
     return true;
 }
-juce::var DesignGraph::automationReceipt(bool close){
+juce::var DesignGraph::automationReceipt(bool close, int64_t consumedEnd)
+{
     if(!impl->writer)return {};
-    if(close)impl->writer->finish();
+    auto &w = *impl->writer;
+    if (close)
+    {
+        w.finish();
+        if (w.release > consumedEnd)
+        {
+            w.release = consumedEnd;
+            std::erase_if(w.events, [&](auto &e) { return e.frame >= consumedEnd; });
+            w.receipt = juce::var();
+        }
+    }
+    else if (w.release > consumedEnd)
+    {
+        return {};
+    }
     return impl->writer->result();
 }
 bool DesignGraph::squareTouch(const juce::var &command)
@@ -1670,7 +1685,8 @@ struct DesignReader::Impl : juce::AudioSource
     std::optional<PerformControls> pendingPerformance;
     TakeCapture *capture = nullptr;
     Impl(const DesignDocument &d, double rate, int64_t first, int64_t last, double tail,
-         const std::function<bool()> &cancelled, int64_t warmup, const DesignDocument *effectiveInput)
+         const std::function<bool()> &cancelled, int64_t warmup, const DesignDocument *effectiveInput,
+         const juce::var &initialWriter)
         : document(effectiveInput    ? *effectiveInput
                    : selectedTake(d) ? takeDocument(d)
                                      : audioSourceProjection(d)),
@@ -1682,6 +1698,8 @@ struct DesignReader::Impl : juce::AudioSource
     {
         if (first < 0 || end <= first || end > d.sampleRate * 3630 || rate < 8000 || rate > 192000)
             throw std::runtime_error("Invalid design playback/render range");
+        if (initialWriter.isObject() && (immutableReplay || !graph.automationCommand(initialWriter)))
+            throw std::runtime_error("Armed automation target changed before playback");
         graph.seek(first, cancelled, selectedTake(d) ? -1 : warmup);
         total = (int64_t)std::ceil((long double)(end - first) * rate / document.sampleRate);
         if (auto *t = selectedTake(d))
@@ -1721,14 +1739,16 @@ juce::var DesignReader::mixerMeters() const
     return impl->graph.mixerMeters();
 }
 DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
-                           double tail, const std::function<bool()> &cancelled, int64_t warmup)
-    : DesignReader(d, outputRate, first, last, tail, cancelled, warmup, nullptr)
+                           double tail, const std::function<bool()> &cancelled, int64_t warmup,
+                           const juce::var &initialWriter)
+    : DesignReader(d, outputRate, first, last, tail, cancelled, warmup, nullptr, initialWriter)
 {
 }
 DesignReader::DesignReader(const DesignDocument &d, double outputRate, int64_t first, int64_t last,
                            double tail, const std::function<bool()> &cancelled, int64_t warmup,
-                           const DesignDocument *effectiveInput)
-    : impl(std::make_unique<Impl>(d, outputRate, first, last, tail, cancelled, warmup, effectiveInput))
+                           const DesignDocument *effectiveInput, const juce::var &initialWriter)
+    : impl(std::make_unique<Impl>(d, outputRate, first, last, tail, cancelled, warmup, effectiveInput,
+                                  initialWriter))
 {
 }
 void DesignReader::updateParameters(const juce::var &parameters)
@@ -1744,7 +1764,10 @@ void DesignReader::updateParameters(const juce::var &parameters)
                                                           impl->outputRate / impl->document.sampleRate));
 }
 bool DesignReader::automationCommand(const juce::var &command){return !impl->immutableReplay && impl->graph.automationCommand(command);}
-juce::var DesignReader::automationReceipt(bool close){return impl->graph.automationReceipt(close);}
+juce::var DesignReader::automationReceipt(bool close, int64_t consumedEnd)
+{
+    return impl->graph.automationReceipt(close, consumedEnd);
+}
 bool DesignReader::squareTouch(const juce::var &command)
 {
     return !impl->immutableReplay && impl->graph.squareTouch(command);

@@ -99,6 +99,7 @@ void runMixerGraphTests(const juce::File &root)
             o->setProperty("value",-12.);o->setProperty("phase","move");
             require(graph.automationCommand(command),"Graph accepted move");
             for(int n=1000;n<4096;n+=61)graph.render(applied,n,std::min(61,4096-n));
+            require(graph.automationReceipt(false, 999).isVoid(), "Lookahead cannot certify unheard points");
             auto receipt=graph.automationReceipt(false);
             require((int)receipt["pointCount"]==2 && (int)receipt["end"]==1500,"Exact bounded applied receipt");
             auto scale=[](int n){return n<100 || n>=1500 ? 1. : std::pow(10.,(n<1000 ? -6. : -12.)/20.);};
@@ -110,6 +111,24 @@ void runMixerGraphTests(const juce::File &root)
             auto *curve=automationCurve(*automationLane(frozen.original,track),{{},"volume"});
             require(curve && curve->points.front().frame==99 && curve->points.back().frame==1500,
                     "Exact guard and restore at punch boundaries");
+            auto prefix = graph.automationReceipt(true, 999);
+            require((int)prefix["pointCount"] == 1 && (int)prefix["end"] == 999,
+                    "Stop trims queued second event and unheard hold");
+            // Prearmed reader receives the pass before graph warmup and first FIFO fill.
+            o->setProperty("value", -6.);
+            o->setProperty("phase", "begin");
+            o->setProperty("first", 0);
+            DesignReader primed(dry, rate, 0, 1500, 0, [] { return false; }, -1, command);
+            juce::AudioBuffer<float> early(2, 1500);
+            require(primed.read(early, 1500) == 1500, "Prearmed full interval");
+            require(std::abs(early.getSample(0, 900) - oracle.getSample(0, 900) * std::pow(10., -.3)) < 1e-6,
+                    "First producer buffer contains armed pass");
+            auto primedReceipt = primed.automationReceipt(true, 1500);
+            auto primedMix = dry.original;
+            retainAutomationWrite(primedMix, track, {{}, "volume"}, primedReceipt, false);
+            require(
+                automationCurve(*automationLane(primedMix, track), {{}, "volume"})->points.front().frame == 0,
+                "Prearmed pass begins at exact frame zero");
             auto original=juce::JSON::toString(designToJson(frozen),true);
             receipt.getDynamicObject()->setProperty("discard",true);
             retainAutomationWrite(frozen.original,track,{{},"volume"},receipt,false);

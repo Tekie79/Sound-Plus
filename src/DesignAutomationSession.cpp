@@ -15,10 +15,8 @@ juce::String curveRevision(const DesignMix &m, const juce::String &owner, const 
     return juce::JSON::toString(automationLaneJson(isolated), true);
 }
 } // namespace
-void DesignSession::sendAutomationWrite(const char *phase, double value)
+juce::var DesignSession::automationWriteCommand(const char *phase, double value) const
 {
-    if (!writerPass || !services.squareTouchCommand)
-        return;
     auto &p = *writerPass;
     auto cmd = sp::message("square_touch");
     auto *o = cmd.getDynamicObject();
@@ -34,14 +32,29 @@ void DesignSession::sendAutomationWrite(const char *phase, double value)
     o->setProperty("value", value);
     o->setProperty("first", (juce::int64)p.first);
     o->setProperty("last", (juce::int64)p.last);
-    services.squareTouchCommand(std::move(cmd));
+    if (p.loop)
+        o->setProperty("loopPunch", true);
+    return cmd;
+}
+void DesignSession::sendAutomationWrite(const char *phase, double value)
+{
+    if (writerPass && services.squareTouchCommand)
+        services.squareTouchCommand(automationWriteCommand(phase, value));
 }
 bool DesignSession::beginAutomationWrite(const juce::String &owner, const AutomationTarget &target,
                                          double value, bool merge, bool preview)
 {
     const auto start = automationFrame();
+    if (!start || !reserveAutomationWrite(owner, target, value, merge, preview, *start))
+        return false;
+    sendAutomationWrite("begin", value);
+    return true;
+}
+bool DesignSession::reserveAutomationWrite(const juce::String &owner, const AutomationTarget &target,
+                                           double value, bool merge, bool preview, int64_t start)
+{
     if (writerPass || replacing || takeBusy() || midiBusy() || inputBusy() ||
-        document.activeTake.isNotEmpty() || !services.squareTouchCommand || !start)
+        document.activeTake.isNotEmpty() || !services.squareTouchCommand)
         return false;
     const auto &mix = document.activeMix();
     auto *lane = automationLane(mix, owner);
@@ -66,13 +79,12 @@ bool DesignSession::beginAutomationWrite(const juce::String &owner, const Automa
     pass.first = document.renderSettings.first;
     pass.last = document.renderSettings.last < 0 ? mixDuration(mix, document.sampleRate)
                                                  : document.renderSettings.last;
-    if (pass.last <= pass.first || *start >= pass.last)
+    if (pass.last <= pass.first || start >= pass.last)
         return false;
     pass.merge = merge;
     pass.preview = preview;
     pass.base = curveRevision(mix, owner, target);
     writerPass = std::move(pass);
-    sendAutomationWrite("begin", value);
     return true;
 }
 bool DesignSession::ownsAutomationWrite(const juce::String &owner, const AutomationTarget &target) const
@@ -101,6 +113,19 @@ void DesignSession::pollAutomationWrite(const juce::var &state)
         return;
     auto &p = *writerPass;
     auto receipt = p.completedPreview.isObject() ? p.completedPreview : state["automationWrite"];
+    if (p.epoch < 0)
+    {
+        if (receipt["pass"].toString() == p.id &&
+            (uint64_t)(int64_t)receipt["playGeneration"] == p.generation)
+            p.epoch = (int64_t)receipt["graphEpoch"];
+        else if ((uint64_t)(int64_t)state["playGeneration"] == p.generation)
+        {
+            p.epoch = (int64_t)state["graphEpoch"];
+            p.helper = (int64_t)state["helperPid"];
+        }
+        else if (!p.ending && services.now() < p.deadline && state["error"].toString().isEmpty())
+            return;
+    }
     bool match = receipt["pass"].toString() == p.id && receipt["owner"].toString() == p.owner &&
                  (uint64_t)(int64_t)receipt["playGeneration"] == p.generation &&
                  (int64_t)receipt["graphEpoch"] == p.epoch;
@@ -140,6 +165,14 @@ void DesignSession::pollAutomationWrite(const juce::var &state)
     }
     else if (!match)
         message = "Automation pass ended without an audio-engine receipt";
+    if (match && valid && saved.loop && !saved.ending && active && !previewWaiting &&
+        (int)receipt["pointCount"] > 0 && (int64_t)receipt["end"] == saved.last &&
+        (uint64_t)(int64_t)state["playGeneration"] == saved.generation &&
+        laneWriteSettings(saved.owner).loopPunch && laneWriteSettings(saved.owner).armed)
+    {
+        document.playhead = document.renderSettings.first;
+        schedulePreview();
+    }
     if (auto next = std::exchange(afterWriter, {}))
         services.post(std::move(next));
 }
@@ -158,6 +191,53 @@ DesignSession::LaneWriteSettings &DesignSession::laneWriteSettings(const juce::S
         laneModesVariation = document.activeVariation;
     }
     return laneModes[owner];
+}
+bool DesignSession::armLaneWrite(const juce::String &owner, bool arm)
+{
+    auto &options = laneWriteSettings(owner);
+    if (arm && options.mode != WriteMode::touch)
+        for (const auto &[id, other] : laneModes)
+            if (id != owner && other.armed && other.mode != WriteMode::touch)
+            {
+                message = "Disarm the other automation writer first";
+                notify();
+                return false;
+            }
+    options.armed = arm;
+    options.started = 0;
+    return true;
+}
+juce::var DesignSession::prepareArmedWrite(int64_t position)
+{
+    if (!services.playArmed || laneModesLifetime != lifetime || laneModesDocument != document.id ||
+        laneModesVariation != document.activeVariation)
+        return {};
+    for (auto &[owner, options] : laneModes)
+    {
+        if (!options.armed || (options.mode != WriteMode::replace && options.mode != WriteMode::merge))
+            continue;
+        auto &mix = document.activeMix();
+        auto *lane = automationLane(mix, owner);
+        if (!lane || !lane->touch)
+            continue;
+        auto registry = automationTargets(mix, owner);
+        auto p = std::find_if(registry.begin(), registry.end(),
+                              [&](auto &d) { return d.target == lane->armed && d.writable; });
+        if (p == registry.end())
+            continue;
+        auto *curve = automationCurve(*lane, lane->armed);
+        auto first = std::max(position, document.renderSettings.first);
+        auto value = curve && curve->read ? automationValue(*curve, *p, first) : p->base;
+        if (!reserveAutomationWrite(owner, lane->armed, value, options.mode == WriteMode::merge, false,
+                                    position))
+            continue;
+        writerPass->first = first;
+        writerPass->loop = options.loopPunch && document.renderSettings.last > first;
+        writerPass->epoch = -1;
+        writerPass->deadline = services.now() + 120000;
+        return automationWriteCommand("begin", value);
+    }
+    return {};
 }
 void DesignSession::pollArmedWrites(const juce::var &state)
 {

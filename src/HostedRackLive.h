@@ -120,18 +120,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                 for (size_t i = 0; i < slots.size(); ++i)
                     if (slots[i].effect.get() == processor)
                     {
-                        const auto program = processor->getCurrentProgram();
-                        const bool indexChanged = programSnapshots[i]->exchange(program) != program;
-                        // Generic all-flags metadata notifications are not program recall.
-                        if (!indexChanged && (details.latencyChanged || details.parameterInfoChanged))
-                            continue;
-                        for (int p = 0; p < slots[i].parameterIds.size(); ++p)
-                        {
-                            auto value = processor->getParameters()[p]->getValue();
-                            slots[i].manualValues[(size_t)p] = value;
-                            observedControlValues[i][p] = value;
-                            nativeParameterTicks[i][p] = tick;
-                        }
+                        observeProgram(i, !details.latencyChanged && !details.parameterInfoChanged);
                     }
                 nativeStateTicks = tick;
                 nativeAnyTicks = tick;
@@ -410,6 +399,27 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
     }
 
   public:
+    // AU may notify the host of a program change after the next process request.
+    // Observe on the same message thread as native editors, before reinstating Read.
+    void observeProgram(size_t i, bool explicitRecall = false)
+    {
+        auto &slot = slots[i];
+        const int program = slot.effect->getCurrentProgram();
+        const bool changed = programSnapshots[i]->exchange(program) != program;
+        if (!changed && !explicitRecall)
+            return;
+        const auto tick = Time::getHighResolutionTicks();
+        for (int p = 0; p < slot.parameterIds.size(); ++p)
+        {
+            const float value = slot.effect->getParameters()[p]->getValue();
+            if (!changed && slot.overlayActive[(size_t)p] && value == slot.overlayValues[(size_t)p].load())
+                continue;
+            slot.manualValues[(size_t)p] = value;
+            observedControlValues[i][p] = value;
+            nativeParameterTicks[i][p] = tick;
+        }
+    }
+
     RackLiveUI(const var &request, std::vector<Slot> &prepared, sp::HostedRackExchange &e)
         : job(request), slots(prepared), exchange(e), directory(request["liveDirectory"].toString()),
           generation(request["generation"].toString()), requested(sp::hostedRackFromJson(request["rack"]))

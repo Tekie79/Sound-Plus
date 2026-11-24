@@ -5,7 +5,8 @@
 		✓  Build M01 generation jobs, credentials and verified WAV storage
 		✓  Connect candidate history, audition and workspace actions
 		✓  Verify M01 on an isolated Release build
-		○  Implement and verify M03, M02 and M04–M08 in order
+		✓  Verify M03, M02, M04 and M05 development stages
+		○  Implement and verify M06–M08
 		○  Create the consolidated M09 acceptance program
 ```
 

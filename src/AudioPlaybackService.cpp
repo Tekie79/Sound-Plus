@@ -206,9 +206,22 @@ void AudioPlaybackService::prepare()
                                   : (int64_t)std::llround(document.sampleRate * (grain ? .05 : .25));
                 // Offline render retains full history; interactive seeks explicitly reset
                 // stock state at most 250 ms before the requested location.
+                auto writer = request.command["initialWriter"].clone();
+                if (writer.isObject())
+                {
+                    if (result.mode != "play" || result.immutableReplay)
+                        throw std::runtime_error("Automation capture needs live design playback");
+                    writer.getDynamicObject()->setProperty("playGeneration", (juce::int64)result.generation);
+                    writer.getDynamicObject()->setProperty("graphEpoch", (juce::int64)result.epoch);
+                    if ((bool)writer["loopPunch"])
+                    {
+                        end = (int64_t)writer["last"];
+                        document.renderSettings.tailSeconds = 0;
+                    }
+                }
                 result.stream = std::make_unique<PcmStream>(document, request.rate, frame,
                                                             juce::File(request.command["capture"].toString()),
-                                                            cancelled, warmup, end, grain);
+                                                            cancelled, warmup, end, grain, writer);
                 if (result.capture)
                     result.stream->startTake(result.capture);
                 result.revision = document.revision;
@@ -288,7 +301,7 @@ void AudioPlaybackService::produce()
     auto harvestSquare = [&](bool finish)
     {
         if(auto *stream=core.producerStream()){
-            auto r=stream->automationReceipt(finish);
+            auto r = stream->automationReceipt(finish, core.sourceSample());
             if(r.isObject() && r["pass"].toString()!=harvestedWrite){
                 harvestedWrite=r["pass"].toString();writeReceipt=std::move(r);
             }

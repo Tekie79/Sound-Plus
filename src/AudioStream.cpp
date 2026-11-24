@@ -62,12 +62,14 @@ PcmStream::PcmStream(const juce::File &file, double outputRate, int64_t first, i
     }
 }
 PcmStream::PcmStream(const DesignDocument &d, double outputRate, int64_t first, const juce::File &captureFile,
-                     const std::function<bool()> &cancelled, int64_t warmup, int64_t last, bool grain)
+                     const std::function<bool()> &cancelled, int64_t warmup, int64_t last, bool grain,
+                     const juce::var &initialWriter)
     : rate(outputRate), sourceStart(first), sourceRate(d.sampleRate)
 {
     hostedServices = hasHostedInserts(d.activeMix());
-    designReader = std::make_unique<DesignReader>(
-        d, outputRate, first, last, grain ? 0 : d.renderSettings.tailSeconds, cancelled, warmup);
+    designReader =
+        std::make_unique<DesignReader>(d, outputRate, first, last, grain ? 0 : d.renderSettings.tailSeconds,
+                                       cancelled, warmup, initialWriter);
     if (auto *t = selectedTake(d))
         sourceRate = t->sampleRate;
     pcmChannels = designChannels(d);
