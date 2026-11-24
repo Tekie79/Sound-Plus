@@ -100,6 +100,7 @@ struct Engine
 {
     virtual ~Engine() = default;
     virtual void tick(const Frame &, Frame &, const Parameters &) = 0;
+    virtual void setClock(int64_t) {}
     virtual int latency() const
     {
         return 0;
@@ -234,6 +235,8 @@ struct AdvancedEffectProcessor::Impl
             throw std::runtime_error("Advanced preparation exceeds supported rate/memory");
         if (e.type == "granular-texture")
             engine = std::make_unique<Granular>(e, bus, rate);
+        else if (e.type == "stutter")
+            engine = std::make_unique<Stutter>(bus, rate, timing);
         else if (e.type.startsWith("spectral-"))
             engine = std::make_unique<Spectral>(e, bus, rate);
         else if (e.type == "advanced-delay")
@@ -317,6 +320,10 @@ void AdvancedEffectProcessor::update(const StockEffect &e)
 void AdvancedEffectProcessor::process(juce::AudioBuffer<float> &b, int n)
 {
     impl->process(b, n);
+}
+void AdvancedEffectProcessor::setClock(int64_t t)
+{
+    impl->engine->setClock(t);
 }
 int AdvancedEffectProcessor::latency() const
 {

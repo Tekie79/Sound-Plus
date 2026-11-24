@@ -61,6 +61,18 @@ void creativeTests()
         e.id = juce::Uuid().toString();
         check(advancedError(reference, advancedRun(e, stereo, rate, input, 61)) > .01,
               "Independent instance sequence");
+        auto stutter = makeStockEffect("stutter");
+        nativeValue(stutter, "mix", 1);
+        nativeValue(stutter, "gate", 1);
+        nativeValue(stutter, "division", 1);
+        nativeValue(stutter, "repeats", 0);
+        auto repeated = advancedRun(stutter, stereo, rate, input, 61, {120, 4, 4});
+        int slice = (int)std::llround(rate * .25);
+        for (int n = 100; n < slice - 100; ++n)
+            check(repeated[0][slice + n] == sine[n],
+                  "Synced eighth-note at 120 BPM repeats the captured input");
+        check(advancedError(repeated, advancedRun(stutter, stereo, rate, input, 257, {120, 4, 4})) == 0,
+              "Clocked stutter block invariance");
         auto freeze = makeStockEffect("spectral-freeze");
         nativeValue(freeze, "mix", 1);
         NativeEffectProcessor proc(freeze, mono, rate);

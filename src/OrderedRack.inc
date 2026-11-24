@@ -156,7 +156,7 @@ class OrderedRack
         automation = &snapshot;
         automationInput = inputFrame;
     }
-    void process(juce::AudioBuffer<float> &b, int count)
+    void process(juce::AudioBuffer<float> &b, int count, int64_t sourceFrame)
     {
         for (int n = 0; n < count; ++n)
         {
@@ -174,13 +174,16 @@ class OrderedRack
         int prefix = 0;
         for (auto &s : steps)
         {
+            if (s.native)
+                s.native->setClock(sourceFrame - prefix);
             if ((s.stock || s.native) && automation)
             {
                 for (int offset = 0; offset < count;)
                 {
                     // Native lookahead controls address the sample leaving the
                     // processor, not the future detector/input sample.
-                    auto nativeLatency = s.native ? s.native->latency() : 0;
+                    auto nativeLatency =
+                        s.native && !s.base.type.startsWith("spectral-") ? s.native->latency() : 0;
                     auto frame = std::max<int64_t>(0, automationInput + offset - prefix - nativeLatency);
                     int n = automation->untilBoundary(frame, count - offset);
                     auto phase = automation->segmentFrame(frame);

@@ -60,7 +60,7 @@ template <class M> auto inserts(M &m)
 bool isAdvancedEffect(const juce::String &t)
 {
     return t == "advanced-delay" || t == "algorithmic-reverb" || t == "convolution-reverb" ||
-           t == "granular-texture" || t == "spectral-blur" || t == "spectral-freeze";
+           t == "stutter" || t == "granular-texture" || t == "spectral-blur" || t == "spectral-freeze";
 }
 std::vector<StockEffect *> advancedInserts(DesignMix &m)
 {
@@ -178,6 +178,18 @@ void appendAdvancedDefinitions(std::vector<NativeEffectDefinition> &defs)
                     p("width", "Stereo width", "Spread", "%", 0, 1, .3),
                     p("seed", "Seed", "Sequence", "", 0, 65535, 1, false, {}, true),
                     p("freeze", "Freeze buffer", "Buffer", "", 0, 1, 0, false, {"Follow", "Hold"})};
+    output(d);
+    d = {};
+    d.type = "stutter";
+    d.name = "Stutter";
+    d.policy = "stutter-v1";
+    d.tailPolicy = "four-second-slice-eight-step-pattern-v1";
+    d.parameters = {
+        p("sync", "Timing", "Slice", "", 0, 1, 1, false, {"Free", "Project tempo"}),
+        p("time", "Time", "Slice", "ms", 5, 1000, 125, true),
+        p("division", "Division", "Slice", "", 0, 2, 1, false, {"1/16", "1/8", "1/4"}),
+        p("repeats", "Repeat count", "Pattern", "", 0, 6, 1, false, {"1", "2", "3", "4", "5", "6", "7"}),
+        p("gate", "Gate", "Pattern", "%", .05, 1, .85)};
     output(d);
     for (auto type : {"spectral-freeze", "spectral-blur"})
     {
@@ -353,6 +365,12 @@ ImpulseReference impulseFromJson(const juce::var &o)
 }
 double advancedTailSeconds(const StockEffect &e, const MidiTiming &t)
 {
+    if (e.type == "stutter")
+    {
+        auto period = nativeValue(e, "sync") >= .5 ? 60 / t.bpm * delayBeats((int)nativeValue(e, "division"))
+                                                   : nativeValue(e, "time") / 1000.;
+        return std::min(4., period) * (1 + nativeValue(e, "repeats"));
+    }
     if (e.type == "granular-texture")
         return 2.4;
     if (e.type.startsWith("spectral-"))
@@ -392,10 +410,13 @@ uint64_t advancedMemoryBytes(const StockEffect &e, const ChannelLayout &bus, dou
     if (!std::isfinite(rate) || rate < 8000 || rate > 192000)
         throw std::runtime_error("Invalid advanced preparation rate");
     auto c = (uint64_t)bus.size();
-    if (e.type == "granular-texture" || e.type.startsWith("spectral-"))
+    if (e.type == "stutter" || e.type == "granular-texture" || e.type.startsWith("spectral-"))
     {
-        if (c > 6 || !bus.roles.contains("L") && c != 1)
+        if (bus.id != "mono-v1" && bus.id != "stereo-v1" && bus.id != "5.1-side-v1" &&
+            bus.id != "5.1-rear-v1")
             throw std::runtime_error("Creative effects require mono, stereo or a named surround layout");
+        if (e.type == "stutter")
+            return c * (uint64_t)std::ceil(rate * 4) * sizeof(float) + 65536;
         if (e.type == "granular-texture")
             return c * ((uint64_t)std::ceil(rate * 2) + 2) * sizeof(float) + 65536;
         uint64_t n = 256ull << (int)nativeValue(e, "fft-size");

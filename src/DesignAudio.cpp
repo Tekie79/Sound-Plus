@@ -478,7 +478,7 @@ class Voice
                 block.setSample(1, n, interpolated(1, position) * right * envelope);
             }
         }
-        rack->process(block, frames);
+        rack->process(block, frames, frame);
         if (alignmentFrames)
             for (int n = 0; n < frames; ++n)
             {
@@ -1104,7 +1104,7 @@ struct DesignGraph::Impl
                             node.pcm.addFrom(c, 0, node.legacyClips, k, 0, frames,
                                              node.legacyConversion[c][k]);
             node.rack->automate(*node.automation, cursor - node.inputLatency);
-            node.rack->process(node.pcm, frames);
+            node.rack->process(node.pcm, frames, cursor - node.inputLatency);
             auto *motion = squareTouch && squareTouch->owner == node.track.id ? &*squareTouch : nullptr;
             if (motion)
                 motion->apply(std::max<int64_t>(0, cursor - node.outputLatency), sampleRate);
@@ -1418,7 +1418,7 @@ struct DesignGraph::Impl
                     voice->add(block, 0, n, cursor, inputEnd);
             if (masterAutomation)
                 masterRack->automate(*masterAutomation, cursor - masterInputLatency);
-            masterRack->process(block, n);
+            masterRack->process(block, n, cursor - masterInputLatency);
             for (int i = 0; i < n; ++i)
             {
                 auto gain = masterGain.getNextValue();

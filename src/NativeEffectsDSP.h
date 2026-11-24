@@ -14,6 +14,7 @@ class NativeEffectProcessor
     ~NativeEffectProcessor();
     void update(const StockEffect &);
     void process(juce::AudioBuffer<float> &, int count);
+    void setClock(int64_t projectFrame);
     int latency() const;
     double gainReductionDb() const;
 

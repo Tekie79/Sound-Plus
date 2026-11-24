@@ -197,6 +197,15 @@
         "smoothing": 0.7,
         "blur": 0.18
       }
+    },
+    {
+      "type": "stutter",
+      "name": "Eighth-note gate",
+      "values": {
+        "division": 1,
+        "repeats": 2,
+        "gate": 0.65
+      }
     }
   ]
 }

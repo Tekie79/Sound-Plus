@@ -213,3 +213,78 @@ struct Spectral final : Engine
             captureOffset = (captureOffset + 1) % size;
     }
 };
+
+// The first slice in each group passes through and records. Subsequent slices
+// replay that audio by project frame, even when the host changes block size.
+struct Stutter final : Engine
+{
+    enum
+    {
+        Sync,
+        Time,
+        Division,
+        Repeats,
+        Gate
+    };
+    const double rate, bpm;
+    const int channels, capacity;
+    std::vector<float> captured;
+    int64_t clock = 0, groupStart = -1;
+    int stored = 0, previousPeriod = 0;
+    Stutter(const ChannelLayout &bus, double sr, MidiTiming timing)
+        : rate(sr), bpm(timing.bpm), channels(bus.size()), capacity((int)std::ceil(sr * 4)),
+          captured((size_t)channels * capacity)
+    {
+        validateAdvancedClock(timing);
+    }
+    void setClock(int64_t frame) override
+    {
+        if (frame != clock)
+        {
+            groupStart = -1;
+            stored = 0;
+        }
+        clock = frame;
+    }
+    void tick(const Frame &dry, Frame &wet, const Parameters &p) override
+    {
+        auto &v = p.values;
+        const auto duration = v[Sync] >= .5 ? 60 / bpm * delayBeats((int)v[Division]) : v[Time] / 1000.;
+        const int period = std::clamp((int)std::llround(rate * duration), 1, capacity);
+        const int repeats = 2 + (int)v[Repeats];
+        auto now = clock++;
+        if (now < 0)
+        {
+            wet = dry;
+            return;
+        }
+        auto group = now / (period * repeats) * (period * repeats);
+        int phase = (int)((now - group) % period);
+        if (previousPeriod != period || groupStart != group)
+        {
+            stored = 0;
+            groupStart = group;
+            previousPeriod = period;
+        }
+        if (now - group < period)
+        {
+            if (phase == stored)
+            {
+                for (int ch = 0; ch < channels; ++ch)
+                    captured[(size_t)ch * capacity + phase] = (float)dry[ch];
+                ++stored;
+            }
+            wet = dry;
+        }
+        else if (stored == period)
+        {
+            const int active = std::max(1, (int)std::round(v[Gate] * period));
+            const int ramp = std::max(1, std::min(active / 2, (int)std::round(rate * .001)));
+            double envelope = std::clamp(std::min(phase, active - 1 - phase) / (double)ramp, 0., 1.);
+            for (int ch = 0; ch < channels; ++ch)
+                wet[ch] = envelope * captured[(size_t)ch * capacity + phase];
+        }
+        else
+            wet = dry; // A live seek without history resumes captures on the next complete group.
+    }
+};

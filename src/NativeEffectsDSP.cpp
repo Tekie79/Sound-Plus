@@ -404,6 +404,11 @@ void NativeEffectProcessor::process(juce::AudioBuffer<float> &b, int count)
     else
         impl->process(b, count);
 }
+void NativeEffectProcessor::setClock(int64_t frame)
+{
+    if (advanced)
+        advanced->setClock(frame);
+}
 int NativeEffectProcessor::latency() const
 {
     return advanced ? advanced->latency() : impl->delayFrames;

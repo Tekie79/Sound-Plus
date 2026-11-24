@@ -29,7 +29,7 @@ void contracts(const juce::File &base)
 {
     using namespace sp;
     for (auto type : {"advanced-delay", "algorithmic-reverb", "convolution-reverb", "granular-texture",
-                      "spectral-freeze", "spectral-blur"})
+                      "spectral-freeze", "spectral-blur", "stutter"})
     {
         auto e = makeStockEffect(type);
         auto original = nativeEffectJson(e);
