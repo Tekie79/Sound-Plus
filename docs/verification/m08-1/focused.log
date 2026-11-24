@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/development-release
+    Start 12: acoustic_metadata
+1/5 Test #12: acoustic_metadata ................   Passed    0.44 sec
+    Start 13: catalog_metadata
+2/5 Test #13: catalog_metadata .................   Passed    5.80 sec
+    Start 14: library_collections
+3/5 Test #14: library_collections ..............   Passed    1.60 sec
+    Start 21: library_playback_search
+4/5 Test #21: library_playback_search ..........   Passed    2.91 sec
+    Start 41: library_similar_integrity
+5/5 Test #41: library_similar_integrity ........   Passed    1.23 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) =  11.98 sec

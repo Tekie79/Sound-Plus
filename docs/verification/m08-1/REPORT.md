@@ -18,4 +18,15 @@ All 43 fixture files matched the source hashes in the local ESC-50 evaluation ma
 
 On the installed local model, the same generated decaying transient placed in channel 1 or channel 6 yielded equivalent embeddings and RMS. The rear-only signal scored 0.236 against digital silence. A near-silent 16-bit stimulus scored 0.979 and met the near-silence abstention threshold. [Encoder measurements](channel-check.json)
 
-In isolated native macOS windows, a QA operator action through accessibility selected clip-003, requested suggestions, invoked moment preview, rejected RAIN, verified its disappearance, used Undo, and applied the restored suggestion. Both compact and desktop captures show the full review row. Screenshots precede the final near-silence threshold adjustment. Human listening and representative library accuracy review remain open for M09. [Compact](compact.jpg) · [Desktop](desktop.jpg)
+In isolated native macOS windows, a QA operator action through accessibility selected clip-003, requested suggestions, invoked moment preview, rejected RAIN, verified its disappearance, used Undo, and applied the restored suggestion. Both compact and desktop captures show the full review row. The frozen candidate reopened the editor and returned RAIN at 0.38 in both the 1040 × 680 and 1480 × 920 logical-point QA configurations. Both screenshots are from that candidate. Human listening and representative library accuracy review remain open for M09. [Compact](compact.jpg) · [Desktop](desktop.jpg)
+
+### Repeating the development measurements
+
+After indexing the isolated fixture with the pinned model, run the Release test executable against a disposable copy of that catalog. It reports each ranked category, the unrounded score and the matching half-open sample interval. The local evaluation corpus consists of 40 attributed ESC-50 excerpts and three derived composites.
+
+```sh
+"$build/SoundPlusTests_artefacts/Release/SoundPlusTests" --inspect-acoustic-fixture "$qa_catalog"
+ctest --test-dir "$build" --output-on-failure -R 'acoustic_metadata|catalog_metadata|library_collections|library_playback_search|library_similar_integrity'
+```
+
+For the separate encoder measurement, generate 48,000 signed 16-bit PCM frames at 48 kHz with six interleaved channels. In the single active channel use `round(A * exp(-(i % 6000)/260) * sin(i * 0.31))` at frame `i`. Use amplitude 29,000 for front and rear comparisons, zero for digital silence, and one for the near-silent rear stimulus. Encode the full interval with the same model and preprocessing IDs as the prototype resource. Read the helper's analysis RMS and compare the normalized vectors by dot product. This measures the encoder's channel policy. Physical surround monitoring and human audibility require separate observations.

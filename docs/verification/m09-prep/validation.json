@@ -1,0 +1,18 @@
+{
+  "read retained empty run": {
+    "exit": 0,
+    "observation": "399 cases (153 milestone, 213 mixer, 26 transfer, 7 journeys); 251 historical links, 186 previously unfinished\n{'Not Run': 399}"
+  },
+  "refuse duplicate run": {
+    "exit": 1,
+    "observation": "Run already exists"
+  },
+  "refuse development executable": {
+    "exit": 1,
+    "observation": "Use the frozen build's exact executable path"
+  },
+  "refuse pre-candidate Git SHA": {
+    "exit": 1,
+    "observation": "Commit differs from checked-out source"
+  }
+}

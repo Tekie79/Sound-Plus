@@ -1,0 +1,199 @@
+{
+  "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+  "build": {
+    "architecture": "arm64",
+    "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+    "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+    "macOS": "26.3.2",
+    "pinnedInputs": {
+      "cmake": "3.31.6",
+      "juce": {
+        "archiveSHA256": "95752f8e8b37d802b4c10182bc757de7d88f0c8899e879afa8798589be306a11",
+        "version": "8.0.6"
+      },
+      "ninja": "1.11.1.3",
+      "onnx": {
+        "archiveSHA256": "7b091e012dcfef2f9cc965f2252041101b1840c748ffbc1c18ba047bd6508b1c",
+        "librarySHA256": "36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be",
+        "version": "1.22.1"
+      }
+    },
+    "sdk": "26.5",
+    "tree": "4f701df30da740c426127255cacdd6594c89986c"
+  },
+  "buildNumber": "1",
+  "commands": [
+    [
+      "<tools>/cmake/data/bin/cmake",
+      "-S",
+      "<checkout>",
+      "-B",
+      "<checkout>/build/m09-release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_MAKE_PROGRAM=<tools>/bin/ninja",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DBUILD_TESTING=ON",
+      "-DSOUNDPLUS_BUILD_PLUGIN_ASAN_QA=ON",
+      "-DCMAKE_OSX_ARCHITECTURES=arm64",
+      "-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0",
+      "-DSOUNDPLUS_CANDIDATE_SHA=3be7178ee0525791af3726dbb03b0fdaefec1130"
+    ],
+    [
+      "<tools>/cmake/data/bin/cmake",
+      "--build",
+      "<checkout>/build/m09-release",
+      "--parallel",
+      "8"
+    ],
+    [
+      "<tools>/cmake/data/bin/ctest",
+      "--test-dir",
+      "<checkout>/build/m09-release",
+      "--output-on-failure"
+    ]
+  ],
+  "configuredDependencyTreesSha256": "03ba048d409822584c0db0668b22d39ba53be51911c651fed98ae78fe38079ef",
+  "distribution": "Development only",
+  "gate": {
+    "failed": 0,
+    "passed": 64
+  },
+  "inventory": {
+    "binaries": {
+      "Contents/Frameworks/libonnxruntime.1.22.1.dylib": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "13.3",
+        "sdk": "14.4"
+      },
+      "Contents/Helpers/SoundPlusAI": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "13.3",
+        "sdk": "26.5"
+      },
+      "Contents/Helpers/SoundPlusAudio": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "12.0",
+        "sdk": "26.5"
+      },
+      "Contents/Helpers/SoundPlusPlugin": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "12.0",
+        "sdk": "26.5"
+      },
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "12.0",
+        "sdk": "26.5"
+      },
+      "Contents/MacOS/SoundPlus": {
+        "architecture": "arm64",
+        "macOSDeploymentTarget": "12.0",
+        "sdk": "26.5"
+      }
+    },
+    "bundleFiles": {
+      "Contents/Frameworks/libonnxruntime.1.22.1.dylib": "36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be",
+      "Contents/Helpers/SoundPlusAI": "d8b9dc2792e363ecdc8ef9cdf87f721629babe37cb6548d3568a0665ca458d20",
+      "Contents/Helpers/SoundPlusAudio": "3e53d58823ac3d21c94000570084caf5471367691ae4d527dca132ba2017594b",
+      "Contents/Helpers/SoundPlusPlugin": "48ed9b43440afdfb6dc28752a152bdd6c9a0d8222f67c7bd74c6686d9e4f928f",
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/Info.plist": "ecfc02b4522fb837b84daa8dbc6bf2a901216b02b1fa061042539f2c2252d9ad",
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": "911e2a8d5ba91c91e02e15f5a5218e7ffecdfa2712bd746c8e1a1c4a061d5fa1",
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/PkgInfo": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/Resources/RecentFilesMenuTemplate.nib": "718eb4c5a3a5564dd832ae9a36cf649f3ef257ce896dd921693eeb6101bd008a",
+      "Contents/Info.plist": "192c76c90cb770888134d4461f9546fc47d69314e4eca76e2927ddc361f56a80",
+      "Contents/MacOS/SoundPlus": "ca92909592d92c7e7ac09a0e0b48553e3167c63af84e07bdd25797711876b97f",
+      "Contents/PkgInfo": "82502191c9484b04d685374f9879a0066069c49b8acae7a04b01d38d07e8eca0",
+      "Contents/Resources/Licenses/AGPL-3.0.txt": "0d96a4ff68ad6d4b6f1f30f713b18d5184912ba8dd389f86aa7710db079abcb0",
+      "Contents/Resources/Licenses/Apache-2.0.txt": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
+      "Contents/Resources/Licenses/CLAP-upstream-CC0.txt": "a2010f343487d3f7618affe54f789f5487602331c0a8d03f49e9a7c547cf0499",
+      "Contents/Resources/Licenses/GPL-3.0.txt": "3972dc9744f6499f0f9b2dbf76696f2ae7ad8af9b23dde66d6af86c9dfb36986",
+      "Contents/Resources/Licenses/JUCE-8.0.6.txt": "4f635c4cf805e2c16c439199321a880225e1a1bc708a65bff113efa8000e7ffe",
+      "Contents/Resources/Licenses/Lucide-Attribution.txt": "eb35484798a21aacfb5f6fd4cca5bf79b74c440ef3d41ca753df76cdf2352979",
+      "Contents/Resources/Licenses/Lucide-ISC-and-Feather-MIT.txt": "b495047bd93a9b06913511076f504daba17d5bbeb3e0650f3bb53a4220329c57",
+      "Contents/Resources/Licenses/ONNXRuntime-MIT.txt": "c250d6278f0b47a6439fb7592b08b58a55eb9f535aa49a1db63211c3f982b674",
+      "Contents/Resources/Licenses/ONNXRuntime-ThirdPartyNotices.txt": "e00f828e0a33de591a355ae6606d2625f5758da7d2c844db7821c9dd3e3647b6",
+      "Contents/Resources/Licenses/VST3-SDK.txt": "b8f97584fe732983e7924221e6afc6f7355556fe28e6f494352a40f68aadb309",
+      "Contents/Resources/Licenses/VST3-base.txt": "0f2816e420690499dcf916da261b309f950a7f9f25d322e5c0d8bc883a1c7dff",
+      "Contents/Resources/Licenses/VST3-interfaces.txt": "b8f97584fe732983e7924221e6afc6f7355556fe28e6f494352a40f68aadb309",
+      "Contents/Resources/Licenses/VST3-public-sdk.txt": "0f2816e420690499dcf916da261b309f950a7f9f25d322e5c0d8bc883a1c7dff",
+      "Contents/Resources/RecentFilesMenuTemplate.nib": "718eb4c5a3a5564dd832ae9a36cf649f3ef257ce896dd921693eeb6101bd008a",
+      "Contents/Resources/resolve-transfer.py": "a79f0369b694dbb3638620242d925d77bcacb6edd659b480cb067649c752b491"
+    },
+    "fileModes": {
+      "Contents/Frameworks/libonnxruntime.1.22.1.dylib": 420,
+      "Contents/Helpers/SoundPlusAI": 493,
+      "Contents/Helpers/SoundPlusAudio": 493,
+      "Contents/Helpers/SoundPlusPlugin": 493,
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/Info.plist": 420,
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": 493,
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/PkgInfo": 420,
+      "Contents/Helpers/SoundPlusPluginEditor.app/Contents/Resources/RecentFilesMenuTemplate.nib": 420,
+      "Contents/Info.plist": 420,
+      "Contents/MacOS/SoundPlus": 493,
+      "Contents/PkgInfo": 420,
+      "Contents/Resources/Licenses/AGPL-3.0.txt": 420,
+      "Contents/Resources/Licenses/Apache-2.0.txt": 420,
+      "Contents/Resources/Licenses/CLAP-upstream-CC0.txt": 420,
+      "Contents/Resources/Licenses/GPL-3.0.txt": 420,
+      "Contents/Resources/Licenses/JUCE-8.0.6.txt": 420,
+      "Contents/Resources/Licenses/Lucide-Attribution.txt": 420,
+      "Contents/Resources/Licenses/Lucide-ISC-and-Feather-MIT.txt": 420,
+      "Contents/Resources/Licenses/ONNXRuntime-MIT.txt": 420,
+      "Contents/Resources/Licenses/ONNXRuntime-ThirdPartyNotices.txt": 420,
+      "Contents/Resources/Licenses/VST3-SDK.txt": 420,
+      "Contents/Resources/Licenses/VST3-base.txt": 420,
+      "Contents/Resources/Licenses/VST3-interfaces.txt": 420,
+      "Contents/Resources/Licenses/VST3-public-sdk.txt": 420,
+      "Contents/Resources/RecentFilesMenuTemplate.nib": 420,
+      "Contents/Resources/resolve-transfer.py": 420
+    }
+  },
+  "logs": {
+    "build.log": "251f8d08bac550e0aabb67403089847408037d7d91d514484ef22264be0e5e81",
+    "release.log": "47d6565398b06d0ac87d0b3d620d88f8ce02d80b939f64732e1f3497b9d2ce78"
+  },
+  "productVersion": "0.1.0",
+  "qualificationUtc": "2026-11-24T15:29:19+00:00",
+  "signatures": {
+    "Contents/Frameworks/libonnxruntime.1.22.1.dylib": [
+      "CodeDirectory v=20400 size=260020 flags=0x0(none) hashes=8120+2 location=embedded",
+      "Authority=Developer ID Application: Microsoft Corporation (UBF8T346G9)",
+      "Authority=Developer ID Certification Authority",
+      "Authority=Apple Root CA",
+      "TeamIdentifier=UBF8T346G9"
+    ],
+    "Contents/Helpers/SoundPlusAI": [
+      "CodeDirectory v=20400 size=98180 flags=0x20002(adhoc,linker-signed) hashes=3065+0 location=embedded",
+      "Signature=adhoc",
+      "TeamIdentifier=not set"
+    ],
+    "Contents/Helpers/SoundPlusAudio": [
+      "CodeDirectory v=20400 size=102087 flags=0x20002(adhoc,linker-signed) hashes=3187+0 location=embedded",
+      "Signature=adhoc",
+      "TeamIdentifier=not set"
+    ],
+    "Contents/Helpers/SoundPlusPlugin": [
+      "CodeDirectory v=20400 size=93064 flags=0x20002(adhoc,linker-signed) hashes=2905+0 location=embedded",
+      "Signature=adhoc",
+      "TeamIdentifier=not set"
+    ],
+    "Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor": [
+      "CodeDirectory v=20400 size=93102 flags=0x20002(adhoc,linker-signed) hashes=2906+0 location=embedded",
+      "Signature=adhoc",
+      "TeamIdentifier=not set"
+    ],
+    "Contents/MacOS/SoundPlus": [
+      "CodeDirectory v=20400 size=150306 flags=0x20002(adhoc,linker-signed) hashes=4694+0 location=embedded",
+      "Signature=adhoc",
+      "TeamIdentifier=not set"
+    ]
+  },
+  "source": {
+    "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+    "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+    "tree": "4f701df30da740c426127255cacdd6594c89986c"
+  },
+  "unchangedAfterCTest": true,
+  "version": 1
+}
