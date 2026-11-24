@@ -1,5 +1,9 @@
 # SoundPlus
 
+Choose **Generate SFX** in Library, Edit or Perform to generate and audition ElevenLabs sound effects. Save a candidate to a Library collection, insert it on an Edit track, or assign it to a Perform pad. A personal Keychain credential and confirmation are required for a paid request. [Generation guide](docs/verification/m01/REPORT.md)
+
+The integrated development branch also includes audio transforms, event refinement, creative effects, automation, live source triggering, portable projects and searchable catalog metadata. [Development handoff](docs/verification/integrated/REPORT.md) · [M09 acceptance program](docs/acceptance/M09_PROGRAM.md)
+
 **Hosted automation and four-pad Perform:** supported VST3/AUv2 effects and Instruments now have Read/Touch curves in the existing single track lane. Perform supports up to four independent pads on one transport, editable overdubs and combined/per-pad printing. See the [milestone report, native evidence, commands and limits](docs/HOSTED_AUTOMATION_MILESTONE_REPORT.md).
 
 A standalone macOS sound library built with C++20, JUCE 8.0.6, CMake and SQLite FTS5. Add existing folders, search filenames or describe a sound, and audition original files or matching regions. No project, account or DAW is needed. Sound-description search runs locally and works offline after installing its optional model.

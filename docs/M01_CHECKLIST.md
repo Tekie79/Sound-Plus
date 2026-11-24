@@ -7,7 +7,7 @@
 		✓  Verify M01 on an isolated Release build
 		✓  Verify M03, M02, M04 and M05 development stages
 		✓  Implement and verify M06–M08
-		○  Create the consolidated M09 acceptance program
+		✓  Create the consolidated M09 acceptance program
 ```
 
 The M01 branch starts at M00 report commit `1a6f53a`. Historic results and all unfinished cases stay in [the M00 report](verification/m00/REPORT.md). Run development checks against isolated catalogs and bundles. Live paid generation requires explicit approval.

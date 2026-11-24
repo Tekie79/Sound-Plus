@@ -5,5 +5,5 @@
 		✓  Implement immutable source events and prepared voices
 		✓  Connect Perform gestures, recording and recovery
 		✓  Verify exact frames, independent overlap, routing and historical playback
-		◉  Continue M07 and M08 before consolidated acceptance
+		✓  Continue M07 and M08 before consolidated acceptance
 ```
