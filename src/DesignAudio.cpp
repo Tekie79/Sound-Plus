@@ -1,4 +1,5 @@
 #include "SurroundTouch.h"
+#include "AutomationWriter.h"
 #include "AdvancedIR.h"
 #include "NativeSampler.h"
 #include "NativeEffectsDSP.h"
@@ -645,6 +646,7 @@ struct DesignGraph::Impl
     std::optional<DesignDocument> padBase;
     std::optional<PerformControls> lastPadControls;
     std::optional<SquareTouchPass> squareTouch;
+    std::optional<AutomationWriter> writer;
     void applyControlPacket(const juce::var &p)
     {
         applyDesignParameters(document, p);
@@ -1117,9 +1119,9 @@ struct DesignGraph::Impl
                 {
                     auto time = node.automation->segmentFrame(frame);
                     node.route.spatial = node.track.spatial;
-                    node.route.azimuth = node.automation->value({{}, "azimuth"}, node.track.azimuth, time);
-                    node.route.width = node.automation->value({{}, "width"}, node.track.width, time);
-                    auto pan = node.automation->value({{}, "pan"}, node.track.pan, time);
+                    node.route.azimuth = node.automation->value({{}, "azimuth"}, node.track.azimuth, time, frame);
+                    node.route.width = node.automation->value({{}, "width"}, node.track.width, time, frame);
+                    auto pan = node.automation->value({{}, "pan"}, node.track.pan, time, frame);
                     auto position = node.track.surroundXY;
                     if (position)
                     {
@@ -1157,7 +1159,7 @@ struct DesignGraph::Impl
                     if (motion && motion->release >= 0 && frame < motion->returnEnd)
                         matrixEnd = std::min(matrixEnd, n + (int)(motion->returnEnd - frame));
                 }
-                float gain = node.volumeAutomated
+                float gain = (node.volumeAutomated || (node.automation->writer && node.automation->writer->target==AutomationTarget{{},"volume"}))
                                  ? juce::Decibels::decibelsToGain((float)node.automation->value(
                                        {{}, "volume"}, node.track.volumeDb, frame))
                                  : node.gain.getNextValue();
@@ -1411,6 +1413,11 @@ struct DesignGraph::Impl
                         node->sampler->verify();
                 lastVerified = cursor;
             }
+            if (writer && masterAutomation)
+            {
+                masterAutomation->writer=writer->owner=="master" ? &*writer : nullptr;
+                for(auto &node:tracks) node->automation->writer=writer->owner==node->track.id ? &*writer : nullptr;
+            }
             if (masterAutomation)
                 renderTracks(n, offset + done);
             else
@@ -1425,7 +1432,7 @@ struct DesignGraph::Impl
                 if (masterAutomation)
                 {
                     auto *curve = automationCurve(document.activeMix().masterAutomation, {{}, "volume"});
-                    if (curve && curve->read)
+                    if ((curve && curve->read) || (masterAutomation->writer && masterAutomation->writer->target==AutomationTarget{{},"volume"}))
                         gain = juce::Decibels::decibelsToGain((float)masterAutomation->value(
                             {{}, "volume"}, document.activeMix().masterDb,
                             std::max<int64_t>(0, cursor + i - pipelineLatency)));
@@ -1485,6 +1492,39 @@ void DesignGraph::updateParameters(const juce::var &parameters)
     impl->applyControlPacket(parameters);
 }
 
+bool DesignGraph::automationCommand(const juce::var &command)
+{
+    if(impl->inputEnd>=0 || !impl->masterAutomation) return false;
+    auto owner=command["owner"].toString(), id=command["pass"].toString(), phase=command["phase"].toString();
+    AutomationTarget target{command["instance"].toString(),command["parameter"].toString()};
+    auto &slot=impl->writer;
+    if(id.length()!=32 || owner.isEmpty())return false;
+    if(phase=="begin"){
+        if(slot && slot->release<0)return false;
+        auto registry=automationTargets(impl->document.activeMix(),owner);
+        auto found=std::find_if(registry.begin(),registry.end(),[&](auto &p){return p.target==target && p.writable && !p.hostedBinding;});
+        double v=command["value"];int64_t first=command["first"],last=command["last"];
+        if(found==registry.end() || first<0 || last<=first || !std::isfinite(v) || v<found->minimum || v>found->maximum)return false;
+        auto &w=slot.emplace();w.id=id;w.owner=owner;w.target=target;w.first=first;w.last=last;w.pending=v;
+        w.minimum=found->minimum;w.maximum=found->maximum;w.step=found->discrete ? (found->normalizedStep>0?found->normalizedStep:1) : 0;
+        w.epoch=(int64_t)command["graphEpoch"];w.generation=(int64_t)command["playGeneration"];w.prepare();
+        return true;
+    }
+    if(!slot || slot->release>=0 || slot->owner!=owner || slot->id!=id || slot->target!=target)return false;
+    if(phase=="move"){
+        double v=command["value"];
+        if(!std::isfinite(v)||v<slot->minimum||v>slot->maximum)return false;
+        slot->pending=v;
+    }else if(phase=="end" || phase=="discard"){
+        slot->discard=phase=="discard";slot->ending=true;
+    }else return false;
+    return true;
+}
+juce::var DesignGraph::automationReceipt(bool close){
+    if(!impl->writer)return {};
+    if(close)impl->writer->finish();
+    return impl->writer->result();
+}
 bool DesignGraph::squareTouch(const juce::var &command)
 {
     if (impl->inputEnd >= 0)
@@ -1692,6 +1732,8 @@ void DesignReader::updateParameters(const juce::var &parameters)
     impl->total = std::max<int64_t>(0, (int64_t)std::ceil((long double)(impl->end - impl->firstFrame) *
                                                           impl->outputRate / impl->document.sampleRate));
 }
+bool DesignReader::automationCommand(const juce::var &command){return !impl->immutableReplay && impl->graph.automationCommand(command);}
+juce::var DesignReader::automationReceipt(bool close){return impl->graph.automationReceipt(close);}
 bool DesignReader::squareTouch(const juce::var &command)
 {
     return !impl->immutableReplay && impl->graph.squareTouch(command);

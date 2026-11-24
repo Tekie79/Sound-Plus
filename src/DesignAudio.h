@@ -15,6 +15,8 @@ class DesignGraph
     void
     seek(int64_t frame, const std::function<bool()> &cancelled = [] { return false; }, int64_t warmup = -1);
     void updateParameters(const juce::var &);
+    bool automationCommand(const juce::var &);
+    juce::var automationReceipt(bool close);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t injectMidi(const juce::String &, MidiPacket);
@@ -49,6 +51,8 @@ class DesignReader
     void updatePerformance(const PerformControls &, TakeCapture &);
     int64_t consumed() const;
     int64_t producedFrame() const;
+    bool automationCommand(const juce::var &);
+    juce::var automationReceipt(bool close);
     bool squareTouch(const juce::var &);
     juce::var squareTouchReceipt(bool close = false);
     int64_t endFrame() const;

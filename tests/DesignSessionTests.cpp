@@ -3,6 +3,7 @@
 #include "DesignLive.h"
 #include "SurroundPanner.h"
 #include "SurroundTouch.h"
+#include "AutomationWriter.h"
 #include <deque>
 #include <iostream>
 #include <future>
@@ -287,12 +288,59 @@ void checkInterruptedSquareTouch(const juce::File &root)
         }
     }
 }
+void checkScalarPass(const juce::File &root)
+{
+    using namespace sp;
+    for (const juce::String action : {"latch", "cancel", "punch", "missing", "concurrent edit"})
+    {
+        Harness h(root.getChildFile("write-"+action));
+        auto services=h.services();
+        std::vector<juce::var> commands;
+        services.squareTouchCommand=[&](auto command){commands.push_back(std::move(command));};
+        DesignSession session(h.directory.getChildFile("library.sqlite"),services);
+        session.document=recipe();
+        auto owner=addTrack(session.document.original,TrackKind::audio);
+        auto &layer=session.document.original.layers.front();
+        layer.trackId=owner;initialiseRouting(layer,findTrack(session.document.original,owner)->layout);
+        AutomationTarget volume{{},"volume"};
+        auto *transport=h.state.getDynamicObject();transport->setProperty("graphEpoch",1);transport->setProperty("helperPid",10);
+        session.play();h.drain();
+        auto lane=[&]{return automationLane(session.document.activeMix(),owner);};
+        check(!session.beginAutomationWrite(owner,volume,-6,false,false),"An unarmed target refuses Write");
+        lane()->touch=true;lane()->armed=volume;
+        auto curve=[&]{return automationCurve(*lane(),volume);};
+        const bool preview=action=="punch" || action=="cancel";
+        check(session.beginAutomationWrite(owner,volume,-6,false,preview),"Begin armed scalar pass");
+        lane()->shown={{},"pan"};
+        session.moveAutomationWrite(owner,{{},"pan"},0.5);
+        check(commands.size()==1,"Displayed target cannot take over pass");
+        session.moveAutomationWrite(owner,volume,-4);
+        session.endAutomationWrite(action=="punch");
+        auto first=commands.front();
+        AutomationWriter writer;writer.id=first["pass"].toString();writer.owner=owner;writer.target=volume;
+        writer.epoch=1;writer.generation=(int64_t)first["playGeneration"];writer.first=100;writer.last=600;
+        writer.minimum=-90;writer.maximum=24;writer.pending=-6;writer.apply(volume,100,0);
+        writer.pending=-4;writer.apply(volume,300,0);writer.apply(volume,600,0);
+        if(action=="concurrent edit") addAutomationPoint(session.document.activeMix(),owner,volume,200,-9,48000);
+        if(action!="missing")transport->setProperty("automationWrite",writer.result());
+        h.now+=2600;session.poll();
+        if(action=="punch" || action=="latch")
+        {
+            check(curve() && curve()->points.size()==4 && curve()->points[2].frame==300,"Session retains only acknowledged frames");
+            session.undo();check(!curve(),"One Undo restores prior curve");session.redo();
+            check(curve() && curve()->points[1].value==-6,"Redo restores scalar pass");
+        }
+        else if(action=="concurrent edit")check(curve() && curve()->points[1].value==-9,"Conflicting edit preserved");
+        else check(!curve(),"Canceled or uncertified pass leaves no curve");
+    }
+}
 } // namespace
 void runDesignSessionTests(const juce::File &parent)
 {
     juce::ScopedJuceInitialiser_GUI initialise;
     auto root = parent.getChildFile(juce::Uuid().toString());
     root.createDirectory();
+    checkScalarPass(root);
     checkSquareSelection(root);
     checkInterruptedSquareTouch(root);
     {

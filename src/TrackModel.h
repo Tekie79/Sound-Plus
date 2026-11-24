@@ -91,6 +91,7 @@ void writeTouchPass(DesignMix &, const juce::String &, const AutomationTarget &,
                     const std::vector<AutomationPoint> &, int64_t end, double rate,
                     std::optional<double> returnValue = {});
 // Typed prepared bindings; snapshots are built on the decoder/graph worker.
+struct AutomationWriter;
 struct CompiledAutomation
 {
     struct Binding
@@ -99,8 +100,9 @@ struct CompiledAutomation
         AutomationCurve curve;
     };
     std::vector<Binding> bindings;
+    AutomationWriter *writer=nullptr;
     explicit CompiledAutomation(const DesignMix &, const juce::String &);
-    double value(const AutomationTarget &, double base, int64_t frame) const;
+    double value(const AutomationTarget &, double base, int64_t frame, int64_t appliedFrame = -1) const;
     int untilBoundary(int64_t frame, int maximum) const;
     int64_t segmentFrame(int64_t) const;
     std::vector<HostedParameterEvent> hostedEvents(const HostedRack &, int64_t inputFrame, int frames,

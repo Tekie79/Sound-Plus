@@ -191,7 +191,7 @@ class OrderedRack
                     for (int p = 0; p < effectParameterCount(effect); ++p)
                         setEffectParameterValue(
                             effect, p,
-                            automation->value(s.targets[(size_t)p], effectParameterValue(effect, p), phase));
+                            automation->value(s.targets[(size_t)p], effectParameterValue(effect, p), phase, frame));
                     effect.bypass = automation->value(s.bypassTarget, effect.bypass ? 1 : 0, frame) >= .5;
                     if (s.native)
                         s.native->update(effect);

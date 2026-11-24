@@ -25,9 +25,11 @@ class PcmStream
         bool grain = false);
     void fill(int budget = 16384, const std::function<bool()> &cancelled = [] { return false; });
     void updateParameters(const juce::var &, uint64_t sequence, double eventMs);
+    juce::var automationReceipt(bool close) {return designReader?designReader->automationReceipt(close):juce::var();}
     bool squareTouch(const juce::var &command)
     {
-        return designReader && !takeCapture && !previewGrain && designReader->squareTouch(command);
+        if(!designReader || takeCapture || previewGrain)return false;
+        return command["scalar"].isBool() && (bool)command["scalar"] ? designReader->automationCommand(command) : designReader->squareTouch(command);
     }
     juce::var squareTouchReceipt(bool close = false)
     {

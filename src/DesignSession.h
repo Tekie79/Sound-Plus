@@ -193,6 +193,11 @@ class DesignSession final : public juce::Component, private juce::Timer
     void stop();
     bool ownsPlayback() const;
     std::optional<int64_t> automationFrame() const;
+    bool beginAutomationWrite(const juce::String &, const AutomationTarget &, double value, bool merge, bool preview);
+    bool ownsAutomationWrite(const juce::String &, const AutomationTarget &) const;
+    void moveAutomationWrite(const juce::String &, const AutomationTarget &, double);
+    void endAutomationWrite(bool punch = false);
+    uint64_t automationPlaybackGeneration() const { return expectedGeneration; }
     bool beginSquareTouch(const juce::String &owner, juce::Point<double>);
     bool moveSquareTouch(juce::Point<double>);
     void endSquareTouch();
@@ -313,6 +318,19 @@ class DesignSession final : public juce::Component, private juce::Timer
     bool replacing = false, active = false, previewWaiting = false, autoPending = false;
     bool seekGesture = false, seekWasPlaying = false, audibleSeek = false;
     uint64_t expectedGeneration = 0;
+    struct WriterPass
+    {
+        juce::String id, owner, document, variation, base;
+        AutomationTarget target;
+        uint64_t lifetime = 0, generation = 0;
+        int64_t epoch = 0, helper = 0, first = 0, last = 0;
+        bool merge = false, preview = false, ending = false, commit = false;
+        double deadline = 0;
+    };
+    std::optional<WriterPass> writerPass;
+    std::function<void()> afterWriter;
+    void sendAutomationWrite(const char *, double = 0);
+    void pollAutomationWrite(const juce::var &);
     struct SquarePass
     {
         juce::String id, owner, document, variation;

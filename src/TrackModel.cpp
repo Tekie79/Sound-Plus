@@ -1,5 +1,6 @@
 #include "PerformanceState.h"
 #include "TrackModel.h"
+#include "AutomationWriter.h"
 #include "HostedParameterIdentity.h"
 #include "NativeEffects.h"
 #include "CanvasEditing.h"
@@ -946,17 +947,22 @@ CompiledAutomation::CompiledAutomation(const DesignMix &m, const juce::String &o
                                          "plugin/owner/parameter or disable Read");
         }
 }
-double CompiledAutomation::value(const AutomationTarget &target, double base, int64_t frame) const
+double CompiledAutomation::value(const AutomationTarget &target, double base, int64_t frame, int64_t appliedFrame) const
 {
     for (auto &b : bindings)
         if (b.parameter.target == target)
-            return automationValue(b.curve, b.parameter, frame);
-    return base;
+        { base=automationValue(b.curve,b.parameter,frame); break; }
+    return writer ? writer->apply(target,appliedFrame<0 ? frame : appliedFrame,base) : base;
 }
 int64_t CompiledAutomation::segmentFrame(int64_t frame) const
 {
     frame = std::max<int64_t>(0, frame);
     auto result = frame - frame % 32;
+    if (writer && writer->release<0)
+    {
+        if(frame>=writer->first) result=std::max(result,writer->first);
+        if(frame>=writer->last) result=std::max(result,writer->last);
+    }
     for (auto &b : bindings)
     {
         auto at = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,
@@ -970,6 +976,9 @@ int CompiledAutomation::untilBoundary(int64_t frame, int maximum) const
 {
     frame = std::max<int64_t>(0, frame);
     int n = std::min(maximum, 32 - (int)(frame % 32));
+    if(writer && writer->release<0)
+        for(auto boundary:{writer->first,writer->last})
+            if(boundary>frame && boundary-frame<n) n=static_cast<int>(boundary-frame);
     for (auto &b : bindings)
     {
         auto at = std::upper_bound(b.curve.points.begin(), b.curve.points.end(), frame,

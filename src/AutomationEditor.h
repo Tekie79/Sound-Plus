@@ -6,7 +6,7 @@
 namespace sp
 {
 // One component per expanded owner, never one component per curve.
-class AutomationEditor final : public juce::Component
+class AutomationEditor final : public juce::Component, private juce::Timer
 {
   public:
     AutomationEditor(DesignSession &, juce::String owner, TimelineViewport &, SnapSettings &);
@@ -44,7 +44,13 @@ class AutomationEditor final : public juce::Component
     SnapSettings &snap;
     const uint64_t incarnation;
     const juce::String documentId, variation;
-    ui::TextActionButton target{"Volume"}, read{"Read", true}, touch{"Touch", true};
+    ui::TextActionButton target{"Volume"}, read{"Read", true}, touch{"Arm", true}, mode{"Touch"};
+    enum class WriteMode { touch, latch, replace, merge, preview };
+    WriteMode writeMode = WriteMode::touch;
+    uint64_t writtenGeneration = 0;
+    bool deliberateArm = false;
+    void chooseMode();
+    void timerCallback() override;
     juce::Slider write;
     juce::Label valueLabel;
     AutomationParameter parameter, capturedParameter;

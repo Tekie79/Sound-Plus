@@ -1,4 +1,5 @@
 #include "DesignAudio.h"
+#include "AutomationWriter.h"
 #include "DesignLive.h"
 #include "TrackModel.h"
 #include "NativeEffects.h"
@@ -84,6 +85,36 @@ void runMixerGraphTests(const juce::File &root)
                 "Dry impulses maintain exact independent sample origin and channels");
         const auto historical = juce::JSON::toString(designToJson(dry), true);
 
+        {
+            DesignGraph graph(dry);
+            auto command=juce::var(new juce::DynamicObject());
+            auto *o=command.getDynamicObject();
+            o->setProperty("owner",track);o->setProperty("parameter","volume");
+            o->setProperty("pass",juce::Uuid().toString());o->setProperty("phase","begin");
+            o->setProperty("value",-6.);o->setProperty("first",100);o->setProperty("last",1500);
+            require(graph.automationCommand(command),"Graph accepted scalar writer");
+            juce::AudioBuffer<float> applied(2,4096);
+            graph.render(applied,0,1000);
+            require(graph.automationReceipt(false).isVoid(),"Unfinished pass has no receipt");
+            o->setProperty("value",-12.);o->setProperty("phase","move");
+            require(graph.automationCommand(command),"Graph accepted move");
+            for(int n=1000;n<4096;n+=61)graph.render(applied,n,std::min(61,4096-n));
+            auto receipt=graph.automationReceipt(false);
+            require((int)receipt["pointCount"]==2 && (int)receipt["end"]==1500,"Exact bounded applied receipt");
+            auto scale=[](int n){return n<100 || n>=1500 ? 1. : std::pow(10.,(n<1000 ? -6. : -12.)/20.);};
+            compare(oracle, applied,scale,"Live Latch uses applied value");
+            auto frozen=dry;
+            retainAutomationWrite(frozen.original,track,{{},"volume"},receipt,false);
+            frozen=designFromJson(designToJson(frozen));
+            compare(oracle,render(frozen,31),scale,"Reopened Write matches independent live PCM");
+            auto *curve=automationCurve(*automationLane(frozen.original,track),{{},"volume"});
+            require(curve && curve->points.front().frame==99 && curve->points.back().frame==1500,
+                    "Exact guard and restore at punch boundaries");
+            auto original=juce::JSON::toString(designToJson(frozen),true);
+            receipt.getDynamicObject()->setProperty("discard",true);
+            retainAutomationWrite(frozen.original,track,{{},"volume"},receipt,false);
+            require(original==juce::JSON::toString(designToJson(frozen),true),"Canceled preview cannot mutate saved state");
+        }
         auto wet = dry;
         const auto group = addTrack(wet.original, TrackKind::groupBus);
         const auto aux = addTrack(wet.original, TrackKind::fxReturn);

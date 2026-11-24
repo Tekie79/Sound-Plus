@@ -112,7 +112,7 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
 {
     setWantsKeyboardFocus(true);
     setTitle("Automation lane");
-    for (auto *c : std::initializer_list<juce::Component *>{&target, &read, &touch, &write, &valueLabel})
+    for (auto *c : std::initializer_list<juce::Component *>{&target, &read, &touch, &mode, &write, &valueLabel})
         addAndMakeVisible(c);
     target.onClick = [this] { chooseTarget(); };
     read.onClick = [this]
@@ -127,11 +127,15 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
                          c->read = !c->read;
                      });
     };
+    mode.onClick = [this] { chooseMode(); };
     touch.onClick = [this]
     {
         if (!lane())
             return;
-        session.edit("Arm automation Touch",
+        if (session.ownsAutomationWrite(owner, lane()->armed)) session.endAutomationWrite();
+        deliberateArm = !lane()->touch;
+        writtenGeneration = 0;
+        session.edit("Arm automation",
                      [&](auto &d)
                      {
                          auto &l = *automationLane(d.activeMix(), owner);
@@ -155,10 +159,48 @@ AutomationEditor::AutomationEditor(DesignSession &s, juce::String id, TimelineVi
     write.onDragEnd = [this] { endTouch(); };
     target.setTooltip("Choose the curve shown in this single lane. Hidden read curves keep playing.");
     refresh();
+    startTimerHz(24);
 }
 AutomationEditor::~AutomationEditor()
 {
     finishInteraction();
+}
+void AutomationEditor::chooseMode()
+{
+    if (!lane()) return;
+    juce::PopupMenu menu;
+    const bool scalar = parameter.writable && !parameter.hostedBinding && parameter.target.instance != "square-surround-v1";
+    const char *names[] = {"Touch", "Latch", "Write (replace)", "Write (merge)", "Preview"};
+    for (int i=0; i<5; ++i) menu.addItem(i+1,names[i], i==0 || scalar, i==static_cast<int>(writeMode));
+    if (writeMode==WriteMode::preview && session.ownsAutomationWrite(owner,lane()->armed))
+    {
+        menu.addSeparator(); menu.addItem(6,"Punch preview"); menu.addItem(7,"Cancel preview");
+    }
+    juce::Component::SafePointer<AutomationEditor> safe(this);
+    menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&mode),[safe](int id)
+    {
+        if (!safe || !id || !safe->lane()) return;
+        auto &self=*safe;
+        if (self.session.ownsAutomationWrite(self.owner,self.lane()->armed)) self.session.endAutomationWrite(id==6);
+        if (id>5) return;
+        self.finishInteraction();
+        self.writeMode=static_cast<WriteMode>(id-1);
+        self.writtenGeneration=0;
+        self.deliberateArm=false;
+        if (self.lane()->touch)
+            self.session.edit("Disarm automation",[&](auto &d){automationLane(d.activeMix(),self.owner)->touch=false;});
+        static constexpr const char *labels[]={"Touch","Latch","Write","Merge","Preview"};
+        self.mode.setButtonText(labels[id-1]);
+        self.refresh();
+    });
+}
+void AutomationEditor::timerCallback()
+{
+    if ((writeMode!=WriteMode::replace && writeMode!=WriteMode::merge) || !deliberateArm ||
+        !lane() || !lane()->touch || !session.automationFrame()) return;
+    const auto generation=session.automationPlaybackGeneration();
+    if (writtenGeneration!=generation && session.beginAutomationWrite(owner,lane()->armed,write.getValue(),writeMode==WriteMode::merge,false))
+        writtenGeneration=generation;
 }
 bool AutomationEditor::contextValid() const
 {
@@ -218,15 +260,14 @@ void AutomationEditor::refresh()
     else
         write.setSkewFactor(1);
     auto value = c && c->read ? automationValue(*c, parameter, session.document.playhead) : parameter.base;
-    if (!touching)
+    if (!touching && !session.ownsAutomationWrite(owner,l->armed))
     {
         auto *armedCurve = automationCurve(*l, l->armed);
         write.setValue(armedCurve ? automationValue(*armedCurve, armed, session.document.playhead)
                                   : armed.base,
                        juce::dontSendNotification);
     }
-    write.setTooltip("Touch: " + armed.name + juce::String::fromUTF8(" · ") + armed.units +
-                     ". Captured when armed; return 100 ms.");
+    write.setTooltip(mode.getButtonText() + " " + armed.name);
     valueLabel.setText(juce::String(touching ? write.getValue() : value, parameter.normalizedStep > 0 ? 3
                                                                          : parameter.discrete         ? 0
                                                                                                       : 2) +
@@ -239,6 +280,7 @@ void AutomationEditor::refresh()
 }
 void AutomationEditor::resized()
 {
+    mode.setBounds(6, 88, (int)viewport.header-20, 24);
     read.setBounds(6, 2, 40, 24);
     touch.setBounds(50, 2, 48, 24);
     target.setBounds((int)viewport.header, 2, std::max(40, getWidth() - (int)viewport.header - 8), 24);
@@ -813,6 +855,14 @@ void AutomationEditor::beginTouch()
     if (p == targets.end())
         return;
     capturedParameter = *p;
+    if (writeMode!=WriteMode::touch)
+    {
+        if (!deliberateArm || p->hostedBinding) return;
+        touching=session.ownsAutomationWrite(owner,capturedTarget) ||
+            session.beginAutomationWrite(owner,capturedTarget,write.getValue(),writeMode==WriteMode::merge,writeMode==WriteMode::preview);
+        if(touching)writtenGeneration=session.automationPlaybackGeneration();
+        return;
+    }
     if (p->hostedBinding)
     {
         hostedWriting =
@@ -832,6 +882,11 @@ void AutomationEditor::touchValue(double value)
 {
     if (!touching || !lane())
         return;
+    if (writeMode!=WriteMode::touch)
+    {
+        session.moveAutomationWrite(owner,capturedTarget,snappedAutomation(value,capturedParameter));
+        return;
+    }
     if (hostedWriting)
     {
         session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 1,
@@ -872,6 +927,7 @@ void AutomationEditor::endTouch()
         touching = false;
         return;
     }
+    if (touching && writeMode!=WriteMode::touch) { touching=false; refresh(); return; }
     if (touching && hostedWriting)
     {
         session.hostedTouch(capturedTarget.instance, capturedTarget.parameter, incarnation, 2);

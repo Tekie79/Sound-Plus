@@ -531,6 +531,17 @@ void DesignSession::withLiveState(std::function<void()> continuation, std::funct
 bool DesignSession::flushLive(std::function<void()> continuation, bool allowFailure,
                               std::function<void()> rejected)
 {
+    if (writerPass)
+    {
+        endAutomationWrite();
+        if (afterWriter)
+        {
+            if (rejected) rejected();
+            message = "Finishing automation pass";
+        }
+        else afterWriter = std::move(continuation);
+        return true;
+    }
     if (squarePass)
     {
         endSquareTouch();
@@ -1807,6 +1818,7 @@ void DesignSession::stop()
         message = "Recording owns transport; use Stop or Cancel Take";
         return;
     }
+    endAutomationWrite();
     endSquareTouch();
     auto state = services.status();
     if (active && !seekGesture && (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration &&
@@ -1840,6 +1852,7 @@ void DesignSession::seek(int64_t frame)
         message = "Take playback starts at frame zero with full history";
         return;
     }
+    endAutomationWrite();
     endSquareTouch();
     document.playhead =
         std::clamp<int64_t>(frame, 0, mixDuration(document.activeMix(), document.sampleRate) - 1);
@@ -1851,6 +1864,7 @@ void DesignSession::beginSeekGesture(bool audible)
 {
     if (takeBusy() || inputBusy() || midiBusy() || document.activeTake.isNotEmpty())
         return;
+    endAutomationWrite();
     endSquareTouch();
     seekWasPlaying = active;
     seekGesture = true;
@@ -1902,6 +1916,7 @@ void DesignSession::timerCallback()
     pollInput(state);
     pollTake(state);
     pollSquareTouch(state);
+    pollAutomationWrite(state);
     bool owned = state["id"].toString() == "design:" + document.id &&
                  (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration;
     if (active && !previewWaiting && owned && !(bool)state["pendingPlayback"])

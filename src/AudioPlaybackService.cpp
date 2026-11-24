@@ -283,8 +283,16 @@ void AudioPlaybackService::produce()
     juce::var latestControls, lastSquareReceipt;
     juce::String lastSquarePass;
     double squareReceiptExpiry = 0;
+    juce::var writeReceipt;
+    juce::String harvestedWrite;
     auto harvestSquare = [&](bool finish)
     {
+        if(auto *stream=core.producerStream()){
+            auto r=stream->automationReceipt(finish);
+            if(r.isObject() && r["pass"].toString()!=harvestedWrite){
+                harvestedWrite=r["pass"].toString();writeReceipt=std::move(r);
+            }
+        }
         if (auto *stream = core.producerStream())
             if (auto receipt = stream->squareTouchReceipt(finish);
                 receipt.isObject() && receipt["pass"].toString() != lastSquarePass)
@@ -413,6 +421,8 @@ void AudioPlaybackService::produce()
                 lastSquareReceipt = lastSquareReceipt.clone();
                 lastSquareReceipt.getDynamicObject()->removeProperty("packedPoints");
             }
+        for(auto &cmd:incomingSquare)
+            if(cmd["phase"].toString()=="ack" && cmd["pass"].toString()==harvestedWrite)writeReceipt=juce::var();
         if (squareReceiptExpiry > 0 && monotonicMs() >= squareReceiptExpiry)
             lastSquareReceipt = juce::var();
         try
@@ -528,6 +538,7 @@ void AudioPlaybackService::produce()
         clockFrame = core.sourceSample();
         auto state = message("status");
         auto *object = state.getDynamicObject();
+        if(writeReceipt.isObject()) object->setProperty("automationWrite",writeReceipt);
         if (lastSquareReceipt.isObject())
             object->setProperty("squareTouch", lastSquareReceipt);
         object->setProperty("id", id);
