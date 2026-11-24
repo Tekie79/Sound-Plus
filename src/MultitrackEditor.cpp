@@ -5,6 +5,18 @@ namespace sp
 {
 namespace
 {
+constexpr int addTrackAction = 500;
+constexpr std::array trackKinds{TrackKind::audio, TrackKind::folder, TrackKind::groupBus,
+                                TrackKind::midiInstrument, TrackKind::fxReturn};
+juce::PopupMenu trackCreationChoices()
+{
+    juce::PopupMenu choices;
+    constexpr std::array names{"Audio Track", "Folder", "Group Bus", "MIDI Track", "FX Return"};
+    for (size_t i = 0; i < names.size(); ++i)
+        choices.addItem(addTrackAction + (int)i, names[i]);
+    return choices;
+}
+
 juce::Path fadePath(const DesignLayer &l, const CanvasClipGeometry &c, bool in, double rate)
 {
     auto n = in ? l.fadeIn : l.fadeOut;
@@ -138,7 +150,7 @@ struct MultitrackEditor::Header final : juce::Component
                                         t->solo = !t->solo;
                                 });
         };
-        more.onClick = [this] { editor.trackMenu(id, more); };
+        more.onClick = [this] { editor.openTrackOptions(id, more); };
         colour.onClick = [this]
         {
             juce::Component::SafePointer<Header> safe(this);
@@ -657,23 +669,21 @@ void MultitrackEditor::createTrack(TrackKind kind)
 }
 void MultitrackEditor::addTrackMenu(juce::Component &anchor)
 {
-    juce::PopupMenu m;
-    m.addItem(1, "Audio Track");
-    m.addItem(2, "Folder");
-    m.addItem(3, "Group Bus");
-    m.addItem(4, "MIDI Track");
-    m.addItem(5, "FX Return");
+    showAddTrackMenu(juce::PopupMenu::Options().withTargetComponent(anchor));
+}
+void MultitrackEditor::showAddTrackMenu(const juce::PopupMenu::Options &options)
+{
     juce::Component::SafePointer<MultitrackEditor> safe(this);
-    m.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor),
-                    [safe](int n)
-                    {
-                        if (safe && n >= 1 && n <= 5)
-                            safe->createTrack(n == 1   ? TrackKind::audio
-                                              : n == 2 ? TrackKind::folder
-                                              : n == 3 ? TrackKind::groupBus
-                                              : n == 4 ? TrackKind::midiInstrument
-                                                       : TrackKind::fxReturn);
-                    });
+    const auto incarnation = session.documentGeneration();
+    const auto id = session.document.id, variation = session.document.activeVariation;
+    trackCreationChoices().showMenuAsync(options, [safe, incarnation, id, variation](int n)
+    {
+        const auto index = n - addTrackAction;
+        if (safe && index >= 0 && index < (int)trackKinds.size() &&
+            safe->session.documentGeneration() == incarnation &&
+            safe->session.document.id == id && safe->session.document.activeVariation == variation)
+            safe->createTrack(trackKinds[(size_t)index]);
+    });
 }
 void MultitrackEditor::selectTrack(const juce::String &id)
 {
@@ -727,12 +737,25 @@ void MultitrackEditor::splitSelected()
                          splitClip(d, id, d.playhead);
                  });
 }
-void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor)
+void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::Options &options)
 {
     juce::PopupMenu m;
     auto *t = findTrack(session.document.activeMix(), id);
     if (!t)
+    {
+        showAddTrackMenu(options);
         return;
+    }
+    m.addSubMenu("Add track", trackCreationChoices());
+    m.addSeparator();
+    m.addItem(5, "Rename track");
+    m.addItem(6, "Track colour");
+    if (t->kind != TrackKind::folder)
+    {
+        m.addItem(7, "Mute", !session.inputBusy(), t->mute);
+        m.addItem(8, "Solo", !session.inputBusy(), t->solo);
+    }
+    m.addSeparator();
     if (t->kind == TrackKind::audio)
     {
         m.addItem(400, juce::String::fromUTF8("Audio input…"), !session.inputBusy());
@@ -794,12 +817,30 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
     auto document = session.document.id;
     auto variation = session.document.activeVariation;
     m.showMenuAsync(
-        juce::PopupMenu::Options().withTargetComponent(anchor),
+        options,
         [safe, id, folders, buses, incarnation, document, variation](int n)
         {
             if (!safe || !n || safe->session.documentGeneration() != incarnation ||
                 safe->session.document.id != document || safe->session.document.activeVariation != variation)
                 return;
+            if (n >= addTrackAction && n < addTrackAction + (int)trackKinds.size())
+            {
+                safe->createTrack(trackKinds[(size_t)(n - addTrackAction)]);
+                return;
+            }
+            if (n == 5 || n == 6)
+            {
+                for (auto *header : safe->headers)
+                    if (header->id == id)
+                    {
+                        if (n == 5)
+                            header->name.showEditor();
+                        else
+                            header->colour.triggerClick();
+                        break;
+                    }
+                return;
+            }
             if (n == 405)
             {
                 safe->openSurroundPanner(id);
@@ -849,6 +890,10 @@ void MultitrackEditor::trackMenu(const juce::String &id, juce::Component &anchor
                         deleteTrack(mix, id);
                     if (n == 4)
                         track->spatial = !track->spatial;
+                    if (n == 7)
+                        track->mute = !track->mute;
+                    if (n == 8)
+                        track->solo = !track->solo;
                     if (n >= 100 && n < 200)
                         reparentTrack(mix, id, n == 100 ? juce::String() : folders[(size_t)n - 101]);
                     if (n >= 200 && n < 300)
@@ -1031,6 +1076,13 @@ void MultitrackEditor::mouseDown(const juce::MouseEvent &e)
     midiDrag = false;
     hit = CanvasTarget::none;
     fadePoint = -1;
+    const auto popupOptions = juce::PopupMenu::Options().withTargetComponent(this)
+        .withParentComponent(getTopLevelComponent()).withTargetScreenArea({e.getScreenX(), e.getScreenY(), 1, 1});
+    if (e.mods.isPopupMenu() && (e.x < viewport.header || (e.y >= 25 && ownerAtDown.isEmpty())))
+    {
+        trackMenu(ownerAtDown, popupOptions);
+        return;
+    }
     if (e.y < 25)
     {
         draggingMarker.clear();
@@ -1057,7 +1109,7 @@ void MultitrackEditor::mouseDown(const juce::MouseEvent &e)
     if (ownerAtDown.isEmpty())
         return;
     auto row = std::find(rows.begin(), rows.end(), ownerAtDown);
-    if (row != rows.end() && e.y > tops[(size_t)(row - rows.begin())] + height - 8)
+    if (!e.mods.isPopupMenu() && row != rows.end() && e.y > tops[(size_t)(row - rows.begin())] + height - 8)
     {
         hit = CanvasTarget::rowResize;
         capturedHeight = height;
@@ -1186,6 +1238,11 @@ void MultitrackEditor::mouseDown(const juce::MouseEvent &e)
         original = session.document;
         active = true;
         session.beginGesture();
+        return;
+    }
+    if (e.mods.isPopupMenu())
+    {
+        trackMenu(ownerAtDown, popupOptions);
         return;
     }
     selectTrack(ownerAtDown);

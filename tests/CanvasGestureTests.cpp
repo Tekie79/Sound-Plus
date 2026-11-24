@@ -763,6 +763,14 @@ void runCanvasGestureTests(const juce::File &parent)
                           layout.waveform.getBottom() < layout.controlsY &&
                           layout.controlsY + 40 < layout.monitorY,
                       "Minimum Library retains usable results and a separate transport");
+                check(layout.waveform.getWidth() >= 420 &&
+                          layout.waveform.getRight() < layout.auditionMeter.getX() &&
+                          layout.auditionMeter.getRight() < layout.auditionTools.getX() &&
+                          layout.auditionTools.getX() == layout.details.getX() &&
+                          layout.auditionTools.getWidth() == layout.details.getWidth() &&
+                          layout.auditionTools.getHeight() >= 110 &&
+                          layout.preview.contains(layout.auditionTools),
+                      "Waveform, live meter and transfer tools retain separate usable areas");
                 if (reference)
                     check(layout.referenceWave.getBottom() < layout.results.getY(),
                           "Reference waveform stays above result rows");

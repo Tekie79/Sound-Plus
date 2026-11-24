@@ -102,6 +102,7 @@ void TransferController::retry(int track)
 }
 void TransferController::execute(TransferRequest r, TransferArtifact prepared)
 {
+    int placedTrack = 0;
     juce::var record;
     bool safeRetry = false;
     const auto stop = [this] { return cancelled.load(); };
@@ -183,6 +184,7 @@ void TransferController::execute(TransferRequest r, TransferArtifact prepared)
                 throw std::runtime_error(message.isNotEmpty() ? message.toStdString() : "Placement was not verified");
             }
             fields->setProperty("status", "Placed");
+            placedTrack = (int)result["track"];
         }
         else
             fields->setProperty("status", "Ready to drag");
@@ -190,6 +192,7 @@ void TransferController::execute(TransferRequest r, TransferArtifact prepared)
         update([&](auto &s)
         {
             s.status = record["status"].toString();
+            s.placedTrack = placedTrack;
             s.running = s.cancellable = false;
         });
     }
@@ -254,22 +257,23 @@ TransferPanel::TransferPanel(juce::PropertiesFile &p, TransferController &s, int
     heading.setText(w == 3 ? "Transfer receipts" : "Transfer options", juce::dontSendNotification);
     selected.setText(context, juce::dontSendNotification);
     selectionLabel.setText("Selection", juce::dontSendNotification);
-    actionLabel.setText("Default action", juce::dontSendNotification);
+    actionLabel.setText("Action", juce::dontSendNotification);
     rangeLabel.setText("Project frames", juce::dontSendNotification);
-    trackLabel.setText("Track override", juce::dontSendNotification);
+    trackLabel.setText("Resolve track", juce::dontSendNotification);
     selection.setTitle("Transfer selection scope");
-    action.setTitle("Default transfer action");
+    action.setTitle("Transfer action");
     first.setTitle("First project frame inclusive");
     last.setTitle("Last project frame exclusive");
-    track.setTitle("Optional Resolve audio track number for this send");
+    track.setTitle("Resolve audio track number");
     first.setText(juce::String(in));
     last.setText(juce::String(out));
     first.setInputRestrictions(14, "0123456789");
     last.setInputRestrictions(14, "0123456789");
     track.setInputRestrictions(3, "0123456789");
-    track.setTextToShowWhenEmpty("Active audio track (Fairlight)", ui::muted);
+    track.setTextToShowWhenEmpty("Auto", ui::muted);
     if (prefs.getIntValue("transfer.track") > 0)
         track.setText(juce::String(prefs.getIntValue("transfer.track")));
+    track.onTextChange = [this] { prefs.setValue("transfer.track", track.getText().getIntValue()); };
     auto defaultChoice = preferredScope(prefs, w);
     int fallback = 0;
     for (auto scope : scopes(w))
@@ -367,8 +371,8 @@ void TransferPanel::updateOptions()
     rangeLabel.setVisible(ranged);
     first.setVisible(ranged);
     last.setVisible(ranged);
-    track.setVisible(resolve);
-    trackLabel.setVisible(resolve);
+    track.setVisible(edit);
+    trackLabel.setVisible(edit);
     folder.setVisible(edit && copy.getToggleState());
     const auto path = prefs.getValue("transfer.copyDisplay");
     folder.setButtonText(path.isEmpty() ? "Choose folder" : juce::File(path).getFileName());

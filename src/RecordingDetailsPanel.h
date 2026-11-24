@@ -78,9 +78,10 @@ class RecordingDetailsPanel final : public juce::Viewport
         juce::TextLayout textLayout(int width) const
         {
             juce::AttributedString text;
-            text.setWordWrap(tone == value && getTitle() == "Path" ? juce::AttributedString::WordWrap::byChar
-                                                                   : juce::AttributedString::WordWrap::byWord);
-            text.append(getText(), juce::FontOptions(tone == value ? 13.f : 12.f,
+            const bool path = tone == value && getTitle() == "Path";
+            text.setWordWrap(path ? juce::AttributedString::WordWrap::byChar
+                                  : juce::AttributedString::WordWrap::byWord);
+            text.append(getText(), juce::FontOptions(path ? 11.5f : tone == value ? 13.f : 12.f,
                                                     tone == heading ? juce::Font::bold : juce::Font::plain),
                         tone == key ? ui::muted : tone == heading ? ui::accent : ui::text);
             juce::TextLayout layout;

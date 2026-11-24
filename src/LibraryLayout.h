@@ -12,7 +12,8 @@ inline juce::Range<int> visibleLibraryRows(juce::Rectangle<int> area, int height
 }
 struct LibraryLayout
 {
-    juce::Rectangle<int> collections, results, details, selection, waveform, referenceWave, preview;
+    juce::Rectangle<int> collections, results, details, selection, waveform, auditionMeter, auditionTools,
+        referenceWave, preview;
     int referenceTop = 176, referenceHeight = 0, controlsY = 0, monitorY = 0, statusY = 0;
     bool small = false;
 };
@@ -24,6 +25,8 @@ inline LibraryLayout libraryLayout(int width, int height, bool compact, bool ref
     {
         result.results = {8, 136, std::max(1, width - 16), std::max(60, height - 338)};
         result.waveform = {12, height - 180, std::max(1, width - 24), 94};
+        result.auditionMeter = result.waveform.removeFromRight(18);
+        result.waveform.removeFromRight(4);
         return result;
     }
     const int sidebar = std::clamp(width / 5, 272, 320);
@@ -44,6 +47,11 @@ inline LibraryLayout libraryLayout(int width, int height, bool compact, bool ref
                             std::max(0, result.referenceHeight - 79)};
     result.waveform = {result.selection.getX(), auditionTop + 34, result.selection.getWidth(),
                        auditionHeight - 148};
+    result.auditionTools = result.waveform.withX(result.details.getX()).withWidth(result.details.getWidth())
+                               .withTop(result.selection.getY());
+    result.waveform.setRight(result.auditionTools.getX() - 12);
+    result.auditionMeter = result.waveform.removeFromRight(24);
+    result.waveform.removeFromRight(5);
     result.controlsY = height - 105;
     result.monitorY = height - 58;
     result.statusY = height - 28;

@@ -50,6 +50,11 @@ class IconButton : public juce::TextButton
         primary = value;
         repaint();
     }
+    void setIconSize(float logicalSize)
+    {
+        preferredIconSize = logicalSize;
+        repaint();
+    }
     void paintButton(juce::Graphics &g, bool over, bool down) override
     {
         auto bounds = getLocalBounds().toFloat().reduced(.5f);
@@ -57,7 +62,8 @@ class IconButton : public juce::TextButton
         auto state = ui::button::style(isEnabled(), over, down, !disclosure && getToggleState(),
                                        keyboardFocus && hasKeyboardFocus(false), primary, showLabel);
         ui::button::paintBackground(g, bounds, state, primary);
-        float size = primary                                 ? ui::button::transportIcon
+        float size = preferredIconSize > 0                   ? preferredIconSize
+                     : primary                               ? ui::button::transportIcon
                      : disclosure                            ? ui::button::disclosureIcon
                      : getHeight() <= 30 || getWidth() <= 30 ? ui::button::compactIcon
                                                              : ui::button::toolbarIcon;
@@ -110,6 +116,7 @@ class IconButton : public juce::TextButton
 
   private:
     ActionIcon kind;
+    float preferredIconSize = 0;
     bool showLabel, primary = false, keyboardFocus = false, labelAlignedLeft = false;
 };
 } // namespace sp

@@ -4,11 +4,29 @@
 
 ## Workflow
 
-- Use the **Resolve** or **Copy** icon in Library Preview, Edit, or Perform. The icon runs the saved action directly. In Drag WAV mode, click to prepare the file and drag the same icon when **Ready to drag** appears. The adjacent gear opens the scope and destination options. Choose **Save a copy** and select its destination in the macOS folder picker. Deliver → **Transfer receipts** opens the receipt directory.
+- Use the **Resolve** icon to send directly from Library, Edit or Perform. Click **Prepare audio to drag** to prepare a file, then drag from the same icon when **Ready to drag** appears. The gear opens scope and destination options. Choose **Save a copy** and select its destination in the macOS folder picker. Deliver → **Transfer receipts** opens the receipt directory.
 - Library uses original source samples. The marked range is half-open, with IN included and OUT excluded. A full-file copy retains all original bytes. With Copy off, the full scope uses the verified source path and a range uses a finalized WAV in the catalog’s transfer-media folder.
 - Edit track and Group exports tap the selected owner after its processing and PDC, before downstream Group and Master processing. Full track stems retain the design’s padded timeline and configured tail. Selected clip isolates the clip, retains its source region, fades and inserts, and passes through the owning track. Project ranges warm up from frame zero and stop at the exclusive end. Full and ranged mixes include Group and Master processing. Render sample rate and layout use the existing export settings.
 - Perform selected pad isolates its owned sources, retains its motion and routing, and includes the common Master. Shared MIDI is excluded from an isolated pad and included in the combined mix. With nonlinear processing, summing isolated pads can differ from the combined output. Frozen transfers resolve the recorded recipe and include its recipe and event hashes in the receipt.
-- For quick sends, select an audio track in Resolve’s Fairlight page. Resolve inserts audio on its active track at its playhead. Its scripting API exposes the insert command but does not expose the active track number, so SoundPlus checks the interval and layout on every unlocked candidate. If another track blocks this check, use the gear’s **Track override** and send from there. An explicit track also supports the Resolve Edit page. Collision checking rounds duration up for the protected interval. Post-placement validation uses Resolve’s actual subframe end, allowing up to one record frame of duration difference. Retrying a known pre-placement failure reuses the verified file and keeps prior attempt data.
+- On Resolve’s Edit page, Auto sends to the track of a selected audio clip, or to A1 when no audio clip is selected. On Fairlight, Auto uses Resolve’s active audio track. Resolve exposes the Fairlight insert command without an active-track getter, so SoundPlus checks the interval on every unlocked candidate. To send directly to a specific track, enter its number in **Resolve track** in the gear menu. The quick Resolve button uses the saved track number on both pages. Clear the field or enter `0` to return to Auto. Collision checking rounds duration up for the protected interval. Post-placement validation uses Resolve’s actual subframe end, allowing up to one record frame of duration difference. Retrying a known pre-placement failure reuses the verified file and keeps prior attempt data.
+
+### Waveform tools and Edit routing follow-up
+
+- The full Library waveform shares a right column with Details. The transfer controls use the supplied square Resolve logo and a separate enlarged drag button. The post-volume audition peak meter responded during native playback. File paths in Details use smaller wrapping text.
+- Right-clicking a track header or an empty portion of its lane opens track operations and an **Add track** submenu. Right-clicking open canvas space brings up Audio Track, Folder, Group Bus, MIDI Track and FX Return. Native QA toggled Mute from the menu and created a MIDI track from empty canvas space.
+- On Apple Silicon running macOS 26.3.2 and Resolve Studio 21.1.2.10, four quick sends placed the fixture audio at the expected 24 fps record frames. Receiver verification compared item and media IDs, source paths, channel counts and timeline intervals. All four placements reopened online after both apps quit. Resolve referenced the fixture files at their source paths. The chosen track retained its own output routing.
+
+| Resolve destination | Record frame | Source → track |
+| --- | ---: | --- |
+| Edit Auto, A1 | 360 | Mono → stereo |
+| Edit numbered override, A3 | 624 | Stereo → 5.1 |
+| Edit selected audio clip, A2 | 864 | Stereo → mono |
+| Fairlight active track, A1 | 1392 | Mono → stereo |
+
+- An occupied A1 refused the send in the workspace status line. The receiver still had the same item IDs and intervals on every audio track. A gesture on the separate Library drag handle started a native drag. Receiver drop and human listening remain unverified for this follow-up.
+- All seven focused Release suites passed. They cover Library playback and search, Library stability, audio health, Designer commands, icons, canvas and native layout scale. The independent transfer PCM suite passed exact sample-range, channel, WAV mask and scoped-mix checks. The Release executable SHA-256 is `3aaf878011cc22b4075377c1bf7bff507d5c1caa37907df707ad75565db2149a`.
+- The original Resolve project and timeline were restored. SoundPlus reopened working revision r4506 with 432 media files, the audited catalog and 197 state files unchanged.
+- [Saved receiver records](../build/waveform-tools/receiver-saved.json), [reopened receiver records](../build/waveform-tools/receiver-reopened.json), [native drag events](../build/waveform-tools/drag.log), [Release checks](../build/waveform-tools/final-ctest.log), [PCM checks](../build/waveform-tools/final-pcm.log) and [working state audit](../build/waveform-tools/after-reopen-audit.json).
 
 ### Quick-action follow-up
 

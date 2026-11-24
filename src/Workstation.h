@@ -23,7 +23,6 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         library.onProcess=[this,db](const sp::Asset &a,int64_t first,int64_t last) { sp::PluginInput input; input.source=a;input.first=first;input.last=last;input.layout=a.layoutOverride.id.isNotEmpty()?a.layoutOverride:a.detectedChannels; if(a.channels<=16)for(int c=0;c<a.channels;++c)input.inputs.push_back(c); showProcessing(input,db); };
         designer.onProcessOutput=[this,db](const juce::File &file) { try { sp::PluginInput input;input.source=sp::inspectDesignSource(file);input.last=input.source.samples;input.layout=input.source.detectedChannels;input.scope="Finalized design/take output";for(int c=0;c<input.source.channels;++c)input.inputs.push_back(c);showProcessing(input,db); } catch(const std::exception &e) { designer.session.message=e.what(); } };
         library.bindPreferences(preferences);
-        library.onTransfer = [this](auto &anchor, bool quick) { showTransfer(Workspace::library, anchor, quick); };
         browserOpen=preferences.getBoolValue("browserOpen",true);
         addAndMakeVisible(library);
         addChildComponent(designer);
@@ -152,6 +151,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         sp::IconButton settings{"Settings", sp::ActionIcon::settings};
         sp::IconButton save{"Save design", sp::ActionIcon::save};
         sp::ui::FileDragButton transfer{"Prepare audio to drag"};
+        sp::IconButton resolveTransfer{"Send to DaVinci Resolve", sp::ActionIcon::resolve};
         sp::IconButton transferOptions{"Transfer options", sp::ActionIcon::settings};
         sp::IconButton transferReceipts{"Transfer receipts", sp::ActionIcon::history};
         juce::Label transferStatus;
@@ -165,6 +165,9 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
             for (auto *button : {&save, &search, &settings})
                 addAndMakeVisible(*button);
             addChildComponent(transfer);
+            addChildComponent(resolveTransfer);
+            resolveTransfer.setIconSize(24.f);
+            transfer.setIconSize(23.f);
             addChildComponent(transferOptions);
             addChildComponent(transferReceipts);
             addAndMakeVisible(transferStatus);
@@ -186,8 +189,9 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
                 tab->setBounds(nav.removeFromLeft(70));
                 nav.removeFromLeft(4);
             }
-            auto send = row.removeFromRight(68);
+            auto send = row.removeFromRight(106);
             transferOptions.setBounds(send.removeFromRight(34));
+            resolveTransfer.setBounds(send.removeFromLeft(36));
             transfer.setBounds(send);
             transferReceipts.setBounds(transferOptions.getBounds());
             transferStatus.setBounds(row.withLeft(std::min(statusStart, row.getRight())).reduced(6, 0));
@@ -210,11 +214,15 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         shell.settings.onClick = [this] { showSettings(); };
         shell.search.onClick = [this] { showCommands(); };
         shell.save.onClick = [this] { designer.saveFromShell(); };
-        shell.transfer.onClick = [this] { runQuickTransfer(workspace); };
-        shell.transferOptions.onClick = [this] { showTransfer(workspace, shell.transferOptions, false); };
-        shell.transferReceipts.onClick = [this] { showTransfer(workspace, shell.transferReceipts, false); };
+        shell.transfer.onClick = [this] { runQuickTransfer(workspace, sp::TransferAction::drag); };
+        shell.resolveTransfer.onClick = [this] { runQuickTransfer(workspace, sp::TransferAction::resolve); };
+        shell.transferOptions.onClick = [this] { showTransfer(workspace, shell.transferOptions); };
+        shell.transferReceipts.onClick = [this] { showTransfer(workspace, shell.transferReceipts); };
         shell.transfer.resolveFile = [this] { return readyQuickDrag(workspace); };
-        library.transferButton().resolveFile = [this] { return readyQuickDrag(Workspace::library); };
+        library.dragTransferButton().resolveFile = [this] { return readyQuickDrag(Workspace::library); };
+        library.dragTransferButton().onClick = [this] { runQuickTransfer(Workspace::library, sp::TransferAction::drag); };
+        library.sendTransferButton().onClick = [this] { runQuickTransfer(Workspace::library, sp::TransferAction::resolve); };
+        library.transferSettingsButton().onClick = [this] { showTransfer(Workspace::library, library.transferSettingsButton()); };
     }
     void chooseWorkspace(Workspace target)
     {
@@ -240,6 +248,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         preferences.setValue("designerActive", workspace != Workspace::library);
         const bool designing = workspace == Workspace::edit || workspace == Workspace::perform;
         shell.transfer.setVisible(designing);
+        shell.resolveTransfer.setVisible(designing);
         shell.transferOptions.setVisible(designing);
         shell.transferReceipts.setVisible(workspace == Workspace::deliver);
         timerCallback();
@@ -284,7 +293,7 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     void beginTransfer(Workspace from, sp::TransferScope scope, sp::TransferAction action, bool copy,
                        int64_t first, int64_t last, int track)
     {
-        if (!transfers.reserve((int)from, transferKey(from, scope, action, copy, first, last)))
+        if (!transfers.reserve((int)from, transferKey(from, scope, copy, first, last)))
             return;
         if (!availableForTransfer(from, scope))
         {
@@ -339,21 +348,16 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         return from == Workspace::library && scope == sp::TransferScope::sourceRange &&
             !availableForTransfer(from, scope) ? sp::TransferScope::original : scope;
     }
-    sp::TransferAction quickAction() const
-    {
-        return preferences.getIntValue("transfer.action") == (int)sp::TransferAction::resolve
-            ? sp::TransferAction::resolve : sp::TransferAction::drag;
-    }
     std::pair<int64_t, int64_t> transferInterval() const
     {
         const auto &d = designer.session.document;
         return {std::max<int64_t>(0, d.renderSettings.first),
                 d.renderSettings.last >= 0 ? d.renderSettings.last : sp::mixDuration(d.activeMix(), d.sampleRate)};
     }
-    juce::String transferKey(Workspace from, sp::TransferScope scope, sp::TransferAction action, bool copy,
+    juce::String transferKey(Workspace from, sp::TransferScope scope, bool copy,
                              int64_t first, int64_t last) const
     {
-        juce::StringArray parts{juce::String((int)from), juce::String((int)scope), juce::String((int)action),
+        juce::StringArray parts{juce::String((int)from), juce::String((int)scope),
                                juce::String((int)copy),
                                copy ? preferences.getValue("transfer.copyBookmark") : juce::String()};
         if (from == Workspace::library)
@@ -385,13 +389,13 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
     }
     bool currentDrag(const sp::TransferController::State &state, Workspace from) const
     {
-        if (state.running || state.workspace != (int)from || state.status != "Ready to drag" ||
-            quickAction() != sp::TransferAction::drag)
+        if (state.running || state.workspace != (int)from || state.artifact.file == juce::File() ||
+            state.status == "Cancelled")
             return false;
         const auto scope = quickScope(from);
         const auto [first, last] = transferInterval();
         return availableForTransfer(from, scope) && state.selectionKey ==
-            transferKey(from, scope, quickAction(), preferences.getBoolValue("transfer.saveCopy"), first, last);
+            transferKey(from, scope, preferences.getBoolValue("transfer.saveCopy"), first, last);
     }
     juce::File readyQuickDrag(Workspace from) const
     {
@@ -399,47 +403,44 @@ class Workstation final : public juce::Component,public juce::DragAndDropContain
         return currentDrag(state, from) && sp::transferArtifactUnchanged(state.artifact)
             ? state.artifact.file : juce::File();
     }
-    void runQuickTransfer(Workspace from)
+    void runQuickTransfer(Workspace from, sp::TransferAction action)
     {
-        if (readyQuickDrag(from) != juce::File())
+        if (action == sp::TransferAction::drag && readyQuickDrag(from) != juce::File())
             return;
         const auto [first, last] = transferInterval();
-        const auto action = quickAction();
-        beginTransfer(from, quickScope(from), action, preferences.getBoolValue("transfer.saveCopy"), first, last, 0);
+        beginTransfer(from, quickScope(from), action, preferences.getBoolValue("transfer.saveCopy"),
+                      first, last, preferences.getIntValue("transfer.track"));
         timerCallback();
     }
     void timerCallback() override
     {
         const auto state = transfers.snapshot();
-        const bool sending = quickAction() == sp::TransferAction::resolve;
-        auto refresh = [&](sp::IconButton &button, Workspace from)
+        auto refresh = [&](sp::IconButton &drag, sp::IconButton &send, Workspace from)
         {
-            button.setIcon(sending ? sp::ActionIcon::resolve : sp::ActionIcon::copy);
-            const juce::String name = sending ? "Send to DaVinci Resolve" :
-                currentDrag(state, from) ? "Drag prepared audio" : "Prepare audio to drag";
-            if (name != button.getButtonText())
+            const juce::String name = currentDrag(state, from) ? "Drag prepared audio" : "Prepare audio to drag";
+            if (name != drag.getButtonText())
             {
-                button.setButtonText(name);
-                button.setTooltip(name);
+                drag.setButtonText(name);
+                drag.setTooltip(name);
             }
-            button.setEnabled(!state.running && availableForTransfer(from, quickScope(from)));
+            const auto enabled = !state.running && availableForTransfer(from, quickScope(from));
+            drag.setEnabled(enabled);
+            send.setEnabled(enabled);
+            const auto track = preferences.getIntValue("transfer.track");
+            send.setTooltip(track > 0 ? "Send to Resolve A" + juce::String(track) : "Send to DaVinci Resolve");
         };
-        refresh(library.transferButton(), Workspace::library);
+        refresh(library.dragTransferButton(), library.sendTransferButton(), Workspace::library);
         if (workspace == Workspace::edit || workspace == Workspace::perform)
-            refresh(shell.transfer, workspace);
+            refresh(shell.transfer, shell.resolveTransfer, workspace);
         const bool show = state.workspace == (int)workspace &&
             (state.status != "Ready to drag" || currentDrag(state, workspace));
-        const auto status = state.error.isNotEmpty() ? state.error : state.status;
+        const auto status = state.error.isNotEmpty() ? state.error
+            : state.placedTrack > 0 ? "Placed on A" + juce::String(state.placedTrack) : state.status;
         shell.transferStatus.setText(show ? status : juce::String(), juce::dontSendNotification);
         shell.transferStatus.setTooltip(show ? status : juce::String());
     }
-    void showTransfer(Workspace from, juce::Component &anchor, bool quick)
+    void showTransfer(Workspace from, juce::Component &anchor)
     {
-        if (quick)
-        {
-            runQuickTransfer(from);
-            return;
-        }
         auto &d = designer.session.document;
         const auto &mix = d.activeMix();
         const auto [first, last] = transferInterval();

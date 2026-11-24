@@ -23,7 +23,8 @@ endif()
 juce_add_binary_data(NativePresets HEADER_NAME NativePresetsData.h NAMESPACE NativePresetData SOURCES resources/native-effects-presets.json)
 juce_add_binary_data(ModelManifest HEADER_NAME ModelManifestData.h SOURCES resources/clap-model.json)
 file(GLOB SOUNDPLUS_ICON_SVGS CONFIGURE_DEPENDS resources/icons/lucide/*.svg resources/icons/custom/*.svg)
-juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES ${SOUNDPLUS_ICON_SVGS})
+juce_add_binary_data(SoundPlusIcons HEADER_NAME IconAssets.h NAMESPACE IconAssets SOURCES
+  ${SOUNDPLUS_ICON_SVGS} resources/icons/custom/davinci_resolve.png)
 add_library(soundplus_core STATIC
   src/NativeEffects.cpp src/NativeEffectsDSP.cpp src/AdvancedEffects.cpp src/AdvancedEffectsDSP.cpp src/AdvancedIR.cpp src/MidiModel.cpp src/NativeSampler.cpp src/MidiInput.cpp
   src/InputRecording.cpp

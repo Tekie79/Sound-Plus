@@ -79,7 +79,7 @@ constexpr const char *resources[]{
     "timeline_marker_next_svg",
     "lucide_circle_svg",
     "lucide_mic_svg",
-    "davinci_resolve_svg",
+    "davinci_resolve_png",
     "lucide_copy_svg",
 };
 static_assert(std::size(resources) == (size_t)ActionIcon::count);
@@ -88,6 +88,7 @@ struct Registry
 {
     std::map<juce::String, Images> cache;
     std::array<const Images *, (size_t)ActionIcon::count> actions{};
+    juce::Image resolveLogo;
     int parsed = 0;
     static std::array<juce::Colour, (size_t)Tone::count> palette()
     {
@@ -109,6 +110,16 @@ struct Registry
     {
         for (size_t i = 0; i < std::size(resources); ++i)
         {
+            if (i == (size_t)ActionIcon::resolve)
+            {
+                int length = 0;
+                auto *data = IconAssets::getNamedResource(resources[i], length);
+                resolveLogo = juce::ImageFileFormat::loadFrom(data, (size_t)length);
+                if (!resolveLogo.isValid())
+                    throw std::runtime_error("Missing/invalid Resolve logo");
+                ++parsed;
+                continue;
+            }
             auto [entry, added] = cache.try_emplace(resources[i]);
             if (added)
             {
@@ -164,8 +175,16 @@ juce::AffineTransform viewBoxTransform(juce::Rectangle<float> target)
 void draw(juce::Graphics &g, ActionIcon action, juce::Rectangle<float> target, Tone tone)
 {
     jassert(ready != nullptr);
-    if (ready)
-        (*ready->actions[(size_t)action])[(size_t)tone]->draw(g, 1, viewBoxTransform(target));
+    if (!ready)
+        return;
+    if (action == ActionIcon::resolve)
+    {
+        juce::Graphics::ScopedSaveState state(g);
+        g.setOpacity(tone == Tone::disabled ? .35f : 1.f);
+        g.drawImage(ready->resolveLogo, target, juce::RectanglePlacement::centred);
+        return;
+    }
+    (*ready->actions[(size_t)action])[(size_t)tone]->draw(g, 1, viewBoxTransform(target));
 }
 ActionIcon forState(ActionIcon action, bool selected)
 {

@@ -37,7 +37,10 @@ class MultitrackEditor final : public juce::Component,
     void splitSelected();
     void midiInputMenu(const juce::String &, juce::Component &);
     void inputMenu(const juce::String &, juce::Component &);
-    void openTrackOptions(const juce::String &id, juce::Component &anchor) { trackMenu(id, anchor); }
+    void openTrackOptions(const juce::String &id, juce::Component &anchor)
+    {
+        trackMenu(id, juce::PopupMenu::Options().withTargetComponent(anchor));
+    }
     void mouseDown(const juce::MouseEvent &) override;
     void mouseDrag(const juce::MouseEvent &) override;
     void mouseUp(const juce::MouseEvent &) override;
@@ -74,7 +77,8 @@ class MultitrackEditor final : public juce::Component,
     std::vector<float> tops;
     juce::String rowAt(float) const;
     CanvasClipGeometry geometry(const DesignLayer &, const juce::String &) const;
-    void trackMenu(const juce::String &, juce::Component &);
+    void showAddTrackMenu(const juce::PopupMenu::Options &);
+    void trackMenu(const juce::String &, const juce::PopupMenu::Options &);
     void fadeMenu(const juce::String &, bool);
     void updateRows();
     void dropOwner(float);

@@ -51,8 +51,9 @@ class LibraryView final : public juce::Component,
     void bindPreferences(juce::PropertiesFile &);
     void parkPlayback();
     std::optional<BookmarkRequest> transferSelection() const;
-    ui::FileDragButton &transferButton() { return sendTransfer; }
-    std::function<void(juce::Component &, bool)> onTransfer;
+    IconButton &sendTransferButton() { return sendTransfer; }
+    ui::FileDragButton &dragTransferButton() { return dragTransfer; }
+    IconButton &transferSettingsButton() { return transferOptions; }
     void focusSearch()
     {
         search.grabKeyboardFocus();
@@ -65,8 +66,20 @@ class LibraryView final : public juce::Component,
 
   private:
     void lookAndFeelChanged() override;
-    ui::FileDragButton sendTransfer{"Prepare audio to drag"};
+    IconButton sendTransfer{"Send to DaVinci Resolve", ActionIcon::resolve};
+    ui::FileDragButton dragTransfer{"Prepare audio to drag"};
     IconButton transferOptions{"Transfer options", ActionIcon::settings};
+    class AuditionMeter : public juce::Component
+    {
+      public:
+        AuditionMeter();
+        void update(float outputPeak);
+        void paint(juce::Graphics &) override;
+
+      private:
+        float level = 0.f, held = 0.f;
+        double holdUntil = 0;
+    } auditionMeter;
     IconButton processPlugin{"Process selected source/range with Plug-in", ActionIcon::processing};
     friend struct CorrectionViewTestAccess;
     friend class Benchmark;

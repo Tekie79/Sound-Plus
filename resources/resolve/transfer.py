@@ -75,14 +75,13 @@ def track_items(timeline, track):
     return items
 
 
-def safe_track(timeline, index, subtype, first, end):
-    require(timeline.GetTrackSubType("audio", index) == subtype, "Resolve track layout does not match the media")
-    require(timeline.GetIsTrackLocked("audio", index) is False, "Resolve audio track is locked or unavailable")
+def safe_track(timeline, index, first, end):
+    require(timeline.GetIsTrackLocked("audio", index) is False, f"Resolve A{index} is locked or unavailable")
     for clip in track_items(timeline, index):
         lo, hi = clip.GetStart(True), clip.GetEnd(True)
         require(isinstance(lo, (int, float)) and isinstance(hi, (int, float)) and hi >= lo,
                 "Resolve did not report reliable occupied intervals")
-        require(not (lo < end and hi > first), "Resolve target is occupied at the playhead. Choose another track.")
+        require(not (lo < end and hi > first), f"Resolve A{index} is occupied. Choose a clear range or track.")
 
 
 def get_bin(pool):
@@ -144,21 +143,27 @@ def same_target(expected):
     return resolve, project, timeline, identity
 
 
-def check_active_candidates(timeline, subtype, first, end):
+def check_active_candidates(timeline, first, end):
     tracks = []
     for index in range(1, timeline.GetTrackCount("audio") + 1):
         locked = timeline.GetIsTrackLocked("audio", index)
         require(isinstance(locked, bool), "Resolve did not report reliable track locks")
         if locked:
             continue
-        try:
-            safe_track(timeline, index, subtype, first, end)
-        except RuntimeError as error:
-            raise RuntimeError(f"Active track cannot be preflighted (A{index}). {error} "
-                               "Set an explicit track in Transfer options.") from error
+        safe_track(timeline, index, first, end)
         tracks.append(index)
     require(tracks, "Select an unlocked audio track in Resolve Fairlight")
     return tracks
+
+
+def edit_target(timeline):
+    selected_tracks = set()
+    for item in timeline.GetSelectedClips() or []:
+        address = item.GetTrackTypeAndIndex()
+        if address and len(address) == 2 and address[0] == "audio":
+            selected_tracks.add(address[1])
+    require(len(selected_tracks) <= 1, "Select one Resolve audio track or set a track number")
+    return next(iter(selected_tracks), 1)
 
 
 def verify_placement(timeline, response, item, index, first, length, path, request, roles, subtype,
@@ -183,7 +188,8 @@ def verify_placement(timeline, response, item, index, first, length, path, reque
                      "durationRounding": "Resolve natural duration, verified within one record frame",
                      "channels": len(roles), "sampleRate": request["rate"], "roles": roles,
                      "media": media_id, "mediaPath": str(path),
-                     "trackSubtype": subtype, "mediaDuration": info.get("Duration", ""),
+                     "trackSubtype": timeline.GetTrackSubType("audio", index), "sourceSubtype": subtype,
+                     "mediaDuration": info.get("Duration", ""),
                      "online": True, "audioMapping": mapping})
 
 
@@ -204,11 +210,11 @@ def place(request, response):
     frame_span = max(1, -(-length.numerator // length.denominator))
     count = timeline.GetTrackCount("audio")
     index = int(request.get("track", 0))
-    if not index:
-        require(resolve.GetCurrentPage() == "fairlight", "Select the active audio track in Resolve Fairlight")
+    page = resolve.GetCurrentPage()
+    if not index and page == "fairlight":
         # Resolve exposes an insert command, but no active-track getter. The command can
         # overwrite clips. Preflight every unlocked track it could select.
-        tracks = check_active_candidates(timeline, subtype, first, first + frame_span)
+        tracks = check_active_candidates(timeline, first, first + frame_span)
         previous = {item.GetUniqueId() for track in tracks for item in track_items(timeline, track)}
         same_target(identity)
         require(timeline.GetCurrentTimecode() == playhead, "Resolve playhead moved before transfer")
@@ -224,8 +230,10 @@ def place(request, response):
         verify_placement(timeline, response, item, index, first, length, path, request, roles, subtype,
                          playhead, rate, drop)
         return
-    require(1 <= index <= count, "Chosen Resolve track does not exist")
-    safe_track(timeline, index, subtype, first, first + frame_span)
+    automatic = not index
+    index = index or edit_target(timeline)
+    require(1 <= index <= count, f"Resolve has no audio track A{index}")
+    safe_track(timeline, index, first, first + frame_span)
 
     pool = project.GetMediaPool()
     prior = pool.GetCurrentFolder()
@@ -250,15 +258,19 @@ def place(request, response):
     verified_media(media, path, len(roles), request["rate"])
     verify_mapping(media.GetAudioMapping(), subtype, len(roles))
 
-    same_target(identity)
+    current_resolve, _, _, _ = same_target(identity)
     require(timeline.GetCurrentTimecode() == playhead, "Resolve playhead moved during import. The media is retained.")
-    safe_track(timeline, index, subtype, first, first + frame_span)
+    if automatic:
+        require(current_resolve.GetCurrentPage() == page and edit_target(timeline) == index,
+                "Resolve audio selection changed during import")
+    safe_track(timeline, index, first, first + frame_span)
     previous = {i.GetUniqueId() for i in track_items(timeline, index)}
     response["placementAttempted"] = True
     placed = pool.AppendToTimeline([{"mediaPoolItem": media, "mediaType": 2, "trackIndex": index,
                                      "recordFrame": first}])
     require(placed and len(placed) == 1, "Resolve imported media but did not confirm placement")
     require(placed[0].GetUniqueId() not in previous, "Resolve did not add a new audio item")
+    response["destination"] = "edit-audio-selection" if automatic else "explicit-audio-track"
     verify_placement(timeline, response, placed[0], index, first, length, path, request, roles, subtype,
                      playhead, rate, drop)
 

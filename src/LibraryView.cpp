@@ -273,6 +273,8 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
                                                             &gain,
                                                             &summary,
                                                             &sendTransfer,
+                                                            &dragTransfer,
+                                                            &auditionMeter,
                                                             &transferOptions,
                                                             &columnsButton,
                                                             &detail,
@@ -326,8 +328,9 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     columnsButton.setLabelVisible(true);
     columnsButton.setTooltip("Choose recording columns");
     columnsButton.onClick = [this] { showMetadataColumns(); };
-    sendTransfer.onClick = [this] { if (onTransfer) onTransfer(sendTransfer, true); };
-    transferOptions.onClick = [this] { if (onTransfer) onTransfer(transferOptions, false); };
+    sendTransfer.setIconSize(33.f);
+    dragTransfer.setIcon(ActionIcon::drag);
+    dragTransfer.setIconSize(26.f);
     transport.setColour(juce::Label::textColourId, amber);
     transport.setVisible(false);
     lookAndFeelChanged();
@@ -761,6 +764,47 @@ LibraryView::~LibraryView()
     sources.setModel(nullptr);
     setLookAndFeel(nullptr);
 }
+LibraryView::AuditionMeter::AuditionMeter()
+{
+    setTitle("Audition output peak");
+    setDescription("Post-volume peak level and peak hold");
+    setInterceptsMouseClicks(false, false);
+}
+void LibraryView::AuditionMeter::update(float outputPeak)
+{
+    const auto next = (juce::Decibels::gainToDecibels(std::clamp(outputPeak, 0.f, 1.f), -60.f) + 60.f) / 60.f;
+    const auto oldLevel = level, oldHeld = held;
+    level = std::max(next, level - .035f);
+    const auto now = juce::Time::getMillisecondCounterHiRes();
+    if (next > 0 && next >= held)
+    {
+        held = next;
+        holdUntil = now + 500;
+    }
+    else if (now >= holdUntil)
+        held = std::max(level, held - .018f);
+    if (level != oldLevel || held != oldHeld)
+        repaint();
+}
+void LibraryView::AuditionMeter::paint(juce::Graphics &g)
+{
+    const auto area = getLocalBounds().toFloat().reduced(3.f, 7.f);
+    const auto bar = area.withWidth(std::min(8.f, area.getWidth())).withX(area.getX() + 4.f);
+    const auto yAt = [&](float value) { return bar.getBottom() - value * bar.getHeight(); };
+    g.setColour(line);
+    g.fillRoundedRectangle(bar, 3.f);
+    g.setColour(accent);
+    if (level > 0.f)
+        g.fillRoundedRectangle(bar.withTop(yAt(level)), 3.f);
+    g.setColour(muted.withAlpha(.55f));
+    for (const float tick : {.2f, .4f, .6f, .8f, 1.f})
+        g.drawHorizontalLine(juce::roundToInt(yAt(tick)), area.getX(), bar.getX() - 1.f);
+    if (held > 0.f)
+    {
+        g.setColour(held >= 1.f ? juce::Colour(0xffef7274) : held >= .9f ? amber : text);
+        g.fillRect(bar.withY(yAt(held)).withHeight(1.5f));
+    }
+}
 void LibraryView::paint(juce::Graphics &g)
 {
     if (compact)
@@ -777,6 +821,8 @@ void LibraryView::paint(juce::Graphics &g)
     g.fillRect(layout.collections);
     g.fillRoundedRectangle(layout.preview.toFloat(), 12);
     g.fillRoundedRectangle(layout.details.toFloat(), 12);
+    g.setColour(bg.withAlpha(.42f));
+    g.fillRoundedRectangle(layout.auditionTools.toFloat(), 8.f);
     g.setColour(line);
     g.drawVerticalLine(layout.collections.getRight() - 1, 0, (float)getHeight());
     g.setColour(text);
@@ -864,7 +910,8 @@ void LibraryView::resized()
         updateScope();
         table.setBounds(layout.results);
         table.getHeader().setColumnWidth(1, std::max(160, table.getWidth() - 18));
-        waveform.setBounds(12, getHeight() - 180, getWidth() - 24, 94);
+        waveform.setBounds(layout.waveform);
+        auditionMeter.setBounds(layout.auditionMeter);
         play.setBounds(getWidth() / 2 - 20, getHeight() - 71, 40, 40);
         repeatOne.setBounds(getWidth() / 2 + 26, getHeight() - 67, 24, 30);
         repeatAll.setBounds(getWidth() / 2 + 52, getHeight() - 67, 24, 30);
@@ -961,14 +1008,22 @@ void LibraryView::resized()
     channelDetails.setBounds(layout.details.getRight() - 41, layout.details.getY() + 7, 30, 26);
     detail.setBounds(metadata.removeFromTop(26));
     recordingDetails.setBounds(metadata.withTrimmedTop(4));
-    findSimilar.setBounds(previewRight - 145, y, 145, 28);
+    auto tools = layout.auditionTools.reduced(5, 2);
+    auto transfers = tools.removeFromTop(44);
+    sendTransfer.setBounds(transfers.removeFromLeft(44));
+    transfers.removeFromLeft(4);
+    dragTransfer.setBounds(transfers.removeFromLeft(44));
+    transferOptions.setBounds(transfers.removeFromRight(30).withSizeKeepingCentre(30, 30));
+    tools.removeFromTop(4);
+    auto actions = tools.removeFromTop(30);
+    processPlugin.setBounds(actions.removeFromLeft(34));
+    addDesigner.setBounds(actions.removeFromLeft(34));
+    findSimilar.setBounds(tools.removeFromTop(29));
     findSimilar.setLabelVisible(true);
-    addDesigner.setBounds(previewRight - 181, y, 30, 28);
-    processPlugin.setBounds(previewRight - 217, y, 30, 28);
-    moments.setBounds(previewLeft, y, std::min(286, selection.getWidth() - 230), 27);
-    sendTransfer.setBounds(moments.getRight() + 8, y, 30, 28);
-    transferOptions.setBounds(sendTransfer.getRight(), y, 30, 28);
+    findSimilar.setLabelAlignedLeft();
+    moments.setBounds(previewLeft, y, std::min(248, layout.waveform.getWidth()), 27);
     waveform.setBounds(layout.waveform);
+    auditionMeter.setBounds(layout.auditionMeter);
     repeatOne.setBounds(centre - 221, controls + 6, 28, 28);
     repeatAll.setBounds(centre - 187, controls + 6, 28, 28);
     waveform.markInButton().setBounds(centre - 150, controls + 6, 28, 28);
@@ -979,7 +1034,7 @@ void LibraryView::resized()
     playMatch.setBounds(centre + 78, controls + 4, 32, 32);
     waveform.markOutButton().setBounds(centre + 122, controls + 6, 28, 28);
     context.setBounds(previewRight - 109, controls + 7, 109, 26);
-    dragOriginal.setBounds(previewLeft, controls + 4, 30, 30);
+    dragOriginal.setVisible(false);
     volumeLabel.setBounds(previewLeft, layout.monitorY, 48, 25);
     const int gainWidth = std::min(170, selection.getWidth() / 5);
     gain.setBounds(volumeLabel.getRight(), layout.monitorY, gainWidth, 25);
@@ -1000,7 +1055,7 @@ void LibraryView::compactVisibility()
                       c == &addDesigner || c == &processPlugin || c == &channelDetails ||
                       c == &dragOriginal || c == &scopeLabel || c == &clearScope || c == &findSimilar ||
                       c == &collectionSelector || c == &collectionActions || c == &favoriteButton ||
-                      c == &newCollection || c == &repeatOne || c == &repeatAll ||
+                      c == &newCollection || c == &repeatOne || c == &repeatAll || c == &auditionMeter ||
                       (c == &transport && transport.getText().isNotEmpty()));
     }
 }
@@ -2273,6 +2328,8 @@ void LibraryView::timerCallback()
     bool pending = (bool)state["pendingPlayback"];
     library.setAuditionActive(isPlaying || pending);
     bool libraryOwned = !state["id"].toString().startsWith("design:");
+    if (auditionMeter.isShowing())
+        auditionMeter.update(libraryOwned && isPlaying ? (float)state["peak"] : 0.f);
     play.setButtonText(libraryOwned && (isPlaying || pending) ? "Stop  [Space]" : "Play  [Space]");
     play.setIcon(navigationAuto || (libraryOwned && (isPlaying || pending)) ? ActionIcon::stop
                                                                             : ActionIcon::play);

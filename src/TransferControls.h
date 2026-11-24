@@ -11,6 +11,7 @@ class TransferController
     struct State
     {
         int workspace = -1;
+        int placedTrack = 0;
         bool running = false, cancellable = false, canRetry = false;
         juce::String status, error, selectionKey;
         TransferArtifact artifact;
