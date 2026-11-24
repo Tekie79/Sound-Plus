@@ -5,6 +5,7 @@ import os
 import re
 import sys
 from fractions import Fraction
+from math import ceil
 from pathlib import Path
 
 
@@ -156,6 +157,17 @@ def check_active_candidates(timeline, first, end):
     return tracks
 
 
+def fairlight_duration(timeline, samples, source_rate):
+    setting = str(timeline.GetSetting("timelineSampleRate"))
+    require(setting.isdecimal() and int(setting) > 0,
+            "Resolve did not report the Fairlight timeline sample rate. Set a track number to send.")
+    timeline_rate = int(setting)
+    # The active-track command measures duration on the Fairlight clock.
+    # Round up so the converted duration covers the final source sample.
+    duration = (samples * timeline_rate + source_rate - 1) // source_rate
+    return timeline_rate, duration
+
+
 def edit_target(timeline):
     selected_tracks = set()
     for item in timeline.GetSelectedClips() or []:
@@ -206,20 +218,29 @@ def place(request, response):
                 "Transfer file changed before Resolve import")
     layout_matches_file(path, layout)
     first, playhead, rate, drop = timing(timeline)
-    length = (int(request["samples"]) * rate / int(request["rate"]))
-    frame_span = max(1, -(-length.numerator // length.denominator))
+    samples, source_rate = int(request["samples"]), int(request["rate"])
+    require(samples > 0 and source_rate > 0, "Transfer has no valid audio duration")
+    length = samples * rate / source_rate
+    frame_span = max(1, ceil(length))
     count = timeline.GetTrackCount("audio")
     index = int(request.get("track", 0))
     page = resolve.GetCurrentPage()
     if not index and page == "fairlight":
         # Resolve exposes an insert command, but no active-track getter. The command can
         # overwrite clips. Preflight every unlocked track it could select.
-        tracks = check_active_candidates(timeline, first, first + frame_span)
+        timeline_rate, insert_duration = fairlight_duration(timeline, samples, source_rate)
+        ticks_as_frames = insert_duration * rate / timeline_rate
+        protected_span = max(frame_span, ceil(ticks_as_frames))
+        tracks = check_active_candidates(timeline, first, first + protected_span)
         previous = {item.GetUniqueId() for track in tracks for item in track_items(timeline, track)}
-        same_target(identity)
+        current_resolve, _, current_timeline, _ = same_target(identity)
+        require(current_resolve.GetCurrentPage() == "fairlight" and
+                fairlight_duration(current_timeline, samples, source_rate)[0] == timeline_rate,
+                "Resolve Fairlight page or sample rate changed before transfer")
         require(timeline.GetCurrentTimecode() == playhead, "Resolve playhead moved before transfer")
+        response.update({"timelineSampleRate": timeline_rate, "insertDurationSamples": insert_duration})
         response["placementAttempted"] = True
-        placed = project.InsertAudioToCurrentTrackAtPlayhead(str(path), 0, int(request["samples"]))
+        placed = project.InsertAudioToCurrentTrackAtPlayhead(str(path), 0, insert_duration)
         fresh = [(track, item) for track in tracks for item in track_items(timeline, track)
                  if item.GetUniqueId() not in previous]
         if len(fresh) == 1:
