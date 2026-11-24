@@ -1,0 +1,3188 @@
+{
+  "candidate": {
+    "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+    "binarySha256": "ca92909592d92c7e7ac09a0e0b48553e3167c63af84e07bdd25797711876b97f",
+    "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+    "manifestSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+    "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+    "tree": "4f701df30da740c426127255cacdd6594c89986c"
+  },
+  "catalog": "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/native/library.sqlite",
+  "createdUtc": "2026-11-24T17:17:29+00:00",
+  "platform": "Apple M5 Pro, arm64 macOS 26.3.2, SDK 26.5, clang 21.0.0",
+  "results": {
+    "JRN-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "JRN-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-03": {
+      "actual": "All 45 delay / bypass / return-mute configurations matched the signed stereo impulse and feedback-tail oracle exactly. Declared lookahead was 221/240/480 frames across the three sample rates.",
+      "evidence": [
+        {
+          "bytes": 123,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/delay.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "dab82f1e06bbdfe498d2b6965c4a4046be2c864380b9bf3cd974e8b73e5a332e"
+        },
+        {
+          "bytes": 13131,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "df624a280b31fdc5b486a16821ba58a42c7f293b60958abad85f6cff30e52f88"
+        },
+        {
+          "bytes": 1623326,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-pcm.zip",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "65ac96550ad378409651f80e65bfd62c19c3dfc1564c30a1ce9f34e2b6cc6172"
+        },
+        {
+          "bytes": 849,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/fixtures.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "7d8290892763215cbcd5b2f2f58138ba773bbd0e05758370711eaf11a3129ad2"
+        },
+        {
+          "bytes": 11387,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/probe.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "42421cfb9e08b9f11d0d43aa4742c2d769a2f726630309e8619403a59553eec5"
+        },
+        {
+          "bytes": 311,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/probe-build-final.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "7c35576cb06f4dbb0c2a317ed9e179f7ca3be7cdaaca9771ea5801a7819a584b"
+        },
+        {
+          "bytes": 1046,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/build_probe.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "25f7b62d61fc150f73045e160b79fc2897d0598e3be06b8b5eab8fc12801461a"
+        },
+        {
+          "bytes": 4181,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm_oracle.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "06a6f5ec1914e66146fed57b4ad3908e2e3bb4ebd3be2ebe5dd2b02cae6b3dfa"
+        },
+        {
+          "bytes": 1392,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/recheck.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "8731ffa00e38220697165be56a681ffe43b598ae4e13188f0860c5700e6c2650"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M00-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-05": {
+      "actual": "Five saved/reopened read masks on one track. Two independent Volume and pre-fader Send Level ramps. Maximum producer/export difference 5.216e-8 FS. Actual track disclosure on the same reopened document showed one Volume control on expansion, zero on collapse; both read flags stayed enabled.",
+      "evidence": [
+        {
+          "bytes": 13131,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "df624a280b31fdc5b486a16821ba58a42c7f293b60958abad85f6cff30e52f88"
+        },
+        {
+          "bytes": 1623326,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-pcm.zip",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "65ac96550ad378409651f80e65bfd62c19c3dfc1564c30a1ce9f34e2b6cc6172"
+        },
+        {
+          "bytes": 11387,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/probe.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "42421cfb9e08b9f11d0d43aa4742c2d769a2f726630309e8619403a59553eec5"
+        },
+        {
+          "bytes": 3153,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/lane.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "26cc4bb3adeecc09b052050b3e40aa04721de418b1be58153f9d85f5518c11e5"
+        },
+        {
+          "bytes": 310,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/lane-build.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "6caa9ed9c62b04db6a9c7a37ed129749a476661f95d91ee7fab327add995eea6"
+        },
+        {
+          "bytes": 144,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/lane.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "637d9ed3a9589fee1f05e1676674f9953e82733728c0e113771942fb05ffa35b"
+        },
+        {
+          "bytes": 4181,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm_oracle.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "06a6f5ec1914e66146fed57b4ad3908e2e3bb4ebd3be2ebe5dd2b02cae6b3dfa"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M00-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M00-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-02": {
+      "actual": "Isolated native Keychain canary saved, read and erased. Inspected 22 artifacts, including serialized undo/redo, exported portable project, WAV and process-matched OS crash report. Zero matches, four positive encoding controls.",
+      "evidence": [
+        {
+          "bytes": 259,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-source.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "269a3b9f9d72e6e103b1a52d54c788691f10dcb04d71bdfd7a731ab563bb859a"
+        },
+        {
+          "bytes": 4075,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/redaction.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "916fbb3a1d4bcfcd639664fb40f4552ca0dc455d7f801d7fc298c7c8ec0d24f6"
+        },
+        {
+          "bytes": 1543,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/redaction.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "26cf9f052046dc30c6838984c94081b8b9d611ca6336111c98a94e8238d15277"
+        },
+        {
+          "bytes": 1623326,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-pcm.zip",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "65ac96550ad378409651f80e65bfd62c19c3dfc1564c30a1ce9f34e2b6cc6172"
+        },
+        {
+          "bytes": 819,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/diagnostic.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "2e0ea90508c4a6e3f8330a26a95cba15e57f5dd826c956426973bd4e82451748"
+        },
+        {
+          "bytes": 2158,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/controlled_diagnostic.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ece3abda8dd25ef736baea67a2a6cada2265bee7300e4cd37891e8c860208809"
+        },
+        {
+          "bytes": 184,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/sfx.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ffba9c2db79833d711deb4eb2f8a1e8d2dd04d1356bba7186d4c5636578a7fbe"
+        },
+        {
+          "bytes": 11387,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/probe.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "42421cfb9e08b9f11d0d43aa4742c2d769a2f726630309e8619403a59553eec5"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M01-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-07": {
+      "actual": "Owner-approved synchronous criterion 1B-sync-1: one observed loopback POST, client lost before reply, durable Needs review on reopen, no resubmission. Original async ID requirement remains applicable to asynchronous providers. One additional real native ElevenLabs generation reached Ready; actual invoice amount unavailable.",
+      "evidence": [
+        {
+          "bytes": 1183,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/recovery-policy.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "e23597b42f96de454e6881caa8554f3007c8df729b36904176f95bdbdf1b8b19"
+        },
+        {
+          "bytes": 1039,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/live-provider.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "7b0ae62cc3dfd3a46fe8549323ab09b1437f6768a563c95b23f5279d8c4d1657"
+        },
+        {
+          "bytes": 819,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/diagnostic.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "2e0ea90508c4a6e3f8330a26a95cba15e57f5dd826c956426973bd4e82451748"
+        },
+        {
+          "bytes": 184,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/sfx.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ffba9c2db79833d711deb4eb2f8a1e8d2dd04d1356bba7186d4c5636578a7fbe"
+        },
+        {
+          "bytes": 2158,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/controlled_diagnostic.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ece3abda8dd25ef736baea67a2a6cada2265bee7300e4cd37891e8c860208809"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M01-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M01-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M02-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-13": {
+      "actual": "Actual coarse/refined Library compare commands drove an instrumented IPC sink linked to frozen PcmStream; Ls/Rs playback matched each signed sample. Drag preparation published exact six-channel [100,47000) and [37200,37513) files. Source identity, owner, pinned reference and half-open counts checked.",
+      "evidence": [
+        {
+          "bytes": 13131,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "df624a280b31fdc5b486a16821ba58a42c7f293b60958abad85f6cff30e52f88"
+        },
+        {
+          "bytes": 1623326,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/generated-pcm.zip",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "65ac96550ad378409651f80e65bfd62c19c3dfc1564c30a1ce9f34e2b6cc6172"
+        },
+        {
+          "bytes": 11387,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/probe.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "42421cfb9e08b9f11d0d43aa4742c2d769a2f726630309e8619403a59553eec5"
+        },
+        {
+          "bytes": 4181,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/pcm_oracle.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "06a6f5ec1914e66146fed57b4ad3908e2e3bb4ebd3be2ebe5dd2b02cae6b3dfa"
+        },
+        {
+          "bytes": 1835,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/preservation.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ee06536774383321bd03ea5473997be2a13ab40839b5f1117389b93305b27ecd"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M03-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M03-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M04-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M05-17": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M06-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M07-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-12": {
+      "actual": "Known sea_waves fixture scored NATURAL DISASTER at 0.444326519966125. Native Reject persisted, Undo restored suggestion, Apply persisted on second restart. Product owner heard a disaster sound and agreed with category. Acoustic specialist assessment of this disagreement with the dataset label remains open.",
+      "evidence": [
+        {
+          "bytes": 539,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/metadata-review.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "c0e8c0b809da270878f44b11a4d3ff51db5d9240b8674bc4f700e8a6b5601c04"
+        },
+        {
+          "bytes": 187,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/raw-score.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "7a4f1b61818131bfe313a750c74540cf3578cf3243659d64b1776257150e314a"
+        },
+        {
+          "bytes": 975,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/score.cpp",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "577495405cfdb0ef56492954857f299bb1c6c7385076235876aef12aa356e4b7"
+        },
+        {
+          "bytes": 311,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/score-build.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "f1ded6bb9393277485607c3721e08a243e61109289fe6cc49b4ee543ee1963dc"
+        },
+        {
+          "bytes": 6426,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/metadata-ui.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "0f0750da06377a6a8ebbc27065946343f5d1ece13b7200a9c9b861180fdb24d3"
+        },
+        {
+          "bytes": 1835,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/preservation.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ee06536774383321bd03ea5473997be2a13ab40839b5f1117389b93305b27ecd"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Partial"
+    },
+    "M08-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M08-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-01": {
+      "actual": "Clean independent bootstrap/build, matching source tree, compiler, SDK, dependency digest, embedded candidate and main machine-code section. 64/64 passed; isolated rebuilt native app initialized its own catalog. Whole executable SHA differs; only mapped section that differs is __cstring.",
+      "evidence": [
+        {
+          "bytes": 5280,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/build-comparison.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "4bacca8de79eeb4cd801f7f14a3b17de904718910a6bc8818adf3024af583c77"
+        },
+        {
+          "bytes": 2543,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/compare_builds.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "990781f3f81719650b47f1386ae7a2e805210d005516ad905e2056e7b160309b"
+        },
+        {
+          "bytes": 9650,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/candidate.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "3f373fb26bfd15f49a7e9a143c12891d05f9900d023cb14bf0666c2544bb6bbd"
+        },
+        {
+          "bytes": 1282,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/bootstrap.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "1f3962ce783ad4dfda337505e43610236125faaadee833f3ca99ba9d8d5643ed"
+        },
+        {
+          "bytes": 7171,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/release.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "8b227f68b20318c59f041fa82db1a3b18ccdf6329c866b01e8e20d7c9e25475f"
+        },
+        {
+          "bytes": 375,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/rebuilt-launch.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "76d875bdb689c22cd35a55da9a4ff0443b66c60ccb21b66b932de5a94a08188b"
+        },
+        {
+          "bytes": 667,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/custody.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "19f0724a585182e18d2b9cfb5cb539e1e5795096375d2e358f09140c1d871516"
+        },
+        {
+          "bytes": 154,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/phase1-validation.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "f4db2324e57421d29c3af6d81c065d6edf327a36d044bf529a182560c8549f61"
+        },
+        {
+          "bytes": 103,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/dependencies.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "2af073ce4ccbcd09551b3ac9ee65245b616238469d63aeafedcaf86eae286847"
+        },
+        {
+          "bytes": 2246,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/stack-frame.txt",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "a3bebb2287081bb2ddf3347be536ba9a087f8ecd8a6ce7de807afc2329043dd4"
+        },
+        {
+          "bytes": 3269,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/stack-repeat.log",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "5382690c71429e0444f5a180a8611983c477c2b888d84d5c60034d2e32e4c55d"
+        },
+        {
+          "bytes": 1152,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/stack_run.py",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "bb9460138bac5eb2416f7aac202bb231a1745456e4b1391efce4e22944a49aff"
+        },
+        {
+          "bytes": 1835,
+          "candidateSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+          "path": "evidence/preservation.json",
+          "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+          "sha256": "ee06536774383321bd03ea5473997be2a13ab40839b5f1117389b93305b27ecd"
+        }
+      ],
+      "owner": "Codex, Apple Silicon local QA; product owner where explicitly credited",
+      "runUtc": "2026-11-24T17:40:22+00:00",
+      "status": "Pass"
+    },
+    "M09-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-07": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-08": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-09": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-10": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-11": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-12": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-13": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-14": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-15": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "M09-16": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-AUT-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-015": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-016": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-017": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-018": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-019": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-020": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-021": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-022": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-023": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-024": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-025": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-026": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-027": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-028": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-029": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-DSP-030": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ERR-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FAD-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-FX-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-MUT-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PER-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PHY-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-PST-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RCV-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-REC-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-ROLE-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-RTE-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-015": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-016": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-017": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-018": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-019": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SND-020": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPA-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-SPD-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-STEM-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-001": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-002": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-003": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-004": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-005": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-006": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-007": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-008": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-009": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-010": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-011": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-012": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-013": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "MX-UI-014": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-ED-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-GLO-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-LIB-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-PER-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-REG-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-01": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-02": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-03": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-04": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-05": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    },
+    "TX-RES-06": {
+      "actual": "",
+      "evidence": [],
+      "owner": "",
+      "runUtc": "",
+      "status": "Not Run"
+    }
+  },
+  "runId": "b750c9eb-2afa-4557-b7a8-022ca186aadf",
+  "version": 2
+}

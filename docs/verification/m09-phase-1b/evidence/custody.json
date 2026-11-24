@@ -1,0 +1,13 @@
+{
+  "oldFilesVerifiedAgainstGit": 42,
+  "oldBase": "ec0c4689923a6e50b12cd14f0be97d0a860b3880",
+  "independentOldAnchorEqual": true,
+  "previousRunSha256": "2a10c024c4e50777968fe493a531ed5716ce4d989e9f396871b5011181c7a9b2",
+  "arm64StackReservationBytes": 8467408,
+  "calleeSavedBytes": 128,
+  "entryTotalBytes": 8467536,
+  "defaultSoftBytes": 8372224,
+  "observedChildBytes": 67092480,
+  "initialPythonLauncher": "Attempt to raise RLIMIT_STACK after interpreter startup returned ValueError; no tests ran on that launch. Applied hard limit in zsh before exec, checked child limit in CTest, then completed both repetitions.",
+  "oldChecklistVerifiedAgainstGit": true
+}

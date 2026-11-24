@@ -1,0 +1,77 @@
+2026-11-24T17:18:38.337Z
+	13 text (settable) 43 results  ·  43 indexed  ·  43 ready
+	15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+		31 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+			32 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav, Help: Detected: 1 ch · MONO (conventional)
+	70 button (settable) Repeat All, Help: Repeat search results, Value: Off
+The focused UI element is 15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+2026-11-24T17:18:45.660Z
+	14 button Edit catalog metadata
+	20 text (settable) clip-021.wav
+	24 container Recording metadata
+	25 text (settable) Audio Duration 5.000 s Sample rate 44100 Hz Channels 1 Format WAV file Bit depth (reader) 16-bit integer Frames 220500 Layout MONO Channel order C Layout confidence conventional File File size 430.7 KB Modified 17 Nov 2026 19:52 Status Ready Path /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+		34 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+			35 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav, Help: Detected: 1 ch · MONO (conventional)
+2026-11-24T17:18:55.095Z
+	5 button Apply
+	7 button Undo
+	10 button Suggest from audio
+2026-11-24T17:19:03.654Z
+	5 button Apply
+	7 button Undo
+	10 button Suggest from audio
+	11 text (settable) Suggested from audio (unverified)
+	12 pop up button (settable) Help: Ranked by cosine similarity, Value: NATURAL DISASTER  0.44
+	13 button Preview matching moment
+	14 button Apply
+	15 button Reject
+2026-11-24T17:19:12.536Z
+	12 pop up button (settable) Help: Ranked by cosine similarity, Value: NATURAL DISASTER  0.44
+	13 button Preview matching moment
+	15 button Reject
+2026-11-24T17:19:13.378Z
+	7 button Undo
+	10 button Suggest from audio
+2026-11-24T17:19:22.980Z
+	2 text (settable) 1 selected recordings
+	5 button Apply
+	7 button Undo
+	11 text (settable) No remaining suggestions
+2026-11-24T17:20:05.016Z
+	13 text (settable) 43 results  ·  43 indexed  ·  43 ready
+	15 text entry area (settable) Search library, Secondary Actions: Delete
+	70 button (settable) Repeat All, Help: Repeat search results, Value: Off
+2026-11-24T17:20:12.292Z
+	13 text (settable) 43 results  ·  43 indexed  ·  43 ready
+	15 text entry area (settable) Search library, Secondary Actions: Delete
+	70 button (settable) Repeat All, Help: Repeat search results, Value: Off
+2026-11-24T17:20:19.993Z
+	15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+		31 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+			32 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+The focused UI element is 15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+2026-11-24T17:20:28.271Z
+	5 button Apply
+	7 button Undo
+	11 text (settable) No remaining suggestions
+2026-11-24T17:20:29.509Z
+	5 button Apply
+	12 pop up button (settable) Help: Ranked by cosine similarity, Value: NATURAL DISASTER  0.44
+	14 button Apply
+	15 button Reject
+2026-11-24T17:20:36.801Z
+	5 button Apply
+	7 button Undo
+2026-11-24T17:20:57.353Z
+	15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+		31 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+			32 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+The focused UI element is 15 text entry area (settable) Search library, Value: clip-021, Secondary Actions: Delete
+2026-11-24T17:20:58.022Z
+	14 button Edit catalog metadata
+	20 text (settable) clip-021.wav
+	25 text (settable) Sound tags Category NATURAL DISASTER Audio Duration 5.000 s Sample rate 44100 Hz Channels 1 Format WAV file Bit depth (reader) 16-bit integer Frames 220500 Layout MONO Channel order C Layout confidence conventional File File size 430.7 KB Modified 17 Nov 2026 19:52 Status Ready Path /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+		34 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+			35 row clip-021.wav, 5.00 seconds, 1 channels, MONO, 44100 Hz, ready, Filename + sound similarity, match 0.000 to 5.000 seconds, /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav, Help: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav
+2026-11-24T17:20:58.695Z
+	25 text (settable) Sound tags Category NATURAL DISASTER Audio Duration 5.000 s Sample rate 44100 Hz Channels 1 Format WAV file Bit depth (reader) 16-bit integer Frames 220500 Layout MONO Channel order C Layout confidence conventional File File size 430.7 KB Modified 17 Nov 2026 19:52 Status Ready Path /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus/build/semantic/real-effects/media/clip-021.wav

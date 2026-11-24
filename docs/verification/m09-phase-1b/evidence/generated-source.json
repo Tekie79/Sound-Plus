@@ -1,0 +1,10 @@
+{
+  "id": "ac4adb2b8b8d457ca80dea2516f57509",
+  "provider": "ElevenLabs",
+  "model": "eleven_text_to_sound_v3",
+  "sha256": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c",
+  "frames": 22050,
+  "rate": 44100,
+  "channels": 2,
+  "state": 2
+}

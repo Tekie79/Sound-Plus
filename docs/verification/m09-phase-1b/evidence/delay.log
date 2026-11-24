@@ -1,0 +1,3 @@
+rate 44100 declared lookahead frames 221
+rate 48000 declared lookahead frames 240
+rate 96000 declared lookahead frames 480

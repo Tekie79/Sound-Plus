@@ -1,0 +1,17 @@
+Collecting cmake==3.31.6
+  Using cached cmake-3.31.6-py3-none-macosx_10_10_universal2.whl.metadata (6.3 kB)
+Collecting ninja==1.11.1.3
+  Using cached ninja-1.11.1.3-py3-none-macosx_10_9_universal2.whl.metadata (5.3 kB)
+Using cached cmake-3.31.6-py3-none-macosx_10_10_universal2.whl (47.2 MB)
+Using cached ninja-1.11.1.3-py3-none-macosx_10_9_universal2.whl (279 kB)
+Installing collected packages: ninja, cmake
+
+Successfully installed cmake-3.31.6 ninja-1.11.1.3
+
+[notice] A new release of pip is available: 26.1.2 -> 26.3
+[notice] To update, run: pip3 install --upgrade pip
+  % Total    % Received % Xferd  Average Speed   Time    Time     Time  Current
+                                 Dload  Upload   Total   Spent    Left  Speed
+  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0  0     0    0     0    0     0      0      0 --:--:-- --:--:-- --:--:--     0100 10.2M    0 10.2M    0     0  8484k      0 --:--:--  0:00:01 --:--:-- 8481k100 17.2M    0 17.2M    0     0  8044k      0 --:--:--  0:00:02 --:--:-- 8044k100 20.8M    0 20.8M    0     0  7589k      0 --:--:--  0:00:02 --:--:-- 7588k
+/tmp/soundplus-juce.KIOqiQ: OK
+Installed verified native ONNX Runtime 1.22.1: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/rebuild/vendor/onnxruntime-1.22.1

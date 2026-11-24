@@ -1,0 +1,47 @@
+launcher RLIMIT_STACK bytes (67092480, 67092480)
+Internal ctest changing into directory: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+UpdateCTestConfiguration  from :/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd/DartConfiguration.tcl
+UpdateCTestConfiguration  from :/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd/DartConfiguration.tcl
+Test project /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+Constructing a list of tests
+Done constructing a list of tests
+Updating test list for fixtures
+Added 0 tests to meet fixture requirements
+Checking test dependency graph...
+Checking test dependency graph end
+test 1
+    Start 1: limits
+
+1: Test command: /Library/Frameworks/Python.framework/Versions/3.14/bin/python3 "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/evidence/stack_run.py" "limits"
+1: Working Directory: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+1: Test timeout computed to be: 10000000
+1: CTest child RLIMIT_STACK bytes (67092480, 67092480)
+1/4 Test #1: limits ...........................   Passed    0.03 sec
+test 2
+    Start 2: run0
+
+2: Test command: /Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests "--multichannel" "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd/tmpjrx68g_b/multichannel-test-output" "/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+2: Working Directory: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+2: Test timeout computed to be: 10000000
+2: PASS multichannel identity, processing, spatial takes, delivery: 885231 checks; native error 0
+2/4 Test #2: run0 .............................   Passed    5.16 sec
+test 3
+    Start 3: run1
+
+3: Test command: /Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests "--multichannel" "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd/tmp5ryxk9we/multichannel-test-output" "/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+3: Working Directory: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+3: Test timeout computed to be: 10000000
+3: PASS multichannel identity, processing, spatial takes, delivery: 888051 checks; native error 0
+3/4 Test #3: run1 .............................   Passed    5.35 sec
+test 4
+    Start 4: run2
+
+4: Test command: /Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests "--similar-integrity" "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd/tmpmht2q39b/similar-test-output" "/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus"
+4: Working Directory: /Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp2fjxietd
+4: Test timeout computed to be: 10000000
+4: PASS exact cached retrieval, live deltas, filters, exclusions, invalidation, log gap recovery, cache reuse/integrity, channels and reference windows
+4/4 Test #4: run2 .............................   Passed    1.23 sec
+
+100% tests passed, 0 tests failed out of 4
+
+Total Test time (real) =  11.77 sec

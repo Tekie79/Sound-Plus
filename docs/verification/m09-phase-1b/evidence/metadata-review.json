@@ -1,0 +1,16 @@
+{
+  "name": "clip-021.wav",
+  "sourceId": "2f831e4a62f44ff4b0a4017a85d713c0",
+  "category": "NATURAL DISASTER",
+  "similarity": 0.444326519966125,
+  "first": 0,
+  "last": 220500,
+  "sha256": "806548ec876df9f91ced5503f76794a42dca6b8790324f87464de5ed780189cb",
+  "datasetLabel": "sea_waves",
+  "listenerRole": "product owner",
+  "listenerResponse": "i heard disaster sound , product owner",
+  "categoryFitsAnswer": "yes",
+  "listeningDate": "2026-11-24",
+  "independentAcousticExpertise": "not established",
+  "sourceBytesUnchanged": true
+}

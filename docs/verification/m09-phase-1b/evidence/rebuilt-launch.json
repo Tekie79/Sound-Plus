@@ -1,0 +1,15 @@
+{
+  "command": [
+    "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/rebuild/build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+    "--data-dir",
+    "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/work/tmp5k2bb83j",
+    "--no-ai"
+  ],
+  "pid": 29515,
+  "running": true,
+  "isolatedCatalogAssets": 0,
+  "children": [
+    "29516",
+    "29517"
+  ]
+}

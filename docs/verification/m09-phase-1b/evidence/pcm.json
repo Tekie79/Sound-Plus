@@ -1,0 +1,451 @@
+{
+  "delay": [
+    {
+      "rate": 44100,
+      "mode": "delay + lookahead",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "a71175bb32250ed4c1186d500f3da8a4477d087350917f15328048fa4033c372"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "a71175bb32250ed4c1186d500f3da8a4477d087350917f15328048fa4033c372"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "a71175bb32250ed4c1186d500f3da8a4477d087350917f15328048fa4033c372"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "a71175bb32250ed4c1186d500f3da8a4477d087350917f15328048fa4033c372"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "a71175bb32250ed4c1186d500f3da8a4477d087350917f15328048fa4033c372"
+        }
+      ]
+    },
+    {
+      "rate": 44100,
+      "mode": "delay bypass",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        }
+      ]
+    },
+    {
+      "rate": 44100,
+      "mode": "return mute",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        }
+      ]
+    },
+    {
+      "rate": 48000,
+      "mode": "delay + lookahead",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "52b380bd84bb44c827cff9f6d861aad4c69a0a220b438ed9a0c8265b872acb8c"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "52b380bd84bb44c827cff9f6d861aad4c69a0a220b438ed9a0c8265b872acb8c"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "52b380bd84bb44c827cff9f6d861aad4c69a0a220b438ed9a0c8265b872acb8c"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "52b380bd84bb44c827cff9f6d861aad4c69a0a220b438ed9a0c8265b872acb8c"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "52b380bd84bb44c827cff9f6d861aad4c69a0a220b438ed9a0c8265b872acb8c"
+        }
+      ]
+    },
+    {
+      "rate": 48000,
+      "mode": "delay bypass",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        }
+      ]
+    },
+    {
+      "rate": 48000,
+      "mode": "return mute",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        }
+      ]
+    },
+    {
+      "rate": 96000,
+      "mode": "delay + lookahead",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "6e29ee867e9cfae981a15890bb920459038554e9ec3eee0f0787497b05a7b4d8"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "6e29ee867e9cfae981a15890bb920459038554e9ec3eee0f0787497b05a7b4d8"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "6e29ee867e9cfae981a15890bb920459038554e9ec3eee0f0787497b05a7b4d8"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "6e29ee867e9cfae981a15890bb920459038554e9ec3eee0f0787497b05a7b4d8"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "6e29ee867e9cfae981a15890bb920459038554e9ec3eee0f0787497b05a7b4d8"
+        }
+      ]
+    },
+    {
+      "rate": 96000,
+      "mode": "delay bypass",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "454e4595df03fbf1e1363011e3c9056a45875cacc38d8d9f174de7a9649c07d7"
+        }
+      ]
+    },
+    {
+      "rate": 96000,
+      "mode": "return mute",
+      "partitions": [
+        {
+          "block": 1,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 32,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 61,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 257,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        },
+        {
+          "block": 512,
+          "frames": 12288,
+          "error": 0.0,
+          "tailError": 0.0,
+          "sha256": "d4f9a3afc87aa0b8316b80476f7e7ffb0ee5c19db563989803e438095b8c898b"
+        }
+      ]
+    }
+  ],
+  "automation": [
+    {
+      "mask": 0,
+      "frames": 8192,
+      "rate": 48000,
+      "sessionSha256": "2cdcc5cdbac68981c13bfa5ba03ee5ee007d91b42cfb04466b6043bac17f7ecc",
+      "wavSha256": "9deb119b6ef4c5540c94377ab4135239d5228d9618c74be7dffdcda98f61f3a9",
+      "playError": 4.4119947140153215e-09,
+      "exportError": 4.561908947819937e-08,
+      "difference": 4.470348358154297e-08
+    },
+    {
+      "mask": 1,
+      "frames": 8192,
+      "rate": 48000,
+      "sessionSha256": "302b8cf3d16a399c20d41fd2aa6b7e2fa06904c1ee1a1e8f398771aac10b87f4",
+      "wavSha256": "943d18fa49dad9505379f8aac1690d00cceed183e154d541eb95268c01e46335",
+      "playError": 1.0931122895740941e-08,
+      "exportError": 4.0733445283436254e-08,
+      "difference": 2.9802322387695312e-08
+    },
+    {
+      "mask": 3,
+      "frames": 8192,
+      "rate": 48000,
+      "sessionSha256": "c73dc23a6afb99888f7499ef1c9012262ffd3f6e5057f370f1cde19e7cc39bbd",
+      "wavSha256": "5ab1e655bc08f8e46c47bb8e86f8ab878db2b01a3ffa71c1dfde12d6596c51fb",
+      "playError": 7.6765516721089e-09,
+      "exportError": 5.589868298794265e-08,
+      "difference": 5.21540641784668e-08
+    },
+    {
+      "mask": 2,
+      "frames": 8192,
+      "rate": 48000,
+      "sessionSha256": "bd366d8b850be3dca6171a6f3ca1ec32f2530adc9d130ee03fa6abce75374fb0",
+      "wavSha256": "ca90f345045de766d7c393e61e155138957b6736ece00c6626b8ba9c48f7c24d",
+      "playError": 9.603777328948127e-09,
+      "exportError": 3.940609971664344e-08,
+      "difference": 2.9802322387695312e-08
+    },
+    {
+      "mask": 0,
+      "frames": 8192,
+      "rate": 48000,
+      "sessionSha256": "2cdcc5cdbac68981c13bfa5ba03ee5ee007d91b42cfb04466b6043bac17f7ecc",
+      "wavSha256": "9deb119b6ef4c5540c94377ab4135239d5228d9618c74be7dffdcda98f61f3a9",
+      "playError": 4.4119947140153215e-09,
+      "exportError": 4.561908947819937e-08,
+      "difference": 4.470348358154297e-08
+    }
+  ],
+  "library": [
+    {
+      "start": 100,
+      "end": 47000,
+      "generation": 1,
+      "sourceId": "external-428c55a6f32b44abbf05b08c243668bf",
+      "pair": "Ls/Rs",
+      "sourceSha256": "4816f3c93f36c7e0c47742ae2fee3b15638428e42257be70e36a0e587cddcaa3",
+      "deliverySha256": "54b0c57e0fbe18d897223158d24b488f9931f0e14404186e88057280965d29b1",
+      "deliveredMask": "0x60f",
+      "auditionError": 0.0,
+      "deliveryError": 0.0
+    },
+    {
+      "start": 37200,
+      "end": 37513,
+      "generation": 2,
+      "sourceId": "external-428c55a6f32b44abbf05b08c243668bf",
+      "pair": "Ls/Rs",
+      "sourceSha256": "4816f3c93f36c7e0c47742ae2fee3b15638428e42257be70e36a0e587cddcaa3",
+      "deliverySha256": "9d8a40fae6d4edd70f39e1fe18318e4dafe24c5a028a4a0a9f644e7400247462",
+      "deliveredMask": "0x60f",
+      "auditionError": 0.0,
+      "deliveryError": 0.0
+    }
+  ]
+}

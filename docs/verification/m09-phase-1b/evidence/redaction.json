@@ -1,0 +1,128 @@
+{
+  "matched": 0,
+  "positiveEncodingControls": 4,
+  "files": {
+    "jobs, catalog and journal": [
+      {
+        "file": "tone - a3290fc163f24306b6a7d68b39ba693b.wav",
+        "bytes": 132412,
+        "sha256": "bf0967f7c8c573e57d73a7cbc6eb1e41d3ed6b9cc012e45c5c597e4929b255af"
+      },
+      {
+        "file": "874d1e22249d44cb973d24c0ae030a7f.json",
+        "bytes": 138,
+        "sha256": "93b66fa8dc837972dbf04e31879b5bf12a842cb250d239ec9e212efa6a638644"
+      },
+      {
+        "file": "874d1e22249d44cb973d24c0ae030a7f.soundplus",
+        "bytes": 3770,
+        "sha256": "3cb85ef167235ba49f2e756d6fef816ea4b322c7aedf7dbdde99a9356563da8d"
+      },
+      {
+        "file": "active.json",
+        "bytes": 56,
+        "sha256": "a51b3a576cc1a4cb33ff6b73e8104a6171aaee45491d751ec87a59f174c7af79"
+      },
+      {
+        "file": "9e191ac48e514b2aa9df574a8532e812.wav",
+        "bytes": 132404,
+        "sha256": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c"
+      },
+      {
+        "file": "a3290fc163f24306b6a7d68b39ba693b.wav",
+        "bytes": 132404,
+        "sha256": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c"
+      },
+      {
+        "file": "ac4adb2b8b8d457ca80dea2516f57509.wav",
+        "bytes": 132404,
+        "sha256": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c"
+      },
+      {
+        "file": "e1afd8612957408db34d6cebfba91b6e.wav",
+        "bytes": 72680,
+        "sha256": "fc947a89a921d6e98a9e4497271db38ba4a02d11e638ec53c72abc1802b15533"
+      },
+      {
+        "file": "history.sqlite",
+        "bytes": 40960,
+        "sha256": "06b3285d82abfb2b4a4b43eb4a80852b76d4372fd9c7c6045d5af70851363ef5"
+      },
+      {
+        "file": "library.sqlite",
+        "bytes": 4096,
+        "sha256": "a209ba85773882b79b8147779c406fbb67a12dcb723ba7c4ea7ca3168e651cc8"
+      },
+      {
+        "file": "library.sqlite-shm",
+        "bytes": 32768,
+        "sha256": "b228bb855a67faec536e9b91c6fb8a0f80b7b7ac3046c5ff2f4544337d58b7e2"
+      },
+      {
+        "file": "library.sqlite-wal",
+        "bytes": 593312,
+        "sha256": "5a4d408e2fa9fe3fd467d1e0633c4b67eb9cf82bcdbb253efb6fd2713bb2f9a0"
+      }
+    ],
+    "undo and redo snapshots": [
+      {
+        "file": "generated-edited.soundplus",
+        "bytes": 3573,
+        "sha256": "c4ac661e61f3d0936cff433a1e11244a6105d9d67d49d79b87b4a34c044efd87"
+      },
+      {
+        "file": "generated-undo.soundplus",
+        "bytes": 965,
+        "sha256": "57cd164a5e9d0c8110747bc790bfb70b765b8106ee75207963783be688446c25"
+      },
+      {
+        "file": "generated-redo.soundplus",
+        "bytes": 3573,
+        "sha256": "9c2053df6e1b11d74ad6b78c61a56913f58d51bae3a568fe748af7acdf53b6ed"
+      }
+    ],
+    "final audio export": [
+      {
+        "file": "generated-export.wav",
+        "bytes": 144784,
+        "sha256": "35089c27db33204931d0cf4393150580a17f102337013f7e2cbc985d9c611b44"
+      }
+    ],
+    "exported portable project": [
+      {
+        "file": "Manifest.json",
+        "bytes": 408,
+        "sha256": "9245bba5d35620a66f475199836ec070cd9e5b74f12364e40fb1d2b056c9e4cb"
+      },
+      {
+        "file": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c.wav",
+        "bytes": 132404,
+        "sha256": "604b42269f0ccfda69fcaa5dcc6d857fd8708f193c62d0d21acf1b93c5b4490c"
+      },
+      {
+        "file": "Project.soundplus",
+        "bytes": 3480,
+        "sha256": "87d9f12c8c41fafc97707f697ffeb94cf03e2cfebb17fe08606b6bacc51c802d"
+      }
+    ],
+    "test logs": [
+      {
+        "file": "sfx.log",
+        "bytes": 184,
+        "sha256": "ffba9c2db79833d711deb4eb2f8a1e8d2dd04d1356bba7186d4c5636578a7fbe"
+      },
+      {
+        "file": "diagnostic.json",
+        "bytes": 819,
+        "sha256": "2e0ea90508c4a6e3f8330a26a95cba15e57f5dd826c956426973bd4e82451748"
+      }
+    ],
+    "raw OS crash report": [
+      {
+        "file": "SoundPlusTests-2026-11-24-122447.ips",
+        "bytes": 9732,
+        "sha256": "2e0290fda068b953be830fba8dfb0eec4bf8cef533c7f45c62d3b4896208e361"
+      }
+    ]
+  }
+}

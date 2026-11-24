@@ -1,0 +1,28 @@
+{
+  "pid": 27503,
+  "captured": "2026-11-24 12:24:47.1871 -0500",
+  "incident": "05C960E4-01DF-40A4-8FD8-0F12B4025C51",
+  "binary": "/Users/harvest/SoundPlus-QA/m09-3be7178/build/m09-release/SoundPlusTests_artefacts/Release/SoundPlusTests",
+  "imageUUID": "3f35d812-0fb3-31e1-bf0e-1f9b239dd372",
+  "rawBytes": 9732,
+  "rawSha256": "2e0290fda068b953be830fba8dfb0eec4bf8cef533c7f45c62d3b4896208e361",
+  "exception": {
+    "codes": "0x0000000000000000, 0x0000000000000000",
+    "rawCodes": [
+      0,
+      0
+    ],
+    "type": "EXC_CRASH",
+    "signal": "SIGABRT"
+  },
+  "triggeredFrames": [
+    "__semwait_signal",
+    "nanosleep",
+    "juce::Thread::sleep(int)",
+    "runSfxTests(juce::File const&, juce::String const&, juce::String const&)",
+    "main",
+    "start"
+  ],
+  "loopbackPosts": 1,
+  "rawTokenMatches": 0
+}

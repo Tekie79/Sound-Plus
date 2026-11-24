@@ -1,0 +1,155 @@
+{
+  "uniquePrintableStrings": [
+    [
+      "10:20:16"
+    ],
+    [
+      "12:21:49"
+    ]
+  ],
+  "candidates": [
+    {
+      "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+      "tree": "4f701df30da740c426127255cacdd6594c89986c",
+      "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "binarySha256": "ca92909592d92c7e7ac09a0e0b48553e3167c63af84e07bdd25797711876b97f",
+      "manifestSha256": "c3c5a2f55bc2bf4174125845ff57185aa87d74a18c135951516701734634ecc0",
+      "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+      "configuredDependencies": "03ba048d409822584c0db0668b22d39ba53be51911c651fed98ae78fe38079ef",
+      "gate": {
+        "failed": 0,
+        "passed": 64
+      },
+      "provenance": {
+        "architecture": "arm64",
+        "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+        "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+        "macOS": "26.3.2",
+        "pinnedInputs": {
+          "cmake": "3.31.6",
+          "juce": {
+            "archiveSHA256": "95752f8e8b37d802b4c10182bc757de7d88f0c8899e879afa8798589be306a11",
+            "version": "8.0.6"
+          },
+          "ninja": "1.11.1.3",
+          "onnx": {
+            "archiveSHA256": "7b091e012dcfef2f9cc965f2252041101b1840c748ffbc1c18ba047bd6508b1c",
+            "librarySHA256": "36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be",
+            "version": "1.22.1"
+          }
+        },
+        "sdk": "26.5",
+        "tree": "4f701df30da740c426127255cacdd6594c89986c"
+      },
+      "path": "/Users/harvest/SoundPlus-QA/m09-3be7178",
+      "absoluteCheckoutMentions": 0,
+      "qualifiedUtc": "2026-11-24T15:29:19+00:00"
+    },
+    {
+      "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+      "tree": "4f701df30da740c426127255cacdd6594c89986c",
+      "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+      "binarySha256": "6abdca749c1d9bae3a570236f02e7efc45134be41a85878653e156facbf8bdbc",
+      "manifestSha256": "3f373fb26bfd15f49a7e9a143c12891d05f9900d023cb14bf0666c2544bb6bbd",
+      "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+      "configuredDependencies": "03ba048d409822584c0db0668b22d39ba53be51911c651fed98ae78fe38079ef",
+      "gate": {
+        "failed": 0,
+        "passed": 64
+      },
+      "provenance": {
+        "architecture": "arm64",
+        "clang": "Apple clang version 21.0.0 (clang-2100.1.1.101)",
+        "commit": "3be7178ee0525791af3726dbb03b0fdaefec1130",
+        "macOS": "26.3.2",
+        "pinnedInputs": {
+          "cmake": "3.31.6",
+          "juce": {
+            "archiveSHA256": "95752f8e8b37d802b4c10182bc757de7d88f0c8899e879afa8798589be306a11",
+            "version": "8.0.6"
+          },
+          "ninja": "1.11.1.3",
+          "onnx": {
+            "archiveSHA256": "7b091e012dcfef2f9cc965f2252041101b1840c748ffbc1c18ba047bd6508b1c",
+            "librarySHA256": "36a46aeb65eee6618daded125577192514d058d0cce6adc4892bc1bcc77cb9be",
+            "version": "1.22.1"
+          }
+        },
+        "sdk": "26.5",
+        "tree": "4f701df30da740c426127255cacdd6594c89986c"
+      },
+      "path": "/Users/harvest/SoundPlus-QA/phase1b.SN9DTO/rebuild",
+      "absoluteCheckoutMentions": 0,
+      "qualifiedUtc": "2026-11-24T17:30:35+00:00"
+    }
+  ],
+  "commands": [
+    [
+      "<tools>/cmake/data/bin/cmake",
+      "-S",
+      "<checkout>",
+      "-B",
+      "<checkout>/build/m09-release",
+      "-G",
+      "Ninja",
+      "-DCMAKE_MAKE_PROGRAM=<tools>/bin/ninja",
+      "-DCMAKE_BUILD_TYPE=Release",
+      "-DBUILD_TESTING=ON",
+      "-DSOUNDPLUS_BUILD_PLUGIN_ASAN_QA=ON",
+      "-DCMAKE_OSX_ARCHITECTURES=arm64",
+      "-DCMAKE_OSX_DEPLOYMENT_TARGET=12.0",
+      "-DSOUNDPLUS_CANDIDATE_SHA=3be7178ee0525791af3726dbb03b0fdaefec1130"
+    ],
+    [
+      "<tools>/cmake/data/bin/cmake",
+      "--build",
+      "<checkout>/build/m09-release",
+      "--parallel",
+      "8"
+    ],
+    [
+      "<tools>/cmake/data/bin/ctest",
+      "--test-dir",
+      "<checkout>/build/m09-release",
+      "--output-on-failure"
+    ]
+  ],
+  "equalSections": [
+    "__TEXT,__text",
+    "__TEXT,__stubs",
+    "__TEXT,__objc_stubs",
+    "__TEXT,__init_offsets",
+    "__TEXT,__objc_methlist",
+    "__TEXT,__gcc_except_tab",
+    "__TEXT,__const",
+    "__TEXT,__objc_methname",
+    "__TEXT,__objc_classname",
+    "__TEXT,__objc_methtype",
+    "__TEXT,__unwind_info",
+    "__TEXT,__eh_frame",
+    "__DATA_CONST,__got",
+    "__DATA_CONST,__const",
+    "__DATA_CONST,__cfstring",
+    "__DATA_CONST,__objc_protolist",
+    "__DATA_CONST,__objc_imageinfo",
+    "__DATA_CONST,__objc_arraydata",
+    "__DATA_CONST,__objc_dictobj",
+    "__DATA,__objc_const",
+    "__DATA,__objc_selrefs",
+    "__DATA,__objc_protorefs",
+    "__DATA,__objc_classrefs",
+    "__DATA,__data",
+    "__DATA,__thread_vars"
+  ],
+  "differentSections": [
+    "__TEXT,__cstring"
+  ],
+  "differentBundleFiles": [
+    "Contents/Helpers/SoundPlusAI",
+    "Contents/Helpers/SoundPlusAudio",
+    "Contents/Helpers/SoundPlusPlugin",
+    "Contents/Helpers/SoundPlusPluginEditor.app/Contents/MacOS/SoundPlusPluginEditor",
+    "Contents/MacOS/SoundPlus"
+  ],
+  "totalBundleFiles": 26
+}

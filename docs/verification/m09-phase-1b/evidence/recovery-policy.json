@@ -1,0 +1,19 @@
+{
+  "case": "M01-07",
+  "criterionVersion": "1B-sync-1",
+  "originalRegistryExpected": "Reopen resumes status via provider ID, never silently resubmits charge",
+  "approval": "Product owner responded \"$2, yes\" to the explicit one submission followed by Needs review criterion and live-test spending limit, November 24, 2026.",
+  "scope": "ElevenLabs synchronous SFX only. Providers with a durable asynchronous ID still require polling the original ID.",
+  "passRule": "After one accepted POST, lose the client before receiving the result. Reopen the same journal. Show Needs review and make no additional POST.",
+  "observedInterruptedJob": {
+    "id": "c57e327d39fb4aa1bac15423bda0f8da",
+    "model": "eleven_text_to_sound_v3",
+    "state": 5,
+    "detail": "Interrupted after submission. Check provider billing",
+    "requestId": "",
+    "startedAt": "2026-11-24T12:18:09.879-05:00",
+    "finishedAt": "2026-11-24T12:18:09.897-05:00"
+  },
+  "observation": "One HTTP POST counted by isolated receiver, SIGKILL in the fixture, SIGABRT in a separate controlled diagnostic, both recover runs passed. Live success is additional and separate.",
+  "liveBillingLedger": "not examined"
+}
