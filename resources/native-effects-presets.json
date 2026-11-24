@@ -172,6 +172,31 @@
         "width": 0.8,
         "mix": 0.5
       }
+    },
+    {
+      "type": "granular-texture",
+      "name": "Scatter",
+      "values": {
+        "spray": 0.6,
+        "reverse": 0.35,
+        "density": 30
+      }
+    },
+    {
+      "type": "spectral-freeze",
+      "name": "Held air",
+      "values": {
+        "smoothing": 0.3,
+        "blur": 0.03
+      }
+    },
+    {
+      "type": "spectral-blur",
+      "name": "Soft focus",
+      "values": {
+        "smoothing": 0.7,
+        "blur": 0.18
+      }
     }
   ]
 }

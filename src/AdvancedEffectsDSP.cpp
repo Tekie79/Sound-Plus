@@ -210,6 +210,7 @@ struct Delay final : Engine
         }
     }
 };
+#include "CreativeEffects.inc"
 #include "AdvancedReverb.inc"
 #include "AdvancedConvolution.inc"
 } // namespace
@@ -231,7 +232,11 @@ struct AdvancedEffectProcessor::Impl
         validateLayout(bus);
         if (!std::isfinite(rate) || rate < 8000 || rate > 192000 || bytes > maxAdvancedBytes)
             throw std::runtime_error("Advanced preparation exceeds supported rate/memory");
-        if (e.type == "advanced-delay")
+        if (e.type == "granular-texture")
+            engine = std::make_unique<Granular>(e, bus, rate);
+        else if (e.type.startsWith("spectral-"))
+            engine = std::make_unique<Spectral>(e, bus, rate);
+        else if (e.type == "advanced-delay")
             engine = std::make_unique<Delay>(e, bus, rate, timing);
         else if (e.type == "algorithmic-reverb")
             engine = std::make_unique<Reverb>(e, bus, rate);

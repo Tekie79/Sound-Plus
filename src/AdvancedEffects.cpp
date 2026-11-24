@@ -59,7 +59,8 @@ template <class M> auto inserts(M &m)
 } // namespace
 bool isAdvancedEffect(const juce::String &t)
 {
-    return t == "advanced-delay" || t == "algorithmic-reverb" || t == "convolution-reverb";
+    return t == "advanced-delay" || t == "algorithmic-reverb" || t == "convolution-reverb" ||
+           t == "granular-texture" || t == "spectral-blur" || t == "spectral-freeze";
 }
 std::vector<StockEffect *> advancedInserts(DesignMix &m)
 {
@@ -155,6 +156,51 @@ void appendAdvancedDefinitions(std::vector<NativeEffectDefinition> &defs)
         p("mix", "Mix", "Output", "%", 0, 1, .25),
         p("output", "Output", "Output", "dB", -36, 12, 0)};
     defs.push_back(d);
+    auto output = [&](NativeEffectDefinition &fx)
+    {
+        fx.parameters.push_back(p("lfe", "LFE", "Output", "", 0, 1, 0, false, {"Dry only", "Independent"}));
+        fx.parameters.push_back(p("mix", "Mix", "Output", "%", 0, 1, .65));
+        fx.parameters.push_back(p("output", "Output", "Output", "dB", -36, 12, 0));
+        defs.push_back(fx);
+    };
+    d = {};
+    d.type = "granular-texture";
+    d.name = "Granular Texture";
+    d.policy = "granular-texture-v1";
+    d.tailPolicy = "two-second-history-held-until-release-v1";
+    d.parameters = {p("size", "Grain size", "Grains", "ms", 5, 400, 90, true),
+                    p("density", "Density", "Grains", "grains/s", 1, 60, 18, true),
+                    p("position", "Position", "Buffer", "s", 0, 1, .25),
+                    p("spray", "Position spray", "Buffer", "s", 0, 1, .1),
+                    p("pitch", "Pitch", "Grains", "st", -12, 12, 0),
+                    p("reverse", "Reverse probability", "Grains", "%", 0, 1, 0),
+                    p("window", "Window", "Grains", "", 0, 1, 0, false, {"Hann", "Triangle"}),
+                    p("width", "Stereo width", "Spread", "%", 0, 1, .3),
+                    p("seed", "Seed", "Sequence", "", 0, 65535, 1, false, {}, true),
+                    p("freeze", "Freeze buffer", "Buffer", "", 0, 1, 0, false, {"Follow", "Hold"})};
+    output(d);
+    for (auto type : {"spectral-freeze", "spectral-blur"})
+    {
+        bool freeze = juce::String(type) == "spectral-freeze";
+        d = {};
+        d.type = type;
+        d.name = freeze ? "Spectral Freeze" : "Spectral Blur";
+        d.policy = d.type + "-v1";
+        d.latencyPolicy = "stft-window-frames-v1";
+        d.tailPolicy = "bounded-render-held-until-release-v1";
+        d.parameters = {p("fft-size", "Window", "Analysis", "frames", 0, 3, 2, false,
+                          {"256", "512", "1024", "2048"}, true),
+                        p("overlap", "Overlap", "Analysis", "", 0, 1, 1, false, {"50%", "75%"}, true),
+                        p("smoothing", "Frequency smear", "Spectrum", "%", 0, 1, freeze ? 0 : .25),
+                        p("blur", "Time blur", "Spectrum", "s", 0, 1, freeze ? 0 : .12)};
+        if (freeze)
+        {
+            d.parameters.push_back(p("hold", "Capture", "Spectrum", "", 0, 1, 0, false, {"Follow", "Hold"}));
+            d.parameters.push_back(
+                p("phase", "Held phase", "Spectrum", "", 0, 1, 0, false, {"Advance", "Locked"}));
+        }
+        output(d);
+    }
 }
 double nativeValue(const StockEffect &e, const juce::String &id)
 {
@@ -307,6 +353,10 @@ ImpulseReference impulseFromJson(const juce::var &o)
 }
 double advancedTailSeconds(const StockEffect &e, const MidiTiming &t)
 {
+    if (e.type == "granular-texture")
+        return 2.4;
+    if (e.type.startsWith("spectral-"))
+        return nativeValue(e, "blur") * 10 + .256;
     if (e.type == "advanced-delay")
     {
         double longest = 0;
@@ -342,6 +392,15 @@ uint64_t advancedMemoryBytes(const StockEffect &e, const ChannelLayout &bus, dou
     if (!std::isfinite(rate) || rate < 8000 || rate > 192000)
         throw std::runtime_error("Invalid advanced preparation rate");
     auto c = (uint64_t)bus.size();
+    if (e.type == "granular-texture" || e.type.startsWith("spectral-"))
+    {
+        if (c > 6 || !bus.roles.contains("L") && c != 1)
+            throw std::runtime_error("Creative effects require mono, stereo or a named surround layout");
+        if (e.type == "granular-texture")
+            return c * ((uint64_t)std::ceil(rate * 2) + 2) * sizeof(float) + 65536;
+        uint64_t n = 256ull << (int)nativeValue(e, "fft-size");
+        return (c * 8 + 24) * n * sizeof(float) + 65536;
+    }
     if (e.type == "advanced-delay")
         return (uint64_t)std::ceil((nativeValue(e, "max-ms") + 20) * rate / 1000.) * c * sizeof(float) +
                65536;

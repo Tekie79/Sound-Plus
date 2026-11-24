@@ -74,10 +74,12 @@ class OrderedRack
                     delay += step.native->latency();
                     // Uniform FFT buffering is purely causal and adds no source
                     // lookahead. Only compensated IR conversion support does.
-                    inputDependencies +=
-                        step.native->latency() - (step.base.type == "convolution-reverb"
-                                                      ? (128 << (int)nativeValue(step.base, "partition"))
-                                                      : 0);
+                    inputDependencies += step.base.type.startsWith("spectral-")
+                                             ? 0
+                                             : step.native->latency() -
+                                                   (step.base.type == "convolution-reverb"
+                                                        ? (128 << (int)nativeValue(step.base, "partition"))
+                                                        : 0);
                 }
                 else
                     step.stock =

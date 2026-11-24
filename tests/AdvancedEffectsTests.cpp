@@ -28,7 +28,8 @@ template <class F> void rejects(F f, const char *why)
 void contracts(const juce::File &base)
 {
     using namespace sp;
-    for (auto type : {"advanced-delay", "algorithmic-reverb", "convolution-reverb"})
+    for (auto type : {"advanced-delay", "algorithmic-reverb", "convolution-reverb", "granular-texture",
+                      "spectral-freeze", "spectral-blur"})
     {
         auto e = makeStockEffect(type);
         auto original = nativeEffectJson(e);
@@ -136,6 +137,7 @@ void contracts(const juce::File &base)
 } // namespace
 
 #include "AdvancedDelayTests.inc"
+#include "CreativeEffectsTests.inc"
 #include "AdvancedIntegrationTests.inc"
 #include "AdvancedReverbTests.inc"
 #include "AdvancedConvolutionTests.inc"
@@ -144,6 +146,7 @@ void runAdvancedEffectsTests(const juce::File &base)
 {
     base.createDirectory();
     contracts(base);
+    creativeTests();
     if (sp::nativeDSPAvailable("advanced-delay"))
     {
         delayTests(base);
