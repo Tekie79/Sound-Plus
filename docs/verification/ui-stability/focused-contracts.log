@@ -1,0 +1,16 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus-UI-Stability/build/ui
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus-UI-Stability/build/ui
+    Start 11: native_effects
+1/5 Test #11: native_effects ...................   Passed    1.10 sec
+    Start 36: designer_view_commands
+2/5 Test #36: designer_view_commands ...........   Passed    3.56 sec
+    Start 45: designer_session
+3/5 Test #45: designer_session .................   Passed    0.24 sec
+    Start 56: plugin_processing
+4/5 Test #56: plugin_processing ................   Passed   60.73 sec
+    Start 61: ordered_inserts
+5/5 Test #61: ordered_inserts ..................   Passed   36.13 sec
+
+100% tests passed, 0 tests failed out of 5
+
+Total Test time (real) = 101.75 sec

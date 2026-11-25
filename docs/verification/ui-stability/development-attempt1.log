@@ -1,0 +1,147 @@
+Internal ctest changing into directory: /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus-UI-Stability/build/ui
+Test project /Users/harvest/Documents/Ysew_Project/GIT/Sound-Plus-UI-Stability/build/ui
+      Start  1: sfx_generation
+ 1/64 Test  #1: sfx_generation ....................   Passed    1.35 sec
+      Start  2: mixer_graph
+ 2/64 Test  #2: mixer_graph .......................   Passed    0.42 sec
+      Start  3: mixer_stems
+ 3/64 Test  #3: mixer_stems .......................   Passed    0.04 sec
+      Start  4: hosted_vendor_automation
+ 4/64 Test  #4: hosted_vendor_automation ..........   Passed    0.01 sec
+      Start  5: surround_xy
+ 5/64 Test  #5: surround_xy .......................   Passed    0.08 sec
+      Start  6: surround_xy_device
+ 6/64 Test  #6: surround_xy_device ................   Passed    4.97 sec
+      Start  7: multi_pad
+ 7/64 Test  #7: multi_pad .........................   Passed    0.44 sec
+      Start  8: multi_pad_device
+ 8/64 Test  #8: multi_pad_device ..................   Passed    4.79 sec
+      Start  9: midi_responsiveness
+ 9/64 Test  #9: midi_responsiveness ...............   Passed   45.77 sec
+      Start 10: advanced_effects
+10/64 Test #10: advanced_effects ..................   Passed    2.51 sec
+      Start 11: native_effects
+11/64 Test #11: native_effects ....................   Passed    0.72 sec
+      Start 12: m09_evidence_integrity
+12/64 Test #12: m09_evidence_integrity ............   Passed    0.41 sec
+      Start 13: acoustic_metadata
+13/64 Test #13: acoustic_metadata .................   Passed    0.05 sec
+      Start 14: catalog_metadata
+14/64 Test #14: catalog_metadata ..................   Passed    5.82 sec
+      Start 15: library_collections
+15/64 Test #15: library_collections ...............   Passed    1.49 sec
+      Start 16: midi_sequencing
+16/64 Test #16: midi_sequencing ...................   Passed    0.11 sec
+      Start 17: audio_input_recording
+17/64 Test #17: audio_input_recording .............   Passed    0.52 sec
+      Start 18: multitrack_automation
+18/64 Test #18: multitrack_automation .............   Passed    0.83 sec
+      Start 19: pool_corrections
+19/64 Test #19: pool_corrections ..................   Passed    5.69 sec
+      Start 20: project_package
+20/64 Test #20: project_package ...................   Passed    0.06 sec
+      Start 21: source_pools
+21/64 Test #21: source_pools ......................   Passed    1.57 sec
+      Start 22: library_playback_search
+22/64 Test #22: library_playback_search ...........   Passed    2.66 sec
+      Start 23: multichannel_corrections
+23/64 Test #23: multichannel_corrections ..........   Passed   13.38 sec
+      Start 24: multichannel
+24/64 Test #24: multichannel ......................   Passed    5.16 sec
+      Start 25: take_integrity
+25/64 Test #25: take_integrity ....................   Passed    4.02 sec
+      Start 26: capture_device_lifecycle
+26/64 Test #26: capture_device_lifecycle ..........   Passed    5.30 sec
+      Start 27: recorded_takes
+27/64 Test #27: recorded_takes ....................   Passed    8.59 sec
+      Start 28: library_stability
+28/64 Test #28: library_stability .................   Passed    1.40 sec
+      Start 29: waveform_scheduling
+29/64 Test #29: waveform_scheduling ...............   Passed    2.05 sec
+      Start 30: audio_health
+30/64 Test #30: audio_health ......................   Passed    7.61 sec
+      Start 31: audio_transform_jobs
+31/64 Test #31: audio_transform_jobs ..............   Passed    4.83 sec
+      Start 32: audio_transform_pcm
+32/64 Test #32: audio_transform_pcm ...............   Passed    0.18 sec
+      Start 33: event_refinement
+33/64 Test #33: event_refinement ..................   Passed    0.19 sec
+      Start 34: waveform_previews
+34/64 Test #34: waveform_previews .................   Passed    0.46 sec
+      Start 35: performance_state
+35/64 Test #35: performance_state .................   Passed    3.23 sec
+      Start 36: designer_view_commands
+36/64 Test #36: designer_view_commands ............   Passed    3.25 sec
+      Start 37: icon_system
+37/64 Test #37: icon_system .......................   Passed    0.14 sec
+      Start 38: library_and_audio
+38/64 Test #38: library_and_audio .................   Passed    8.98 sec
+      Start 39: library_selection_audition
+39/64 Test #39: library_selection_audition ........   Passed    3.78 sec
+      Start 40: library_performance_regression
+40/64 Test #40: library_performance_regression ....   Passed    5.98 sec
+      Start 41: library_semantic_integrity
+41/64 Test #41: library_semantic_integrity ........   Passed    0.39 sec
+      Start 42: library_similar_integrity
+42/64 Test #42: library_similar_integrity .........   Passed    1.24 sec
+      Start 43: designer_transport
+43/64 Test #43: designer_transport ................   Passed   16.16 sec
+      Start 44: designer_canvas
+44/64 Test #44: designer_canvas ...................   Passed    0.20 sec
+      Start 45: designer_session
+45/64 Test #45: designer_session ..................***Failed    0.12 sec
+CoreMIDI error: 372 - ffffffce
+FAIL after 0 checks: Interruption closes the identified gesture to further moves
+
+      Start 46: designer_workflow
+46/64 Test #46: designer_workflow .................   Passed    9.73 sec
+      Start 47: designer_fades
+47/64 Test #47: designer_fades ....................   Passed    2.42 sec
+      Start 48: hosted_touch_session
+48/64 Test #48: hosted_touch_session ..............   Passed    0.37 sec
+      Start 49: hosted_touch_device
+49/64 Test #49: hosted_touch_device ...............   Passed    6.03 sec
+      Start 50: hosted_automation
+50/64 Test #50: hosted_automation .................   Passed   46.43 sec
+      Start 51: hosted_automation_au
+51/64 Test #51: hosted_automation_au ..............   Passed   47.65 sec
+      Start 52: hosted_instrument_automation
+52/64 Test #52: hosted_instrument_automation ......   Passed   12.64 sec
+      Start 53: hosted_instrument_automation_au
+53/64 Test #53: hosted_instrument_automation_au ...   Passed   12.66 sec
+      Start 54: midi_instruments
+54/64 Test #54: midi_instruments ..................   Passed    5.16 sec
+      Start 55: beta_surround_workflow
+55/64 Test #55: beta_surround_workflow ............   Passed    2.92 sec
+      Start 56: plugin_processing
+56/64 Test #56: plugin_processing .................***Failed   48.46 sec
+FAIL after 0 checks: R30 Gain to Reverb requests parent relayout
+
+      Start 57: plugin_correctness
+57/64 Test #57: plugin_correctness ................   Passed   10.53 sec
+      Start 58: plugin_gate_a
+58/64 Test #58: plugin_gate_a .....................   Passed   17.42 sec
+      Start 59: ordered_corrections
+59/64 Test #59: ordered_corrections ...............   Passed    0.12 sec
+      Start 60: plugin_takes
+60/64 Test #60: plugin_takes ......................   Passed   29.52 sec
+      Start 61: ordered_inserts
+61/64 Test #61: ordered_inserts ...................***Failed   31.16 sec
+FAIL after 0 checks: Undo/Redo retains stable focused insert identity
+
+      Start 62: native_view_scale
+62/64 Test #62: native_view_scale .................   Passed    0.01 sec
+      Start 63: plugin_live
+63/64 Test #63: plugin_live .......................   Passed   34.92 sec
+      Start 64: advanced_effects_asan
+64/64 Test #64: advanced_effects_asan .............   Passed    6.58 sec
+
+95% tests passed, 3 tests failed out of 64
+
+Total Test time (real) = 501.69 sec
+
+The following tests FAILED:
+	 45 - designer_session (Failed)
+	 56 - plugin_processing (Failed)
+	 61 - ordered_inserts (Failed)
+Errors while running CTest

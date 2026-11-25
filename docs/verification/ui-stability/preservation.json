@@ -1,0 +1,60 @@
+{
+  "default": {
+    "catalog": {
+      "checkedAfter": 5,
+      "checkedBefore": 5,
+      "differenceCount": 0
+    },
+    "files": {
+      "checkedAfter": 37,
+      "checkedBefore": 37,
+      "differenceCount": 0
+    },
+    "references": {
+      "checkedAfter": 35,
+      "checkedBefore": 35,
+      "differenceCount": 0
+    }
+  },
+  "projectReferences": {
+    "default": {
+      "matched": true,
+      "recordCount": 1,
+      "referenceCount": 0
+    },
+    "review-profile": {
+      "matched": true,
+      "recordCount": 6,
+      "referenceCount": 21
+    },
+    "running": {
+      "matched": true,
+      "recordCount": 3,
+      "referenceCount": 1
+    }
+  },
+  "running": {
+    "catalog": {
+      "checkedAfter": 5,
+      "checkedBefore": 5,
+      "differenceCount": 1
+    },
+    "catalogScanDifference": {
+      "changedFields": [
+        "seen"
+      ],
+      "rowsAfter": 1,
+      "rowsBefore": 1
+    },
+    "files": {
+      "checkedAfter": 16,
+      "checkedBefore": 16,
+      "differenceCount": 0
+    },
+    "references": {
+      "checkedAfter": 1,
+      "checkedBefore": 1,
+      "differenceCount": 0
+    }
+  }
+}
