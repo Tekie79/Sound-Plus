@@ -106,8 +106,12 @@
         require(session.document.original.layers[0].inserts.order.back().id == id,
                 "Consecutive Down addresses the SAME actual Track slot");
         key(KeyPress::upKey);
-        require(view.getPeer()->handleKeyPress(KeyPress(KeyPress::returnKey)) && rack->values[0].isVisible(),
+        require(view.getPeer()->handleKeyPress(KeyPress(KeyPress::returnKey)) && rack->values[0].isShowing(),
                 "Return reaches that focused slot and opens its stock controls");
+        auto *editor = dynamic_cast<DocumentWindow *>(rack->values[0].getTopLevelComponent());
+        require(editor && editor->isVisible(), "Return presents a real native insert editor window");
+        editor->closeButtonPressed();
+        require(Component::getCurrentlyFocusedComponent() == row, "Closing editor returns focus to its slot");
         session.undo();
         session.undo();
         session.undo();

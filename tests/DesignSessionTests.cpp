@@ -232,6 +232,8 @@ void checkInterruptedSquareTouch(const juce::File &root)
             check(session.moveSquareTouch({-.8, -.9}), "Queue controlled motion");
         }
         const auto begin = commands.front();
+        const auto commandCount = commands.size();
+        const auto playbackGeneration = h.generation;
         if (action == "stop")
             session.stop();
         else if (action == "seek")
@@ -256,8 +258,13 @@ void checkInterruptedSquareTouch(const juce::File &root)
         else
             session.endSquareTouch();
         session.poll();
-        check(commands.back()["phase"].toString() == "end" && !session.moveSquareTouch({0, 0}),
-              "Interruption closes the identified gesture to further moves");
+        check(!session.moveSquareTouch({0, 0}), "Interruption closes the identified gesture to further moves");
+        if (action == "stop")
+            check(h.generation == playbackGeneration + 1 && commands.size() == commandCount,
+                  "Transport Stop owns the interrupted receipt without racing an ordinary release");
+        else
+            check(commands.back()["phase"].toString() == "end",
+                  "Other interruptions send the identified gesture release");
         h.now += 2000;
         session.poll();
         check(!session.squareTouchBusy() && path() == before &&

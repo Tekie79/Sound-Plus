@@ -679,7 +679,15 @@ class StockRackView final : public juce::Component
             viewport.setBounds(content.getLocalBounds().reduced(12));
             layoutPanel();
         }
-        void closeButtonPressed() override { setVisible(false); }
+        void closeButtonPressed() override
+        {
+            setVisible(false);
+            if (auto *focus = rackView.editorReturnFocus.getComponent(); focus && focus->isShowing())
+            {
+                focus->getTopLevelComponent()->toFront(false);
+                focus->grabKeyboardFocus();
+            }
+        }
         bool keyPressed(const juce::KeyPress &key) override
         {
             if (key == juce::KeyPress::escapeKey)
@@ -699,6 +707,7 @@ class StockRackView final : public juce::Component
     NativeParameterPanel nativePanel;
     std::unique_ptr<NativeEditorWindow> nativeWindow;
     juce::String nativeSlot;
+    juce::Component::SafePointer<juce::Component> editorReturnFocus;
     void closeNativeEditor()
     {
         if (nativeWindow)
@@ -709,6 +718,8 @@ class StockRackView final : public juce::Component
     {
         if (!isShowing() || externalSelected || selectedSlot.isEmpty() || !more.isEnabled())
             return;
+        if (auto *focus = getCurrentlyFocusedComponent(); focus && isParentOf(focus))
+            editorReturnFocus = focus;
         auto top = getTopLevelComponent();
         if (!nativeWindow)
         {

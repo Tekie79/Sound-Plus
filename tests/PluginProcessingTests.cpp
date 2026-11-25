@@ -1388,26 +1388,39 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
                     recalled.original.layers[0].inserts.stock[0].id ==
                         rackSession.document.original.layers[0].inserts.stock[0].id,
                 "Separate rack owner/slot identity survives production serialization");
-        // R30: actual selectors must request parent layout when parameter height changes.
+        // R30: the built-in editor lays out the selected effect in its own
+        // window. Its height changes must stay out of the parent Inspector.
+        Component stockHost;
+        stockHost.setBounds(80, 80, 360, 340);
+        stockHost.addToDesktop(ComponentPeer::windowIsTemporary);
+        stockHost.setVisible(true);
         for (auto *view : {&track, &master})
         {
-            int relayouts = 0;
-            view->onHeightChange = [&] { ++relayouts; };
+            stockHost.addAndMakeVisible(view);
             view->append(view->owner, "gain");
             view->append(view->owner, "reverb");
-            view->setParametersExpanded(true);
-            int reverbId = view->slots.getNumItems();
-            view->slots.setSelectedId(reverbId - 1, sendNotificationSync);
-            int small = view->preferredHeight(), before = relayouts;
-            view->slots.setSelectedId(reverbId, sendNotificationSync);
-            require(view->preferredHeight() > small && relayouts > before,
-                    "R30 Gain to Reverb requests parent relayout");
-            before = relayouts;
-            view->slots.setSelectedId(reverbId - 1, sendNotificationSync);
-            require(view->preferredHeight() == small && relayouts > before,
-                    "R30 Reverb to Gain shrinks parent layout");
-            view->onHeightChange = {};
+            const int reverbId = view->slots.getNumItems(), rackHeight = view->preferredHeight();
+            auto open = [&](int id)
+            {
+                view->slots.setSelectedId(id, sendNotificationSync);
+                view->setParametersExpanded(true);
+                return dynamic_cast<DocumentWindow *>(view->values[0].getTopLevelComponent());
+            };
+            auto *editor = open(reverbId - 1);
+            require(editor && editor->getName().startsWith("Gain") && view->values[0].isShowing() &&
+                        !view->values[1].isVisible(), "R30 Gain opens one parameter in the native editor");
+            const auto gainHeight = view->values[0].getParentComponent()->getHeight();
+            require(open(reverbId) == editor && editor->getName().startsWith("Reverb") &&
+                        view->values[1].isShowing() && view->preferredHeight() == rackHeight &&
+                        view->values[0].getParentComponent()->getHeight() > gainHeight,
+                    "R30 Reverb expands editor content inside the same window and Inspector height");
+            require(open(reverbId - 1) == editor && view->values[0].getParentComponent()->getHeight() == gainHeight &&
+                        view->preferredHeight() == rackHeight,
+                    "R30 Reopening Gain restores its compact editor content");
+            editor->closeButtonPressed();
+            stockHost.removeChildComponent(view);
         }
+        stockHost.removeFromDesktop();
         // R29: hold the real view's editor command in a controlled worker.
         {
             std::atomic<int> started{0}, cancelledEditors{0};
@@ -1538,7 +1551,7 @@ void runPluginProcessingTests(const juce::File &base, const juce::File &app, con
         require(unified.slots.getNumItems() == 1 && !unified.slots.isVisible() && orderedRows() &&
                     orderedRows()->isVisible() && orderedRows()->preferredHeight() == 32 &&
                     !visibleButtons(unified).contains("Remove external insert") &&
-                    visibleButtons(unified).contains("Open live editor"),
+                    visibleButtons(unified).contains("Open " + retainedJob["plugin"]["name"].toString() + " editor"),
                 "Loaded external effect has an actual ordered row and primary tools");
         unified.append(unified.owner, "gain");
         unified.refresh();
