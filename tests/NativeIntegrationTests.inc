@@ -375,10 +375,22 @@ struct NativeEffectTestAccess
         };
         auto track = addTrack(session.document.original, TrackKind::audio);
         session.document.selectedTrack = track;
+        juce::Component host;
+        host.setBounds(80, 80, 360, 340);
+        host.addToDesktop(juce::ComponentPeer::windowIsTemporary);
+        host.setVisible(true);
         StockRackView rack(session, false);
+        host.addAndMakeVisible(rack);
         rack.bind(track);
         rack.append(rack.owner, "compressor");
-        rack.setParametersExpanded(true);
+        check(rack.nativeWindow && rack.nativeWindow->isVisible() &&
+                  rack.nativeWindow->getName().startsWith("Compressor"),
+              "Adding a native insert opens its real window");
+        rack.nativeWindow->closeButtonPressed();
+        check(!rack.nativeWindow->isVisible(), "Native close hides its editor");
+        auto reopen = rack.orderedList.open;
+        reopen({InsertKind::stock, rack.selectedSlot});
+        check(rack.nativeWindow->isVisible(), "Native row action reopens the same editor");
         rack.setSize(306, rack.preferredHeight());
         auto id = findTrack(session.document.original, track)->inserts.stock[0].id;
         auto &panel = rack.nativePanel;
@@ -432,6 +444,8 @@ struct NativeEffectTestAccess
               "Actual session reopen retains edited preset");
         // Controlled worker: separate accepted IR choices complete independently;
         // a newer choice for the same slot supersedes only that slot.
+        rack.bind(track);
+        check(!rack.nativeWindow->isVisible(), "Replacing the document closes its old effect editor");
         auto ir = dir.getChildFile("Impulse.wav"), ir2 = dir.getChildFile("Impulse2.wav");
         auto writeIR = [&](const juce::File &f, float level)
         {
@@ -491,6 +505,10 @@ struct NativeEffectTestAccess
               "Pending IR completion cannot mutate replacement document");
         auto advancedTrack = addTrack(session.document.original, TrackKind::audio);
         rack.bind(advancedTrack);
+        rack.append(rack.owner, "gain");
+        check(rack.nativeWindow->isVisible() && rack.nativeWindow->getName().startsWith("Gain") &&
+                  rack.values[0].isShowing(), "Legacy built-in Gain opens the same native editor surface");
+        rack.nativeWindow->closeButtonPressed();
         for (auto type : {"advanced-delay", "algorithmic-reverb", "convolution-reverb"})
         {
             rack.append(rack.owner, type);

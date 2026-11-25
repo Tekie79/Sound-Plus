@@ -160,8 +160,15 @@ void saveProcessingJson(const juce::File &file, const juce::var &v)
 }
 juce::var loadProcessingJson(const juce::File &f)
 {
-    require(f.existsAsFile() && f.getSize() <= 32 * 1024 * 1024, "Missing or oversized processing record");
-    auto v = juce::JSON::parse(f);
+    constexpr juce::int64 limit = 32 * 1024 * 1024;
+    juce::FileInputStream input(f);
+    require(input.openedOk(), "Missing processing record");
+    // FileInputStream::getTotalLength uses the path. An atomic replacement
+    // can change that size while the open stream still reads the old inode.
+    juce::MemoryOutputStream contents;
+    const auto bytes = contents.juce::OutputStream::writeFromInputStream(input, limit + 1);
+    require(bytes <= limit, "Oversized processing record");
+    auto v = juce::JSON::parse(contents.toString());
     require(v.isObject(), "Invalid processing record");
     return v;
 }

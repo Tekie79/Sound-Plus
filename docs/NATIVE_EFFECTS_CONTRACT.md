@@ -10,7 +10,7 @@ All supported live parameters appear in the existing one collapsed-by-default au
 
 ## Preparation and availability
 
-The definition-driven inspector has collapsible groups, named units, numerical fields, logarithmic ranges, discrete menus and per-parameter variation locks. Its parent Inspector owns scrolling. Preset files are bounded local `.soundplus-effect` metadata, with no media/owner IDs. Available DSP definitions alone appear in Add Effect; an unavailable processor fails explicitly and is never silently omitted.
+Adding a built-in insert opens a separate resizable editor window. Click the insert or its editor button to reopen it. The window scrolls its definition-driven groups, named units, numerical fields, logarithmic ranges, discrete menus and per-parameter variation locks. Legacy built-in editors use the same window and retain their original controls. Preset files are bounded local `.soundplus-effect` metadata, with no media/owner IDs. Available DSP definitions alone appear in Add Effect; an unavailable processor fails explicitly and is never silently omitted.
 
 OrderedRack includes native and hosted latency in its aligned dry whole-chain bypass and automation prefixes. Native instances prepare state/buffers off the device callback. The existing graph handles parallel source/Track/Group/Master PDC, priming once and bounded output tails. The device callback continues to consume prepared PCM; it does not instantiate DSP, parse JSON, load presets, allocate graphs or do file/database I/O.
 

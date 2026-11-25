@@ -234,7 +234,7 @@ void LibraryView::addCollectionDestinations(juce::PopupMenu &menu, const std::ve
     const auto safe = juce::Component::SafePointer<LibraryView>(this);
     const auto selection = std::make_shared<const std::vector<BookmarkRequest>>(items);
     const auto parent = collectionScope;
-    menu.addItem(juce::String::fromUTF8("New Collection…"), !items.empty(), false,
+    menu.addItem(juce::String::fromUTF8("New Collection"), !items.empty(), false,
                  [safe, selection, parent] { if (safe) safe->nameCollection(false, parent, *selection); });
     if (!snapshot.organization.nodes.empty())
         menu.addSeparator();
@@ -282,13 +282,13 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node, juce:
                 if (safe)
                     safe->selectCollectionScope(node);
             });
-        add(menu, juce::String::fromUTF8("New Subcollection…"),
+        add(menu, juce::String::fromUTF8("New Subcollection"),
             [safe, node]
             {
                 if (safe)
                     safe->nameCollection(false, node);
             });
-        add(menu, juce::String::fromUTF8("Rename…"),
+        add(menu, juce::String::fromUTF8("Rename"),
             [safe, node]
             {
                 if (safe)
@@ -341,7 +341,7 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node, juce:
                     }
                 });
         menu.addSeparator();
-        add(menu, juce::String::fromUTF8("Delete Collection…"),
+        add(menu, juce::String::fromUTF8("Delete Collection"),
             [safe, node]
             {
                 juce::AlertWindow::showOkCancelBox(juce::MessageBoxIconType::QuestionIcon,
@@ -471,7 +471,7 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node, juce:
                 });
         menu.addSubMenu("Sources", roots);
         if (collectionScope.isNotEmpty() && collectionScope != "favorites" && collectionScope != "recent")
-            add(menu, juce::String::fromUTF8("Collection Actions…"),
+            add(menu, juce::String::fromUTF8("Collection Actions"),
                 [safe, id = collectionScope]
                 {
                     if (safe)
@@ -480,14 +480,14 @@ void LibraryView::collectionMenu(bool selection, const juce::String &node, juce:
     }
     if (selection && collectionScope.isNotEmpty() && collectionScope != "favorites" &&
         collectionScope != "recent")
-        add(menu, juce::String::fromUTF8("Collection Actions…"),
+        add(menu, juce::String::fromUTF8("Collection Actions"),
             [safe, id = collectionScope]
             {
                 if (safe)
                     safe->collectionMenu(false, id);
             });
     menu.addSeparator();
-    add(menu, juce::String::fromUTF8("New Collection…"),
+    add(menu, juce::String::fromUTF8("New Collection"),
         [safe]
         {
             if (safe)

@@ -287,7 +287,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     };
     restart.onClick = [this] { audio.restart(); };
     output.setTitle("Audio output device");
-    output.setTextWhenNothingSelected(juce::String::fromUTF8("Starting audio…"));
+    output.setTextWhenNothingSelected(juce::String::fromUTF8("Starting audio"));
     output.onChange = [this]
     {
         if (!updating)
@@ -319,7 +319,7 @@ LibraryView::LibraryView(const juce::File &db, const juce::File &executable, boo
     sources.setRowHeight(36);
     sources.setOutlineThickness(0);
     sources.selectRow(0);
-    status.setText(juce::String::fromUTF8("Opening local catalog…"), juce::dontSendNotification);
+    status.setText(juce::String::fromUTF8("Opening local catalog"), juce::dontSendNotification);
     updateRecordingDetails();
     summary.setText("Your sounds, in place. No project needed.", juce::dontSendNotification);
     for (auto *label : {&aiStatusLabel, &semanticCoverage, &inLabel, &outLabel})
@@ -759,13 +759,13 @@ void LibraryView::paintOverChildren(juce::Graphics &g)
         }
         else if (similarMode)
         {
-            heading = snapshot.reference.loading ? juce::String::fromUTF8("Analyzing reference…")
+            heading = snapshot.reference.loading ? juce::String::fromUTF8("Analyzing reference")
                                                  : "No recordings above this similarity";
             description = "Lower the similarity cutoff, try another range or clear the source scope.";
         }
         else if (pending)
         {
-            heading = juce::String::fromUTF8("Searching sounds…");
+            heading = juce::String::fromUTF8("Searching sounds");
             description = "Discovered filenames remain searchable during analysis.";
         }
         else if (search.isEmpty() && collectionScope.isNotEmpty())
@@ -1016,7 +1016,7 @@ void LibraryView::setCompact(bool value)
 void LibraryView::lookAndFeelChanged()
 {
     search.setTextToShowWhenEmpty(
-        compact ? "Search sounds..." : juce::String::fromUTF8("Search filenames or describe a sound…"), muted);
+        compact ? "Search sounds" : juce::String::fromUTF8("Search filenames or describe a sound"), muted);
 }
 std::optional<BookmarkRequest> LibraryView::transferSelection() const
 {
@@ -1259,7 +1259,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         if (column == 1)
         {
             g.setColour(muted);
-            g.drawText("Loading recording...", 12, 0, w - 24, h, juce::Justification::centredLeft);
+            g.drawText("Loading recording", 12, 0, w - 24, h, juce::Justification::centredLeft);
         }
         return;
     }
@@ -1270,7 +1270,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
     if (column == 1)
     {
         g.drawText(a.name + (a.bookmarkFirst >= 0 ? " · Region" : ""), 12, 3, w - (compact ? 112 : 24), 23,
-                   juce::Justification::centredLeft, true);
+                   juce::Justification::centredLeft, false);
         if (compact && a.channels > 0)
         {
             g.setFont(juce::FontOptions(9.f));
@@ -1329,8 +1329,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         {
             g.setFont(juce::FontOptions(11.f));
             g.setColour(muted);
-            g.drawText(a.path, 12, 29, std::max(0, previewX - 22), 20, juce::Justification::centredLeft,
-                       true);
+            g.drawText(a.path, 12, 29, std::max(0, previewX - 22), 20, juce::Justification::centredLeft, false);
         }
         return;
     }
@@ -1350,9 +1349,9 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
             label = "?";
         value = a.channels > 0
                     ? juce::String(a.channels) + "ch " + label + (a.layoutOverride.id.isNotEmpty() ? "*" : "")
-                    : "...";
+                    : "Pending";
         g.setFont(juce::FontOptions(12.f));
-        g.drawFittedText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, 1, .8f);
+        g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, false);
         return;
     }
     if (column == 4)
@@ -1367,7 +1366,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
     {
         g.setFont(juce::FontOptions(11.5f));
         g.setColour(muted);
-        g.drawText(a.matchReason, 8, 5, w - 12, 22, juce::Justification::centredLeft, true);
+        g.drawText(a.matchReason, 8, 5, w - 12, 22, juce::Justification::centredLeft, false);
         if (!a.matches.empty() && a.sampleRate > 0)
         {
             const auto &match = a.matches.front();
@@ -1375,7 +1374,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
             g.drawText(duration(match.startSample / a.sampleRate) + " - " +
                            duration(match.endSample / a.sampleRate) +
                            (a.matches.size() > 1 ? "  +" + juce::String((int)a.matches.size() - 1) : ""),
-                       8, 28, w - 12, 22, juce::Justification::centredLeft, true);
+                       8, 28, w - 12, 22, juce::Justification::centredLeft, false);
         }
         return;
     }
@@ -1395,7 +1394,7 @@ void LibraryView::paintCell(juce::Graphics &g, int row, int column, int w, int h
         if (const auto *header = cachedRecordingHeader(a))
             value = tag->second.startsWith("Catalog / ") ? header->value(tag->second.substring(10))
                                                          : header->tags.getValue(tag->second, {});
-    g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, true);
+    g.drawText(value, 8, 0, w - 12, h, juce::Justification::centredLeft, false);
 }
 void LibraryView::selectedRowsChanged(int)
 {
@@ -1552,7 +1551,7 @@ void LibraryView::paintListBoxItem(int n, juce::Graphics &g, int w, int h, bool)
         x += 20;
     g.setColour(r.kind == "heading" ? muted : selected ? accent : text);
     g.setFont(juce::FontOptions(r.kind == "heading" ? 13.f : 15.f));
-    g.drawText(r.name, x, 0, w - x - 35, h, juce::Justification::centredLeft, true);
+    g.drawText(r.name, x, 0, w - x - 35, h, juce::Justification::centredLeft, false);
     if (r.count > 0)
     {
         g.setColour(muted);
@@ -2135,7 +2134,7 @@ void LibraryView::installModelMenu(juce::Component *anchor)
 {
     juce::PopupMenu menu;
     menu.addItem(1, "Download verified CLAP model (163 MB)");
-    menu.addItem(2, "Import an offline model pack...");
+    menu.addItem(2, "Import an offline model pack");
     juce::Component::SafePointer<LibraryView> safe(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(anchor ? *anchor : installAI),
                        [safe](int choice)
@@ -2405,7 +2404,7 @@ void LibraryView::timerCallback()
         summary.setText(juce::String(snapshot.total) + " results" + juce::String::fromUTF8("  ·  ") +
                             juce::String(total) + juce::String::fromUTF8(" indexed  ·  ") +
                             juce::String(ready) + " ready" +
-                            (scanning ? juce::String::fromUTF8("  ·  Scanning…") : ""),
+                            (scanning ? juce::String::fromUTF8("  ·  Scanning") : ""),
                         juce::dontSendNotification);
         status.setText(snapshot.error.isNotEmpty() ? snapshot.error
                        : sourceError.isNotEmpty()

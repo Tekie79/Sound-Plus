@@ -177,7 +177,7 @@ void SourceCard::paint(juce::Graphics &g)
         g.drawText(cardDuration(seconds), 8, metaY, 52, 14, juce::Justification::left);
         auto sourceLayout = observedSource(*layer);
         g.drawText(silent ? "Silent source" : layoutBadge(sourceLayout), 60, metaY,
-                   std::max(0, getWidth() - 98), 14, juce::Justification::left, true);
+                   std::max(0, getWidth() - 98), 14, juce::Justification::left, false);
         g.setColour(ui::line);
         g.fillRoundedRectangle(getWidth() - 33.f, metaY + 6.f, 23, 2, 1);
         g.setColour(ui::accent);

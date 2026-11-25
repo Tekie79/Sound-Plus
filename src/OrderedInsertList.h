@@ -131,7 +131,7 @@ class OrderedInsertList final : public juce::Component
             bypass.setToggleState(!item.bypass, juce::dontSendNotification);
             bypass.setEnabled(editable);
             bypass.setTooltip(item.bypass ? "Enable effect" : "Bypass effect");
-            editor.setVisible(item.ref.kind == InsertKind::hosted);
+            editor.setButtonText("Open " + item.name + " editor");
             editor.setEnabled(editable && !item.unavailable);
             setEnabled(editable);
         }
@@ -151,7 +151,7 @@ class OrderedInsertList final : public juce::Component
             g.setFont(juce::FontOptions(12.f));
             auto r = getLocalBounds().reduced(34, 0);
             g.drawText(item.name + (item.unavailable ? " · unavailable" : ""), r,
-                       juce::Justification::centredLeft, true);
+                       juce::Justification::centredLeft, false);
             if (hasKeyboardFocus(false))
             {
                 g.setColour(ui::accent.withAlpha(.65f));
@@ -183,8 +183,15 @@ class OrderedInsertList final : public juce::Component
             auto ref = dragged;
             int to = drop;
             drop = -1;
-            if (fn && to >= 0)
-                fn(ref, to);
+            if (to >= 0)
+            {
+                if (fn)
+                    fn(ref, to);
+                return;
+            }
+            auto open = list.open;
+            if (open && list.items[(size_t)index].ref == ref && ref.kind == InsertKind::stock)
+                open(ref);
         }
         bool keyPressed(const juce::KeyPress &key) override
         {

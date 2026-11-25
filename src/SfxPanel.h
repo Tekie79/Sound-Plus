@@ -17,6 +17,7 @@ class Panel final : public juce::Component, private juce::Timer
     void paint(juce::Graphics &) override;
 
   private:
+    friend struct PreviewTestAccess;
     Generation &jobs;
     LibraryView &library;
     DesignerView &designer;
@@ -38,6 +39,8 @@ class Panel final : public juce::Component, private juce::Timer
     std::unique_ptr<juce::FileChooser> chooser;
     Snapshot state;
     uint64_t seen = UINT64_MAX, previewGeneration = 0;
+    uint64_t previewRequest = 0;
+    bool preparingPreview = false;
     juce::String selected, previewId;
     int64_t previewPosition = 0;
     std::vector<std::pair<juce::String, juce::String>> collections;
@@ -53,6 +56,8 @@ class Panel final : public juce::Component, private juce::Timer
     void togglePreview();
     void stopPreview();
     bool previewActive(const juce::var &transport) const;
+    void refreshPreviewControls();
+    void startVerifiedPreview(const Asset &, const juce::String &id, uint64_t request, uint64_t intent);
     void previewOriginal();
     void approve();
     void chooseFolder();

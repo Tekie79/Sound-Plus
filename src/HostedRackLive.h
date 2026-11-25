@@ -272,6 +272,14 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         }
     };
     std::map<String, std::unique_ptr<Window>> windows;
+    void countNativeChange()
+    {
+        ++nativeSequence;
+        const auto stamp = nativeEventTicks.load();
+        eventTicks = stamp > 0 ? stamp : Time::getHighResolutionTicks();
+        appliedTicks = eventTicks;
+        pendingCapture = true;
+    }
     bool publish(bool checkpoint)
     {
         // Explicit test-only barrier: hold publication while continuing native
@@ -287,6 +295,10 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         onPluginMessageThread(
             [&]
             {
+                // A native callback can run after poll observed nativeDirty
+                // but before this snapshot reaches the plugin message thread.
+                if (nativeDirty.exchange(false))
+                    countNativeChange();
                 if (!idle() &&
                     processBegin.load() <= std::max(modelAppliedTicks.load(), nativeEventTicks.load()))
                 {
@@ -360,6 +372,7 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
                 for (auto &[id, window] : windows)
                     visible |= window->isVisible();
                 put(record, "editorVisible", visible);
+                rememberValues();
                 exchange.heartbeatTicks = Time::getHighResolutionTicks();
             });
         if (!coherent)
@@ -889,17 +902,12 @@ template <class Slot> class RackLiveUI : private AudioProcessorListener
         const bool dirty = nativeDirty.exchange(false);
         if (dirty || (changed && !pendingCapture))
         {
-            ++nativeSequence;
-            auto stamp = nativeEventTicks.load();
-            eventTicks = stamp > 0 ? stamp : Time::getHighResolutionTicks();
-            appliedTicks = eventTicks;
+            countNativeChange();
             settleStopped();
-            pendingCapture = true;
         }
         capture = pendingCapture && (idle() || processBegin.load() > appliedTicks);
         if (((capture && now >= nextCapture) || now >= nextCheckpoint) && publish(true))
         {
-            onPluginMessageThread([&] { rememberValues(); });
             pendingCapture = false;
             nextCapture = now + 75;
             nextCheckpoint = now + 2000;

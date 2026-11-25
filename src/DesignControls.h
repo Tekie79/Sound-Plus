@@ -31,7 +31,7 @@ class TextActionButton final : public juce::TextButton
         }
         g.setColour((getToggleState() ? accent : sp::ui::text).withMultipliedAlpha(isEnabled() ? 1.f : .3f));
         g.setFont(juce::FontOptions(12.f, juce::Font::bold));
-        g.drawText(getButtonText(), getLocalBounds(), juce::Justification::centred);
+        g.drawText(getButtonText(), getLocalBounds().reduced(3, 0), juce::Justification::centred, false);
         if (hasKeyboardFocus(false))
         {
             g.setColour(button::focus);

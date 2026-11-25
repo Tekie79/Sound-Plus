@@ -430,7 +430,7 @@ class HostedRackView final : public juce::Component
         openPreset{"Open insert preset", ActionIcon::open},
         editor{"Open or focus live editor", ActionIcon::settings},
         parameters{"Show external insert parameters", ActionIcon::chevron},
-        more{"Effect actions", ActionIcon::more};
+        more{"Effect actions", ActionIcon::settings};
     juce::Viewport parameterViewport;
     juce::Component parameterContent;
     std::vector<std::function<void()>> sliderEnds;
@@ -640,7 +640,7 @@ class HostedRackView final : public juce::Component
         auto serial = ++*epoch;
         auto gate = epoch;
         juce::Component::SafePointer<HostedRackView> safe(this);
-        feedback.setText("Loading effect...", juce::dontSendNotification);
+        feedback.setText("Loading effect", juce::dontSendNotification);
         worker.submit(
             [safe, target, plugin, layout, rate, exe, folder, serial, gate]
             {
@@ -770,13 +770,12 @@ class HostedRackView final : public juce::Component
             g.setFont(juce::FontOptions(12.f, juce::Font::bold));
             bool needsAttention = p["status"].toString() != "Available";
             g.drawText(p["displayName"].toString(), 10, needsAttention ? 2 : 12, width - 20, 20,
-                       juce::Justification::centredLeft, true);
+                       juce::Justification::centredLeft, false);
             if (needsAttention)
             {
                 g.setColour(ui::muted);
                 g.setFont(juce::FontOptions(11.f));
-                g.drawText(p["status"].toString(), 10, 22, width - 20, 18, juce::Justification::centredLeft,
-                           true);
+                g.drawText(p["status"].toString(), 10, 22, width - 20, 18, juce::Justification::centredLeft, false);
             }
         }
         void selectedRowsChanged(int row) override
@@ -959,8 +958,8 @@ class HostedRackView final : public juce::Component
         bool includeAU = scanAudioUnits;
         juce::Component::SafePointer<HostedRackView> safe(this);
         juce::Component::SafePointer<Chooser> view(panel);
-        panel->status.setText(retryQuarantine ? "Retrying failed effects..."
-                                              : "Checking installed effects...",
+        panel->status.setText(retryQuarantine ? "Retrying failed effects"
+                                              : "Checking installed effects",
                               juce::dontSendNotification);
         worker.submit(
             [safe, view, registry, exe, folder, retryQuarantine, extraRoots, targetPath, serial, gate,
@@ -981,7 +980,7 @@ class HostedRackView final : public juce::Component
                                     view->snapshot = snapshot;
                                     view->populate();
                                     view->status.setText(
-                                        "Cached effects / checking installed registrations...",
+                                        "Cached effects / checking installed registrations",
                                         juce::dontSendNotification);
                                 }
                             });
@@ -1065,7 +1064,7 @@ class HostedRackView final : public juce::Component
         auto id = selected;
         juce::Component::SafePointer<HostedRackView> safe(this);
         juce::PopupMenu menu;
-        menu.addItem(juce::PopupMenu::Item("Save preset...")
+        menu.addItem(juce::PopupMenu::Item("Save preset")
                          .setID(1)
                          .setEnabled(savePreset.isEnabled())
                          .setAction(
@@ -1074,7 +1073,7 @@ class HostedRackView final : public juce::Component
                                  if (safe)
                                      safe->preset(true, target, id);
                              }));
-        menu.addItem(juce::PopupMenu::Item("Load preset...")
+        menu.addItem(juce::PopupMenu::Item("Load preset")
                          .setID(2)
                          .setEnabled(openPreset.isEnabled())
                          .setAction(
@@ -1083,7 +1082,7 @@ class HostedRackView final : public juce::Component
                                  if (safe)
                                      safe->preset(false, target, id);
                              }));
-        menu.addItem(3, juce::String::fromUTF8("Copy / move…"), transfer.isEnabled());
+        menu.addItem(3, juce::String::fromUTF8("Copy / move"), transfer.isEnabled());
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());

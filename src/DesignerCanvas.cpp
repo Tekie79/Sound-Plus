@@ -460,8 +460,7 @@ void DesignerCanvas::paint(juce::Graphics &graphics)
         graphics.drawVerticalLine((int)left - 8, shape.top, shape.top + shape.height - 5);
         graphics.setColour(layer.mute ? ui::muted : ui::text);
         graphics.setFont(juce::FontOptions(12.f, juce::Font::bold));
-        graphics.drawText(layer.name, 13, (int)shape.top + 8, (int)left - 52, 21, juce::Justification::left,
-                          true);
+        graphics.drawText(layer.name, 13, (int)shape.top + 8, (int)left - 52, 21, juce::Justification::left, false);
         if ((!layer.inserts.stock.empty() || !layer.inserts.hosted.slots.empty()) && left >= 145)
         {
             graphics.setFont(juce::FontOptions(10.f));

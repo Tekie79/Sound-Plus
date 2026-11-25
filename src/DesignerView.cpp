@@ -511,6 +511,8 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
     chooseFolder.onClick = [this] { chooseFile(4); };
     copyOriginal.onClick = [this] { chooseFile(5); };
     addAndMakeVisible(processPlugin);
+    for (auto *button : {static_cast<IconButton *>(&prepareDrag), &sendResolve, &transferOptions})
+        addChildComponent(button);
     processPlugin.onClick = [this]
     {
         auto file = session.readyOutput();
@@ -527,6 +529,9 @@ DesignerView::DesignerView(const juce::File &catalog, AudioClient &client, juce:
             session.addExternal(output);
         }
     };
+    dragOriginal.setIcon(ActionIcon::file);
+    dragOutput.setIcon(ActionIcon::renderSelection);
+    prepareDrag.setIconSize(18.f);
     dragOutput.resolveFile = [this] { return session.readyOutput(); };
     dragOutput.resolveFiles = [this] { return session.readyFiles(); };
     dragOriginal.setTooltip("Drag the complete unprocessed original file. The receiving app may reference "
@@ -1306,9 +1311,6 @@ void DesignerView::refresh()
     newButton.setEnabled(!session.rendering);
     openButton.setEnabled(!session.rendering);
     dragOriginal.file = layer ? juce::File(layer->source.path) : juce::File();
-    dragOriginal.setEnabled(layer && layer->region.startSample == 0 &&
-                            layer->region.endSample == layer->source.samples &&
-                            layer->source.error.isEmpty());
     dragOutput.file = session.lastOutput;
     dragOutput.setButtonText(session.lastOutput.hasFileExtension("wav") ? "Drag WAV"
                                                                         : "Drag verified output");
@@ -1394,7 +1396,8 @@ void DesignerView::refresh()
                       (selectedTake(d) ? selectedTake(d)->complete
                                        : (!d.activeMix().layers.empty() || hasMidi(d.activeMix()))));
     render.setButtonText(d.activeTake.isEmpty() ? "Render Design" : "Render Take");
-    dragOriginal.setEnabled(!frozen && layer && layer->source.error.isEmpty());
+    dragOriginal.setEnabled(!frozen && layer && layer->region.startSample == 0 &&
+                            layer->region.endSample == layer->source.samples && layer->source.error.isEmpty());
     accurate.setEnabled(!session.takeBusy() && (!selectedTake(d) || selectedTake(d)->complete));
     updating = false;
     repaint();
@@ -1681,27 +1684,50 @@ void DesignerView::resized()
             button->setBounds({});
         add.setBounds(performMode ? juce::Rectangle<int>{256, 54, 30, 30} : juce::Rectangle<int>{});
         const int labelX = performMode ? 334 : 396;
-        title.setBounds(labelX, 51, std::max(0, right - labelX - 205), 26);
+        const int titleWidth = std::max(0, right - labelX - 190);
+        title.setFont(juce::FontOptions(titleWidth < 156 ? 15.f : 20.f));
+        title.setBounds(labelX, 51, titleWidth, 26);
         info.setBounds(labelX + 3, 76, std::max(0, right - labelX - 216), 15);
         layoutControl.setBounds(right - 188, 56, 137, 28);
     }
     int y = getHeight() - (performMode ? 148 : 180);
-    generate.setBounds(16, y, 32, 32);
-    variationSettings.setBounds(52, y, 32, 32);
-    int comboWidth = std::clamp(creative - 280, 100, 224);
-    candidates.setBounds(92, y, comboWidth, 30);
-    x = 100 + comboWidth;
-    for (auto *b : {&compare, &keep, &rename, &discard})
+    auto deliveryRow = juce::Rectangle<int>(14, y + 42, std::max(0, creative - 28), 32);
+    const auto place = [](auto &row, auto &button) { button.setBounds(row.removeFromLeft(29).reduced(1, 0)); };
+    for (auto *button : {static_cast<IconButton *>(&dragOriginal), &copyOriginal})
+        place(deliveryRow, *button);
+    deliveryRow.removeFromLeft(6);
+    for (auto *button : {static_cast<IconButton *>(&dragOutput), &addPrint, &processPlugin})
+        place(deliveryRow, *button);
+    for (auto *button : {static_cast<IconButton *>(&prepareDrag), &sendResolve, &transferOptions})
+        button->setVisible(shell);
+    if (shell)
     {
-        b->setBounds(x, y, 28, 30);
-        x += 32;
+        deliveryRow.removeFromLeft(8);
+        place(deliveryRow, prepareDrag);
+        sendResolve.setBounds(deliveryRow.removeFromLeft(126).reduced(1, 1));
+        place(deliveryRow, transferOptions);
+        deliveryRow.removeFromLeft(6);
     }
-    dragOriginal.setBounds(16, y + 42, 32, 32);
-    copyOriginal.setBounds(52, y + 42, 32, 32);
-    dragOutput.setBounds(100, y + 42, 32, 32);
-    addPrint.setBounds(136, y + 42, 32, 32);
-    processPlugin.setBounds(172, y + 42, 32, 32);
-    outputInfo.setBounds(216, y + 42, std::max(40, creative - (performMode ? 436 : 234)), 30);
+    if (performMode)
+        deliveryRow.setRight(std::max(deliveryRow.getX(), creative - 180));
+    auto variations = juce::Rectangle<int>(14, y, std::max(0, creative - 28), 32);
+    auto output = deliveryRow;
+    if (output.getWidth() < 104)
+    {
+        output = variations.removeFromRight(88);
+        variations.removeFromRight(6);
+        output.reduce(0, 2);
+    }
+    const int slotWidth = variations.getWidth() < 320 ? 24 : 32;
+    generate.setBounds(variations.removeFromLeft(slotWidth).reduced(1, 0));
+    variationSettings.setBounds(variations.removeFromLeft(slotWidth).reduced(1, 0));
+    variations.removeFromLeft(6);
+    const int comboWidth = std::clamp(variations.getWidth() - 4 * slotWidth - 5, 48, 224);
+    candidates.setBounds(variations.removeFromLeft(comboWidth).reduced(0, 1));
+    variations.removeFromLeft(5);
+    for (auto *b : {&compare, &keep, &rename, &discard})
+        b->setBounds(variations.removeFromLeft(slotWidth).reduced(1, 1));
+    outputInfo.setBounds(output);
     readyOutputs.setBounds(outputInfo.getBounds());
     play.setBounds(performMode ? creative - 170 : creative / 2 - 20, getHeight() - (performMode ? 118 : 92),
                    40, 40);
@@ -2035,6 +2061,7 @@ void DesignerView::variationPopup()
     struct Panel : juce::Component
     {
         juce::OwnedArray<juce::Component> children;
+        void paint(juce::Graphics &g) override { g.fillAll(ui::surface); }
     };
     auto panel = std::make_unique<Panel>();
     panel->setOpaque(true);
@@ -2047,9 +2074,10 @@ void DesignerView::variationPopup()
         panel->children.add(check);
         panel->children.add(slider);
         panel->addAndMakeVisible(check);
-        panel->addAndMakeVisible(slider);
-        check->setBounds(10, y, 160, 28);
-        slider->setBounds(174, y, 190, 28);
+        if (bit != varyReverse)
+            panel->addAndMakeVisible(slider);
+        check->setBounds(10, y, 188, 28);
+        slider->setBounds(208, y, 196, 28);
         check->setToggleState(session.document.variationSettings.enabled & bit, juce::dontSendNotification);
         check->setTitle("Enable variation " + name);
         slider->setScrollWheelEnabled(false);
@@ -2086,7 +2114,7 @@ void DesignerView::variationPopup()
     auto *sources = new juce::ToggleButton("Choose alternate source");
     panel->children.add(sources);
     panel->addAndMakeVisible(sources);
-    sources->setBounds(10, y, 354, 28);
+    sources->setBounds(10, y, 394, 28);
     sources->setTitle("Enable seeded source-choice variation");
     sources->setTooltip("Opt-in deterministic choice among enabled, reviewed alternatives. The source-choice "
                         "lock is independent of other locks.");
@@ -2106,7 +2134,7 @@ void DesignerView::variationPopup()
     auto *count = new juce::Slider();
     panel->children.add(count);
     panel->addAndMakeVisible(count);
-    count->setBounds(10, y, 354, 32);
+    count->setBounds(10, y, 394, 32);
     count->setScrollWheelEnabled(false);
     count->setTitle("Variation count");
     count->setRange(1, 32, 1);
@@ -2117,7 +2145,7 @@ void DesignerView::variationPopup()
     count->onValueChange = [this, count] {
         session.edit("Variation count", [&](auto &d) { d.variationSettings.count = (int)count->getValue(); });
     };
-    panel->setSize(376, y + 42);
+    panel->setSize(416, y + 42);
     juce::CallOutBox::launchAsynchronously(std::move(panel), variationSettings.getBounds(), this);
 }
 void DesignerView::projectToolsMenu()
@@ -2136,9 +2164,9 @@ void DesignerView::projectToolsMenu()
     menu.addItem(10, "Export settings");
     menu.addItem(11, "Import audio");
     menu.addSeparator();
-    menu.addItem(12, "Collect project...");
-    menu.addItem(13, "Open collected project...");
-    menu.addItem(14, "Collect with selected render...", session.readyOutput() != juce::File());
+    menu.addItem(12, "Collect project");
+    menu.addItem(13, "Open collected project");
+    menu.addItem(14, "Collect with selected render", session.readyOutput() != juce::File());
     juce::Component::SafePointer<DesignerView> safe(this);
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(projectTools), [safe](int action)
     {

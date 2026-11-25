@@ -29,6 +29,9 @@ class DesignerView final : public juce::Component,
     std::function<void()> onToggleBrowser;
     std::function<void()> onSearch, onWorkspaceChanged;
     void useWorkspaceShell() { shell = true; resized(); }
+    ui::FileDragButton &dragTransferButton() { return prepareDrag; }
+    IconButton &sendTransferButton() { return sendResolve; }
+    IconButton &transferSettingsButton() { return transferOptions; }
     bool inPerform() const { return performMode; }
     void showPerform(bool enabled) { setPerformMode(enabled); }
     void saveFromShell() { saveDesign(); }
@@ -105,7 +108,7 @@ class DesignerView final : public juce::Component,
     bool shell = false;
     int inspectorPage = 0;
     ui::TextActionButton controlsPage{"Controls", true}, effectsPage{"Effects", true}, routingPage{"Routing", true};
-    IconButton projectTools{"Project tools", ActionIcon::more};
+    IconButton projectTools{"Project tools", ActionIcon::settings};
     void projectToolsMenu();
     std::unique_ptr<MidiEditor> midiEditor;
     bool midiEditorOpen = false;
@@ -134,6 +137,9 @@ class DesignerView final : public juce::Component,
     std::unique_ptr<juce::Component> makeRenderPanel();
     IconButton processPlugin{"Process finalized output with Plug-in", ActionIcon::processing};
     ui::FileDragButton dragOutput{"Drag WAV"}, dragOriginal{"Drag Original"};
+    ui::FileDragButton prepareDrag{"Prepare audio to drag"};
+    IconButton sendResolve{"Send to Resolve", ActionIcon::resolve, true},
+        transferOptions{"Transfer options", ActionIcon::settings};
     AudioClient &audio;
     ui::LookAndFeel look;
     void mouseDown(const juce::MouseEvent &e) override

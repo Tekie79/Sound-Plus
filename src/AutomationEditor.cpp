@@ -63,7 +63,7 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
         g.drawText(
             p.name + (p.units.isNotEmpty() ? juce::String::fromUTF8(" · ") + p.units : "") +
                 (p.writable ? juce::String::fromUTF8(" · ") + juce::String(p.base, 3) : juce::String::fromUTF8(" · unavailable")),
-            10, 0, w - 20, h, juce::Justification::centredLeft, true);
+            10, 0, w - 20, h, juce::Justification::centredLeft, false);
     }
     void listBoxItemClicked(int row, const juce::MouseEvent &) override
     {
@@ -90,7 +90,7 @@ class TargetSearch final : public juce::Component, private juce::ListBoxModel
     {
         addAndMakeVisible(search);
         addAndMakeVisible(list);
-        search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search track controls and inserts…"),
+        search.setTextToShowWhenEmpty(juce::String::fromUTF8("Search track controls and inserts"),
                                       ui::muted);
         search.setTitle("Search automation targets");
         search.onTextChange = [this] { filter(); };
@@ -524,13 +524,13 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
         if (at >= 0)
             selection.insert(curve()->points[(size_t)at].id);
         juce::PopupMenu m;
-        m.addItem(7, juce::String::fromUTF8("Repair target…"), curve() && curve()->hostedBinding.has_value());
-        m.addItem(1, juce::String::fromUTF8("Numeric time / value…"),
+        m.addItem(7, juce::String::fromUTF8("Repair target"), curve() && curve()->hostedBinding.has_value());
+        m.addItem(1, juce::String::fromUTF8("Numeric time / value"),
                   parameter.writable && !selection.empty());
         m.addItem(2, "Linear", parameter.writable && !selection.empty());
         m.addItem(3, "Hold", parameter.writable && !selection.empty());
         m.addItem(8,"Ease in/out",parameter.writable && !parameter.discrete && !selection.empty());
-        m.addItem(9,"Trim range...",canTrimAutomation(parameter));
+        m.addItem(9,"Trim range",canTrimAutomation(parameter));
         m.addItem(10,"Thin curve (0.1%)",parameter.writable && !parameter.discrete && curve() && curve()->points.size()>2);
         m.addItem(11,"Snapshot at playhead",parameter.writable);
         auto selectedClip = session.document.selectedLayer;
@@ -538,7 +538,7 @@ void AutomationEditor::mouseDown(const juce::MouseEvent &e)
         bool linked = curve() && curve()->followClip.isNotEmpty();
         m.addItem(15, linked ? "Unlink from clip" : "Follow selected clip",
                   linked || (clip && clip->trackId == owner && parameter.writable));
-        m.addItem(12, "Learn MIDI controller...",
+        m.addItem(12, "Learn MIDI controller",
                   parameter.writable && !parameter.hostedBinding &&
                       parameter.target.instance != "square-surround-v1");
         if (curve() && curve()->midi)

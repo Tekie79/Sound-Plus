@@ -199,7 +199,7 @@ if(BUILD_TESTING)
   set_tests_properties(waveform_previews PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
   add_test(NAME performance_state COMMAND SoundPlusTests --performance-state "${CMAKE_BINARY_DIR}/performance-state-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(performance_state PROPERTIES TIMEOUT 60 RUN_SERIAL TRUE)
-  target_sources(SoundPlusTests PRIVATE tests/ViewCommandTests.cpp src/PluginProcessPanel.cpp src/DesignerLayouts.cpp src/PackagePanel.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp)
+  target_sources(SoundPlusTests PRIVATE tests/ViewCommandTests.cpp src/SfxPanel.cpp src/PluginProcessPanel.cpp src/DesignerLayouts.cpp src/PackagePanel.cpp src/DesignerView.cpp src/TrackMixer.cpp src/DesignerTakes.cpp src/DesignerPools.cpp src/PoolMappingReview.cpp src/SourcePoolView.cpp src/PerformView.cpp src/SourceCard.cpp)
   add_test(NAME designer_view_commands COMMAND SoundPlusTests --view-commands
     "${CMAKE_BINARY_DIR}/view-command-test-output" "$<TARGET_FILE:SoundPlus>")
   set_tests_properties(designer_view_commands PROPERTIES TIMEOUT 30 RUN_SERIAL TRUE)

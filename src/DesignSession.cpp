@@ -419,7 +419,7 @@ bool DesignSession::openLiveEditor(const juce::String &slot)
         return false;
     syncLive();
     liveInserts->editor(slot, liveInserts->rootFor(document, lifetime), owner);
-    message = "Opening editor...";
+    message = "Opening editor";
     return true;
 }
 void DesignSession::receiveLive(LiveInsertSession::Capture capture)
@@ -439,7 +439,7 @@ void DesignSession::receiveLive(LiveInsertSession::Capture capture)
             return &c->hosted;
         return nullptr;
     };
-    if ((bool)capture.evidence["editorVisible"] && message == "Opening editor...")
+    if ((bool)capture.evidence["editorVisible"] && message == "Opening editor")
     {
         message = "Live";
         notify();
@@ -607,7 +607,7 @@ void DesignSession::runLiveCommands()
     }
     syncLive();
     liveFlushing = true;
-    message = "Capturing live insert state...";
+    message = "Capturing live insert state";
     if (onChange)
         onChange();
     const auto edits = liveUserEdits;
@@ -1070,7 +1070,7 @@ void DesignSession::transition(const juce::File &file, bool recover, std::functi
     auto snapshot = document;
     auto path = savedFile;
     bool changed = dirty;
-    message = juce::String::fromUTF8("Retaining current design…");
+    message = juce::String::fromUTF8("Retaining current design");
     notify();
     juce::Component::SafePointer<DesignSession> safe(this);
     auto next = DesignDocument();
@@ -1232,7 +1232,7 @@ void DesignSession::save(const juce::File &file)
     auto token = stamp(Operation::save);
     auto snapshot = document;
     working = true;
-    message = juce::String::fromUTF8("Saving design…");
+    message = juce::String::fromUTF8("Saving design");
     notify();
     juce::Component::SafePointer<DesignSession> safe(this);
     enqueue(token,
@@ -1896,7 +1896,13 @@ void DesignSession::stop()
         return;
     }
     endAutomationWrite();
-    endSquareTouch();
+    // The producer closes the pass at Stop and tags it as interrupted.
+    // Sending an ordinary release first lets it win the race with Stop.
+    if (squarePass && !squarePass->ending)
+    {
+        squarePass->ending = true;
+        squarePass->deadline = services.now() + 1800;
+    }
     auto state = services.status();
     if (active && !seekGesture && (uint64_t)(int64_t)state["playGeneration"] == expectedGeneration &&
         state["id"].toString() == "design:" + document.id)

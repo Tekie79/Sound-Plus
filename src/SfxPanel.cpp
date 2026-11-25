@@ -70,7 +70,7 @@ Panel::Panel(Generation &g, LibraryView &l, DesignerView &d, std::function<void(
         auto i = history.getSelectedId() - 1;
         if (juce::isPositiveAndBelow(i, (int)state.history.size()))
         {
-            if (!transforming && state.history[(size_t)i].id != selected)
+            if (state.history[(size_t)i].id != selected)
                 stopPreview();
             selected = state.history[(size_t)i].id;
         }
@@ -379,8 +379,13 @@ void Panel::timerCallback()
             manageKey.setToggleState(!state.hasKey, juce::dontSendNotification);
         seen = state.version;
         history.clear(juce::dontSendNotification);
-        if (!current() && !state.history.empty())
-            selected = state.history.front().id;
+        if (!current())
+        {
+            stopPreview();
+            selected = state.history.empty() ? juce::String() : state.history.front().id;
+        }
+        if (!state.busy)
+            preparingPreview = false;
         for (size_t i = 0; i < state.history.size(); ++i)
         {
             auto &c = state.history[i];
@@ -393,23 +398,30 @@ void Panel::timerCallback()
         status.setText(state.status, juce::dontSendNotification);
         updateControls();
     }
-    const bool playing = previewGeneration && previewActive(library.audioClient().status());
+    refreshPreviewControls();
+}
+
+void Panel::refreshPreviewControls()
+{
+    const bool active = preparingPreview || previewActive(library.audioClient().status());
+    const auto *candidate = current();
+    const bool ready = !state.busy && candidate && candidate->state == State::ready;
     if (transforming)
-        preview.setButtonText(playing ? "Stop" : "Preview");
+    {
+        preview.setButtonText(active ? "Stop" : "Preview");
+        preview.setEnabled(active || ready);
+    }
     else
     {
-        playPreview.setIcon(playing ? ActionIcon::pause : ActionIcon::play);
-        playPreview.setButtonText(playing                                     ? "Pause preview"
-                                  : !previewGeneration && previewPosition > 0 ? "Resume preview"
-                                                                               : "Play preview");
-        const auto *candidate = current();
-        playPreview.setEnabled(playing || (!state.busy && candidate && candidate->state == State::ready));
+        playPreview.setIcon(active ? ActionIcon::pause : ActionIcon::play);
+        playPreview.setButtonText(active ? "Pause preview" : !previewGeneration && previewPosition > 0 ? "Resume preview" : "Play preview");
+        playPreview.setEnabled(active || ready);
     }
 }
 
 bool Panel::previewActive(const juce::var &transport) const
 {
-    return previewGeneration && previewId == "sfx-" + selected && transport["intentId"].toString() == previewId &&
+    return previewGeneration && transport["intentId"].toString() == previewId &&
            (uint64_t)(juce::int64)transport["intentGeneration"] == previewGeneration &&
            ((bool)transport["playing"] || (bool)transport["pendingPlayback"]);
 }
@@ -418,7 +430,12 @@ void Panel::togglePreview()
 {
     auto &audio = library.audioClient();
     const auto transport = audio.status();
-    if (!previewActive(transport))
+    if (preparingPreview)
+    {
+        ++previewRequest;
+        preparingPreview = false;
+    }
+    else if (!previewActive(transport))
     {
         if (previewGeneration)
             stopPreview();
@@ -432,14 +449,37 @@ void Panel::togglePreview()
             previewPosition = (juce::int64)transport["sourceSample"];
         previewGeneration = 0;
     }
+    refreshPreviewControls();
 }
 
 void Panel::stopPreview()
 {
+    ++previewRequest;
+    preparingPreview = false;
     if (previewGeneration)
         library.audioClient().stopIfOwned(previewId, previewGeneration);
     previewGeneration = 0;
     previewPosition = 0;
+}
+
+void Panel::startVerifiedPreview(const Asset &asset, const juce::String &id, uint64_t request, uint64_t intent)
+{
+    if (request != previewRequest)
+        return;
+    preparingPreview = false;
+    auto &audio = library.audioClient();
+    if (audio.captureBusy() || (uint64_t)(juce::int64)audio.status()["intentGeneration"] != intent)
+        return;
+    designer.session.stop();
+    library.parkPlayback();
+    previewId = id;
+    PlaybackRegion region;
+    region.positionSample = previewPosition < asset.samples ? previewPosition : 0;
+    region.size = asset.size;
+    region.modified = asset.modified;
+    region.inode = asset.inode;
+    previewGeneration = audio.playRegion(previewId, juce::File(asset.path), region);
+    refreshPreviewControls();
 }
 
 void Panel::updateControls()
@@ -452,8 +492,7 @@ void Panel::updateControls()
     test.setEnabled(erase.isEnabled());
     generate.setEnabled(!state.busy && state.hasKey && prompt.getText().trim().isNotEmpty());
     cancel.setEnabled(state.busy);
-    preview.setEnabled(ready);
-    playPreview.setEnabled(ready || (previewGeneration && previewActive(library.audioClient().status())));
+    refreshPreviewControls();
     save.setEnabled(ready);
     edit.setEnabled(saved);
     perform.setEnabled(saved);
@@ -601,26 +640,18 @@ void Panel::previewOriginal()
     auto a = c && c->options.edit ? std::optional<TransformInput>(c->options.edit->input) : input;
     if (!a)
         return;
+    const auto intent = (uint64_t)(juce::int64)library.audioClient().status()["intentGeneration"];
+    const auto request = ++previewRequest;
     juce::Component::SafePointer<Panel> safe(this);
-    jobs.inspectInput(*a,
-                      [safe](Asset source)
-                      {
-                          juce::MessageManager::callAsync(
-                              [safe, source]
-                              {
-                                  if (!safe || safe->library.audioClient().captureBusy())
-                                      return;
-                                  safe->designer.session.stop();
-                                  safe->library.parkPlayback();
-                                  safe->previewId = "transform-original-" + source.id;
-                                  PlaybackRegion region;
-                                  region.size = source.size;
-                                  region.modified = source.modified;
-                                  region.inode = source.inode;
-                                  safe->previewGeneration = safe->library.audioClient().playRegion(
-                                      safe->previewId, juce::File(source.path), region);
-                              });
-                      });
+    preparingPreview = jobs.inspectInput(*a, [safe, request, intent](Asset source)
+    {
+        juce::MessageManager::callAsync([safe, source, request, intent]
+        {
+            if (safe)
+                safe->startVerifiedPreview(source, "transform-original-" + source.id, request, intent);
+        });
+    });
+    refreshPreviewControls();
 }
 void Panel::chooseFolder()
 {
@@ -701,9 +732,11 @@ void Panel::use(int action, int slot, juce::File folder)
             return pending.get();
         };
     juce::Component::SafePointer<Panel> safe(this);
-    jobs.use(
+    const auto request = action == 0 ? ++previewRequest : 0;
+    const auto intent = action == 0 ? (uint64_t)(juce::int64)library.audioClient().status()["intentGeneration"] : 0;
+    const bool scheduled = jobs.use(
         selected, folder,
-        [safe, action, slot, catalog = service.catalogFile(), id = doc.id, rev = doc.revision,
+        [safe, action, slot, request, intent, catalog = service.catalogFile(), id = doc.id, rev = doc.revision,
          pad = doc.performPad, track = doc.selectedTrack](auto f, auto candidate)
         {
             auto asset = inspectDesignSource(f);
@@ -717,26 +750,13 @@ void Panel::use(int action, int slot, juce::File folder)
                 asset = std::move(indexed);
             }
             juce::MessageManager::callAsync(
-                [safe, asset, candidate, action, slot, id, rev, pad, track]
+                [safe, asset, candidate, action, slot, id, rev, pad, track, request, intent]
                 {
                     if (!safe || safe->selected != candidate.id)
                         return;
                     auto &s = safe->designer.session;
                     if (action == 0)
-                    {
-                        if (safe->library.audioClient().captureBusy())
-                            return;
-                        s.stop();
-                        safe->library.parkPlayback();
-                        safe->previewId = "sfx-" + candidate.id;
-                        PlaybackRegion region;
-                        region.positionSample = safe->previewPosition < asset.samples ? safe->previewPosition : 0;
-                        region.size = asset.size;
-                        region.modified = asset.modified;
-                        region.inode = asset.inode;
-                        safe->previewGeneration = safe->library.audioClient().playRegion(
-                            safe->previewId, juce::File(asset.path), region);
-                    }
+                        safe->startVerifiedPreview(asset, "sfx-" + candidate.id, request, intent);
                     if (action == 2 || action == 3 || action == 5)
                     {
                         if (s.document.id != id || s.document.revision != rev ||
@@ -769,5 +789,7 @@ void Panel::use(int action, int slot, juce::File folder)
                 });
         },
         std::move(index));
+    if (action == 0)
+        preparingPreview = scheduled;
 }
 } // namespace sp::sfx

@@ -190,8 +190,8 @@ void LibraryView::metadataPanel(bool filter)
         v->exchange.onClick = [v, safe, items]
         {
             PopupMenu m;
-            m.addItem(1, "Export selected metadata...");
-            m.addItem(2, "Import user fields...");
+            m.addItem(1, "Export selected metadata");
+            m.addItem(2, "Import user fields");
             m.addSeparator();
             m.addItem(3, "Mark revision reviewed");
             m.showMenuAsync(
@@ -282,7 +282,7 @@ void LibraryView::metadataPanel(bool filter)
         {
             if (!current() || !panel)
                 return;
-            fill({"Checking cached audio...", {}});
+            fill({"Checking cached audio", {}});
             panel->cancelled->store(true);
             auto stop = std::make_shared<std::atomic<bool>>(false);
             panel->cancelled = stop;

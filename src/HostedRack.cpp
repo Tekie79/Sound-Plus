@@ -152,8 +152,12 @@ struct HostedRackClient::Impl
         while ((target ? exchange->response.load(std::memory_order_acquire) != target
                        : !exchange->ready.load(std::memory_order_acquire)))
         {
-            if (borrowed && exchange->closing.load(std::memory_order_acquire))
+            if (exchange->closing.load(std::memory_order_acquire) && borrowed)
+            {
+                if (exchange->failed.load(std::memory_order_acquire))
+                    throw std::runtime_error(exchange->reason);
                 throw std::runtime_error("Live insert owner closed; no output is certified");
+            }
             if (exchange->failed.load(std::memory_order_acquire))
                 throw std::runtime_error(exchange->reason);
             if (cancelled())

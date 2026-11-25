@@ -34,6 +34,29 @@ void runHostedInstrumentAutomationTests(const juce::File &base, const juce::File
     ScopedJuceInitialiser_GUI gui;
     auto root = base.getChildFile(Uuid().toString());
     root.createDirectory();
+    // Repeatedly replace a live command with differently sized complete JSON
+    // records while the same reader used by the hosted worker opens them.
+    auto command = root.getChildFile("replace-command.json");
+    auto small = obj(), large = obj();
+    put(small, "payload", "small");
+    const auto longPayload = String::repeatedString("large", 16384);
+    put(large, "payload", longPayload);
+    saveProcessingJson(command, large);
+    std::jthread writer([&](std::stop_token stop)
+    {
+        while (!stop.stop_requested())
+        {
+            saveProcessingJson(command, small);
+            saveProcessingJson(command, large);
+        }
+    });
+    for (int scan = 0; scan < 750; ++scan)
+    {
+        const auto payload = loadProcessingJson(command)["payload"].toString();
+        check(payload == "small" || payload == longPayload, "Reader sees one complete published command");
+    }
+    writer.request_stop();
+    writer.join();
     auto helper = app.getParentDirectory().getParentDirectory().getChildFile("Helpers/SoundPlusPlugin");
     setenv("SOUNDPLUS_PLUGIN_HELPER", helper.getFullPathName().toRawUTF8(), 1);
     bool au = fixture.hasFileExtension("component");

@@ -271,12 +271,20 @@ void nativeDeviceMotion(const File &root, const File &app, DesignDocument docume
     o->setProperty("cpuDeltaSeconds", (double)after["cpuSeconds"] - (double)before["cpuSeconds"]);
     o->setProperty("receiptBytes", receipt["receiptBytes"]);
     check(root.getChildFile("device.json").replaceWithText(JSON::toString(report)), "Retain device receipt");
+    const auto priorPass = received["pass"].toString();
     check(session.beginSquareTouch(owner, {.3, .8}), "Start a second pass before Stop");
-    pump(105);
+    const auto beginFrame = (int64_t)audio.status()["sourceSample"];
+    wait([&] { return (int64_t)audio.status()["sourceSample"] >= beginFrame + 4800; },
+         "Second pass receives 100 ms of device playback");
     session.stop();
     wait([&] { return !session.squareTouchBusy(); }, "Stop retains the acknowledged pass safely");
-    check((int)received["pointCount"] >= 1 && (bool)received["interrupted"],
-          "Stop closes retained paired motion");
+    if (received["pass"].toString() == priorPass || (int)received["pointCount"] < 1 ||
+        !(bool)received["interrupted"])
+        root.getChildFile("stop-failure.json").replaceWithText(
+            JSON::toString(received, true) + "\n" + session.message + "\n" + JSON::toString(audio.status(), true));
+    check(received["pass"].toString().isNotEmpty() && received["pass"].toString() != priorPass &&
+              (int)received["pointCount"] >= 1 && (bool)received["interrupted"],
+          "Stop closes this pass and retains its own paired motion");
     pump(150);
 
     const auto pairedBeforeLoss =

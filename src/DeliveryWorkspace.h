@@ -63,7 +63,7 @@ class DeliveryWorkspace final : public juce::Component, private juce::Timer
         g.setFont(juce::FontOptions(12.f));
         g.drawText(designer.session.outputFolder().getFullPathName(),
                    outputCard.reduced(14, 0).withTrimmedTop(142).withHeight(22),
-                   juce::Justification::centredLeft, true);
+                   juce::Justification::centredLeft, false);
     }
     void resized() override
     {

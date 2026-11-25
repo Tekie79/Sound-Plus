@@ -593,7 +593,7 @@ void MultitrackEditor::paint(juce::Graphics &g)
             g.setColour(ui::text.withAlpha(.7f));
             g.setFont(juce::FontOptions(10.f));
             g.drawText(l.name, rect.toNearestInt().reduced(14, 10).removeFromBottom(13),
-                       juce::Justification::bottomLeft, true);
+                       juce::Justification::bottomLeft, false);
         }
     }
     for (auto &marker : d.markers)
@@ -758,15 +758,15 @@ void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::
     m.addSeparator();
     if (t->kind == TrackKind::audio)
     {
-        m.addItem(400, juce::String::fromUTF8("Audio input…"), !session.inputBusy());
+        m.addItem(400, juce::String::fromUTF8("Audio input"), !session.inputBusy());
         m.addItem(401, "Raw input monitoring", session.inputArmed(id), session.inputMonitored(id));
         m.addSeparator();
     }
     if (t->kind == TrackKind::midiInstrument)
-        m.addItem(402, juce::String::fromUTF8("Instrument…"));
+        m.addItem(402, juce::String::fromUTF8("Instrument"));
     if (t->kind == TrackKind::midiInstrument)
     {
-        m.addItem(403, juce::String::fromUTF8("MIDI input…"), !session.midiBusy());
+        m.addItem(403, juce::String::fromUTF8("MIDI input"), !session.midiBusy());
         m.addItem(404, "MIDI monitoring", session.midiArmed(id), session.midiMonitored(id));
         m.addSeparator();
     }
@@ -806,7 +806,7 @@ void MultitrackEditor::trackMenu(const juce::String &id, const juce::PopupMenu::
             layout.addItem(n++, layoutName(l), true, t->layout == l);
         }
         m.addSubMenu("Track bus", layout);
-        m.addItem(405, juce::String::fromUTF8("Square Surround…"), trackSquareSurroundSupported(session.document.activeMix(), *t));
+        m.addItem(405, juce::String::fromUTF8("Square Surround"), trackSquareSurroundSupported(session.document.activeMix(), *t));
         m.addItem(4, "Angular spatial panning",
                   !t->surroundXY && t->layout.size() <= 2 &&
                       horizontalLayout(trackOutputLayout(session.document.activeMix(), *t)),

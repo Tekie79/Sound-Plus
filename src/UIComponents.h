@@ -46,6 +46,39 @@ class LookAndFeel : public juce::LookAndFeel_V4
         setColour(juce::TableHeaderComponent::textColourId, muted);
         setColour(juce::TableHeaderComponent::backgroundColourId, raised);
     }
+    void drawLabel(juce::Graphics &g, juce::Label &label) override
+    {
+        g.fillAll(label.findColour(juce::Label::backgroundColourId));
+        const float alpha = label.isEnabled() ? 1.f : .5f;
+        const auto area = getLabelBorderSize(label).subtractedFrom(label.getLocalBounds());
+        if (!label.isBeingEdited() && !area.isEmpty())
+        {
+            const auto font = getLabelFont(label);
+            const auto colour = label.findColour(juce::Label::textColourId).withMultipliedAlpha(alpha);
+            const auto justify = label.getJustificationType();
+            juce::Graphics::ScopedSaveState restore(g);
+            g.reduceClipRegion(area);
+            if (area.getHeight() >= 2 * font.getHeight())
+            {
+                juce::AttributedString content;
+                content.setJustification(justify);
+                content.append(label.getText(), font, colour);
+                juce::TextLayout layout;
+                layout.createLayout(content, (float)area.getWidth());
+                layout.draw(g, area.toFloat());
+            }
+            else
+            {
+                const auto width = juce::GlyphArrangement::getStringWidth(font, label.getText());
+                const auto scale = std::clamp(area.getWidth() / std::max(1.f, width), .85f, 1.f);
+                g.setColour(colour);
+                g.setFont(font.withHorizontalScale(font.getHorizontalScale() * scale));
+                g.drawText(label.getText(), area, justify, false);
+            }
+        }
+        g.setColour(label.findColour(juce::Label::outlineColourId).withMultipliedAlpha(alpha));
+        g.drawRect(label.getLocalBounds());
+    }
     void drawCallOutBoxBackground(juce::CallOutBox &, juce::Graphics &g, const juce::Path &path,
                                   juce::Image &) override
     {

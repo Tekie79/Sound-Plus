@@ -26,10 +26,10 @@ class StockRackView final : public juce::Component
     {
         for (auto *c :
              std::initializer_list<juce::Component *>{&heading, &slots, &add, &remove, &up, &down, &bypass,
-                                                      &all, &transfer, &reset, &lockSlot, &parameters, &more})
+                                                      &all, &transfer, &reset, &lockSlot, &more})
             addAndMakeVisible(c);
         addAndMakeVisible(orderedList);
-        addAndMakeVisible(nativePanel);
+        editorControls.addAndMakeVisible(nativePanel);
         nativePanel.onTempo = [this]
         {
             auto target = owner;
@@ -111,8 +111,8 @@ class StockRackView final : public juce::Component
         };
         nativePanel.onHeightChange = [this]
         {
-            resized();
-            reportHeight();
+            if (nativeWindow)
+                nativeWindow->layoutPanel();
         };
         heading.setColour(juce::Label::textColourId, ui::muted);
         heading.setFont(juce::FontOptions(12.f));
@@ -154,7 +154,7 @@ class StockRackView final : public juce::Component
             if (external)
             {
                 menu.addSeparator();
-                menu.addItem(5, juce::String::fromUTF8("Plug-in…"),
+                menu.addItem(5, juce::String::fromUTF8("Plug-in"),
                              external->currentRack() && external->currentRack()->slots.size() < 8);
             }
             juce::Component::SafePointer<StockRackView> safe(this);
@@ -203,16 +203,14 @@ class StockRackView final : public juce::Component
         };
         transfer.onClick = [this] { showTransfer(); };
         more.onClick = [this] { showActions(); };
-        parameters.setToggleable(true);
-        parameters.onClick = [this] { setParametersExpanded(!expanded); };
         for (int i = 0; i < 4; ++i)
         {
             auto &v = values[(size_t)i];
             auto &label = labels[(size_t)i];
-            addAndMakeVisible(v);
-            addAndMakeVisible(label);
+            editorControls.addAndMakeVisible(v);
+            editorControls.addAndMakeVisible(label);
             auto &lock = locks[(size_t)i];
-            addAndMakeVisible(lock);
+            editorControls.addAndMakeVisible(lock);
             lock.setIcon(ActionIcon::lock);
             lock.setToggleable(true);
             lock.setButtonText("Lock stock insert parameter " + juce::String(i + 1));
@@ -289,10 +287,10 @@ class StockRackView final : public juce::Component
     std::function<void()> onHeightChange;
     void setParametersExpanded(bool value)
     {
-        expanded = value;
-        refresh();
-        if (onHeightChange)
-            onHeightChange();
+        if (value)
+            openNativeEditor();
+        else
+            closeNativeEditor();
     }
     DesignSession &session;
     bool isMaster;
@@ -314,6 +312,7 @@ class StockRackView final : public juce::Component
             selectedExternalSlot.clear();
             externalSelected = false;
             knownExternalCount = -1;
+            closeNativeEditor();
         }
         owner = next;
         if (external)
@@ -362,6 +361,7 @@ class StockRackView final : public juce::Component
             selectedSlot = fresh.id;
             externalSelected = false;
             refresh();
+            openNativeEditor();
         }
     }
     int preferredHeight() const
@@ -369,10 +369,7 @@ class StockRackView final : public juce::Component
         bool has = slots.getNumItems() > 0;
         return 28 + orderedList.preferredHeight() + 4 +
                (externalSelected && external ? external->preferredHeight()
-                : has ? 32 + (expanded ? (nativePanel.isVisible() ? nativePanel.preferredHeight()
-                                                                  : parameterCount * 46)
-                                       : 0)
-                      : 0);
+                : has ? 32 : 0);
     }
     void selectExternalSlot(const juce::String &id)
     {
@@ -516,7 +513,7 @@ class StockRackView final : public juce::Component
             if (ref.kind == InsertKind::hosted && safe->external)
                 safe->external->openSelectedEditor();
             else
-                safe->setParametersExpanded(!safe->expanded);
+                safe->openNativeEditor();
         };
         orderedList.setItems(std::move(items),
                              {externalSelected ? InsertKind::hosted : InsertKind::stock,
@@ -526,8 +523,7 @@ class StockRackView final : public juce::Component
         for (auto *button : {&remove, &up, &down, &all, &transfer, &reset, &lockSlot})
             button->setVisible(false);
         bypass.setVisible(false);
-        for (auto *button : {&parameters, &more})
-            button->setVisible(effect != nullptr);
+        more.setVisible(effect != nullptr);
         more.setEnabled(editable && effect);
         if (external)
             external->setVisible(externalSelected);
@@ -577,16 +573,17 @@ class StockRackView final : public juce::Component
         }
         if (effect && effect->nativeVersion)
             names.clear();
+        if (nativeWindow && (!editable || !effect || nativeSlot != effect->id))
+            closeNativeEditor();
         nativePanel.bind(effect, editable, session.document.activeMix().midiTiming,
                          session.document.renderSettings.tailSeconds);
-        nativePanel.setVisible(effect && effect->nativeVersion && !externalSelected && expanded);
         parameterCount = names.size();
         for (int i = 0; i < 4; ++i)
         {
             auto &v = values[(size_t)i];
             auto &label = labels[(size_t)i];
             bool visible =
-                !externalSelected && expanded && i < parameterCount && effect && !effect->nativeVersion;
+                !externalSelected && i < parameterCount && effect && !effect->nativeVersion;
             locks[(size_t)i].setVisible(visible);
             locks[(size_t)i].setEnabled(editable);
             locks[(size_t)i].setToggleState(effect && (effect->parameterLocks & (1u << i)),
@@ -608,9 +605,8 @@ class StockRackView final : public juce::Component
                 }
             }
         }
-        parameters.setEnabled(effect != nullptr);
-        parameters.setToggleState(expanded, juce::dontSendNotification);
-        parameters.setButtonText(expanded ? "Hide stock insert parameters" : "Show stock insert parameters");
+        if (nativeWindow)
+            nativeWindow->layoutPanel();
         updating = false;
         resized();
         reportHeight();
@@ -625,24 +621,10 @@ class StockRackView final : public juce::Component
         slots.setBounds(0, 0, 0, 0);
         orderedList.setBounds(r.removeFromTop(orderedList.preferredHeight()));
         r.removeFromTop(4);
-        auto row = r;
         if (externalSelected && external)
             external->setBounds(r.removeFromTop(external->preferredHeight()));
         else if (slots.getNumItems())
-        {
-            row = r.removeFromTop(32);
-            for (auto *b : {&parameters, &more})
-                b->setBounds(row.removeFromLeft(32).reduced(2));
-            if (nativePanel.isVisible())
-                nativePanel.setBounds(r.removeFromTop(nativePanel.preferredHeight()));
-            for (int i = 0; expanded && i < parameterCount; ++i)
-            {
-                labels[(size_t)i].setBounds(r.removeFromTop(17));
-                row = r.removeFromTop(29);
-                locks[(size_t)i].setBounds(row.removeFromRight(28));
-                values[(size_t)i].setBounds(row);
-            }
-        }
+            more.setBounds(r.removeFromTop(32).removeFromLeft(90).reduced(2));
     }
 
   private:
@@ -657,7 +639,95 @@ class StockRackView final : public juce::Component
                 onHeightChange();
         }
     }
+    class NativeEditorWindow final : public juce::DocumentWindow
+    {
+      public:
+        explicit NativeEditorWindow(StockRackView &owner)
+            : DocumentWindow({}, ui::surface, closeButton), rackView(owner)
+        {
+            setUsingNativeTitleBar(true);
+            setResizable(true, true);
+            setResizeLimits(380, 260, 920, 1100);
+            viewport.setScrollBarsShown(true, false);
+            viewport.setViewedComponent(&rackView.editorControls, false);
+            content.addAndMakeVisible(viewport);
+            setContentNonOwned(&content, false);
+        }
+        ~NativeEditorWindow() override { clearContentComponent(); }
+        void layoutPanel()
+        {
+            const int height = rackView.nativePanel.isVisible() ? rackView.nativePanel.preferredHeight()
+                                                                 : rackView.parameterCount * 46;
+            const int width = std::max(1, viewport.getWidth() -
+                (height > viewport.getHeight() ? viewport.getScrollBarThickness() : 0));
+            rackView.editorControls.setSize(width, height);
+            auto area = rackView.editorControls.getLocalBounds();
+            if (rackView.nativePanel.isVisible())
+                rackView.nativePanel.setBounds(area);
+            else
+                for (int i = 0; i < rackView.parameterCount; ++i)
+                {
+                    rackView.labels[(size_t)i].setBounds(area.removeFromTop(17));
+                    auto row = area.removeFromTop(29);
+                    rackView.locks[(size_t)i].setBounds(row.removeFromRight(28));
+                    rackView.values[(size_t)i].setBounds(row);
+                }
+        }
+        void resized() override
+        {
+            DocumentWindow::resized();
+            viewport.setBounds(content.getLocalBounds().reduced(12));
+            layoutPanel();
+        }
+        void closeButtonPressed() override { setVisible(false); }
+        bool keyPressed(const juce::KeyPress &key) override
+        {
+            if (key == juce::KeyPress::escapeKey)
+            {
+                closeButtonPressed();
+                return true;
+            }
+            return DocumentWindow::keyPressed(key);
+        }
+
+      private:
+        StockRackView &rackView;
+        juce::Component content;
+        juce::Viewport viewport;
+    };
+    juce::Component editorControls;
     NativeParameterPanel nativePanel;
+    std::unique_ptr<NativeEditorWindow> nativeWindow;
+    juce::String nativeSlot;
+    void closeNativeEditor()
+    {
+        if (nativeWindow)
+            nativeWindow->setVisible(false);
+        nativeSlot.clear();
+    }
+    void openNativeEditor()
+    {
+        if (!isShowing() || externalSelected || selectedSlot.isEmpty() || !more.isEnabled())
+            return;
+        auto top = getTopLevelComponent();
+        if (!nativeWindow)
+        {
+            nativeWindow = std::make_unique<NativeEditorWindow>(*this);
+            nativeWindow->setLookAndFeel(&getLookAndFeel());
+            const auto &displays = juce::Desktop::getInstance().getDisplays();
+            const auto *display = displays.getDisplayForRect(top->getScreenBounds());
+            const int preferred = nativePanel.isVisible() ? nativePanel.preferredHeight() + 28
+                                                           : parameterCount * 46 + 28;
+            const int available = display ? display->userArea.getHeight() - 64 : 560;
+            const int height = std::clamp(preferred, 260, std::max(260, std::min(available, 560)));
+            nativeWindow->centreAroundComponent(top, 450, height);
+        }
+        nativeSlot = selectedSlot;
+        nativeWindow->setName(slots.getText() + " | " + heading.getText());
+        nativeWindow->layoutPanel();
+        nativeWindow->setVisible(true);
+        nativeWindow->toFront(true);
+    }
     std::unique_ptr<juce::FileChooser> presetChooser;
     OrderedInsertList orderedList;
     std::unique_ptr<HostedRackView> external;
@@ -669,8 +739,7 @@ class StockRackView final : public juce::Component
         transfer{"Copy or move insert to another rack", ActionIcon::duplicate},
         reset{"Reset stock preset", ActionIcon::undo};
     IconButton lockSlot{"Lock insert for variations", ActionIcon::lock},
-        parameters{"Show stock insert parameters", ActionIcon::chevron},
-        more{"Effect actions", ActionIcon::more};
+        more{"Actions", ActionIcon::settings, true};
     std::array<IconButton, 4> locks{{{"Lock parameter 1", ActionIcon::lock},
                                      {"Lock parameter 2", ActionIcon::lock},
                                      {"Lock parameter 3", ActionIcon::lock},
@@ -680,7 +749,7 @@ class StockRackView final : public juce::Component
     bool externalSelected = false;
     int knownExternalCount = -1;
     Owner gestureOwner;
-    bool updating = false, dragging = false, expanded = false;
+    bool updating = false, dragging = false;
     int parameterCount = 0;
     juce::String slotId() const
     {
@@ -767,7 +836,7 @@ class StockRackView final : public juce::Component
         juce::PopupMenu menu;
         menu.addItem(1, "Reset effect", reset.isEnabled());
         menu.addItem(2, "Lock for variations", lockSlot.isEnabled(), lockSlot.getToggleState());
-        menu.addItem(3, juce::String::fromUTF8("Copy / move…"), transfer.isEnabled());
+        menu.addItem(3, juce::String::fromUTF8("Copy / move"), transfer.isEnabled());
         menu.addSeparator();
         menu.addItem(4, "Move earlier", up.isEnabled());
         menu.addItem(5, "Move later", down.isEnabled());
@@ -779,8 +848,8 @@ class StockRackView final : public juce::Component
         if (fx && at != fx->end() && at->nativeVersion)
         {
             menu.addSeparator();
-            menu.addItem(8, juce::String::fromUTF8("Save preset…"));
-            menu.addItem(9, juce::String::fromUTF8("Load preset…"));
+            menu.addItem(8, juce::String::fromUTF8("Save preset"));
+            menu.addItem(9, juce::String::fromUTF8("Load preset"));
             auto factory = nativeFactoryPresets(at->type);
             juce::PopupMenu presets;
             for (int i = 0; i < factory.size(); ++i)

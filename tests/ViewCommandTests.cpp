@@ -1,6 +1,9 @@
 #include "ViewCommandTests.h"
 #include "DesignerView.h"
 #include "PerformanceState.h"
+#include "SfxPanel.h"
+#include <CoreFoundation/CoreFoundation.h>
+#include <juce_cryptography/juce_cryptography.h>
 #include <iostream>
 namespace
 {
@@ -11,12 +14,12 @@ void check(bool ok, const char *why)
     if (!ok)
         throw std::runtime_error(why);
 }
-void tone(const juce::File &file, double hz)
+void tone(const juce::File &file, double hz, int rate = 48000)
 {
     juce::WavAudioFormat wav;
     auto stream = file.createOutputStream();
     std::unique_ptr<juce::AudioFormatWriter> writer(
-        wav.createWriterFor(stream.release(), 48000, 2, 24, {}, 0));
+        wav.createWriterFor(stream.release(), rate, 2, 24, {}, 0));
     juce::AudioBuffer<float> pcm(2, 96000);
     for (int ch = 0; ch < 2; ++ch)
         for (int n = 0; n < 96000; ++n)
@@ -152,6 +155,26 @@ struct DesignerViewTestAccess
             check(view.canvasViewport.getRight() < view.inspectorViewport.getX(),
                   "Minimum layout keeps Browser-side canvas separate from Inspector");
         }
+        view.useWorkspaceShell();
+        for (bool performing : {false, true})
+        {
+            view.setPerformMode(performing);
+            view.setSize(ui::workspace::minimumWindowWidth - ui::workspace::sidebarWidth - 6,
+                         ui::workspace::minimumWindowHeight);
+            auto &send = view.sendTransferButton();
+            auto &drag = view.dragTransferButton();
+            auto &options = view.transferSettingsButton();
+            check(view.getLocalBounds().contains(send.getBounds()) && send.isVisible() &&
+                      send.getY() == drag.getY() + 1 && send.getX() >= drag.getRight() &&
+                      options.getX() >= send.getRight(),
+                  "Direct Send stays beside drag and options at minimum size in Edit and Perform");
+            for (auto *c : std::initializer_list<juce::Component *>{&view.candidates, &view.readyOutputs,
+                      &view.dragOriginal, &view.dragOutput, &view.play, &view.monitorControl})
+                check(!send.getBounds().intersects(c->getBounds()),
+                      "Direct Send stays clear of variations, export selection and transport");
+        }
+        view.shell = false;
+        view.setPerformMode(false);
         auto legacyDocument = view.session.document;
         view.session.edit("Materialize QA tracks",
                           [](auto &document)
@@ -232,6 +255,145 @@ struct DesignerViewTestAccess
     }
 };
 } // namespace sp
+namespace sp::sfx
+{
+struct PreviewTestAccess
+{
+    struct LocalKey final : Credentials
+    {
+        juce::String read() override { return "synthetic"; }
+        void save(const juce::String &) override {}
+        void erase() override {}
+    };
+    static void run(const juce::File &root, const juce::File &app, const juce::File &libraryTone,
+                    const juce::File &design)
+    {
+        const auto catalog = root.getChildFile("preview.sqlite");
+        LibraryView library(catalog, app, false);
+        auto &audio = library.audioClient();
+        audio.gain(.02f);
+        juce::PropertiesFile preferences(root.getChildFile("preview.settings"), ui::preferenceOptions());
+        DesignerView designer(catalog, audio, preferences);
+        juce::MemoryBlock bytes;
+        auto localResponse = root.getChildFile("provider-44k.wav");
+        tone(localResponse, 220, 44100);
+        check(localResponse.loadFileAsData(bytes), "Read the synthetic SFX response");
+        std::atomic<int> submissions{0};
+        auto provider = elevenLabs([&](const auto &, const auto &, const auto &, const auto &)
+        {
+            ++submissions;
+            return Response{200, "audio/wav", "local-preview", bytes};
+        });
+        const auto cache = root.getChildFile("Generation");
+        Generation generation(cache, std::move(provider), std::make_unique<LocalKey>());
+        auto wait = [](auto done, const char *why, bool pump = true)
+        {
+            const auto deadline = juce::Time::getMillisecondCounterHiRes() + 10000;
+            while (!done() && juce::Time::getMillisecondCounterHiRes() < deadline)
+            {
+                if (pump)
+                    CFRunLoopRunInMode(kCFRunLoopDefaultMode, .01, false);
+                juce::Thread::sleep(3);
+            }
+            check(done(), why);
+        };
+        auto idle = [&] { return !generation.snapshot().busy; };
+        auto panel = std::make_unique<Panel>(generation, library, designer, [](int) {});
+        wait(idle, "Local SFX journal opened");
+        panel->timerCallback();
+        check(!panel->playPreview.isEnabled(), "Empty history disables Play");
+        Request request;
+        request.prompt = "Native preview test";
+        request.wav = request.approved = true;
+        request.candidates = 2;
+        check(generation.submit(request), "Seed two local candidates");
+        wait(idle, "Both synthetic candidates verified");
+        panel->timerCallback();
+        const auto candidates = generation.snapshot().history;
+        check(candidates.size() == 2 && panel->playPreview.isEnabled(), "Ready WAV enables Play");
+        const auto selectedFile = cache.getChildFile(panel->selected + ".wav");
+        const auto digest = juce::SHA256(selectedFile).toHexString();
+        auto intent = [&] { return (uint64_t)(juce::int64)audio.status()["intentGeneration"]; };
+        auto originalIntent = intent();
+        panel->togglePreview();
+        check(panel->preparingPreview && panel->playPreview.getTitle() == "Pause preview",
+              "Pause remains accessible during local file verification");
+        wait(idle, "Local verification finished behind the message-thread barrier", false);
+        panel->togglePreview();
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, .04, false);
+        check(intent() == originalIntent, "Pause cancels the queued verification callback");
+        panel->timerCallback();
+
+        auto playing = [&]
+        {
+            const auto status = audio.status();
+            return panel->previewActive(status) && (bool)status["playing"];
+        };
+        auto filePosition = [&] { return (int64_t)audio.status()["sourceSample"]; };
+        panel->togglePreview();
+        wait([&] { return playing() && filePosition() > 4800; }, "Actual helper consumes initial SFX frames");
+        const auto firstGeneration = intent();
+        panel->togglePreview();
+        const auto parked = panel->previewPosition;
+        check(parked > 4800 && panel->playPreview.getTitle() == "Resume preview" && intent() > firstGeneration,
+              "Pause attests its last reported frame and stops its generation");
+        wait(idle, "Local worker available to resume");
+        panel->timerCallback();
+        panel->togglePreview();
+        wait([&] { return playing() && filePosition() >= parked; }, "Resume starts a new owned playback");
+        wait([&] { return (bool)audio.status()["completed"]; }, "Audition reaches real EOF");
+        panel->timerCallback();
+        check(panel->playPreview.getTitle() == "Play preview", "EOF restores Play");
+        panel->togglePreview();
+        wait([&] { return playing() && filePosition() < parked; }, "Restart consumes frames from the beginning");
+
+        panel->history.setSelectedId(2, juce::sendNotificationSync);
+        panel->timerCallback();
+        check(panel->selected == candidates[1].id && !panel->previewGeneration,
+              "Changing selector stops and clears the previous SFX preview");
+        wait(idle, "Worker is ready after selection");
+        panel->togglePreview();
+        wait(idle, "Second preview verification is queued for UI", false);
+        const auto libraryIntent = audio.playRegion("library-owner", libraryTone, {});
+        CFRunLoopRunInMode(kCFRunLoopDefaultMode, .04, false);
+        check(intent() == libraryIntent && audio.status()["intentId"].toString() == "library-owner",
+              "A deferred SFX callback preserves the newer Library owner");
+        panel->timerCallback();
+
+        panel->togglePreview();
+        wait(playing, "Audition takes ownership when explicitly requested");
+        const auto designerIntent = audio.playDesign("design:preview-takeover", design, 0);
+        panel->timerCallback();
+        check(designerIntent == intent() && !panel->previewActive(audio.status()),
+              "A new Designer intent supersedes SFX");
+        panel.reset();
+        check(intent() == designerIntent, "Closing a superseded SFX panel preserves the Designer owner");
+        audio.stop();
+
+        panel = std::make_unique<Panel>(generation, library, designer, [](int) {});
+        panel->togglePreview();
+        wait(playing, "Reopened dialog starts its selected ready candidate");
+        const auto closeIntent = intent();
+        panel.reset();
+        check(intent() > closeIntent && audio.status()["intentId"].toString().isEmpty(),
+              "Closing the audition panel stops the owned transport");
+
+        panel = std::make_unique<Panel>(generation, library, designer, [](int) {});
+        const auto missing = cache.getChildFile(panel->selected + ".wav");
+        const auto relocated = missing.withFileExtension("unavailable");
+        check(missing.moveFileTo(relocated), "Temporarily move the synthetic fixture");
+        originalIntent = intent();
+        panel->togglePreview();
+        wait(idle, "Missing audio is rejected by local verification");
+        panel->timerCallback();
+        check(intent() == originalIntent && !panel->previewGeneration,
+              "Missing candidate never starts transport");
+        check(relocated.moveFileTo(missing) && juce::SHA256(selectedFile).toHexString() == digest &&
+                  submissions == 2 && generation.snapshot().history.front().published.isEmpty(),
+              "Preview never alters a WAV, publishes it, or requests another provider submission");
+    }
+};
+} // namespace sp::sfx
 void runViewCommandTests(const juce::File &parent, const juce::File &application)
 {
     juce::ScopedJuceInitialiser_GUI gui;
@@ -276,6 +438,7 @@ void runViewCommandTests(const juce::File &parent, const juce::File &application
         sp::DesignerView view(directory.getChildFile("library.sqlite"), audio, prefs);
         sp::DesignerViewTestAccess::run(view, doc, saved);
     }
+    sp::sfx::PreviewTestAccess::run(directory, application, first, saved);
     auto info = juce::var(new juce::DynamicObject());
     info.getDynamicObject()->setProperty("design", saved.getFullPathName());
     info.getDynamicObject()->setProperty("alternateDesign", alternateFile.getFullPathName());

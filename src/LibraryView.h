@@ -194,7 +194,7 @@ class LibraryView final : public juce::Component,
         organizationUiError;
     uint64_t organizationVersion = 0;
     bool preserveScopeSelection = false, favoriteSelected = false;
-    IconButton collectionActions{"Collection and selection actions", ActionIcon::more};
+    IconButton collectionActions{"Collection and selection actions", ActionIcon::settings};
     IconButton favoriteButton{"Favorite selected sound or range", ActionIcon::keep};
     IconButton collectionSelector{"All Sounds", ActionIcon::chevronDown, true};
     IconButton newCollection{"New Collection", ActionIcon::newDocument};

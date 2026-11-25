@@ -226,7 +226,7 @@ void SourcePoolView::paintListBoxItem(int row, juce::Graphics &g, int w, int h, 
     }
     g.setColour(active ? ui::accent : ui::text);
     g.setFont(juce::FontOptions(11.5f));
-    g.drawText(e->source.name, 8, 4, w - 32, 18, juce::Justification::left, true);
+    g.drawText(e->source.name, 8, 4, w - 32, 18, juce::Justification::left, false);
     if (active)
         icons::draw(g, ActionIcon::check, {w - 22.f, 6, 14, 14}, icons::Tone::selected);
     auto found = rows.find(e->id);
@@ -251,7 +251,7 @@ void SourcePoolView::paintListBoxItem(int row, juce::Graphics &g, int w, int h, 
                    (!e->reviewed  ? " · Review input"
                     : !e->enabled ? " · Variation off"
                                   : ""),
-               8, 43, w - 16, 15, juce::Justification::left, true);
+               8, 43, w - 16, 15, juce::Justification::left, false);
 }
 void SourcePoolView::activate(int row)
 {
@@ -327,12 +327,12 @@ void SourcePoolView::options()
     auto target = layerId;
     auto key = binding;
     juce::PopupMenu menu;
-    menu.addItem(1, juce::String::fromUTF8("Review input and mapping…"));
+    menu.addItem(1, juce::String::fromUTF8("Review input and mapping"));
     menu.addItem(2, "Use in source variations", true, e->enabled);
     menu.addItem(3, "Move up");
     menu.addItem(4, "Move down");
     menu.addSeparator();
-    menu.addItem(5, juce::String::fromUTF8("Relocate identical content…"));
+    menu.addItem(5, juce::String::fromUTF8("Relocate identical content"));
     juce::Component::SafePointer<SourcePoolView> safe(this);
     bool enabled = e->enabled;
     menu.showMenuAsync(juce::PopupMenu::Options().withTargetComponent(&more),

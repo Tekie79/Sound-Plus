@@ -33,7 +33,7 @@ PoolMappingReview::PoolMappingReview(SourcePoolEntry e, ChannelLayout destinatio
     if (legacy || version == 2)
         physical.addItem(legacy ? "Analysis Mix (all inputs)" : "All physical channels to Mono mean", 2);
     if (!legacy)
-        physical.addItem("Custom subset (up to 16)...", 999);
+        physical.addItem("Custom subset (up to 16)", 999);
     custom.setTitle("Physical source channels, comma-separated, one-based");
     custom.setTextToShowWhenEmpty("e.g. 1, 3, 7 (at most 16)", ui::muted);
     juce::StringArray numbers;
