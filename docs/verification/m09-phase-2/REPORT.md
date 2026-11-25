@@ -1,0 +1,22 @@
+# M09 Phase 2 interim acceptance
+
+Frozen SoundPlus source `4a5cfc51830574ae5d7ed10349a03557c5af924c`, executable SHA-256 `90c0a29f3dbe0850eb2cb97a37b706e3017101966ed565b0cc4f900234c9fa8b`, and manifest SHA-256 `4f86de2ccbdf3816e9cee5f540bf0b829557d8882deaaf9392777d52856ca84b` verified before execution. The initial and final validations checked the source stamp, bundle, helpers and frozen logs. The dependency digest matched before and after. The prior frozen Release gate recorded **64 passed and 0 failed**. [Frozen verification](evidence/frozen-verification.json)
+
+The original M09 run identity `856ae867-7737-4e9a-97f3-4ff2affd3283` binds these observations to the frozen candidate. The initial ledger remains archived at its original path. The updated copy validated with **8 Pass, 0 Fail, 21 Partial, 9 Blocked, and 361 Not Run**. Open cases include 181 P0 and 206 P1. [Updated ledger](run.json) · [Validation](validation.json)
+
+## Local and native results
+
+- Four checks passed using exact frozen executable or test targets. They covered loopback SFX job identity and decoded PCM, loopback Transform multipart and resume with no duplicate POST, independently decoded transfer PCM, and the native view and audition regression.
+- Native Library copied the generated full stereo file byte for byte. Native marked-range preparation produced exactly 24,000 stereo frames at 48 kHz from `[6000, 30000)`, and an independent reader matched every transferred PCM byte. Library, Edit and Perform showed the same copy folder and action. Those preferences persisted after quit and relaunch. [Native copy and PCM](evidence/native-copy.json) · [Native preflight](evidence/native-preflight.json) · [Transfer fixture](evidence/transfer-fixtures.log)
+- The frozen bridge reached Resolve Studio 21.1.2.10 and rejected a deliberately mismatched project before placement. Resolve’s Project Manager context menu was unavailable through the native automation surface, so Dynamic Project Switching could not be verified. The assigned Resolve cases still require a throwaway project for direct placement, a physical drop, and Save/Quit/Reopen. The original project and Fairlight timeline stayed open. [Resolve preflight](evidence/resolve-preflight.json)
+
+## Provider preflight and spending
+
+- The approved ElevenLabs allowance is one two-second SFX v3 request, up to **80 credits and $2**. Official documentation specifies 40 credits per second for fixed duration. The endpoint returns audio with a billing-cost header. The account subscription read timed out while reading the saved Keychain item, and the frozen app’s read-only key check returned no account result before cancellation. The account balance remains unverified. **Zero billable generation requests and $0 spent.** Native declined consent left an empty generation journal. [Provider preflight](evidence/provider-preflight.json) · [SFX pricing](https://elevenlabs.io/docs/overview/capabilities/sound-effects) · [SFX API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert) · [Subscription usage API](https://elevenlabs.io/docs/api-reference/user/subscription/get)
+- Transform Audio prepared a 48,000-frame stereo input from generated QA media and reported the absent Stability key. The local loopback verified same-ID recovery and checked 264,600 composite frames. The public Stable Audio 3 rate was 26 credits per call at $0.01 per credit. This preflight submitted zero external audio uploads. [Transform loopback](evidence/transform-loopback.log) · [Stability pricing](https://platform.stability.ai/pricing)
+
+## Preservation and remaining work
+
+The active SoundPlus worktree, its editable session artifacts, and referenced source audio matched the audit. The live catalog changed only its background scan marker, as verified by the earlier row recovered from a read-only WAL snapshot. The original Resolve project and timeline IDs matched the read-only probe, and the Project Manager’s thumbnail view was restored. [Preservation audit](evidence/preservation-public.json)
+
+Resume receiver checks after confirming Dynamic Project Switching in the Project Manager. Resume the authorized ElevenLabs case after verifying available credits in the account tied to the saved SoundPlus key. The full two-candidate M09 journey and live Stability submission have separate scope and budget requirements. Human listening, installed vendor plug-ins, physical six-output, MIDI, microphone, notarization, clean installation and distribution approval remain open.

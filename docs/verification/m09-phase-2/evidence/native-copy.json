@@ -1,0 +1,14 @@
+{
+  "fullCopySha256": "4040ab02f8fa043e2d26de802ef619590c22aaa62201c24e8065ea86d42cf4c6",
+  "originalSha256": "4040ab02f8fa043e2d26de802ef619590c22aaa62201c24e8065ea86d42cf4c6",
+  "rangeCopySha256": "a6a29744680c0fcaf6c997e4f7705845f7350e4fd9ee22e3dfd51d1120a6da64",
+  "range": [
+    6000,
+    30000
+  ],
+  "frames": 24000,
+  "rate": 48000,
+  "channels": 2,
+  "independentPcmMatch": true,
+  "nativePreparation": "Ready to drag"
+}

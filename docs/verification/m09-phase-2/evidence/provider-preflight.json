@@ -1,0 +1,37 @@
+{
+  "elevenLabs": {
+    "authorization": {
+      "requests": 1,
+      "durationSeconds": 2,
+      "creditCap": 80,
+      "usdCap": 2
+    },
+    "model": "eleven_text_to_sound_v3",
+    "documentedFixedDurationCreditsPerSecond": 40,
+    "configuredCredentialRecordPresent": true,
+    "accountSubscriptionCheck": "Local Keychain credential read timed out before an HTTP request",
+    "consentDeclinedInCandidateUi": true,
+    "nativeGenerationJournalRowsAfterDecline": 0,
+    "externalSubmissions": 0,
+    "documentedEndpointResponse": "Synchronous generated audio, with a billing-cost response header",
+    "citations": [
+      "https://elevenlabs.io/docs/overview/capabilities/sound-effects",
+      "https://elevenlabs.io/docs/api-reference/text-to-sound-effects/convert",
+      "https://elevenlabs.io/docs/api-reference/user/subscription/get"
+    ],
+    "nativeKeyCheck": "The frozen app entered a busy state without returning an account result. The read-only check was cancelled.",
+    "finalNativeGenerationJournalRows": 0
+  },
+  "stability": {
+    "model": "Stable Audio 3",
+    "nativeCredentialRecordPresent": false,
+    "documentedCreditsPerCall": 26,
+    "preparedInputFrames": 48000,
+    "preparedInputChannels": 2,
+    "uploadedToExternalProvider": false,
+    "authorization": "Zero-spend local preflight",
+    "citations": [
+      "https://platform.stability.ai/pricing"
+    ]
+  }
+}

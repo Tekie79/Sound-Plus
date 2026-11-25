@@ -1,0 +1,9 @@
+{
+  "frames": 24192,
+  "channels": 1,
+  "rate": 44100,
+  "width": 3,
+  "providerEncoding": "mp3_44100_128",
+  "sha256": "fc947a89a921d6e98a9e4497271db38ba4a02d11e638ec53c72abc1802b15533",
+  "independentWavHeader": true
+}

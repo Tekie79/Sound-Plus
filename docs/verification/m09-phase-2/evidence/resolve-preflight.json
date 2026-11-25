@@ -1,0 +1,12 @@
+{
+  "version": "21.1.2.10",
+  "bridgeProbeSucceeded": true,
+  "mismatchedTargetRejectedBeforePlacement": true,
+  "actualPlacements": 0,
+  "realCrossAppDrops": 0,
+  "originalActiveProjectAndTimelineMatch": true,
+  "savedOriginalProject": false,
+  "reason": "Original project must stay open. Project Manager context menu was unavailable through native automation.",
+  "projectManagerViewRestored": "Thumbnail view restored, original Fairlight project still visible",
+  "dynamicProjectSwitchingVerified": false
+}

@@ -1,0 +1,76 @@
+{
+  "mono": {
+    "file": "M09 Phase 2 mono.wav",
+    "mask": 4,
+    "rate": 48000,
+    "frames": 48000,
+    "roles": [
+      "C"
+    ],
+    "pulseFrames": [
+      4000
+    ],
+    "sha256": "e7d18d5e466d01f9aa7847590847160c2ee6ceec92c2d39506c7a9b057004a14"
+  },
+  "stereo": {
+    "file": "M09 Phase 2 stereo.wav",
+    "mask": 3,
+    "rate": 48000,
+    "frames": 48000,
+    "roles": [
+      "L",
+      "R"
+    ],
+    "pulseFrames": [
+      4000,
+      10000
+    ],
+    "sha256": "4040ab02f8fa043e2d26de802ef619590c22aaa62201c24e8065ea86d42cf4c6"
+  },
+  "side": {
+    "file": "M09 Phase 2 side.wav",
+    "mask": 1551,
+    "rate": 48000,
+    "frames": 48000,
+    "roles": [
+      "L",
+      "R",
+      "C",
+      "LFE",
+      "Ls",
+      "Rs"
+    ],
+    "pulseFrames": [
+      4000,
+      10000,
+      16000,
+      22000,
+      28000,
+      34000
+    ],
+    "sha256": "953ef58c003f398a3db6c35f1a1bd909b68ba942a55a61d9cfb3cf5caa0a9c0e"
+  },
+  "rear": {
+    "file": "M09 Phase 2 rear.wav",
+    "mask": 63,
+    "rate": 48000,
+    "frames": 48000,
+    "roles": [
+      "L",
+      "R",
+      "C",
+      "LFE",
+      "Lb",
+      "Rb"
+    ],
+    "pulseFrames": [
+      4000,
+      10000,
+      16000,
+      22000,
+      28000,
+      34000
+    ],
+    "sha256": "9ea648596bb4e80b624204e8a02246398cda6bbb1928868bd5e9b419ae04f895"
+  }
+}

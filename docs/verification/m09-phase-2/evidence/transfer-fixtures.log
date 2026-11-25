@@ -1,0 +1,3 @@
+Verified original identity, collision-safe copy, exact 21,810-sample ranges, channel PCM, 0x60f and 0x3f WAV masks, durable path, receipt, cancellation and stale/missing destination.
+Fixture folder /Users/harvest/SoundPlus-QA/m09-phase2.c5utBT/fixtures/c8b48e5b77604955968dda9719c4c0f1
+Independent PCM matches selected clip, track, track range, mix range, full mix, each pad, pad range and all pads with Group/Master gain. Missing take rejected.

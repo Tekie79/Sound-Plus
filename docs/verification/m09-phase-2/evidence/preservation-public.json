@@ -1,0 +1,36 @@
+{
+  "default": {
+    "catalog": {
+      "checked": 5,
+      "changes": []
+    },
+    "files": {
+      "checked": 37,
+      "changes": []
+    },
+    "references": {
+      "checked": 35,
+      "changes": []
+    }
+  },
+  "active": {
+    "catalog": {
+      "checked": 5,
+      "changes": [
+        "assets"
+      ]
+    },
+    "files": {
+      "checked": 16,
+      "changes": []
+    },
+    "references": {
+      "checked": 1,
+      "changes": []
+    },
+    "assetFieldChanges": [
+      "seen"
+    ]
+  },
+  "projectAndReferencedFilesMatch": true
+}

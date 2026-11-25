@@ -1,0 +1,20 @@
+{
+  "architecturalTarget": "frozen app / isolated profile",
+  "copyDefaultsDisplayedIn": [
+    "Library",
+    "Edit",
+    "Perform"
+  ],
+  "copyDefaultsAfterQuitAndRelaunch": true,
+  "copyDestinationLabel": "copy-target",
+  "transferAction": "Drag WAV",
+  "receiverTrackPreference": 2,
+  "copyResults": [
+    "full-source",
+    "marked-range"
+  ],
+  "nativeReadyToDrag": true,
+  "approvedGenerationModalRequests": 1,
+  "testedConsentPath": "Decline",
+  "stabilityNativeShowsMissingKey": true
+}

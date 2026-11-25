@@ -1,0 +1,14 @@
+{
+  "commit": "4a5cfc51830574ae5d7ed10349a03557c5af924c",
+  "tree": "116f7d1688b0331fdb92aa98e4a91c7f4e643918",
+  "binaryPath": "build/m09-release/SoundPlus_artefacts/Release/SoundPlus.app/Contents/MacOS/SoundPlus",
+  "binarySha256": "90c0a29f3dbe0850eb2cb97a37b706e3017101966ed565b0cc4f900234c9fa8b",
+  "manifestSha256": "4f86de2ccbdf3816e9cee5f540bf0b829557d8882deaaf9392777d52856ca84b",
+  "registrySha256": "c3781cfb9047086419c970c0320824568bfd8acc5ee65dd6b5077d12416e2605",
+  "dependenciesSha256": "03ba048d409822584c0db0668b22d39ba53be51911c651fed98ae78fe38079ef",
+  "gate": {
+    "failed": 0,
+    "passed": 64
+  },
+  "distribution": "Development only"
+}
